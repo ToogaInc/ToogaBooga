@@ -1,0 +1,76 @@
+export interface IVerificationInfo {
+    // all alive fame
+    aliveFame: {
+        checkThis: boolean;
+        minFame: number;
+    };
+
+    // guild info
+    guild: {
+        checkThis: boolean;
+        guildName: {
+            checkThis: boolean;
+            // must be in this guild
+            name: string;
+        };
+        guildRank: {
+            checkThis: boolean;
+            minRank: string;
+        };
+    };
+
+    // last seen info
+    lastSeen: {
+        mustBeHidden: boolean;
+    };
+
+    // stars
+    rank: {
+        checkThis: boolean;
+        minRank: number;
+    };
+
+    // characters
+    characters: {
+        checkThis: boolean;
+        statsNeeded: [number, number, number, number, number, number, number, number, number];
+        // if true
+        // dead characters can fulfil the above reqs
+        checkPastDeaths: boolean;
+    };
+
+    // exaltations needed
+    exaltations: {
+        checkThis: boolean;
+        minimum: {
+            hp: number;
+            mp: number;
+            def: number;
+            att: number;
+            dex: number;
+            spd: number;
+            vit: number;
+            wis: number;
+        };
+
+        // if true, all "minimum" must be
+        // achieved. otherwise, only 1.
+        requireAll: boolean;
+    };
+
+    // graveyard summary info
+    graveyardSummary: {
+        checkThis: boolean;
+
+        minimum: {
+            minOryxKills: number;
+            minLostHalls: number;
+            minVoids: number;
+            minCults: number;
+            minNests: number;
+            minShatters: number;
+            minFungal: number;
+            minCrystal: number;
+        };
+    };
+}
