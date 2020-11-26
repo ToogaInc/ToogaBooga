@@ -1,0 +1,14 @@
+# Modules.
+/node_modules/
+
+# Compiled files.
+/out/
+
+# Configuration.
+/src/config/config.ts
+
+# Notes
+/notes/*
+
+# Profiling
+*.cpuprofile
