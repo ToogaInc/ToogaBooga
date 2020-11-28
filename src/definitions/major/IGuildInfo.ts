@@ -4,9 +4,10 @@ import {IVerificationChannels} from "./parts/IVerificationChannels";
 import {IRaidChannels} from "./parts/IRaidChannels";
 import {IBlacklistedUser} from "../IBlacklistedUser";
 import {IRaidInfo} from "./IRaidInfo";
-import {IVerificationRequirements} from "./parts/IVerificationRequirements";
+import {IVerificationProperties} from "./parts/IVerificationProperties";
 import {IAfkCheckProperties} from "./parts/IAfkCheckProperties";
 import {ISuspendedUser} from "../ISuspendedUser";
+import {IQuotaLoggingInfo} from "../IQuotaLoggingInfo";
 
 export interface IGuildInfo {
     // the guild id suffices as an identifier
@@ -57,12 +58,7 @@ export interface IGuildInfo {
             modmailLoggingId: string;
         };
         manualVerificationChannelId: string;
-        quotaLogsChannels: {
-            quotaChannelId: string;
-            noRunsChannelId: string;
-            topLeaderChannelId: string;
-
-        };
+        quotaLogsChannelId: string;
     };
     moderation: {
         suspendedUsers: Array<ISuspendedUser>;
@@ -72,12 +68,28 @@ export interface IGuildInfo {
         blacklistedUsers: Array<IBlacklistedUser>;
         dungeons: number[];
         // verification requirements
-        verificationProperties: IVerificationRequirements;
+        verificationProperties: IVerificationProperties;
         // afk check properties
         afkCheckProperties: IAfkCheckProperties;
+        // quotas
+        quotasAndLogging: {
+            quotas: {
+                noRunsWeeklyMessageId: string;
+                topRunsLedWeeklyMessageId: string;
+                quotaLeaderboardMessageId: string;
+                topRunsLedWeek: Array<IQuotaLoggingInfo>;
+            };
+            logging: {
+                topKeysWeeklyMessageId: string;
+                topKeysWeek: Array<IQuotaLoggingInfo>;
+            };
+            runsDone: {
+                topRunsCompletedMessageId: string;
+                topRunsCompletedWeek: Array<IQuotaLoggingInfo>;
+            }
+        };
     };
     // sections
     guildSections: Array<ISectionInfo>;
     activeRaids: Array<IRaidInfo>;
-
 }

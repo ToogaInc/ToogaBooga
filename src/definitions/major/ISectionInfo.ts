@@ -2,7 +2,7 @@ import {IVerificationChannels} from "./parts/IVerificationChannels";
 import {IRaidChannels} from "./parts/IRaidChannels";
 import {ISectionLeaderRoles} from "./parts/ISectionLeaderRoles";
 import {IAfkCheckProperties} from "./parts/IAfkCheckProperties";
-import {IVerificationRequirements} from "./parts/IVerificationRequirements";
+import {IVerificationProperties} from "./parts/IVerificationProperties";
 import {ISuspendedUser} from "../ISuspendedUser";
 
 
@@ -27,7 +27,7 @@ export interface ISectionInfo {
 
     // verification requirements
     verification: {
-        requirements: IVerificationRequirements;
+        requirements: IVerificationProperties;
     }
 
     // general section properties
@@ -35,7 +35,7 @@ export interface ISectionInfo {
         // dungeons that can be raided here.
         dungeons: number[];
         // verification properties
-        verificationProperties: IVerificationRequirements;
+        verificationProperties: IVerificationProperties;
         // afk check properties
         afkCheckProperties: IAfkCheckProperties;
         // people that are banned from this section
