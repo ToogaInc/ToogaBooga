@@ -1,3 +1,3 @@
-export async function readyEvent() {
+export async function onReadyEvent() {
     
 }

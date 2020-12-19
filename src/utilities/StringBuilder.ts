@@ -1,6 +1,11 @@
 export class StringBuilder {
     private _str: string;
 
+    /**
+     * Creates a new basic StringBuilder object.
+     *
+     * @param {string?} str The string object to begin with.
+     */
     public constructor(str?: string) {
         if (typeof str === "undefined") {
             this._str = "";
@@ -12,6 +17,8 @@ export class StringBuilder {
 
     /**
      * Returns the length of the `StringBuilder`.
+     *
+     * @returns {number} The length of this StringBuilder.
      */
     public length(): number {
         return this._str.length;
@@ -19,7 +26,9 @@ export class StringBuilder {
 
     /**
      * Appends something to the `StringBuilder`.
+     *
      * @param {string} content The content to append.
+     * @returns {StringBuilder} This object.
      */
     public append(content: any): this {
         this._str += content;
@@ -28,6 +37,8 @@ export class StringBuilder {
 
     /**
      * Appends a new line to the `StringBuilder`.
+     *
+     * @returns {StringBuilder} This object.
      */
     public appendLine(): this {
         this._str += "\n";
@@ -36,6 +47,8 @@ export class StringBuilder {
 
     /**
      * Builds the `StringBuilder` object.
+     *
+     * @returns {StringBuilder} This object.
      */
     public toString(): string {
         return this._str;
@@ -43,6 +56,8 @@ export class StringBuilder {
 
     /**
      * Reverses the `StringBuilder` object.
+     *
+     * @returns {StringBuilder} This object.
      */
     public reverse(): this {
         let newStr: string = "";
@@ -55,8 +70,10 @@ export class StringBuilder {
 
     /**
      * Deletes a portion of the `StringBuilder`.
+     *
      * @param {number} start The starting index, inclusive.
      * @param {number} end The end index, exclusive.
+     * @returns {StringBuilder} This object.
      */
     public delete(start: number, end: number): this {
         this._str = this._str.replace(this._str.substring(start, end), "");
