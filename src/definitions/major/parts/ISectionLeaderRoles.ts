@@ -1,5 +1,5 @@
 export interface ISectionLeaderRoles {
-    sectionTrialRaidLeaderRoleId: string;
+    sectionAlmostRaidLeaderRoleId: string;
     sectionRaidLeaderRoleId: string;
     sectionHeadLeaderRoleId: string;
 }

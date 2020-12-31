@@ -1,12 +1,21 @@
 import {ColorResolvable, EmojiResolvable} from "discord.js";
+import {IReactionProps} from "./IReactionProps";
 
 export interface IDungeonInfo {
-    id: number;
+    codeName: string;
     dungeonName: string;
     portalEmojiId: string;
-    keyData: Array<{ keyEmojiId: EmojiResolvable; keyEmojiName: string; }>;
-    reactions: Array<EmojiResolvable>;
+    keyData: Array<IReactionProps>;
+    reactions: Array<IReactionProps>;
     portalLink: string;
     bossLinks: Array<string>;
     dungeonColors: Array<ColorResolvable>;
+    dungeonCategory: ""
+        | "Basic Dungeons"
+        | "Godland Dungeons"
+        | "Endgame Dungeons"
+        | "Event Dungeons"
+        | "Special Event Dungeons"
+        | "Mini Dungeons"
+        | "Heroic Dungeons";
 }

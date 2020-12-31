@@ -101,14 +101,7 @@ export module MongoFunctions {
             return [];
 
         return await UserCollection.find({
-            $or: [
-                {
-                    "rotmgNames.lowercaseIgn": name.toLowerCase()
-                },
-                {
-                    "rotmgAltAccounts.lowercaseIgn": name.toLowerCase()
-                }
-            ]
+            "rotmgNames.lowercaseIgn": name.toLowerCase()
         }).toArray();
     }
 

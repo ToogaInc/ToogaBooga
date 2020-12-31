@@ -4,6 +4,8 @@ import {ISectionLeaderRoles} from "./parts/ISectionLeaderRoles";
 import {IAfkCheckProperties} from "./parts/IAfkCheckProperties";
 import {IVerificationProperties} from "./parts/IVerificationProperties";
 import {ISuspendedUser} from "../ISuspendedUser";
+import {IVerificationRequirements} from "./parts/IVerificationRequirements";
+import {IOtherMajorConfig} from "./parts/IOtherMajorConfig";
 
 
 export interface ISectionInfo {
@@ -25,15 +27,10 @@ export interface ISectionInfo {
         verifiedRoleId: string;
     };
 
-    // verification requirements
-    verification: {
-        requirements: IVerificationProperties;
-    }
+    otherMajorConfig: IOtherMajorConfig;
 
     // general section properties
     properties: {
-        // dungeons that can be raided here.
-        dungeons: number[];
         // verification properties
         verificationProperties: IVerificationProperties;
         // afk check properties

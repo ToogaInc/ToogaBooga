@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@types/axios": "^0.14.0",
-    "@types/mongodb": "^3.6.3"
+    "@types/mongodb": "^3.6.3",
+    "@types/ws": "^7.4.0"
   }
 }

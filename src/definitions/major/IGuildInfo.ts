@@ -4,10 +4,9 @@ import {IVerificationChannels} from "./parts/IVerificationChannels";
 import {IRaidChannels} from "./parts/IRaidChannels";
 import {IBlacklistedUser} from "../IBlacklistedUser";
 import {IRaidInfo} from "./IRaidInfo";
-import {IVerificationProperties} from "./parts/IVerificationProperties";
-import {IAfkCheckProperties} from "./parts/IAfkCheckProperties";
 import {ISuspendedUser} from "../ISuspendedUser";
 import {IQuotaLoggingInfo} from "../IQuotaLoggingInfo";
+import {IOtherMajorConfig} from "./parts/IOtherMajorConfig";
 
 export interface IGuildInfo {
     // the guild id suffices as an identifier
@@ -59,24 +58,19 @@ export interface IGuildInfo {
         };
         manualVerificationChannelId: string;
         quotaLogsChannelId: string;
+        botUpdatesChannelId: string;
     };
+    otherMajorConfig: IOtherMajorConfig;
     moderation: {
         suspendedUsers: Array<ISuspendedUser>;
         blacklistedUsers: Array<IBlacklistedUser>;
     };
     properties: {
-        blacklistedUsers: Array<IBlacklistedUser>;
-        dungeons: number[];
-        // verification requirements
-        verificationProperties: IVerificationProperties;
-        // afk check properties
-        afkCheckProperties: IAfkCheckProperties;
         // quotas
         quotasAndLogging: {
-            quotas: {
+            runsLed: {
                 noRunsWeeklyMessageId: string;
                 topRunsLedWeeklyMessageId: string;
-                quotaLeaderboardMessageId: string;
                 topRunsLedWeek: Array<IQuotaLoggingInfo>;
             };
             logging: {
@@ -86,7 +80,7 @@ export interface IGuildInfo {
             runsDone: {
                 topRunsCompletedMessageId: string;
                 topRunsCompletedWeek: Array<IQuotaLoggingInfo>;
-            }
+            };
         };
     };
     // sections

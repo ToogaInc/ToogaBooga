@@ -35,7 +35,7 @@ export class OneRealmBot {
     /**
      * Defines all necessary events for the bot to work.
      */
-    public startAllEvents(): Promise<void> {
+    public startAllEvents(): void {
         this._bot.on("ready", async () => onReadyEvent());
         this._bot.on("message", async (m: Message) => onMessageEvent(m));
         this._bot.on("messageReactionAdd",
@@ -67,11 +67,9 @@ export class OneRealmBot {
     /***
      * Initializes all optional services. These are normally timers or intervals.
      *
-     * @returns {Promise<boolean>} Whether the services all started successfully.
+     * @returns {boolean} Whether the services all started successfully.
      */
-    public initServices(): Promise<boolean> {
-
-
+    public initServices(): boolean {
         return true;
     }
 
