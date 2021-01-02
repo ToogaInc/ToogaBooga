@@ -5,8 +5,6 @@ export async function onMessageEvent(msg: Message): Promise<void> {
         return;
     }
 
-
-
     // Command handler
 
 }

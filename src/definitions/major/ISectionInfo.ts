@@ -12,6 +12,9 @@ export interface ISectionInfo {
     // A random 30 character ID that can be used to identify this section.
     uniqueIdentifier: string;
 
+    // The section name.
+    sectionName: string;
+
     // Whether the section is the main section or not.
     isMainSection: boolean;
 

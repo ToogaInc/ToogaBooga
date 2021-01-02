@@ -10,8 +10,6 @@ export interface IAfkCheckProperties {
     additionalAfkCheckInfo: string;
     // whether to remove key reacts during afk check
     removeKeyReactsDuringAfk: boolean;
-    // whether to remove all reactions after the afk check
-    removeAllReactionsAfterAfk: boolean;
     // afk check timeout, in minutes.
     afkCheckTimeout: number;
     // allowed dungeons (use codeName)
@@ -25,4 +23,6 @@ export interface IAfkCheckProperties {
     defaultDungeon: string;
     // whether post afk should be allowed or not
     allowPostAfk: boolean;
+    // whether people that react w/ key emoji can bypass a full vc
+    allowKeyReactsToBypassFullVc: boolean;
 }
