@@ -5,11 +5,11 @@ export interface IDungeonInfo {
     codeName: string;
     dungeonName: string;
     portalEmojiId: string;
-    keyData: Array<IReactionProps>;
-    reactions: Array<IReactionProps>;
+    keyData: IReactionProps[];
+    reactions: IReactionProps[];
     portalLink: string;
-    bossLinks: Array<string>;
-    dungeonColors: Array<ColorResolvable>;
+    bossLinks: string[];
+    dungeonColors: ColorResolvable[];
     dungeonCategory: ""
         | "Basic Dungeons"
         | "Godland Dungeons"

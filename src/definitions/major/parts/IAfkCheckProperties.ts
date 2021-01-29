@@ -13,12 +13,12 @@ export interface IAfkCheckProperties {
     // afk check timeout, in minutes.
     afkCheckTimeout: number;
     // allowed dungeons (use codeName)
-    allowedDungeons: Array<string>;
+    allowedDungeons: string[];
     // any reaction overrides
-    dungeonReactionOverride: Array<{
+    dungeonReactionOverride: {
         dungeonCodeName: string;
-        reactions: Array<IReactionProps>;
-    }>;
+        reactions: IReactionProps[];
+    }[]
     // default dungeons -- use codeName
     defaultDungeon: string;
     // whether post afk should be allowed or not

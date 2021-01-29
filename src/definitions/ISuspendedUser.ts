@@ -7,6 +7,6 @@ export interface ISuspendedUser {
     reason: string;
     dateTime: string;
     // in milliseconds
-    // -1 = indefinite 
+    // -1 = indefinite
     duration: number;
 }

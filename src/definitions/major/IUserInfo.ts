@@ -2,44 +2,44 @@ import {IRealmIgn} from "../IRealmIgn";
 
 export interface IUserInfo {
     discordUserId: string;
-    rotmgNames: Array<IRealmIgn>;
+    rotmgNames: IRealmIgn[];
     loggedInfo: {
-        dungeons: Array<{
+        dungeons: {
             guildId: string;
-            // string => The codeName found in DungeonData.
-            dungeonsCompleted: Array<[string, number]>;
-            dungeonsFailed: Array<[string, number]>;
-        }>;
+            // string =[] The codeName found in DungeonData.
+            dungeonsCompleted: [string, number][];
+            dungeonsFailed: [string, number][];
+        }[];
 
-        leaderRuns: Array<{
+        leaderRuns: {
             guildId: string;
-            // string => The codeName found in DungeonData.
-            dungeonsCompleted: Array<{ dungeonCode: string; completed: number; }>;
-            dungeonsFailed: Array<{ dungeonCode: string; failed: number; }>;
-            dungeonsAssisted: Array<{ dungeonCode: string; assisted: number; }>
-        }>;
+            // string =[] The codeName found in DungeonData.
+            dungeonsCompleted: { dungeonCode: string; completed: number; }[];
+            dungeonsFailed: { dungeonCode: string; failed: number; }[];
+            dungeonsAssisted: { dungeonCode: string; assisted: number; }[]
+        }[];
 
-        keys: Array<{
+        keys: {
             guildId: string;
-            // string => key id.
+            // string =[] key id.
             keysUsed: number;
             swordRune: number;
             shieldRune: number;
             helmRune: number;
             vial: number;
-        }>;
+        }[];
 
-        storage: Array<{
+        storage: {
             guildId: string;
             swordRuneStored: number;
             shieldRuneStored: number;
             helmRuneStored: number;
             vialsStored: number;
-        }>;
+        }[];
     };
 
     details: {
-        moderationHistory: Array<{
+        moderationHistory: {
             guildId: string;
             moderationType: "SUSPEND"
                 | "UNSUSPEND"
@@ -54,6 +54,6 @@ export interface IUserInfo {
             duration: number;
             // When this punishment was issued.
             issued: number;
-        }>;
+        }[];
     };
 }

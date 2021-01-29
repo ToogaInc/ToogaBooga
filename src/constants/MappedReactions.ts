@@ -372,4 +372,4 @@ export const MappedReactions: IMappedReactions = {
         emojiId: "",
         emojiName: "Helm Rune"
     }
-}
+};

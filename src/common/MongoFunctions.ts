@@ -2,7 +2,7 @@ import {Collection, MongoClient} from "mongodb";
 import {IUserInfo} from "../definitions/major/IUserInfo";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 
-export module MongoFunctions {
+export namespace MongoFunctions {
     let ThisMongoClient: MongoClient | null = null;
     let UserCollection: Collection<IUserInfo> | null = null;
     let GuildCollection: Collection<IGuildInfo> | null = null;
@@ -93,7 +93,7 @@ export module MongoFunctions {
      * @returns {Array<IUserInfo>} The search results.
      * @throws {ReferenceError} If the Mongo instance isn't connected.
      */
-    export async function getUserDb(name: string): Promise<Array<IUserInfo>> {
+    export async function getUserDb(name: string): Promise<IUserInfo[]> {
         if (UserCollection === null)
             throw new ReferenceError("UserCollection null. Use connect method first.");
 

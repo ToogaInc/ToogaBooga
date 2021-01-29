@@ -2,9 +2,6 @@ export interface IConfiguration {
     // The bot's token
     token: string;
 
-    // URL to my private API for verification.
-    privateApiUrl: string;
-
     // The collection names
     database: {
         // The database connection URL.
@@ -35,14 +32,31 @@ export interface IConfiguration {
     // Relevant Discord IDs
     ids: {
         // IDs of all bot owners
-        botOwnerIds: Array<string>;
+        botOwnerIds: string[];
 
         // Guilds not to include to the database.
-        exemptGuilds: Array<string>;
+        exemptGuilds: string[];
     };
 
     // Other non-important settings.
     misc: {
         deleteEmbedTime: number;
+    };
+
+    // Private API URLs.
+    privateApiLinks: {
+        baseApi: string;
+        pingOnline: string;
+        parseEndpoint: string;
+        realmEye: {
+            playerBasics: string;
+            petyard: string;
+            graveyard: string;
+            graveyardSummary: string;
+            nameHistory: string;
+            rankHistory: string;
+            guildHistory: string;
+            exaltations: string;
+        };
     };
 }

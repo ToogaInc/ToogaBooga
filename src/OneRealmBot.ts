@@ -5,6 +5,7 @@ import {onMessageEvent} from "./events/MessageEvent";
 import {MongoFunctions} from "./common/MongoFunctions";
 import * as assert from "assert";
 import {onMessageReactionAdd} from "./events/MessageReactionAdd";
+import axios, {AxiosInstance} from "axios";
 
 export class OneRealmBot {
     private readonly _config: IConfiguration;
@@ -12,13 +13,17 @@ export class OneRealmBot {
     private _eventsIsStarted: boolean = false;
 
     public static BotInstance: OneRealmBot;
+    public static AxiosClient: AxiosInstance = axios.create();
 
     /**
      * Constructs a new Discord bot.
      *
      * @param {IConfiguration} config The configuration file.
      */
-    public constructor(config: IConfiguration) {
+    public constructor(config: IConfiguration | null) {
+        if (!config)
+            throw new Error("No config file given.");
+
         this._config = config;
         this._bot = new Client({
             partials: [
@@ -80,5 +85,14 @@ export class OneRealmBot {
      */
     public get client(): Client {
         return this._bot;
+    }
+
+    /**
+     * Returns the Configuration object.
+     *
+     * @returns {IConfiguration} The configuration object.
+     */
+    public get config(): IConfiguration {
+        return this._config;
     }
 }

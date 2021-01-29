@@ -1,8 +1,8 @@
 export interface IBotInfo {
-    activeEvents: Array<{
+    activeEvents: {
         issuedTime: number;
         issuedBy: string;
         subject: string;
         details: string;
-    }>;
+    }[];
 }

@@ -24,7 +24,7 @@ import {IReactionProps} from "../definitions/major/parts/IReactionProps";
 import {MiscUtils} from "../utilities/MiscUtils";
 import {OneRealmBot} from "../OneRealmBot";
 
-export module RaidFunctions {
+export namespace RaidFunctions {
     export interface IAfkCheckOptions {
         location: string;
         raidMessage?: string;
@@ -33,8 +33,8 @@ export module RaidFunctions {
     }
 
     function getRolesAndCorrespondingPerms(guild: Guild, guildDb: IGuildInfo,
-                                           section: ISectionInfo): Array<OverwriteResolvable> {
-        const permCol: Array<OverwriteResolvable> = [];
+                                           section: ISectionInfo): OverwriteResolvable[] {
+        const permCol: OverwriteResolvable[] = [];
 
         // No verified role = no point in using this function
         if (!guild.roles.cache.has(section.roles.verifiedRoleId))
@@ -166,7 +166,7 @@ export module RaidFunctions {
         await MiscUtils.stopFor(5 * 1000);
 
         // K = key for mappedreaction
-        const earlyLocReacts = new Collection<string, [Array<GuildMember>, boolean]>();
+        const earlyLocReacts = new Collection<string, [GuildMember[], boolean]>();
         dungeonReactions
             .concat({
                 mappingEmojiName: "NITRO",
@@ -179,9 +179,9 @@ export module RaidFunctions {
          * Creates a new AFK check embed.
          * @returns The new AFK check embed.
          */
-        const createFormalAfkEmbed = (): [MessageEmbed, Array<EmojiResolvable>] => {
-            const afkEmojis: Array<EmojiResolvable> = [
-                MappedReactions["NITRO"].emojiId,
+        const createFormalAfkEmbed = (): [MessageEmbed, EmojiResolvable[]] => {
+            const afkEmojis: EmojiResolvable[] = [
+                MappedReactions.NITRO.emojiId,
                 ...allKeys.map(x => MappedReactions[x.mappingEmojiName].emojiId),
             ];
 
@@ -251,14 +251,14 @@ export module RaidFunctions {
             }
 
             return [afkEmbed, afkEmojis];
-        }
+        };
 
         /**
          * Returns a new control panel embed that can be used to control the AFK check.
          * @returns The new control panel embed.
          */
-        const createFormalControlPanelEmbed = (): [MessageEmbed, Array<EmojiResolvable>] => {
-            const controlPanelEmojis: Array<EmojiResolvable> = [];
+        const createFormalControlPanelEmbed = (): [MessageEmbed, EmojiResolvable[]] => {
+            const tempControlPanelEmojis: EmojiResolvable[] = [];
             const controlPanelDesc = new StringBuilder()
                 .append(`⇒ Section: ${details.section.sectionName}`)
                 .appendLine()
@@ -274,15 +274,15 @@ export module RaidFunctions {
                 .append(`\`\`\`${details.location}\`\`\``)
                 .appendLine()
                 .append("To change this location, react to the 🟦 emoji.");
-            controlPanelEmojis.push("🟦");
+            tempControlPanelEmojis.push("🟦");
 
             const afkCheckField = new StringBuilder()
                 .append("⇒ To __end__ the AFK check and formally start the raid, react to the 🔴 emoji.")
                 .appendLine()
                 .append("⇒ To __abort__ the AFK check, react to the ❌ emoji.");
-            controlPanelEmojis.push("🔴", "❌");
+            tempControlPanelEmojis.push("🔴", "❌");
 
-            const controlPanelEmbed = new MessageEmbed()
+            const tempControlPanelEmbed = new MessageEmbed()
                 .setAuthor(`Control Panel: **${leaderName}'s Raid**`)
                 .setTitle(`${leaderName}'s ${details.dungeon.dungeonName} AFK Check.`)
                 .setDescription(controlPanelDesc)
@@ -300,12 +300,12 @@ export module RaidFunctions {
                     .appendLine()
                     .append(`Key Emojis: ${keys.join(" ")}`);
 
-                controlPanelEmbed.addField("Key Management", keyField);
-                controlPanelEmojis.push(...keys);
+                tempControlPanelEmbed.addField("Key Management", keyField);
+                tempControlPanelEmojis.push(...keys);
             }
 
-            return [controlPanelEmbed, controlPanelEmojis];
-        }
+            return [tempControlPanelEmbed, tempControlPanelEmojis];
+        };
 
         await raidVc.updateOverwrite(guild.roles.everyone, {
             CONNECT: null
@@ -425,6 +425,10 @@ export module RaidFunctions {
     export async function confirmReaction(user: User, emojiInfo: IReactionProps): Promise<boolean> {
 
         return true;
+    }
+
+    export async function endAfkCheck(guild: Guild, guildDb: IGuildInfo, details: IAfkCheckOptions) {
+
     }
 
 

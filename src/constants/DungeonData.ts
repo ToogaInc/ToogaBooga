@@ -1,6 +1,6 @@
 import {IDungeonInfo} from "../definitions/major/parts/IDungeonInfo";
 
-export const DungeonData: Array<IDungeonInfo> = [
+export const DungeonData: IDungeonInfo[] = [
     {
         codeName: "SNAKE_PIT",
         dungeonName: "Snake Pit",

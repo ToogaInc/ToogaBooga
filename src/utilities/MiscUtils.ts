@@ -1,4 +1,4 @@
-export module MiscUtils {
+export namespace MiscUtils {
     /**
      * Stops execution of a function for a specified period of time.
      * @param {number} time The time, in milliseconds, to delay execution.
@@ -9,6 +9,6 @@ export module MiscUtils {
             setTimeout(() => {
                 return resolve();
             }, time);
-        })
+        });
     }
 }

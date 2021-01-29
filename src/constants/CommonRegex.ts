@@ -1,4 +1,4 @@
-export module CommonRegex {
+export namespace CommonRegex {
     /**
      * Use this Regex to test if a string contains ONLY letters.
      * @type {RegExp}

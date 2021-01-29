@@ -22,7 +22,7 @@ export interface IGuildInfo {
             // verifier roles
             verifierRoleId: string;
             // other staff roles. these will get the team role
-            otherStaffRoleIds: Array<string>;
+            otherStaffRoleIds: string[];
             // leader roles -- will work in all
             // sections
             universalLeaderRoleIds: {
@@ -41,11 +41,11 @@ export interface IGuildInfo {
             };
         };
         // these people can talk during raids
-        speakingRoles: Array<string>;
+        speakingRoles: string[];
         // these people can get early location
-        earlyLocationRoles: Array<string>;
+        earlyLocationRoles: string[];
         // these people can stream.
-        streamingRoles: Array<string>;
+        streamingRoles: string[];
     };
     // all channels
     channels: {
@@ -62,8 +62,8 @@ export interface IGuildInfo {
     };
     otherMajorConfig: IOtherMajorConfig;
     moderation: {
-        suspendedUsers: Array<ISuspendedUser>;
-        blacklistedUsers: Array<IBlacklistedUser>;
+        suspendedUsers: ISuspendedUser[];
+        blacklistedUsers: IBlacklistedUser[];
     };
     properties: {
         // quotas
@@ -71,19 +71,19 @@ export interface IGuildInfo {
             runsLed: {
                 noRunsWeeklyMessageId: string;
                 topRunsLedWeeklyMessageId: string;
-                topRunsLedWeek: Array<IQuotaLoggingInfo>;
+                topRunsLedWeek: IQuotaLoggingInfo[];
             };
             logging: {
                 topKeysWeeklyMessageId: string;
-                topKeysWeek: Array<IQuotaLoggingInfo>;
+                topKeysWeek: IQuotaLoggingInfo[];
             };
             runsDone: {
                 topRunsCompletedMessageId: string;
-                topRunsCompletedWeek: Array<IQuotaLoggingInfo>;
+                topRunsCompletedWeek: IQuotaLoggingInfo[];
             };
         };
     };
     // sections
-    guildSections: Array<ISectionInfo>;
-    activeRaids: Array<IRaidInfo>;
+    guildSections: ISectionInfo[];
+    activeRaids: IRaidInfo[];
 }

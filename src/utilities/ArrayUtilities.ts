@@ -1,4 +1,4 @@
-export module ArrayUtilities {
+export namespace ArrayUtilities {
     /**
      * Gets a random element from an array.
      *
@@ -6,8 +6,8 @@ export module ArrayUtilities {
      * @param {Array<T>} array The array.
      * @returns {T} A random element.
      */
-    export function getRandomElement<T>(array: Array<T>): T {
-        return array[Math.floor(Math.random() * array.length)]
+    export function getRandomElement<T>(array: T[]): T {
+        return array[Math.floor(Math.random() * array.length)];
     }
 
     /**
@@ -17,10 +17,10 @@ export module ArrayUtilities {
      * @param {Array<T>} array The array to shuffle.
      * @returns {Array<T>} The shuffled array.
      */
-    export function shuffle<T>(array: Array<T>): Array<T> {
-        let j: number,
-            x: T,
-            i: number;
+    export function shuffle<T>(array: T[]): T[] {
+        let j: number;
+        let x: T;
+        let i: number;
         for (i = array.length - 1; i > 0; i--) {
             j = Math.floor(Math.random() * (i + 1));
             x = array[i];
@@ -37,7 +37,7 @@ export module ArrayUtilities {
      * @param {Array<T>} array The array to remove duplicates from.
      * @returns {Array<T>} The shuffled array.
      */
-    export function removeDuplicates<T>(array: Array<T>): Array<T> {
+    export function removeDuplicates<T>(array: T[]): T[] {
         return array.filter((item, index) => array.indexOf(item) === index);
     }
 
@@ -54,8 +54,8 @@ export module ArrayUtilities {
      *
      * @returns {number} The last index, if any. -1 otherwise.
      */
-    export function findLastIndex<T>(array: Array<T>, predicate: (value: T, index: number,
-                                                                  obj: Array<T>) => boolean): number {
+    export function findLastIndex<T>(array: T[], predicate: (value: T, index: number,
+                                                                  obj: T[]) => boolean): number {
         let l: number = array.length;
         while (l >= 0) {
             if (predicate(array[l], l, array))
@@ -78,10 +78,10 @@ export module ArrayUtilities {
      * @returns {Array<string>} An array that represents the given array.
      */
     export function arrayToStringFields<T>(
-        array: Array<T>,
+        array: T[],
         func: (i: number, element: T) => string,
         maxLenPerElement: number = 1016
-    ): Array<string> {
+    ): string[] {
         if (maxLenPerElement < 300) {
             maxLenPerElement = 300;
         }

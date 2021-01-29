@@ -1,6 +1,6 @@
 import {EmojiResolvable} from "discord.js";
 
-export module Emojis {
+export namespace Emojis {
     // specific classes
     export const ROGUE: EmojiResolvable = "";
     export const ARCHER: EmojiResolvable = "";

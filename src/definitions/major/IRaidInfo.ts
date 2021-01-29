@@ -19,7 +19,7 @@ export interface IRaidInfo {
     voice: {
         vcId: string;
         isOld: boolean;
-        oldPerms: Array<OverwriteResolvable>;
+        oldPerms: OverwriteResolvable[];
     };
     // location info
     location: string;
