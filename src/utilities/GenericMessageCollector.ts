@@ -1,13 +1,23 @@
 import {
-    DMChannel, Emoji,
+    DMChannel,
+    Emoji,
     EmojiResolvable,
+    Guild,
     GuildMember,
     Message,
-    MessageCollector, MessageOptions, MessageReaction, ReactionCollector,
+    MessageCollector,
+    MessageOptions,
+    MessageReaction,
+    PartialTextBasedChannelFields,
+    PermissionResolvable,
+    ReactionCollector,
+    Role,
     TextChannel,
     User
 } from "discord.js";
 import {AdvancedReactionCollector} from "./AdvancedReactionCollector";
+import {MessageUtil} from "./MessageUtil";
+import {StringBuilder} from "./StringBuilder";
 
 type IGenericMsgCollectorArguments = {
     /**
@@ -239,5 +249,217 @@ export class GenericMessageCollector<T> {
                 if (r === "time") return resolve(null);
             });
         });
+    }
+
+    // ============================================ //
+    //      EXAMPLE METHODS FOR FUNCTION BELOW      //
+    // ============================================ //
+
+    /**
+     * A built-in function, to be used as a parameter for the `send` method, that will wait for someone to respond with
+     * `yes` or `no` and return a boolean value associated with that choice.
+     * @param {PartialTextBasedChannelFields} pChan The channel where any messages from this method should be sent to.
+     * @returns {Function} A function that parses a message to a bool.
+     */
+    public static getYesNoPrompt(pChan: PartialTextBasedChannelFields): (m: Message) => Promise<boolean | void> {
+        return async (m: Message): Promise<boolean | void> => {
+            if (m.content === null) {
+                const noContentEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                    .setTitle("No Content Provided")
+                    .setDescription("You did not provide any message content. Do not send any attachments.");
+                MessageUtil.sendThenDelete({embed: noContentEmbed}, pChan);
+                return;
+            }
+
+            if (["yes", "ye", "y"].includes(m.content.toLowerCase()))
+                return true;
+            if (["no", "n"].includes(m.content.toLowerCase()))
+                return false;
+            return;
+        };
+    }
+
+    /**
+     * A built-in function, to be used as a parameter for the `send` method, that will wait for someone to respond
+     * with a message and then return that message.
+     * @return {Function} A function that returns a message that someone responds with.
+     */
+    public static getPureMessage(): (m: Message) => Promise<Message | void> {
+        return async (m: Message): Promise<Message | void> => m;
+    }
+
+    /**
+     * A built-in function, to be used as a parameter for the `send` method, that will wait for someone to respond
+     * with something and then return that response as a string.
+     * @param {PartialTextBasedChannelFields} pChan The channel where any messages from this method should be sent to.
+     * @param {{min?: number, max?: number}} options Any options for this prompt.
+     * @return {Function} A function that returns the message content from a message that someone responds with.
+     */
+    public static getStringPrompt(pChan: PartialTextBasedChannelFields, options?: {
+        min?: number,
+        max?: number
+    }): (m: Message) => Promise<string | void> {
+        return async (m: Message): Promise<string | void> => {
+            if (m.content === null) {
+                const noContentEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                    .setTitle("No Content Provided")
+                    .setDescription("You did not provide any message content. Do not send any attachments.");
+                MessageUtil.sendThenDelete({embed: noContentEmbed}, pChan);
+                return;
+            }
+
+            if (options) {
+                if (options.min && m.content.length < options.min) {
+                    const tooShortDesc = new StringBuilder().append(`Your message is too short. It needs to be at `)
+                        .append(`least ${options.min} characters long.`);
+                    const tooShortEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                        .setTitle("Message Too Short")
+                        .setDescription(tooShortDesc.toString());
+                    MessageUtil.sendThenDelete({embed: tooShortEmbed}, pChan);
+                    return;
+                }
+
+                if (options.max && options.max < m.content.length) {
+                    const tooLongDesc = new StringBuilder().append(`Your message is too long. It needs to be at `)
+                        .append(`most ${options.max} characters long.`);
+                    const tooLongEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                        .setTitle("Message Too Long")
+                        .setDescription(tooLongDesc.toString());
+                    MessageUtil.sendThenDelete({embed: tooLongEmbed}, pChan);
+                    return;
+                }
+            }
+
+            return m.content;
+        };
+    }
+
+    /**
+     * A built-in function, to be used as a parameter for the `send` method, that will wait for someone to respond
+     * with a role and return it. This function must be used in a guild.
+     * @param {Message} msg The message that triggered the use of this class. This is generally the message that
+     * results in the execution of this command.
+     * @param {PartialTextBasedChannelFields} pChan The channel to send messages to.
+     * @return {Function} A function that takes in a message and returns a Role, if any.
+     */
+    public static getRolePrompt(msg: Message, pChan: PartialTextBasedChannelFields): (m: Message)
+        => Promise<Role | void> {
+        return async (m: Message): Promise<void | Role> => {
+            const origRole = m.mentions.roles.first();
+            let resolvedRole: Role;
+            if (origRole) resolvedRole = origRole;
+            else {
+                const resolveById = await msg.guild?.roles.fetch(m.content) ?? null;
+                if (!resolveById) {
+                    const noRoleFound = MessageUtil.generateBlankEmbed(m.author, "RED")
+                        .setTitle("No Role Found")
+                        .setDescription("You didn't specify a role. Either mention the role or type its ID.");
+                    MessageUtil.sendThenDelete({embed: noRoleFound}, pChan);
+                    return;
+                }
+
+                resolvedRole = resolveById;
+            }
+
+            return resolvedRole;
+        };
+    }
+
+    /**
+     * A built-in function, to be used as a parameter for the `send` method, that will wait for someone to respond
+     * with a number and returns that number.
+     * @param {PartialTextBasedChannelFields} channel The channel where any messages should be sent to.
+     * @param {{min?: number, max?: number}} options Any options.
+     * @return {Function} A function that takes in a message and returns a number, if any.
+     */
+    public static getNumberPrompt(channel: PartialTextBasedChannelFields,
+                                  options?: { min?: number, max?: number }): (m: Message) => Promise<number | void> {
+        return async (m: Message): Promise<number | void> => {
+            const num = Number.parseInt(m.content, 10);
+            if (Number.isNaN(num)) {
+                const notNumberEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                    .setTitle("Invalid Number Specified")
+                    .setDescription("You did not provide a valid number. Please try again.");
+                MessageUtil.sendThenDelete({embed: notNumberEmbed}, channel);
+                return;
+            }
+
+            if (options) {
+                if (typeof options.min !== "undefined" && num < options.min) {
+                    const lowerThanMinEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                        .setTitle("Number Too Low")
+                        .setDescription(`The number that you provided is lower than ${options.min}. Try again.`);
+                    MessageUtil.sendThenDelete({embed: lowerThanMinEmbed}, channel);
+                    return;
+                }
+
+                if (typeof options.max !== "undefined" && options.max < num) {
+                    const higherThanMaxEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                        .setTitle("Number Too High")
+                        .setDescription(`The number that you provided is higher than ${options.max}. Try again.`);
+                    MessageUtil.sendThenDelete({embed: higherThanMaxEmbed}, channel);
+                    return;
+                }
+            }
+
+            return num;
+        };
+    }
+
+    /**
+     * A built-in function, to be used as a parameter for the `send` method, that will wait for someone to respond
+     * with a text channel and returns it. This function must be used in a guild.
+     * @param {PartialTextBasedChannelFields} channel The channel where any messages should be sent to.
+     * @param {PermissionResolvable[]} [permissionsForBot = []] Any permissions that the text channel must have in
+     * order to be valid.
+     * @return {(m: Message) => Promise<TextChannel | void>}
+     */
+    public static getTextChannelPrompt(channel: PartialTextBasedChannelFields,
+                                       permissionsForBot: PermissionResolvable[] = []): (m: Message)
+        => Promise<TextChannel | void> {
+        return async (m: Message): Promise<TextChannel | void> => {
+            const guild = m.guild as Guild;
+            const origChannel = m.mentions.channels.first();
+            let resolvedChannel: TextChannel;
+
+            if (origChannel)
+                resolvedChannel = origChannel;
+            else {
+                const resolvedChanById = guild.channels.resolve(m.content);
+                if (!(resolvedChanById instanceof TextChannel)) {
+                    const notTextChannelDesc = new StringBuilder()
+                        .append("You did not specify a valid text channel. Note that a text channel is __not__ a news")
+                        .append(" channel.");
+                    const notTextChannelEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                        .setTitle("Invalid Text Channel Specified")
+                        .setDescription(notTextChannelDesc.toString());
+                    MessageUtil.sendThenDelete({embed: notTextChannelEmbed}, channel);
+                    return;
+                }
+
+                resolvedChannel = resolvedChanById;
+            }
+
+            const theBot = guild.me;
+            if (theBot) {
+                const theBotPermsInChan = resolvedChannel.permissionsFor(theBot);
+                if (theBotPermsInChan) {
+                    for (const p of permissionsForBot) {
+                        if (!theBotPermsInChan.has(p)) {
+                            const noPermDesc = new StringBuilder()
+                                .append(`I do not have the \`${p}\` permission in the ${resolvedChannel} channel. `)
+                                .append("Please make sure I have the permission and then try again.");
+                            const noPermsEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                                .setTitle("No Permissions!")
+                                .setDescription(noPermDesc);
+                            MessageUtil.sendThenDelete({embed: noPermsEmbed}, channel);
+                            return;
+                        }
+                    }
+                } // end inner if
+            } // end outer if
+
+            return resolvedChannel;
+        };
     }
 }
