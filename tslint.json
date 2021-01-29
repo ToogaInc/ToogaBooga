@@ -5,9 +5,26 @@
   ],
   "jsRules": {},
   "rules": {
-    "no-namespace": false,
-    "object-literal-shorthand": false,
-    "semicolon": true
+    "no-namespace": {
+      "severity": "off"
+    },
+    "object-literal-shorthand": {
+      "severity": "off"
+    },
+    "no-console": {
+      "severity": "off"
+    },
+
+    "semicolon": {
+      "severity": "error"
+    },
+
+    "no-trailing-whitespace": {
+      "severity": "warning"
+    },
+    "no-empty": {
+      "severity": "warning"
+    }
   },
   "rulesDirectory": []
 }

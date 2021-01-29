@@ -1,4 +1,4 @@
 export interface IRealmIgn {
-    mainIgn: string;
+    ign: string;
     lowercaseIgn: string;
 }

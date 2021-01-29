@@ -7,12 +7,7 @@ export class StringBuilder {
      * @param {string?} str The string object to begin with.
      */
     public constructor(str?: string) {
-        if (typeof str === "undefined") {
-            this._str = "";
-        }
-        else {
-            this._str = str;
-        }
+        this._str = str ? str : "";
     }
 
     /**
@@ -60,7 +55,7 @@ export class StringBuilder {
      * @returns {StringBuilder} This object.
      */
     public reverse(): this {
-        let newStr: string = "";
+        let newStr = "";
         for (let i = this._str.length - 1; i >= 0; i--) {
             newStr += this._str[i];
         }

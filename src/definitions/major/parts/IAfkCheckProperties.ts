@@ -10,7 +10,7 @@ export interface IAfkCheckProperties {
     additionalAfkCheckInfo: string;
     // whether to remove key reacts during afk check
     removeKeyReactsDuringAfk: boolean;
-    // afk check timeout, in minutes.
+    // afk check timeout (how long until afk ends), in minutes.
     afkCheckTimeout: number;
     // allowed dungeons (use codeName)
     allowedDungeons: string[];
@@ -18,7 +18,7 @@ export interface IAfkCheckProperties {
     dungeonReactionOverride: {
         dungeonCodeName: string;
         reactions: IReactionProps[];
-    }[]
+    }[];
     // default dungeons -- use codeName
     defaultDungeon: string;
     // whether post afk should be allowed or not

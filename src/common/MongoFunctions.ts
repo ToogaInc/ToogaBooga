@@ -118,4 +118,152 @@ export namespace MongoFunctions {
         // only letters
         return /^[a-zA-Z]*$/.test(name);
     }
+
+    /**
+     * Gets the default guild configuration object.
+     * @param {string} guildId The guild ID.
+     * @return {IGuildInfo} The guild configuration object.
+     */
+    export function getDefaultGuildConfig(guildId: string): IGuildInfo {
+        return {
+            activeRaids: [],
+            channels: {
+                botUpdatesChannelId: "",
+                manualVerificationChannelId: "",
+                modmailChannels: {modmailChannelId: "", modmailLoggingId: "", modmailStorageChannelId: ""},
+                quotaLogsChannelId: "",
+                raidChannels: {
+                    afkCheckChannelId: "",
+                    controlPanelChannelId: "",
+                    raidRequestChannel: ""
+                },
+                verificationChannels: {
+                    verificationChannelId: "",
+                    verificationLogsChannelId: "",
+                    verificationSuccessChannelId: "",
+                    manualVerificationChannelId: ""
+                }
+            },
+            guildId: guildId,
+            guildSections: [],
+            moderation: {blacklistedUsers: [], suspendedUsers: []},
+            otherMajorConfig: {
+                verificationProperties: {
+                    showVerificationRequirements: true,
+                    additionalVerificationInfo: "",
+                    verificationSuccessMessage: "",
+                    verificationRequirements: {
+                        aliveFame: {
+                            checkThis: false,
+                            minFame: 0
+                        },
+                        guild: {
+                            checkThis: false,
+                            guildName: {
+                                checkThis: false,
+                                name: ""
+                            },
+                            guildRank: {
+                                checkThis: false,
+                                minRank: ""
+                            },
+                        },
+                        lastSeen: {
+                            mustBeHidden: false
+                        },
+                        rank: {
+                            checkThis: false,
+                            minRank: 0
+                        },
+                        characters: {
+                            checkThis: false,
+                            statsNeeded: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            checkPastDeaths: true
+                        },
+                        exaltations: {
+                            checkThis: false,
+                            minimum: {
+                                hp: 0,
+                                mp: 0,
+                                def: 0,
+                                att: 0,
+                                dex: 0,
+                                spd: 0,
+                                vit: 0,
+                                wis: 0,
+                            },
+                            requireAll: false
+                        },
+                        graveyardSummary: {
+                            checkThis: false,
+                            minimum: {
+                                minOryxKills: 0,
+                                minLostHalls: 0,
+                                minVoids: 0,
+                                minCults: 0,
+                                minNests: 0,
+                                minShatters: 0,
+                                minFungal: 0,
+                                minCrystal: 0,
+                            }
+                        }
+                    }
+                },
+                afkCheckProperties: {
+                    vcLimit: 60,
+                    nitroEarlyLocationLimit: 3,
+                    additionalAfkCheckInfo: "",
+                    removeKeyReactsDuringAfk: false,
+                    afkCheckTimeout: 30 * 60 * 1000,
+                    allowedDungeons: [],
+                    dungeonReactionOverride: [],
+                    defaultDungeon: "",
+                    allowPostAfk: true,
+                    allowKeyReactsToBypassFullVc: true
+                }
+            },
+            properties: {
+                quotasAndLogging: {
+                    logging: {topKeysWeek: [], topKeysWeeklyMessageId: ""},
+                    runsDone: {topRunsCompletedMessageId: "", topRunsCompletedWeek: []},
+                    runsLed: {noRunsWeeklyMessageId: "", topRunsLedWeek: [], topRunsLedWeeklyMessageId: ""}
+                }
+            },
+            roles: {
+                earlyLocationRoles: [],
+                mutedRoleId: "",
+                speakingRoles: [],
+                staffRoles: {
+                    moderation: {moderatorRoleId: "", officerRoleId: "", securityRoleId: ""},
+                    otherStaffRoleIds: [],
+                    sectionLeaderRoleIds: {
+                        sectionAlmostRaidLeaderRoleId: "",
+                        sectionRaidLeaderRoleId: "",
+                        sectionHeadLeaderRoleId: ""
+                    },
+                    teamRoleId: "",
+                    universalLeaderRoleIds: {almostLeaderRoleId: "", headLeaderRoleId: "", leaderRoleId: ""},
+                    verifierRoleId: ""
+                },
+                streamingRoles: [],
+                suspendedRoleId: "",
+                verifiedRoleId: ""
+            }
+        };
+    }
+
+    /**
+     * Gets the default user configuration object.
+     * @param {string} ign The IGN of the person.
+     * @param {string} userId The person's Discord ID.
+     * @return {IGuildInfo} The user configuration object.
+     */
+    export function getDefaultUserConfig(ign: string, userId: string): IUserInfo {
+        return {
+            details: {moderationHistory: []},
+            discordUserId: userId,
+            loggedInfo: {dungeons: [], keys: [], leaderRuns: [], storage: []},
+            rotmgNames: [{lowercaseIgn: ign.toLowerCase(), ign: ign}]
+        };
+    }
 }
