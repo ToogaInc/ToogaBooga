@@ -86,6 +86,15 @@ export class GenericMessageCollector<T> {
         }
     }
 
+    /**
+     * Starts a message collector. This will wait for one message to be sent that fits the criteria specified by the
+     * function parameter and then returns a value based on that message.
+     * @param {Function} func The function that will essentially "filter" and "parse" a message.
+     * @param {IGenericMsgCollectorArguments | null} options Any options for this message collector.
+     * @returns {Promise<T | null>} The parsed content specified by your filter, or null if the collector was
+     * stopped due to time or via the "cancel" command.
+     * @template T
+     */
     public async startNormalCollector(
         func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>,
         options: IGenericMsgCollectorArguments | null = null
@@ -131,7 +140,17 @@ export class GenericMessageCollector<T> {
         });
     }
 
-
+    /**
+     * Starts a message and reaction collector. This function will wait for one message or reaction and returns
+     * either the parsed content from the message (specified by your filter) or the reaction (whichever one comes
+     * first).
+     * @param {Function} func The function that will essentially "filter" and "parse" a message.
+     * @param {IGenericMsgCollectorArguments} options Any options for this collector. You will need to use this to
+     * specify the reactions that will be used.
+     * @returns {Promise<Emoji | T | null>} Either the parsed message content or an emoji, or null if the cancel
+     * command was used or time ran out.
+     * @template T
+     */
     public async startDoubleCollector(
         func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>,
         options?: IGenericMsgCollectorArguments
