@@ -1,4 +1,5 @@
 export interface IBlacklistedUser {
+    nickname: string;
     discordId: string;
     // this should be lowercase.
     rotmgName: string;

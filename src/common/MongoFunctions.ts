@@ -1,11 +1,13 @@
 import {Collection, MongoClient} from "mongodb";
 import {IUserInfo} from "../definitions/major/IUserInfo";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
+import {IBotInfo} from "../definitions/major/IBotInfo";
 
 export namespace MongoFunctions {
     let ThisMongoClient: MongoClient | null = null;
     let UserCollection: Collection<IUserInfo> | null = null;
     let GuildCollection: Collection<IGuildInfo> | null = null;
+    let BotCollection: Collection<IBotInfo> | null = null;
 
     interface IDbConfiguration {
         dbUrl: string;
@@ -64,6 +66,18 @@ export namespace MongoFunctions {
     }
 
     /**
+     * Gets the bot collection, if the program is connected to Mongo.
+     * @return {Collection<IBotInfo>} The bot collection.
+     * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
+     */
+    export function getBotCollection(): Collection<IBotInfo> {
+        if (BotCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
+            throw new ReferenceError("BotCollection null.");
+
+        return BotCollection;
+    }
+
+    /**
      * Connects to the MongoDB instance.
      *
      * @param {IDbConfiguration} config The Mongo configuration info.
@@ -82,6 +96,9 @@ export namespace MongoFunctions {
         GuildCollection = ThisMongoClient
             .db(config.dbName)
             .collection<IGuildInfo>(config.guildColName);
+        BotCollection = ThisMongoClient
+            .db(config.dbName)
+            .collection<IBotInfo>(config.botColName);
 
         return true;
     }
@@ -142,6 +159,10 @@ export namespace MongoFunctions {
                     verificationLogsChannelId: "",
                     verificationSuccessChannelId: "",
                     manualVerificationChannelId: ""
+                },
+                logging: {
+                    suspensionLoggingChannelId: "",
+                    blacklistLoggingChannelId: ""
                 }
             },
             guildId: guildId,

@@ -56,6 +56,10 @@ export interface IGuildInfo {
             modmailStorageChannelId: string;
             modmailLoggingId: string;
         };
+        logging: {
+            suspensionLoggingChannelId: string;
+            blacklistLoggingChannelId: string;
+        };
         manualVerificationChannelId: string;
         quotaLogsChannelId: string;
         botUpdatesChannelId: string;

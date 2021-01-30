@@ -11,9 +11,9 @@ customization in mind.
 
 ## Technologies
 
-OneRealm actually consists of two projects: the bot itself (this repository); and [RealmSharper](https://github.
-com/ewang2002/RealmEyeSharper/), which is how the bot gets its data from RealmEye and provides other services like
-screenshot parsing.
+OneRealm actually consists of two projects: the bot itself (this repository);
+and [RealmSharper](https://github.com/ewang2002/RealmEyeSharper/), which is how the bot gets its data from RealmEye and
+provides other services like screenshot parsing.
 
 ### OneRealm
 
@@ -39,8 +39,8 @@ there that may suit your needs.
   in maintenance mode, though I may revisit it when I have time; I will only fix bugs and update dependencies as needed.
   Written in TypeScript and uses MongoDB.
 
-- [Rotmg-Discord-Bot](https://github.com/Jacobvs/Rotmg-Discord-Bot) - Another open-source bot created by [Jacob]
-  (https://github.com/Jacobvs). Written in Python and uses MySQL.
+- [Rotmg-Discord-Bot](https://github.com/Jacobvs/Rotmg-Discord-Bot) - Another open-source bot created
+  by [Jacob](https://github.com/Jacobvs). Written in Python and uses MySQL.
 
 ## License
 

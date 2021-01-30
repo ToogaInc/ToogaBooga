@@ -5,4 +5,6 @@ export interface IBotInfo {
         subject: string;
         details: string;
     }[];
+
+    clientId: string;
 }
