@@ -3,9 +3,11 @@ export class Queue<T> {
 
     /**
      * Creates a new `Queue<T>`.
+     * @param {T[]} initArr The initial array.
+     * @template T
      */
-    public constructor() {
-        this._storage = [];
+    public constructor(initArr?: T[]) {
+        this._storage = initArr ?? [];
     }
 
     /**

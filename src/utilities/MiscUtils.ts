@@ -1,4 +1,38 @@
+import {IGuildInfo} from "../definitions/major/IGuildInfo";
+import {ISectionInfo} from "../definitions/major/ISectionInfo";
+
 export namespace MiscUtils {
+
+    /**
+     * Returns an array containing all sections. In particular, this function will give you a section representation
+     * of the main section.
+     * @param {IGuildInfo} guildDb The guild document.
+     * @return {ISectionInfo[]} The array of sections in this server.
+     */
+    export function getAllSections(guildDb: IGuildInfo): ISectionInfo[] {
+        const sections: ISectionInfo[] = [];
+        sections.push({
+            channels: {
+                raids: guildDb.channels.raidChannels,
+                verification: guildDb.channels.verificationChannels
+            },
+            isMainSection: true,
+            otherMajorConfig: guildDb.otherMajorConfig,
+            properties: {
+                sectionSuspended: []
+            },
+            roles: {
+                leaders: guildDb.roles.staffRoles.sectionLeaderRoleIds,
+                verifiedRoleId: guildDb.roles.verifiedRoleId
+            },
+            sectionName: "Main",
+            uniqueIdentifier: "MAIN"
+        });
+
+        sections.push(...guildDb.guildSections);
+        return sections;
+    }
+
     /**
      * Stops execution of a function for a specified period of time.
      * @param {number} time The time, in milliseconds, to delay execution.
@@ -54,10 +88,9 @@ export namespace MiscUtils {
             throw 'Time zones are not available in this environment';
         }*/
         try {
-            Intl.DateTimeFormat(undefined, { timeZone: tz.trim() });
+            Intl.DateTimeFormat(undefined, {timeZone: tz.trim()});
             return true;
-        }
-        catch (ex) {
+        } catch (ex) {
             return false;
         }
     }

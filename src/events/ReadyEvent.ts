@@ -1,9 +1,9 @@
 import {OneRealmBot} from "../OneRealmBot";
-import {MongoFunctions} from "../common/MongoFunctions";
+import {MongoManager} from "../managers/MongoManager";
 import {IBotInfo} from "../definitions/major/IBotInfo";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtils} from "../utilities/MiscUtils";
-import {PunishmentFunctions} from "../common/PunishmentFunctions";
+import {PunishmentManager} from "../managers/PunishmentManager";
 
 export async function onReadyEvent(): Promise<void> {
     const botUser = OneRealmBot.BotInstance.client.user;
@@ -15,13 +15,13 @@ export async function onReadyEvent(): Promise<void> {
     }
 
     // If mongo isn't connected, then we can't really use the bot.
-    if (!MongoFunctions.isConnected()) {
+    if (!MongoManager.isConnected()) {
         console.error("Mongo isn't connected! Unable to use bot. Shutting down.");
         process.exit(1);
     }
 
     // If the bot doc isn't in the database, then we add it.
-    const thisBotCollection = await MongoFunctions.getBotCollection()
+    const thisBotCollection = await MongoManager.getBotCollection()
         .findOne({clientId: botUser.id});
 
     if (!thisBotCollection) {
@@ -30,17 +30,17 @@ export async function onReadyEvent(): Promise<void> {
             clientId: botUser.id
         };
 
-        await MongoFunctions.getBotCollection().insertOne(newCollectionObj);
+        await MongoManager.getBotCollection().insertOne(newCollectionObj);
     }
 
     // Now, we want to add any guild docs to the database <=> the guild isn't in the database.
     const botGuilds = OneRealmBot.BotInstance.client.guilds.cache;
-    const guildDocs = await MongoFunctions.getGuildCollection().find({}).toArray();
+    const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
     for await (const [id] of botGuilds) {
         if (guildDocs.find(x => x.guildId === id) || OneRealmBot.BotInstance.config.ids.exemptGuilds.includes(id))
             continue;
 
-        await MongoFunctions.getGuildCollection().insertOne(MongoFunctions.getDefaultGuildConfig(id));
+        await MongoManager.getGuildCollection().insertOne(MongoManager.getDefaultGuildConfig(id));
     }
 
     // Delete guild documents corresponding to guilds that the bot is no longer in.
@@ -49,25 +49,25 @@ export async function onReadyEvent(): Promise<void> {
         const associatedGuild = botGuilds.find(x => x.id === doc.guildId);
         if (associatedGuild) {
             doc.moderation.suspendedUsers.forEach(x => {
-                if (PunishmentFunctions.isInSuspensionTimer(x.discordId, associatedGuild))
+                if (PunishmentManager.isInSuspensionTimer(x.discordId, associatedGuild))
                     return;
-                PunishmentFunctions.addToSuspensionTimer(x, associatedGuild, x.oldRoles);
+                PunishmentManager.addToSuspensionTimer(x, associatedGuild, x.oldRoles);
             });
 
             doc.guildSections.forEach(section => {
                 section.properties.sectionSuspended.forEach(x => {
-                    if (PunishmentFunctions.isInSectionSuspensionTimer(x.discordId, section))
+                    if (PunishmentManager.isInSectionSuspensionTimer(x.discordId, section))
                         return;
-                    PunishmentFunctions.addToSectionSuspensionTimer(x, associatedGuild, section);
+                    PunishmentManager.addToSectionSuspensionTimer(x, associatedGuild, section);
                 });
             });
             continue;
         }
 
-        await MongoFunctions.getGuildCollection().deleteOne({guildId: doc.guildId});
+        await MongoManager.getGuildCollection().deleteOne({guildId: doc.guildId});
     }
 
-    PunishmentFunctions.startChecker();
+    PunishmentManager.startChecker();
 
     const readyLog = new StringBuilder()
         .append(`${botUser.tag} has started successfully.`)

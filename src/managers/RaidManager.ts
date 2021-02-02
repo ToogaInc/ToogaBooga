@@ -13,8 +13,8 @@ import {IDungeonInfo} from "../definitions/major/parts/IDungeonInfo";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {IRaidInfo} from "../definitions/major/IRaidInfo";
-import {MongoFunctions} from "./MongoFunctions";
-import {UserFunctions} from "./UserFunctions";
+import {MongoManager} from "./MongoManager";
+import {UserManager} from "./UserManager";
 import {DungeonData} from "../constants/DungeonData";
 import {MappedReactions} from "../constants/MappedReactions";
 import {StringBuilder} from "../utilities/StringBuilder";
@@ -24,7 +24,7 @@ import {IReactionProps} from "../definitions/major/parts/IReactionProps";
 import {MiscUtils} from "../utilities/MiscUtils";
 import {OneRealmBot} from "../OneRealmBot";
 
-export namespace RaidFunctions {
+export namespace RaidManager {
     export interface IAfkCheckOptions {
         location: string;
         raidMessage?: string;
@@ -128,13 +128,13 @@ export namespace RaidFunctions {
         const afkCheckChannel = guild.channels.resolve(details.section.channels.raids.afkCheckChannelId) as TextChannel;
         const controlPanel = guild.channels.resolve(details.section.channels.raids.controlPanelChannelId) as TextChannel;
 
-        const brokenUpName = UserFunctions.getAllNames(memberInitiated.displayName);
+        const brokenUpName = UserManager.getAllNames(memberInitiated.displayName);
         const leaderName = brokenUpName.length > 0
             ? brokenUpName[0]
             : memberInitiated.displayName;
 
         // get necessary reactions. remember that the server admins may have defined their own reactions.
-        const dungeonReactions = (details.section.properties.afkCheckProperties.dungeonReactionOverride
+        const dungeonReactions = (details.section.otherMajorConfig.afkCheckProperties.dungeonReactionOverride
                 .find(x => x.dungeonCodeName === details.dungeon.codeName)?.reactions
             ?? (DungeonData.find(x => x.codeName === details.dungeon.codeName) as IDungeonInfo).reactions)
             .filter(x => OneRealmBot.BotInstance.client.emojis
@@ -440,7 +440,7 @@ export namespace RaidFunctions {
      * @returns {Promise<IGuildInfo>} The revised guild document.
      */
     export async function addRaidToDatabase(guild: Guild, afk: IRaidInfo): Promise<IGuildInfo> {
-        const res = await MongoFunctions
+        const res = await MongoManager
             .getGuildCollection()
             .findOneAndUpdate({guildId: guild.id}, {
                 $push: {

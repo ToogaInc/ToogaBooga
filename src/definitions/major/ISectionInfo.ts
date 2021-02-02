@@ -1,8 +1,6 @@
 import {IVerificationChannels} from "./parts/IVerificationChannels";
 import {IRaidChannels} from "./parts/IRaidChannels";
 import {ISectionLeaderRoles} from "./parts/ISectionLeaderRoles";
-import {IAfkCheckProperties} from "./parts/IAfkCheckProperties";
-import {IVerificationProperties} from "./parts/IVerificationProperties";
 import {ISuspendedUser} from "../ISuspendedUser";
 import {IOtherMajorConfig} from "./parts/IOtherMajorConfig";
 
@@ -28,14 +26,11 @@ export interface ISectionInfo {
         verifiedRoleId: string;
     };
 
+    // other major configuration items
     otherMajorConfig: IOtherMajorConfig;
 
     // general section properties
     properties: {
-        // verification properties
-        verificationProperties: IVerificationProperties;
-        // afk check properties
-        afkCheckProperties: IAfkCheckProperties;
         // people that are banned from this section
         sectionSuspended: ISuspendedUser[];
     };

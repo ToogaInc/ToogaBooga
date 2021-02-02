@@ -3,7 +3,7 @@ export namespace ArrayUtilities {
      * Gets a random element from an array.
      *
      * @typedef {T} The element type.
-     * @param {Array<T>} array The array.
+     * @param {T[]} array The array.
      * @returns {T} A random element.
      */
     export function getRandomElement<T>(array: T[]): T {
@@ -14,8 +14,8 @@ export namespace ArrayUtilities {
      * Shuffles an array.
      *
      * @typedef {T} The element type.
-     * @param {Array<T>} array The array to shuffle.
-     * @returns {Array<T>} The shuffled array.
+     * @param {T[]} array The array to shuffle.
+     * @returns {T[]} The shuffled array.
      */
     export function shuffle<T>(array: T[]): T[] {
         let j: number;
@@ -34,8 +34,8 @@ export namespace ArrayUtilities {
      * Removes duplicate entries from an array.
      *
      * @typedef {T} The element type.
-     * @param {Array<T>} array The array to remove duplicates from.
-     * @returns {Array<T>} The shuffled array.
+     * @param {T[]} array The array to remove duplicates from.
+     * @returns {T[]} The shuffled array.
      */
     export function removeDuplicates<T>(array: T[]): T[] {
         return array.filter((item, index) => array.indexOf(item) === index);
@@ -46,7 +46,7 @@ export namespace ArrayUtilities {
      * otherwise.
      *
      * @typedef {T} The element type.
-     * @param {Array<T>} array The source array to search in
+     * @param {T[]} array The source array to search in
      * @param {Function} predicate find calls predicate once for each element of the array, in
      *     descending order, until it finds one where predicate returns true. If such an element is
      *     found, findLastIndex immediately returns that element index. Otherwise, findLastIndex
@@ -71,7 +71,7 @@ export namespace ArrayUtilities {
      * number of elements in this array doesn't exceed 25.
      *
      * @typedef {T} The element type.
-     * @param {Array<T>} array The array of elements.
+     * @param {T[]} array The array of elements.
      * @param {Function} func The function to convert an element into a string.
      * @param {number} [maxLenPerElement = 1016] The maximum length of a string per element in the
      *     fields array. This should be greater than 300.

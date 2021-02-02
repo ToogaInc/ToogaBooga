@@ -41,6 +41,7 @@ export interface IConfiguration {
     // Other non-important settings.
     misc: {
         deleteEmbedTime: number;
+        defaultPrefix: string;
     };
 
     // Private API URLs.

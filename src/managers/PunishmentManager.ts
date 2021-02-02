@@ -1,6 +1,6 @@
 import {Collection, Guild, GuildMember, Role} from "discord.js";
 import {OneRealmBot} from "../OneRealmBot";
-import {MongoFunctions} from "./MongoFunctions";
+import {MongoManager} from "./MongoManager";
 import {MessageUtil} from "../utilities/MessageUtil";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtils} from "../utilities/MiscUtils";
@@ -9,7 +9,7 @@ import {ISuspendedUser} from "../definitions/ISuspendedUser";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
 
 // TODO read through this to make sure it works conceptually.
-export namespace PunishmentFunctions {
+export namespace PunishmentManager {
     interface ISuspendedBase {
         nickname: string;
         reason: string;
@@ -29,8 +29,8 @@ export namespace PunishmentFunctions {
     const SuspendedPeople = new Collection<string, ISuspendedDetails>();
     const SectionSuspendedPeople = new Collection<string, ISectionSuspendedDetails>();
 
+    // If true, then we are just going to keep running the checker method.
     let isRunning = false;
-    let interval: NodeJS.Timeout | null = null;
 
     /**
      * Starts the punishment checker.
@@ -38,7 +38,8 @@ export namespace PunishmentFunctions {
     export function startChecker(): void {
         if (isRunning) return;
         isRunning = true;
-        checker();
+        // Use .then() to suppress warning about promise not being acknowledged.
+        checker().then();
     }
 
     /**
@@ -46,16 +47,15 @@ export namespace PunishmentFunctions {
      */
     export function stopChecker(): void {
         if (!isRunning) return;
-        clearInterval(interval as NodeJS.Timeout);
-        interval = null;
+        isRunning = false;
     }
 
     /**
      * The checker service. This should only be called by the `startChecker` function.
      * @private
      */
-    function checker(): void {
-        interval = setInterval(async () => {
+    async function checker(): Promise<void> {
+        while (isRunning) {
             // string => the ID
             // boolean => Whether to remove from database.
             const idsToRemove = new Queue<[string, boolean]>();
@@ -79,7 +79,7 @@ export namespace PunishmentFunctions {
                 // If this is greater than 0, the person still needs to serve time.
                 if (details.endsAt - currentDateTime.getTime() > 0) continue;
 
-                const guildDbArr = await MongoFunctions.getGuildCollection().find({guildId: guild.id})
+                const guildDbArr = await MongoManager.getGuildCollection().find({guildId: guild.id})
                     .toArray();
                 // This should never hit.
                 if (guildDbArr.length === 0) {
@@ -91,6 +91,7 @@ export namespace PunishmentFunctions {
                 // If the section isn't found, it must have been deleted.
                 // In that case, we can "unsuspend" the person.
                 if (!section) {
+                    // No point in removing this entry from the db if the section doesn't exist.
                     idsToRemove.enqueue([id, false]);
                     continue;
                 }
@@ -107,6 +108,7 @@ export namespace PunishmentFunctions {
                 try {
                     await suspendedMember.roles.add(sectionRole);
                     idsToRemove.enqueue([id, true]);
+                    // This is probably not needed.
                     if (!suspendedMember.nickname)
                         await suspendedMember.setNickname(details.nickname);
 
@@ -153,7 +155,7 @@ export namespace PunishmentFunctions {
                 const [id, shouldRemove] = idsToRemove.dequeue();
                 if (shouldRemove) {
                     const data = SectionSuspendedPeople.get(id) as ISectionSuspendedDetails;
-                    await MongoFunctions.getGuildCollection().findOneAndUpdate({
+                    await MongoManager.getGuildCollection().findOneAndUpdate({
                         guildId: data.guild, "guildSections.uniqueIdentifier": data.sectionId
                     }, {
                         $pull: {
@@ -187,7 +189,7 @@ export namespace PunishmentFunctions {
                 // If this is greater than 0, the person still needs to serve time.
                 if (details.endsAt - Date.now() > 0) continue;
 
-                const guildDbArr = await MongoFunctions.getGuildCollection().find({guildId: guild.id})
+                const guildDbArr = await MongoManager.getGuildCollection().find({guildId: guild.id})
                     .toArray();
                 if (guildDbArr.length === 0) {
                     idsToRemove.enqueue([id, false]);
@@ -247,7 +249,7 @@ export namespace PunishmentFunctions {
                 const [id, shouldRemove] = idsToRemove.dequeue();
                 if (shouldRemove) {
                     const data = SuspendedPeople.get(id) as ISuspendedDetails;
-                    await MongoFunctions.getGuildCollection().findOneAndUpdate({guildId: data.guild}, {
+                    await MongoManager.getGuildCollection().findOneAndUpdate({guildId: data.guild}, {
                         $pull: {
                             "guildSections.moderation.suspendedUsers": {
                                 discordId: id.split("_")[0]
@@ -259,8 +261,9 @@ export namespace PunishmentFunctions {
                 SuspendedPeople.delete(id);
             }
 
-            // And that's it for this iteration!
-        }, 60 * 1000);
+            // Wait a minute and then run again.
+            await MiscUtils.stopFor(60 * 1000);
+        }
     }
 
     /**

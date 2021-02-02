@@ -1,6 +1,6 @@
 import {CommonRegex} from "../constants/CommonRegex";
 
-export namespace UserFunctions {
+export namespace UserManager {
 
     /**
      * Gets all names from a raw name. This will automatically remove any symbols.

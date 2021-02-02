@@ -2,8 +2,9 @@ import {Collection, MongoClient} from "mongodb";
 import {IUserInfo} from "../definitions/major/IUserInfo";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {IBotInfo} from "../definitions/major/IBotInfo";
+import {OneRealmBot} from "../OneRealmBot";
 
-export namespace MongoFunctions {
+export namespace MongoManager {
     let ThisMongoClient: MongoClient | null = null;
     let UserCollection: Collection<IUserInfo> | null = null;
     let GuildCollection: Collection<IGuildInfo> | null = null;
@@ -248,7 +249,9 @@ export namespace MongoFunctions {
                     logging: {topKeysWeek: [], topKeysWeeklyMessageId: ""},
                     runsDone: {topRunsCompletedMessageId: "", topRunsCompletedWeek: []},
                     runsLed: {noRunsWeeklyMessageId: "", topRunsLedWeek: [], topRunsLedWeeklyMessageId: ""}
-                }
+                },
+                prefix: OneRealmBot.BotInstance.config.misc.defaultPrefix,
+                blockedCommands: []
             },
             roles: {
                 earlyLocationRoles: [],
@@ -264,7 +267,6 @@ export namespace MongoFunctions {
                     },
                     teamRoleId: "",
                     universalLeaderRoleIds: {almostLeaderRoleId: "", headLeaderRoleId: "", leaderRoleId: ""},
-                    verifierRoleId: ""
                 },
                 streamingRoles: [],
                 suspendedRoleId: "",
@@ -286,5 +288,22 @@ export namespace MongoFunctions {
             loggedInfo: {dungeons: [], keys: [], leaderRuns: [], storage: []},
             rotmgNames: [{lowercaseIgn: ign.toLowerCase(), ign: ign}]
         };
+    }
+
+    /**
+     * Gets a guild document or creates a new one if it doesn't exist.
+     * @param {string} guildId The guild ID.
+     * @return {Promise<IGuildInfo>} The guild document.
+     * @throws {Error} If adding a new guild document is not possible.
+     */
+    export async function getOrCreateGuildDb(guildId: string): Promise<IGuildInfo> {
+        const docs = await getGuildCollection().find({guildId: guildId}).toArray();
+        if (docs.length === 0) {
+            const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(guildId));
+            if (insertRes.ops.length > 0)
+                return insertRes.ops[0];
+            throw new Error(`Insert failed: ${guildId}`);
+        }
+        return docs[0];
     }
 }

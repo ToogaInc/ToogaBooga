@@ -19,8 +19,6 @@ export interface IGuildInfo {
         staffRoles: {
             // given to any staff members EXCEPT trial leaders
             teamRoleId: string;
-            // verifier roles
-            verifierRoleId: string;
             // other staff roles. these will get the team role
             otherStaffRoleIds: string[];
             // leader roles -- will work in all
@@ -86,6 +84,11 @@ export interface IGuildInfo {
                 topRunsCompletedWeek: IQuotaLoggingInfo[];
             };
         };
+        // default prefix
+        prefix: string;
+        // any blocked commands
+        // you only need to reference *one* possible bot command name to block an entire command
+        blockedCommands: string[];
     };
     // sections
     guildSections: ISectionInfo[];

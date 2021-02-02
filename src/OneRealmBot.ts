@@ -1,11 +1,12 @@
 import {IConfiguration} from "./definitions/major/IConfiguration";
-import {Client, Message, MessageReaction, PartialUser, User} from "discord.js";
+import {Client, Collection, Message, MessageReaction, PartialUser, User} from "discord.js";
 import {onReadyEvent} from "./events/ReadyEvent";
 import {onMessageEvent} from "./events/MessageEvent";
-import {MongoFunctions} from "./common/MongoFunctions";
+import {MongoManager} from "./managers/MongoManager";
 import * as assert from "assert";
 import {onMessageReactionAdd} from "./events/MessageReactionAdd";
 import axios, {AxiosInstance} from "axios";
+import {BaseCommand} from "./commands/BaseCommand";
 
 export class OneRealmBot {
     private readonly _config: IConfiguration;
@@ -14,6 +15,7 @@ export class OneRealmBot {
 
     public static BotInstance: OneRealmBot;
     public static AxiosClient: AxiosInstance = axios.create();
+    public static Commands: Collection<string, BaseCommand[]>;
 
     /**
      * Constructs a new Discord bot.
@@ -35,6 +37,7 @@ export class OneRealmBot {
         });
 
         OneRealmBot.BotInstance = this;
+        OneRealmBot.Commands = new Collection<string, BaseCommand[]>();
     }
 
     /**
@@ -56,7 +59,7 @@ export class OneRealmBot {
             this.startAllEvents();
 
         // connects to the database
-        await MongoFunctions.connect({
+        await MongoManager.connect({
             dbUrl: this._config.database.dbUrl,
             dbName: this._config.database.dbName,
             guildColName: this._config.database.collectionNames.guildCollection,
@@ -64,7 +67,7 @@ export class OneRealmBot {
             botColName: this._config.database.collectionNames.botCollection
         });
         // make sure the database is connected
-        assert(MongoFunctions.isConnected());
+        assert(MongoManager.isConnected());
         // logs into the bot
         await this._bot.login(this._config.token);
     }
