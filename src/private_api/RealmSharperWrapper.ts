@@ -150,7 +150,7 @@ export namespace RealmSharperWrapper {
         const config = OneRealmBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi + "/raidutil/parsewho";
         const resp = await OneRealmBot.AxiosClient.get<string[]>(url, {
-            params: link
+            data: link
         });
         return resp.data;
     }

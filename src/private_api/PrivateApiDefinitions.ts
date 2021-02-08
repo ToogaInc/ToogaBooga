@@ -117,8 +117,8 @@ export namespace PrivateApiDefinitions {
         accountFame: number;
         guild: string;
         guildRank: string;
-        firstSeen: string;
-        created: string;
+        firstSeen?: string;
+        created?: string;
         lastSeen: string;
         description: string[];
         characters: {

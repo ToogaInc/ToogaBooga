@@ -23,6 +23,7 @@ import {AdvancedReactionCollector} from "../utilities/AdvancedReactionCollector"
 import {IReactionProps} from "../definitions/major/parts/IReactionProps";
 import {MiscUtils} from "../utilities/MiscUtils";
 import {OneRealmBot} from "../OneRealmBot";
+import {MessageUtil} from "../utilities/MessageUtil";
 
 export namespace RaidManager {
     export interface IAfkCheckOptions {
@@ -32,7 +33,15 @@ export namespace RaidManager {
         dungeon: IDungeonInfo;
     }
 
-    function getRolesAndCorrespondingPerms(guild: Guild, guildDb: IGuildInfo,
+    /**
+     * Generates an array of permissions that will be used for the AFK check.
+     * @param {Guild} guild The guild object.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ISectionInfo} section The section where the AFK check will be held.
+     * @return {OverwriteResolvable[]} The list of permissions.
+     * @private
+     */
+    function getRolesAndCorrespondingPerms(guild: Guild, guildDoc: IGuildInfo,
                                            section: ISectionInfo): OverwriteResolvable[] {
         const permCol: OverwriteResolvable[] = [];
 
@@ -51,28 +60,28 @@ export namespace RaidManager {
             },
             // general staff roles
             {
-                id: guildDb.roles.staffRoles.moderation.securityRoleId,
+                id: guildDoc.roles.staffRoles.moderation.securityRoleId,
                 allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "STREAM"]
             },
             {
-                id: guildDb.roles.staffRoles.moderation.officerRoleId,
+                id: guildDoc.roles.staffRoles.moderation.officerRoleId,
                 allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"]
             },
             {
-                id: guildDb.roles.staffRoles.moderation.moderatorRoleId,
+                id: guildDoc.roles.staffRoles.moderation.moderatorRoleId,
                 allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"]
             },
             // universal leader roles
             {
-                id: guildDb.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
+                id: guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
                 allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "STREAM"]
             },
             {
-                id: guildDb.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+                id: guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
                 allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "DEAFEN_MEMBERS", "STREAM"]
             },
             {
-                id: guildDb.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+                id: guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
                 allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"]
             },
             // section leader roles
@@ -106,10 +115,10 @@ export namespace RaidManager {
                 permCol[idx].allow = thisPerms.concat(p);
         };
 
-        for (const r of guildDb.roles.speakingRoles)
+        for (const r of guildDoc.roles.speakingRoles)
             updatePerms(r, ["SPEAK"]);
 
-        for (const r of guildDb.roles.streamingRoles)
+        for (const r of guildDoc.roles.streamingRoles)
             updatePerms(r, ["STREAM"]);
 
         return permCol.filter(x => guild.roles.cache.has(x.id as string));
@@ -177,7 +186,7 @@ export namespace RaidManager {
 
         /**
          * Creates a new AFK check embed.
-         * @returns The new AFK check embed.
+         * @returns The new AFK check embed and the associated emojis to use.
          */
         const createFormalAfkEmbed = (): [MessageEmbed, EmojiResolvable[]] => {
             const afkEmojis: EmojiResolvable[] = [
@@ -356,7 +365,7 @@ export namespace RaidManager {
             if (!reactInfo![1])
                 return;
 
-            const confirmation = await confirmReaction(u, emojiDetails);
+            const confirmation = await confirmReaction(u, emojiDetails, guild, details);
             if (!confirmation)
                 return;
 
@@ -369,6 +378,7 @@ export namespace RaidManager {
             const needMorePeople = newArr.length < emojiDetails.maxEarlyLocation;
             earlyLocReacts.set(emojiDetails.mappingEmojiName as string, [newArr, needMorePeople]);
 
+            // If we don't need more people, then we can simply remove the reaction.
             if (!needMorePeople) {
                 const idx = allKeys.findIndex(x => x.mappingEmojiName === emojiDetails.mappingEmojiName);
                 if (idx !== -1)
@@ -422,15 +432,22 @@ export namespace RaidManager {
         });
     }
 
-    export async function confirmReaction(user: User, emojiInfo: IReactionProps): Promise<boolean> {
-
-        return true;
+    /**
+     * A function that should be called when someone reacts to an emoji.
+     * @param {User} user
+     * @param {IReactionProps} emojiInfo
+     * @param {Guild} guild
+     * @param {IAfkCheckOptions} afkCheckInfo
+     * @return {Promise<boolean>}
+     */
+    export async function confirmReaction(user: User, emojiInfo: IReactionProps, guild: Guild,
+                                          afkCheckInfo: IAfkCheckOptions): Promise<boolean> {
+        return new Promise((resolve) => {
+            const askConfirmEmbed = MessageUtil.generateBlankEmbed(user, "GREEN")
+                .setTitle("Confirm Reaction")
+                .setDescription("");
+        });
     }
-
-    export async function endAfkCheck(guild: Guild, guildDb: IGuildInfo, details: IAfkCheckOptions) {
-
-    }
-
 
     /**
      * Adds a raid object to the database.
@@ -449,5 +466,11 @@ export namespace RaidManager {
             }, {returnOriginal: false});
 
         return res.value as IGuildInfo;
+    }
+
+    export async function selectSection(guild: Guild, guildDoc: IGuildInfo): Promise<ISectionInfo | null> {
+        const possibleSections = MiscUtils.getAllSections(guildDoc);
+        const askSectionEmbed = MessageUtil.generateBlankEmbed(guild, "RANDOM")
+            .setTitle("Select a Section");
     }
 }

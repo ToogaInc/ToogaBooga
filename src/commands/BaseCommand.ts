@@ -134,10 +134,17 @@ export abstract class BaseCommand {
             }
         }
 
-        // If you have full Administrator, you can run this command.
+        // If you have full Administrator, you can run this command (if the bot can)
         if (userToTest.permissions.has("ADMINISTRATOR")) {
-            results.canRun = true;
+            // Check to make sure the bot can run the command.
+            results.canRun = results.missingBotPerms.length === 0;
             results.hasAdmin = true;
+            return results;
+        }
+
+        // If no user permissions are defined whatsoever, then the person can run the command.
+        if (this.commandInfo.rolePermissions.length === 0 && this.commandInfo.generalPermissions.length === 0) {
+            results.canRun = results.missingBotPerms.length === 0;
             return results;
         }
 
@@ -210,9 +217,22 @@ export abstract class BaseCommand {
             }
         }
 
-        // Must either have 0 missing role perms or 0 missing user perms, and 0 missing bot perms.
-        results.canRun = (results.missingUserRoles.length === 0 || results.missingUserPerms.length === 0)
-            && results.missingBotPerms.length === 0;
+        // If both role and general perms are defined, then we just need to see if one or the other is fulfilled.
+        // Otherwise, we either check role OR general permissions and see if the person has THOSE permissions.
+        // We already covered the case where no permissions (user or role) are defined.
+        if (this.commandInfo.rolePermissions.length !== 0 && this.commandInfo.generalPermissions.length !== 0)
+            // Must either have 0 missing role perms or 0 missing user perms.
+            results.canRun = (results.missingUserRoles.length === 0 || results.missingUserPerms.length === 0);
+        else {
+            // Check one or the other.
+            if (this.commandInfo.rolePermissions.length !== 0)
+                results.canRun = results.missingUserRoles.length === 0;
+            else
+                results.canRun = results.missingUserPerms.length === 0;
+        }
+
+        // Check to see if the bot can run.
+        results.canRun = results.canRun && results.missingBotPerms.length === 0;
         return results;
     }
 }
@@ -257,13 +277,13 @@ interface ICommandInfo {
     exampleGuide: string[];
 
     /**
-     * The duration in which the message that initiated a command should be kept up for.
+     * The duration, in milliseconds, in which the message that initiated a command should be kept up for.
      * @type {number}
      */
     deleteCommandAfter: number;
 
     /**
-     * A cooldown that users will have to wait out after executing a command.
+     * A cooldown, in milliseconds, that users will have to wait out after executing a command.
      * @type {number}
      */
     commandCooldown: number;
@@ -290,7 +310,7 @@ interface ICommandInfo {
      * Whether the command can be used by any roles below the top role specified.
      * @type {boolean[]}
      */
-    isRoleInclusive: boolean[];
+    isRoleInclusive: boolean;
 
     /**
      * Whether the command is for a server only.

@@ -153,7 +153,8 @@ export namespace MongoManager {
                 raidChannels: {
                     afkCheckChannelId: "",
                     controlPanelChannelId: "",
-                    raidRequestChannel: ""
+                    raidRequestChannel: "",
+                    rateLeaderChannel: ""
                 },
                 verificationChannels: {
                     verificationChannelId: "",
