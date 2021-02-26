@@ -284,9 +284,9 @@ export namespace MongoManager {
      */
     export function getDefaultUserConfig(ign: string, userId: string): IUserInfo {
         return {
-            details: {moderationHistory: []},
+            details: {moderationHistory: [], settings: []},
             discordUserId: userId,
-            loggedInfo: {dungeons: [], keys: [], leaderRuns: [], storage: []},
+            loggedInfo: [],
             rotmgNames: [{lowercaseIgn: ign.toLowerCase(), ign: ign}]
         };
     }

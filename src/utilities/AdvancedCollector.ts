@@ -15,11 +15,10 @@ import {
     TextChannel,
     User
 } from "discord.js";
-import {AdvancedReactionCollector} from "./AdvancedReactionCollector";
 import {MessageUtil} from "./MessageUtil";
 import {StringBuilder} from "./StringBuilder";
 
-type IGenericMsgCollectorArguments = {
+type ICollectorArguments = {
     /**
      * The cancel flag. Any message with the cancel flag as its content will force the method to return "CANCEL_CMD"
      */
@@ -57,28 +56,29 @@ type IGenericMsgCollectorArguments = {
      * reaction will automatically be removed.
      */
     removeAllReactionAfterReact?: boolean;
+
+    /**
+     * The time between each reaction.
+     */
+    reactDelay?: number;
 };
 
-export class GenericMessageCollector<T> {
-    private readonly _messageToSend: MessageOptions;
+export class AdvancedCollector {
     private readonly _targetChannel: TextChannel | DMChannel;
     private readonly _targetAuthor: User | GuildMember;
     private readonly _duration: number;
 
     /**
-     * Creates a new GenericMessageCollector.
-     * @param {MessageOptions} messageOptions The message to send.
+     * Creates a new AdvancedCollector.
      * @param {TextChannel | DMChannel} targetChannel The target channel.
      * @param {GuildMember | User} targetMember The target member.
      * @param {number} duration The duration. Specify the unit in the next argument.
      * @param {"MS" | "S" | "M"} timeUnit The duration type.
      */
-    public constructor(messageOptions: MessageOptions,
-                       targetChannel: TextChannel | DMChannel,
+    public constructor(targetChannel: TextChannel | DMChannel,
                        targetMember: GuildMember | User,
                        duration: number,
                        timeUnit: "MS" | "S" | "M" = "M") {
-        this._messageToSend = messageOptions;
         this._targetChannel = targetChannel;
         this._targetAuthor = targetMember;
         this._duration = duration;
@@ -99,36 +99,38 @@ export class GenericMessageCollector<T> {
     /**
      * Starts a message collector. This will wait for one message to be sent that fits the criteria specified by the
      * function parameter and then returns a value based on that message.
+     * @param msgOptions {MessageOptions} The message options.
      * @param {Function} func The function that will essentially "filter" and "parse" a message.
-     * @param {IGenericMsgCollectorArguments | null} options Any options for this message collector.
+     * @param {ICollectorArguments | null} otherOptions Any options for this message collector.
      * @returns {Promise<T | null>} The parsed content specified by your filter, or null if the collector was
      * stopped due to time or via the "cancel" command.
      * @template T
      */
-    public async startNormalCollector(
+    public async startNormalCollector<T>(
+        msgOptions: MessageOptions,
         func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>,
-        options: IGenericMsgCollectorArguments | null = null
+        otherOptions: ICollectorArguments | null = null
     ): Promise<T | null> {
         return new Promise(async (resolve) => {
-            const botMsg = options && options.oldMsg
-                ? options.oldMsg
+            const botMsg = otherOptions && otherOptions.oldMsg
+                ? otherOptions.oldMsg
                 // we need to specify each property because, otherwise, typescript will think this is
                 // an Array<Message>
-                : await this._targetChannel.send(this._messageToSend.content, {
-                    embed: this._messageToSend.embed,
-                    files: this._messageToSend.files,
-                    allowedMentions: this._messageToSend.allowedMentions,
-                    disableMentions: this._messageToSend.disableMentions
+                : await this._targetChannel.send(msgOptions.content, {
+                    embed: msgOptions.embed,
+                    files: msgOptions.files,
+                    allowedMentions: msgOptions.allowedMentions,
+                    disableMentions: msgOptions.disableMentions
                 });
 
             const msgCollector = new MessageCollector(this._targetChannel,
                 (m: Message) => m.author.id === this._targetAuthor.id, {time: this._duration});
 
             msgCollector.on("collect", async (c: Message) => {
-                if (options && options.deleteResponseMessage)
+                if (otherOptions && otherOptions.deleteResponseMessage)
                     await c.delete().catch();
 
-                if (options && options.cancelFlag && options.cancelFlag.toLowerCase() === c.content.toLowerCase()) {
+                if (otherOptions && otherOptions.cancelFlag && otherOptions.cancelFlag.toLowerCase() === c.content.toLowerCase()) {
                     msgCollector.stop();
                     return resolve(null);
                 }
@@ -144,7 +146,7 @@ export class GenericMessageCollector<T> {
             });
 
             msgCollector.on("end", (c, r) => {
-                if (options && options.deleteBaseMsg && botMsg.deletable) botMsg.delete();
+                if (otherOptions && otherOptions.deleteBaseMsg && botMsg.deletable) botMsg.delete();
                 if (r === "time") return resolve(null);
             });
         });
@@ -154,16 +156,18 @@ export class GenericMessageCollector<T> {
      * Starts a message and reaction collector. This function will wait for one message or reaction and returns
      * either the parsed content from the message (specified by your filter) or the reaction (whichever one comes
      * first).
+     * @param msgOptions {MessageOptions} The message options.
      * @param {Function} func The function that will essentially "filter" and "parse" a message.
-     * @param {IGenericMsgCollectorArguments} options Any options for this collector. You will need to use this to
+     * @param {ICollectorArguments} options Any options for this collector. You will need to use this to
      * specify the reactions that will be used.
      * @returns {Promise<Emoji | T | null>} Either the parsed message content or an emoji, or null if the cancel
      * command was used or time ran out.
      * @template T
      */
-    public async startDoubleCollector(
+    public async startDoubleCollector<T>(
+        msgOptions: MessageOptions,
         func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>,
-        options?: IGenericMsgCollectorArguments
+        options?: ICollectorArguments
     ): Promise<T | Emoji | null> {
         const msgReactions: EmojiResolvable[] = [];
         let cancelFlag = "cancel";
@@ -173,11 +177,11 @@ export class GenericMessageCollector<T> {
         let removeReactionsAfter = false;
         const botMsg = options && options.oldMsg
             ? options.oldMsg
-            : await this._targetChannel.send(this._messageToSend.content, {
-                embed: this._messageToSend.embed,
-                files: this._messageToSend.files,
-                allowedMentions: this._messageToSend.allowedMentions,
-                disableMentions: this._messageToSend.disableMentions
+            : await this._targetChannel.send(msgOptions.content, {
+                embed: msgOptions.embed,
+                files: msgOptions.files,
+                allowedMentions: msgOptions.allowedMentions,
+                disableMentions: msgOptions.disableMentions
             });
 
         if (options) {
@@ -203,7 +207,7 @@ export class GenericMessageCollector<T> {
                 (m: Message) => m.author.id === this._targetAuthor.id, {time: this._duration});
             let reactCollector: ReactionCollector | undefined;
             if (msgReactions.length !== 0) {
-                if (reactToMsg) AdvancedReactionCollector.reactFaster(botMsg, msgReactions);
+                if (reactToMsg) AdvancedCollector.reactFaster(botMsg, msgReactions, options?.reactDelay);
                 reactCollector = new ReactionCollector(
                     botMsg,
                     (r: MessageReaction, u: User) => msgReactions.includes(r.emoji.name)
@@ -215,7 +219,8 @@ export class GenericMessageCollector<T> {
                 );
 
                 reactCollector.on("collect", async (reaction: MessageReaction, user: User) => {
-                    await reaction.users.remove(user).catch();
+                    if (!removeReactionsAfter)
+                        await reaction.users.remove(user).catch();
                     msgCollector.stop();
                     return resolve(reaction.emoji);
                 });
@@ -249,6 +254,83 @@ export class GenericMessageCollector<T> {
                 if (r === "time") return resolve(null);
             });
         });
+    }
+
+    /**
+     * Waits for a single reaction from the user.
+     * @param {Message} baseMsg The message that should be tracked.
+     * @param {ICollectorArguments} options The options. Any message-related options will be ignored.
+     * @return {Promise<Emoji | null>} The emoji, if any; otherwise, null.
+     */
+    public async waitForSingleReaction(baseMsg: Message, options: ICollectorArguments): Promise<Emoji | null> {
+        const msgReactions: EmojiResolvable[] = options.reactions
+            ? options.reactions
+            : [];
+        const reactToMessage: boolean = typeof options.reactToMsg !== "undefined"
+            ? options.reactToMsg
+            : true;
+        const removeReactionsAfter: boolean = typeof options.removeAllReactionAfterReact !== "undefined"
+            ? options.removeAllReactionAfterReact
+            : true;
+
+        if (msgReactions.length === 0)
+            return null;
+
+        if (reactToMessage)
+            AdvancedCollector.reactFaster(baseMsg, msgReactions, options.reactDelay);
+
+        return new Promise(async (resolve) => {
+            const reactCollector = new ReactionCollector(
+                baseMsg,
+                (r: MessageReaction, u: User) => msgReactions.includes(r.emoji.name)
+                    && u.id === this._targetAuthor.id,
+                {
+                    time: this._duration,
+                    max: 1
+                }
+            );
+
+            reactCollector.on("collect", async (reaction: MessageReaction, user: User) => {
+                if (removeReactionsAfter)
+                    await baseMsg.reactions.removeAll().catch();
+                else
+                    await reaction.users.remove(user).catch();
+
+                return resolve(reaction.emoji);
+            });
+
+            reactCollector.on("end", async (c, r) => {
+                if (options.deleteResponseMessage)
+                    await baseMsg.delete().catch();
+
+                if (r === "time")
+                    return resolve(null);
+            });
+        });
+    }
+
+    /**
+     * Reacts to a message at a faster than normal speed.
+     * @param {Message} msg The message to react to.
+     * @param {EmojiResolvable[]} reactions The reactions that you want to react with.
+     * @param {number} intervalTime The delay between reactions.
+     */
+    public static reactFaster(msg: Message, reactions: EmojiResolvable[], intervalTime: number = 550): void {
+        intervalTime = Math.max(550, intervalTime);
+        let i: number = 0;
+        const interval = setInterval(() => {
+            if (i < reactions.length) {
+                if (msg.deleted) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                msg.react(reactions[i]).catch();
+            }
+            else
+                clearInterval(interval);
+            i++;
+        }, intervalTime);
     }
 
     // ============================================ //

@@ -1,6 +1,21 @@
 import {EmojiResolvable} from "discord.js";
 
 export namespace Emojis {
+    export const NUMERICAL_EMOJIS: EmojiResolvable[] = [
+        "1⃣",
+        "2⃣",
+        "3⃣",
+        "4⃣",
+        "5⃣",
+        "6⃣",
+        "7⃣",
+        "8⃣",
+        "9⃣",
+        "🔟",
+    ];
+    export const X_EMOJI: EmojiResolvable = "❌";
+
+
     // specific classes
     export const ROGUE: EmojiResolvable = "";
     export const ARCHER: EmojiResolvable = "";

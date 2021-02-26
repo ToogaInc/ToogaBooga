@@ -5,7 +5,7 @@
 /out/
 
 # Configuration.
-/src/config/config.ts
+config.json
 
 # Notes
 /notes/*
