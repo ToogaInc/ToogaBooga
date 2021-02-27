@@ -14,6 +14,15 @@ export namespace Emojis {
         "🔟",
     ];
     export const X_EMOJI: EmojiResolvable = "❌";
+    export const RED_SQUARE_EMOJI: EmojiResolvable = "🟥";
+    export const GREEN_SQUARE_EMOJI: EmojiResolvable = "🟩";
+    export const GREEN_CHECK_MARK_EMOJI: EmojiResolvable = "✅";
+    export const HOURGLASS_EMOJI: EmojiResolvable = "⌛";
+    export const RIGHT_TRIANGLE_EMOJI: EmojiResolvable = "▶️";
+    export const LONG_RIGHT_TRIANGLE_EMOJI: EmojiResolvable = "➡️";
+    export const WASTEBIN_EMOJI: EmojiResolvable = "🗑️";
+    export const MAP_EMOJI: EmojiResolvable = "🗺️";
+    export const SPEECH_BUBBLE_EMOJI: EmojiResolvable = "🗨️";
 
 
     // specific classes

@@ -241,7 +241,6 @@ export namespace MongoManager {
                     allowedDungeons: [],
                     dungeonReactionOverride: [],
                     defaultDungeon: "",
-                    allowPostAfk: true,
                     allowKeyReactsToBypassFullVc: true
                 }
             },

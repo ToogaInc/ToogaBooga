@@ -1,7 +1,18 @@
 export interface IMappedReactions {
     [key: string]: {
+        /**
+         * The emoji type.
+         */
         emojiType: "KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "SPECIAL";
+
+        /**
+         * The emoji ID. This is needed for getting the emoji object.
+         */
         emojiId: string;
+
+        /**
+         * The name of the emoji.
+         */
         emojiName: string;
     };
 }

@@ -6,7 +6,7 @@ import {
     MessageEmbed,
     OverwriteResolvable,
     PermissionResolvable,
-    TextChannel, User
+    TextChannel, VoiceChannel
 } from "discord.js";
 import {IDungeonInfo} from "../definitions/major/parts/IDungeonInfo";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
@@ -138,12 +138,12 @@ export namespace RaidManager {
             .resolve(details.section.channels.raids.controlPanelChannelId) as TextChannel;
 
         // get necessary reactions. remember that the server admins may have defined their own reactions.
-        let dungeonReactions = details.section.otherMajorConfig.afkCheckProperties.dungeonReactionOverride
+        let allReactions = details.section.otherMajorConfig.afkCheckProperties.dungeonReactionOverride
             .find(x => x.dungeonCodeName === details.dungeon.codeName)?.reactions ?? details.dungeon.reactions;
         // Remove any bad emojis
-        dungeonReactions = dungeonReactions.filter(x => OneRealmBot.BotInstance.client.emojis.cache
+        // All emojis beyond this line should exist.
+        allReactions = allReactions.filter(x => OneRealmBot.BotInstance.client.emojis.cache
             .has(MappedReactions[x.mappingEmojiName].emojiId));
-        const allKeys = dungeonReactions.filter(x => MappedReactions[x.mappingEmojiName].emojiType === "KEY");
 
         // Get the leader's name so we can display it.
         const brokenUpName = UserManager.getAllNames(memberInitiated.displayName);
@@ -151,7 +151,19 @@ export namespace RaidManager {
             ? brokenUpName[0]
             : memberInitiated.displayName;
 
+        // K = Mapping Emoji ID
+        // V = The guild members that reacted and whether this reaction is accepting more spots
+        const earlyLocReacts = new Collection<string, [GuildMember[], boolean]>();
+        allReactions
+            .concat({
+                mappingEmojiName: "NITRO",
+                maxEarlyLocation: guildDb.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit
+            })
+            .filter(x => x.maxEarlyLocation > 0)
+            .forEach(r => earlyLocReacts.set(r.mappingEmojiName as string, [[], true]));
+
         // Create a new VC
+        // TODO set position of VC to top.
         const raidVc = await guild.channels.create(`🔒 ${leaderName}'s Raid`, {
             type: "voice",
             userLimit: details.section.otherMajorConfig.afkCheckProperties.vcLimit,
@@ -160,10 +172,20 @@ export namespace RaidManager {
 
         await raidVc.setParent(afkCheckChannel.parent).catch();
 
+        const controlPanelMessage = await controlPanel.send({
+            embed: createControlPanelEmbedForAfkCheck(memberInitiated, details, raidVc, allReactions, earlyLocReacts)
+        });
+        AdvancedCollector.reactFaster(controlPanelMessage, [
+            Emojis.RIGHT_TRIANGLE_EMOJI,
+            Emojis.LONG_RIGHT_TRIANGLE_EMOJI,
+            Emojis.WASTEBIN_EMOJI,
+            Emojis.MAP_EMOJI,
+            Emojis.SPEECH_BUBBLE_EMOJI
+        ]);
+
         const descSb = new StringBuilder()
             .append(`⌛ **Prepare** to join the **\`${leaderName}'s Raid\`** voice channel. The channel will be `)
-            .append("unlocked after 5 seconds.");
-
+            .append("unlocked in 10 seconds.");
         const initialAfkCheckEmbed = new MessageEmbed()
             .setAuthor(`${leaderName} has started a ${details.dungeon.dungeonName} AFK check.`,
                 memberInitiated.user.displayAvatarURL())
@@ -177,37 +199,31 @@ export namespace RaidManager {
             embed: initialAfkCheckEmbed
         });
 
-        await MiscUtils.stopFor(5 * 1000);
+        const raidInfo: IRaidInfo = {
+            channels: details.section.channels.raids,
+            afkCheckMessageId: afkCheckMessage.id,
+            controlPanelMessageId: controlPanelMessage.id,
+            raidMessage: details.raidMessage ?? "",
+            status: 1,
+            vcId: raidVc.id,
+            location: details.location,
+            sectionIdentifier: details.section.uniqueIdentifier
+        };
+        await addRaidToDatabase(guild, raidInfo);
 
-        // K = Mapping Emoji ID
-        // V = The guild members that reacted and whether this reaction is accepting more spots
-        const earlyLocReacts = new Collection<string, [GuildMember[], boolean]>();
-        dungeonReactions
-            .concat({
-                mappingEmojiName: "NITRO",
-                maxEarlyLocation: guildDb.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit
-            })
-            .filter(x => x.maxEarlyLocation > 0)
-            .forEach(r => earlyLocReacts.set(r.mappingEmojiName as string, [[], true]));
+        // 10 seconds so people can prepare for the raid.
+        await MiscUtils.stopFor(10 * 1000);
+        await raidVc.updateOverwrite(guild.roles.everyone, {
+            CONNECT: null
+        }, "Allow raiders to connect to raid VC.");
 
-
-    }
-
-    /**
-     * A function that should be called when someone reacts to an emoji.
-     * @param {User} user
-     * @param {IReactionProps} emojiInfo
-     * @param {Guild} guild
-     * @param {IAfkCheckOptions} afkCheckInfo
-     * @return {Promise<boolean>}
-     */
-    export async function confirmReaction(user: User, emojiInfo: IReactionProps, guild: Guild,
-                                          afkCheckInfo: IAfkCheckOptions): Promise<boolean> {
-        return new Promise((resolve) => {
-            const askConfirmEmbed = MessageUtil.generateBlankEmbed(user, "GREEN")
-                .setTitle("Confirm Reaction")
-                .setDescription("");
+        await afkCheckMessage.edit("@here An AFK Check is currently running.", {
+            embed: createAfkCheckEmbed(memberInitiated, details, guildDb, allReactions, earlyLocReacts)
         });
+        AdvancedCollector.reactFaster(afkCheckMessage, allReactions
+            .map(x => MappedReactions[x.mappingEmojiName].emojiId));
+        // Reactions ready
+        // TODO finish
     }
 
     /**
@@ -230,6 +246,145 @@ export namespace RaidManager {
     }
 
     /**
+     * Creates a control panel embed..
+     * @param {GuildMember} memberResponsible The member that is responsible for this AFK check.
+     * @param {RaidManager.IAfkCheckOptions} details The details of this raid.
+     * @param {VoiceChannel} raidVc The raid voice channel.
+     * @param {IReactionProps[]} allReactions Every reaction for this AFK check.
+     * @param {Collection<string, [GuildMember[], boolean]>} earlyLocCollection The early location object.
+     * @return {MessageEmbed} The new AFK check embed.
+     * @private
+     */
+    function createControlPanelEmbedForAfkCheck(memberResponsible: GuildMember, details: IAfkCheckOptions,
+                                                raidVc: VoiceChannel,
+                                                allReactions: readonly IReactionProps[],
+                                                earlyLocCollection: Collection<string, [GuildMember[], boolean]>): MessageEmbed {
+        const brokenUpNames = UserManager.getAllNames(memberResponsible.displayName)[0];
+        const nameToUse = brokenUpNames.length === 0 ? memberResponsible.displayName : brokenUpNames[0];
+        const descSb = new StringBuilder()
+            .append(`To operate __this__ control panel, you **must** be in the **\`${raidVc.name}\`** voice channel.`)
+            .appendLine()
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.RIGHT_TRIANGLE_EMOJI} if you want to end the AFK check and start `)
+            .append("the raid. This will initiate the post-AFK check.")
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.LONG_RIGHT_TRIANGLE_EMOJI} if you want to end the AFK check and `)
+            .append("start the raid. __This will skip the post-AFK check.__")
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.WASTEBIN_EMOJI} if you want to end the AFK check __without__ `)
+            .append("starting a raid.")
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.MAP_EMOJI} if you want to change this raid's location. This will `)
+            .append("message everyone that is participating in this raid that has early location.")
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.SPEECH_BUBBLE_EMOJI} if you want to __release__ this raid's `)
+            .append("location to everyone. You will **not** be able to undo this.");
+
+        const maxVc = `${raidVc.userLimit === 0 ? "Unlimited" : raidVc.userLimit}`;
+        const generalStatus = new StringBuilder()
+            .append(`⇨ Started At: ${MiscUtils.getTime(raidVc.createdTimestamp)} UTC`)
+            .appendLine()
+            .append(`⇨ VC Capacity: ${raidVc.members.size} / ${maxVc}`)
+            .appendLine()
+            .append(`⇨ Location: **\`${details.location}\`**`);
+        const controlPanelEmbed = new MessageEmbed()
+            .setAuthor(`${nameToUse}'s Control Panel - ${raidVc.name}`,
+                memberResponsible.user.displayAvatarURL())
+            .setDescription(descSb.toString())
+            .setFooter(`${memberResponsible.guild.name} ⇨ ${details.section.sectionName} Control Panel.`)
+            .setTimestamp()
+            .setThumbnail(ArrayUtilities.getRandomElement(details.dungeon.bossLinks
+                .concat(details.dungeon.portalEmojiId)))
+            .addField("General Status", generalStatus.toString());
+
+        for (const [emojiCodeName, [peopleThatReacted, isAcceptingMore]] of earlyLocCollection) {
+            const mappedEmojiInfo = MappedReactions[emojiCodeName];
+            const emoji = OneRealmBot.BotInstance.client.emojis.cache.get(mappedEmojiInfo.emojiId)!;
+            const reactionInfo = allReactions.findIndex(x => x.mappingEmojiName === emojiCodeName);
+            if (reactionInfo === -1)
+                continue;
+            const amtTakenAmtMax = `${peopleThatReacted.length} / ${allReactions[reactionInfo].maxEarlyLocation}`;
+            const info = new StringBuilder()
+                .append(emoji).append(" ")
+                .append(peopleThatReacted.slice(0, 50).join(", "));
+            if (peopleThatReacted.length > 50)
+                info.append(` and ${peopleThatReacted.length - 50} more.`);
+            const emojiForTitle = isAcceptingMore ? Emojis.HOURGLASS_EMOJI : Emojis.GREEN_CHECK_MARK_EMOJI;
+            const title = `${emojiForTitle} Reaction: ${mappedEmojiInfo.emojiName} (${amtTakenAmtMax})`;
+            controlPanelEmbed.addField(title, info.toString());
+        }
+
+        return controlPanelEmbed;
+    }
+
+    /**
+     * Creates an AFK check embed.
+     * @param {GuildMember} memberResponsible The member that is responsible for this AFK check.
+     * @param {RaidManager.IAfkCheckOptions} details The details of this raid.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {IReactionProps[]} allReactions Every reaction for this AFK check.
+     * @param {Collection<string, [GuildMember[], boolean]>} earlyLocCollection The early location object.
+     * @return {MessageEmbed} The new AFK check embed.
+     * @private
+     */
+    function createAfkCheckEmbed(memberResponsible: GuildMember, details: IAfkCheckOptions,
+                                 guildDoc: IGuildInfo,
+                                 allReactions: readonly IReactionProps[],
+                                 earlyLocCollection: Collection<string, [GuildMember[], boolean]>): MessageEmbed {
+        const brokenUpNames = UserManager.getAllNames(memberResponsible.displayName)[0];
+        const nameToUse = brokenUpNames.length === 0 ? memberResponsible.displayName : brokenUpNames[0];
+
+        const descSb = new StringBuilder()
+            .append(`⇨ To participate in this raid, __just__ join the **\`${nameToUse}'s Raid\`** voice channel.`)
+            .appendLine()
+            .append("⇨ There are **no** required reactions.");
+
+        const optSb = new StringBuilder();
+        if (earlyLocCollection.has("NITRO")) {
+            const nitroEmoji = OneRealmBot.BotInstance.client.emojis.cache.get(MappedReactions.NITRO.emojiId);
+            const earlyLocRoleStr = guildDoc.roles.earlyLocationRoles
+                .filter(x => memberResponsible.roles.cache.has(x))
+                .map(x => memberResponsible.roles.cache.get(x))
+                .join(", ");
+            optSb.append(`⇨ If you are a Nitro booster or have the following roles (${earlyLocRoleStr}), then react `)
+                .append(`to the ${nitroEmoji} emoji to get early location.`)
+                .appendLine()
+                .append("⇨ Otherwise, react to the emojis corresponding to your gear and/or class preference.");
+        }
+
+        const afkCheckEmbed = new MessageEmbed()
+            .setAuthor(`${nameToUse} has started a ${details.dungeon.dungeonName} AFK check.`,
+                memberResponsible.user.displayAvatarURL())
+            .setDescription(descSb.toString())
+            .setFooter(`${memberResponsible.guild.name} ⇨ ${details.section.sectionName} AFK Check.`)
+            .setTimestamp()
+            .setThumbnail(ArrayUtilities.getRandomElement(details.dungeon.bossLinks
+                .concat(details.dungeon.portalEmojiId)))
+            .addField("Optional Reactions", optSb.toString());
+
+        const neededReactionsSb = new StringBuilder();
+        for (const [emojiCodeName, [peopleThatReacted, isAcceptingMore]] of earlyLocCollection) {
+            const mappedEmojiInfo = MappedReactions[emojiCodeName];
+            const emoji = OneRealmBot.BotInstance.client.emojis.cache.get(mappedEmojiInfo.emojiId)!;
+            const reactionInfo = allReactions.findIndex(x => x.mappingEmojiName === emojiCodeName);
+            // TODO test this to make sure.
+            if (reactionInfo === -1 || !isAcceptingMore)
+                continue;
+
+            neededReactionsSb
+                .append(Emojis.HOURGLASS_EMOJI)
+                .append(" ")
+                .append(`${emoji}: ${peopleThatReacted.length} / ${allReactions[reactionInfo].maxEarlyLocation} `)
+                .appendLine();
+        }
+
+        if (neededReactionsSb.length() !== 0)
+            afkCheckEmbed.addField("Needed (Priority) Reactions", neededReactionsSb.toString());
+
+        return afkCheckEmbed;
+    }
+
+    /**
      * Asks the user to select a section.
      * @param {Message} msg The message object. Note that the bot must be able to send messages to the channel where
      * this message object was sent to.
@@ -246,7 +401,15 @@ export namespace RaidManager {
             return null;
 
         if (possibleSections.length === 1)
-            return possibleSections[1];
+            return possibleSections[0];
+
+        for (const section of possibleSections) {
+            const afkCheckChannel = member.guild.channels.cache
+                .get(section.channels.raids.afkCheckChannelId) as TextChannel;
+            // If the person typed in a channel that is under a specific section, use that section.
+            if ((msg.channel as TextChannel).parent?.id === afkCheckChannel.parent!.id)
+                return section;
+        }
 
         const askSectionEmbed = MessageUtil.generateBlankEmbed(member.guild, "RANDOM")
             .setTitle("Select a Section")
@@ -289,27 +452,44 @@ export namespace RaidManager {
         if (selectedIndex < possibleSections.length)
             return possibleSections[selectedIndex];
 
+        // X was used.
         return null;
     }
 
     /**
      * Checks whether a person can manage raids in the specified section. The section must have a control panel and
-     * AFK check channel defined and the person must have at least one leader role.
+     * AFK check channel defined, the person must have at least one leader role, and the channels must be under a
+     * category.
      * @param {ISectionInfo} section The section in question.
      * @param {GuildMember} member The member in question.
-     *  @param {IGuildInfo} guildInfo The guild document.
+     * @param {IGuildInfo} guildInfo The guild document.
      * @return {boolean} Whether the person can manage raids in the specified section.
      * @private
      */
     function canManageRaidsIn(section: ISectionInfo, member: GuildMember, guildInfo: IGuildInfo): boolean {
         const guild = member.guild;
+
+        // Verified role doesn't exist.
         if (!guild.roles.cache.has(section.roles.verifiedRoleId))
             return false;
 
+        // Control panel does not exist.
         if (!guild.channels.cache.has(section.channels.raids.controlPanelChannelId))
             return false;
 
+        // AFK check does not exist.
         if (!guild.channels.cache.has(section.channels.raids.afkCheckChannelId))
+            return false;
+
+        const cpCategory = guild.channels.cache.get(section.channels.raids.controlPanelChannelId)!;
+        const acCategory = guild.channels.cache.get(section.channels.raids.afkCheckChannelId)!;
+
+        // AFK check and/or control panel do not have categories.
+        if (!cpCategory.parent || !acCategory.parent)
+            return false;
+
+        // Categories are not the same.
+        if (cpCategory.parent.id !== acCategory.parent.id)
             return false;
 
         return [

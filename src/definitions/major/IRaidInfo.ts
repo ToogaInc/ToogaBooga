@@ -1,5 +1,4 @@
 import {IRaidChannels} from "./parts/IRaidChannels";
-import {OverwriteResolvable} from "discord.js";
 
 export interface IRaidInfo {
     // relevant channels
@@ -14,13 +13,10 @@ export interface IRaidInfo {
     // 1 = afk check
     // 2 = in run
     status: number;
-
     // vc info
-    voice: {
-        vcId: string;
-        isOld: boolean;
-        oldPerms: OverwriteResolvable[];
-    };
+    vcId: string;
     // location info
     location: string;
+    // section id
+    sectionIdentifier: string;
 }

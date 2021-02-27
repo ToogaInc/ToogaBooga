@@ -21,8 +21,6 @@ export interface IAfkCheckProperties {
     }[];
     // default dungeons -- use codeName
     defaultDungeon: string;
-    // whether post afk should be allowed or not
-    allowPostAfk: boolean;
     // whether people that react w/ key emoji can bypass a full vc
     allowKeyReactsToBypassFullVc: boolean;
 }
