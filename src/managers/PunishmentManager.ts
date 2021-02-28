@@ -1,9 +1,9 @@
 import {Collection, Guild, GuildMember, Role} from "discord.js";
 import {OneRealmBot} from "../OneRealmBot";
 import {MongoManager} from "./MongoManager";
-import {MessageUtil} from "../utilities/MessageUtil";
+import {MessageUtil} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {MiscUtils} from "../utilities/MiscUtils";
+import {MiscUtils} from "../utilities/MiscUtilities";
 import {Queue} from "../utilities/Queue";
 import {ISuspendedUser} from "../definitions/ISuspendedUser";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";

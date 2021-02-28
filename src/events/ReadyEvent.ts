@@ -2,7 +2,7 @@ import {OneRealmBot} from "../OneRealmBot";
 import {MongoManager} from "../managers/MongoManager";
 import {IBotInfo} from "../definitions/major/IBotInfo";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {MiscUtils} from "../utilities/MiscUtils";
+import {MiscUtils} from "../utilities/MiscUtilities";
 import {PunishmentManager} from "../managers/PunishmentManager";
 
 export async function onReadyEvent(): Promise<void> {

@@ -19,4 +19,6 @@ export interface IRaidInfo {
     location: string;
     // section id
     sectionIdentifier: string;
+    // early location reactions
+    earlyLocationReactions: { userId: string; reactCodeName: string; }[];
 }

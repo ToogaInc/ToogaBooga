@@ -15,7 +15,7 @@ import {
     TextChannel,
     User
 } from "discord.js";
-import {MessageUtil} from "./MessageUtil";
+import {MessageUtil} from "./MessageUtilities";
 import {StringBuilder} from "./StringBuilder";
 
 type ICollectorArguments = {

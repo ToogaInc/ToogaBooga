@@ -1,7 +1,7 @@
 import {Collection, Guild, GuildMember, Message, PermissionString, User} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {OneRealmBot} from "../OneRealmBot";
-import {MiscUtils} from "../utilities/MiscUtils";
+import {MiscUtils} from "../utilities/MiscUtilities";
 
 type RolePermissions = "Suspended"
     | "Raider"

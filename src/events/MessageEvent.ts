@@ -3,8 +3,8 @@ import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {OneRealmBot} from "../OneRealmBot";
 import {MongoManager} from "../managers/MongoManager";
 import {BaseCommand} from "../commands/BaseCommand";
-import {MessageUtil} from "../utilities/MessageUtil";
-import {StringUtil} from "../utilities/StringUtil";
+import {MessageUtil} from "../utilities/MessageUtilities";
+import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 
 export async function onMessageEvent(msg: Message): Promise<void> {

@@ -3,10 +3,10 @@ import {
     EmojiResolvable,
     Guild,
     GuildMember, Message,
-    MessageEmbed,
+    MessageEmbed, MessageReaction,
     OverwriteResolvable,
     PermissionResolvable,
-    TextChannel, VoiceChannel
+    TextChannel, User, VoiceChannel
 } from "discord.js";
 import {IDungeonInfo} from "../definitions/major/parts/IDungeonInfo";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
@@ -14,17 +14,26 @@ import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {IRaidInfo} from "../definitions/major/IRaidInfo";
 import {MongoManager} from "./MongoManager";
 import {UserManager} from "./UserManager";
-import {MappedReactions} from "../constants/MappedReactions";
+import {IMappedReactions, MappedReactions} from "../constants/MappedReactions";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {IReactionProps} from "../definitions/major/parts/IReactionProps";
-import {MiscUtils} from "../utilities/MiscUtils";
+import {MiscUtils} from "../utilities/MiscUtilities";
 import {OneRealmBot} from "../OneRealmBot";
-import {MessageUtil} from "../utilities/MessageUtil";
+import {MessageUtil} from "../utilities/MessageUtilities";
 import {Emojis} from "../constants/Emojis";
 import {AdvancedCollector} from "../utilities/AdvancedCollector";
+import {FetchUtilities} from "../utilities/FetchUtilities";
 
 export namespace RaidManager {
+    const ALL_CONTROL_PANEL_EMOJIS: EmojiResolvable[] = [
+        Emojis.RIGHT_TRIANGLE_EMOJI,
+        Emojis.LONG_RIGHT_TRIANGLE_EMOJI,
+        Emojis.WASTEBIN_EMOJI,
+        Emojis.MAP_EMOJI,
+        Emojis.SPEECH_BUBBLE_EMOJI
+    ];
+
     export interface IAfkCheckOptions {
         location: string;
         raidMessage?: string;
@@ -125,13 +134,13 @@ export namespace RaidManager {
 
     /**
      * Creates a new AFK check. It is expected that the AFK check channel and the control panel channel are defined.
-     * @param {Guild} guild The guild object.
      * @param {GuildMember} memberInitiated The member that started this AFK check.
      * @param {IGuildInfo} guildDb The guild DB.
      * @param {IAfkCheckOptions} details The AFK check details.
      */
-    export async function startAfkCheck(guild: Guild, memberInitiated: GuildMember, guildDb: IGuildInfo,
-                                        details: IAfkCheckOptions) {
+    export async function startAfkCheck(memberInitiated: GuildMember, guildDb: IGuildInfo,
+                                        details: IAfkCheckOptions): Promise<void> {
+        const guild = memberInitiated.guild;
         const afkCheckChannel = guild.channels
             .resolve(details.section.channels.raids.afkCheckChannelId) as TextChannel;
         const controlPanel = guild.channels
@@ -175,13 +184,7 @@ export namespace RaidManager {
         const controlPanelMessage = await controlPanel.send({
             embed: createControlPanelEmbedForAfkCheck(memberInitiated, details, raidVc, allReactions, earlyLocReacts)
         });
-        AdvancedCollector.reactFaster(controlPanelMessage, [
-            Emojis.RIGHT_TRIANGLE_EMOJI,
-            Emojis.LONG_RIGHT_TRIANGLE_EMOJI,
-            Emojis.WASTEBIN_EMOJI,
-            Emojis.MAP_EMOJI,
-            Emojis.SPEECH_BUBBLE_EMOJI
-        ]);
+        AdvancedCollector.reactFaster(controlPanelMessage, ALL_CONTROL_PANEL_EMOJIS);
 
         const descSb = new StringBuilder()
             .append(`⌛ **Prepare** to join the **\`${leaderName}'s Raid\`** voice channel. The channel will be `)
@@ -207,7 +210,8 @@ export namespace RaidManager {
             status: 1,
             vcId: raidVc.id,
             location: details.location,
-            sectionIdentifier: details.section.uniqueIdentifier
+            sectionIdentifier: details.section.uniqueIdentifier,
+            earlyLocationReactions: []
         };
         await addRaidToDatabase(guild, raidInfo);
 
@@ -222,12 +226,135 @@ export namespace RaidManager {
         });
         AdvancedCollector.reactFaster(afkCheckMessage, allReactions
             .map(x => MappedReactions[x.mappingEmojiName].emojiId));
-        // Reactions ready
-        // TODO finish
+        // begin the collectors
+        const afkCheckFilterFunction = (_: MessageReaction, u: User) => !u.bot;
+        const controlPanelFilterFunction = (_: MessageReaction, u: User) => {
+            const member = guild.member(u);
+            if (member === null)
+                return false;
+
+            return member.voice.channelID === raidVc.id && ([
+                details.section.roles.leaders.sectionHeadLeaderRoleId,
+                details.section.roles.leaders.sectionRaidLeaderRoleId,
+                details.section.roles.leaders.sectionAlmostRaidLeaderRoleId,
+                guildDb.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+                guildDb.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+                guildDb.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
+            ].some(x => member.roles.cache.has(x)) || member.hasPermission("ADMINISTRATOR"));
+        };
+
+        const afkCheckCollector = afkCheckMessage.createReactionCollector(afkCheckFilterFunction, {
+            time: details.section.otherMajorConfig.afkCheckProperties.afkCheckTimeout * 60 * 1000
+        });
+
+        const controlPanelCollector = afkCheckMessage.createReactionCollector(controlPanelFilterFunction, {
+            time: details.section.otherMajorConfig.afkCheckProperties.afkCheckTimeout * 60 * 1000
+        });
+
+        controlPanelCollector.on("collect", async (reaction: MessageReaction, user: User) => {
+            // Not a valid emoji = leave.
+            if (!ALL_CONTROL_PANEL_EMOJIS.includes(reaction.emoji.name))
+                return;
+
+            //     const ALL_CONTROL_PANEL_EMOJIS: EmojiResolvable[] = [
+            //        Emojis.RIGHT_TRIANGLE_EMOJI,
+            //        Emojis.LONG_RIGHT_TRIANGLE_EMOJI,
+            //        Emojis.WASTEBIN_EMOJI,
+            //        Emojis.MAP_EMOJI,
+            //        Emojis.SPEECH_BUBBLE_EMOJI
+            //    ];
+        });
+
+        afkCheckCollector.on("collect", async (reaction: MessageReaction, user: User) => {
+
+        });
+    }
+
+    export async function endAfkCheck(endedBy: GuildMember, raidVc: VoiceChannel,
+                                      skipPostAfkCheck: boolean = false): Promise<void> {
+        const raidObj = await getRaidObject(endedBy.guild, raidVc.id);
+        if (!raidObj)
+            return;
+
+        // K = the mapped id
+        // V = the guild members
+        const earlyLocReacts = new Collection<string, GuildMember[]>();
+        for (const entry of raidObj.earlyLocationReactions) {
+            const member = await FetchUtilities.fetchGuildMember(endedBy.guild, entry.userId);
+            if (!member) continue;
+
+            if (earlyLocReacts.has(entry.reactCodeName)) {
+                earlyLocReacts.set(entry.reactCodeName, earlyLocReacts.get(entry.reactCodeName)!.concat(member));
+                continue;
+            }
+
+            earlyLocReacts.set(entry.reactCodeName, [member]);
+        }
     }
 
     /**
-     * Adds a raid object to the database.
+     * Gets the raid object from the database.
+     * @param {Guild} guild The guild.
+     * @param {string} raidVcId The raid VC.
+     * @return {Promise<IRaidInfo | null>} The raid object, if any. Null if not found.
+     * @private
+     */
+    async function getRaidObject(guild: Guild, raidVcId: string): Promise<IRaidInfo | null> {
+        const doc = await MongoManager.getGuildCollection()
+            .findOne({guildId: guild.id});
+        if (!doc) return null;
+        return doc.activeRaids.find(x => x.vcId === raidVcId) ?? null;
+    }
+
+    /**
+     * Updates the raid location to the specified location.
+     * @param {Guild} guild The guild object.
+     * @param {VoiceChannel} raidVc The raid VC.
+     * @param {string} newLoc The new location.
+     * @return {Promise<IGuildInfo>} The new guild document object.
+     * @private
+     */
+    async function updateLocation(guild: Guild, raidVc: VoiceChannel, newLoc: string): Promise<IGuildInfo> {
+        const res = await MongoManager.getGuildCollection().findOneAndUpdate({
+            guildId: guild.id,
+            "activeRaids.vcId": raidVc.id
+        }, {
+            $set: {
+                "activeRaids.$.location": newLoc
+            }
+        }, {returnOriginal: false});
+
+        return res.value!;
+    }
+
+    /**
+     * Adds an early location entry.
+     * @param {Guild} guild The guild object.
+     * @param {VoiceChannel} raidVc The raid VC (which raid object should be modified).
+     * @param {GuildMember} member The member that is entitled to early location.
+     * @param {keyof IMappedReactions} prop The reaction that the member used.
+     * @return {Promise<IGuildInfo>} The new guild document object.
+     * @private
+     */
+    async function addEarlyLocationEntry(guild: Guild, raidVc: VoiceChannel, member: GuildMember,
+                                         prop: keyof IMappedReactions): Promise<IGuildInfo> {
+        const res = await MongoManager.getGuildCollection().findOneAndUpdate({
+            guildId: guild.id,
+            "activeRaids.vcId": raidVc.id
+        }, {
+            $push: {
+                "activeRaids.$.earlyLocationReactions": {
+                    userId: member.id,
+                    reactCodeName: prop
+                }
+            }
+        }, {returnOriginal: false});
+
+        return res.value!;
+    }
+
+    /**
+     * Adds a raid object to the database. This should only be called once per raid.
      *
      * @param {Guild} guild The guild where the raid is being held.
      * @param {IRaidInfo} afk The raid object.
@@ -242,7 +369,105 @@ export namespace RaidManager {
                 }
             }, {returnOriginal: false});
 
-        return res.value as IGuildInfo;
+        return res.value!;
+    }
+
+    /**
+     * Removes a raid object from the database. This should only be called once per raid.
+     *
+     * @param {Guild} guild The guild where the raid is being held.
+     * @param {string} raidVcId The raid VC ID.
+     * @returns {Promise<IGuildInfo>} The revised guild document.
+     */
+    export async function removeRaidFromDatabase(guild: Guild, raidVcId: string): Promise<IGuildInfo> {
+        const res = await MongoManager
+            .getGuildCollection()
+            .findOneAndUpdate({guildId: guild.id}, {
+                $pull: {
+                    activeRaids: {
+                        vcId: raidVcId
+                    }
+                }
+            });
+
+        return res.value!;
+    }
+
+    /**
+     * Cleans the raid up. This will remove the raid voice channels, delete the control panel message, and remove
+     * the raid from the database.
+     *
+     * @param {Guild} guild The guild where the raid is being held.
+     * @param {string} vcId The raid VC ID.
+     * @param {IRaidInfo} [raidInfo] The raid object.
+     * @returns {IRaidInfo} The raid object.
+     */
+    export async function cleanUpRaid(guild: Guild, vcId: string, raidInfo?: IRaidInfo): Promise<IRaidInfo | null> {
+        const resolvedRaidObj = raidInfo ?? await getRaidObject(guild, vcId);
+        const guildDoc = await MongoManager.getOrCreateGuildDb(guild.id);
+        if (!resolvedRaidObj)
+            return null;
+        // Step 0: Remove the raid object. We don't need it anymore.
+        await removeRaidFromDatabase(guild, vcId);
+
+        // Get appropriate section.
+        const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === resolvedRaidObj.sectionIdentifier);
+        if (!section)
+            return resolvedRaidObj;
+
+        // Get appropriate channels.
+        const controlPanelChannel = guild.channels.cache
+            .get(section.channels.raids.controlPanelChannelId) as TextChannel | undefined;
+        const afkCheckChannel = guild.channels.cache
+            .get(section.channels.raids.afkCheckChannelId) as TextChannel | undefined;
+        const raidVoiceChannel = guild.channels.cache.get(vcId) as VoiceChannel | undefined;
+
+        // Step 1: Remove the control panel message.
+        if (controlPanelChannel) {
+            const cpMsg = await FetchUtilities.fetchMessage(controlPanelChannel, resolvedRaidObj.controlPanelMessageId);
+            if (cpMsg) await cpMsg.delete().catch();
+        }
+
+        // Step 2: Move people out of raid VC and delete.
+        if (raidVoiceChannel) {
+            const vcParent = raidVoiceChannel.parent;
+            let vcToMovePeopleTo: VoiceChannel | null = null;
+            // See if we can find a queue/lounge VC in the same category as the raid VC.
+            if (vcParent) {
+                const queueVc = vcParent.children
+                    .find(x => x.type === "voice"
+                        && (x.name.toLowerCase().includes("queue") || x.name.toLowerCase().includes("lounge")));
+                vcToMovePeopleTo = queueVc
+                    ? queueVc as VoiceChannel
+                    : null;
+            }
+            // If we didn't find a VC, assign the AFK VC.
+            vcToMovePeopleTo ??= guild.afkChannel;
+            // Now see if the VC exists.
+            if (vcToMovePeopleTo) {
+                const promises = raidVoiceChannel.members.map(async (x) => {
+                    await x.voice.setChannel(vcToMovePeopleTo).catch();
+                });
+                await Promise.all(promises).catch();
+            }
+            // Enter an infinite loop where we constantly check the VC to ensure that everyone is out
+            // Before we delete the voice channel.
+            while (true) {
+                if (raidVoiceChannel.members.size !== 0) continue;
+                await raidVoiceChannel.delete().catch();
+                break;
+            }
+        }
+
+        // Step 3: Unpin the AFK check message.
+        if (afkCheckChannel) {
+            const afkCheckMsg = await FetchUtilities.fetchMessage(afkCheckChannel, resolvedRaidObj.afkCheckMessageId);
+            if (afkCheckMsg)
+                await afkCheckMsg.unpin({reason: "No longer need to pin."}).catch();
+        }
+
+        // Step 4: Return the object.
+        return resolvedRaidObj;
     }
 
     /**
@@ -256,9 +481,9 @@ export namespace RaidManager {
      * @private
      */
     function createControlPanelEmbedForAfkCheck(memberResponsible: GuildMember, details: IAfkCheckOptions,
-                                                raidVc: VoiceChannel,
-                                                allReactions: readonly IReactionProps[],
-                                                earlyLocCollection: Collection<string, [GuildMember[], boolean]>): MessageEmbed {
+                                                raidVc: VoiceChannel, allReactions: readonly IReactionProps[],
+                                                earlyLocCollection:
+                                                    Collection<string, [GuildMember[], boolean]>): MessageEmbed {
         const brokenUpNames = UserManager.getAllNames(memberResponsible.displayName)[0];
         const nameToUse = brokenUpNames.length === 0 ? memberResponsible.displayName : brokenUpNames[0];
         const descSb = new StringBuilder()
