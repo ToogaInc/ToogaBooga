@@ -1,9 +1,9 @@
 import {Collection, Guild, GuildMember, Role} from "discord.js";
 import {OneRealmBot} from "../OneRealmBot";
 import {MongoManager} from "./MongoManager";
-import {MessageUtil} from "../utilities/MessageUtilities";
+import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {MiscUtils} from "../utilities/MiscUtilities";
+import {MiscUtilities} from "../utilities/MiscUtilities";
 import {Queue} from "../utilities/Queue";
 import {ISuspendedUser} from "../definitions/ISuspendedUser";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
@@ -123,9 +123,9 @@ export namespace PunishmentManager {
                             .appendLine()
                             .append("⇒ **Reason:** Automatic.")
                             .appendLine()
-                            .append(`⇒ **Time:** ${MiscUtils.getTime()}`);
+                            .append(`⇒ **Time:** ${MiscUtilities.getTime()}`);
 
-                        const logEmbed = MessageUtil.generateBlankEmbed(suspendedMember, "GREEN")
+                        const logEmbed = MessageUtilities.generateBlankEmbed(suspendedMember, "GREEN")
                             .setTitle(`Section Unsuspended: **${section.sectionName}**`)
                             .setDescription(logSb.toString())
                             .setTimestamp();
@@ -137,7 +137,7 @@ export namespace PunishmentManager {
                         .append(`**\`${section.sectionName}\`**, in the server, **\`${guild.name}\`**. `)
                         .append("Please make sure you read through any applicable section and server rules. ")
                         .append("For context, your original suspension reason has been provided below.");
-                    const sectionUnsuspendEmbed = MessageUtil.generateBlankEmbed(guild, "GREEN")
+                    const sectionUnsuspendEmbed = MessageUtilities.generateBlankEmbed(guild, "GREEN")
                         .setTitle(`Unsuspended From ${guild.name} ⇒ ${section.sectionName}`)
                         .setDescription(descSb.toString())
                         .addField("Original Suspension Reason", details.reason)
@@ -218,9 +218,9 @@ export namespace PunishmentManager {
                             .appendLine()
                             .append("⇒ **Reason:** Automatic.")
                             .appendLine()
-                            .append(`⇒ **Time:** ${MiscUtils.getTime()}`);
+                            .append(`⇒ **Time:** ${MiscUtilities.getTime()}`);
 
-                        const logEmbed = MessageUtil.generateBlankEmbed(suspendedMember, "GREEN")
+                        const logEmbed = MessageUtilities.generateBlankEmbed(suspendedMember, "GREEN")
                             .setTitle("Unsuspended From Server")
                             .setDescription(logSb.toString())
                             .setTimestamp();
@@ -231,7 +231,7 @@ export namespace PunishmentManager {
                         .append(`You have automatically been unsuspended from the server, **\`${guild.name}\`**. `)
                         .append("Please make sure you read through any applicable server rules. For context, your ")
                         .append("suspension reason has been provided below.");
-                    const serverUnsuspendEmbed = MessageUtil.generateBlankEmbed(guild, "GREEN")
+                    const serverUnsuspendEmbed = MessageUtilities.generateBlankEmbed(guild, "GREEN")
                         .setTitle(`Unsuspended From ${guild.name}`)
                         .setDescription(descSb.toString())
                         .addField("Original Suspension Reason", details.reason)
@@ -262,7 +262,7 @@ export namespace PunishmentManager {
             }
 
             // Wait a minute and then run again.
-            await MiscUtils.stopFor(60 * 1000);
+            await MiscUtilities.stopFor(60 * 1000);
         }
     }
 

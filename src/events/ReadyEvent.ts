@@ -2,7 +2,7 @@ import {OneRealmBot} from "../OneRealmBot";
 import {MongoManager} from "../managers/MongoManager";
 import {IBotInfo} from "../definitions/major/IBotInfo";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {MiscUtils} from "../utilities/MiscUtilities";
+import {MiscUtilities} from "../utilities/MiscUtilities";
 import {PunishmentManager} from "../managers/PunishmentManager";
 
 export async function onReadyEvent(): Promise<void> {
@@ -72,7 +72,7 @@ export async function onReadyEvent(): Promise<void> {
     const readyLog = new StringBuilder()
         .append(`${botUser.tag} has started successfully.`)
         .appendLine()
-        .append(`Time: ${MiscUtils.getTime()}`);
+        .append(`Time: ${MiscUtilities.getTime()}`);
 
     console.info(readyLog.toString());
 }

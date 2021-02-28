@@ -15,7 +15,7 @@ import {
     TextChannel,
     User
 } from "discord.js";
-import {MessageUtil} from "./MessageUtilities";
+import {MessageUtilities} from "./MessageUtilities";
 import {StringBuilder} from "./StringBuilder";
 
 type ICollectorArguments = {
@@ -291,10 +291,12 @@ export class AdvancedCollector {
             );
 
             reactCollector.on("collect", async (reaction: MessageReaction, user: User) => {
-                if (removeReactionsAfter)
-                    await baseMsg.reactions.removeAll().catch();
-                else
-                    await reaction.users.remove(user).catch();
+                if (!options.deleteResponseMessage) {
+                    if (removeReactionsAfter)
+                        await baseMsg.reactions.removeAll().catch();
+                    else
+                        await reaction.users.remove(user).catch();
+                }
 
                 return resolve(reaction.emoji);
             });
@@ -346,10 +348,10 @@ export class AdvancedCollector {
     public static getYesNoPrompt(pChan: PartialTextBasedChannelFields): (m: Message) => Promise<boolean | void> {
         return async (m: Message): Promise<boolean | void> => {
             if (m.content === null) {
-                const noContentEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
                     .setDescription("You did not provide any message content. Do not send any attachments.");
-                MessageUtil.sendThenDelete({embed: noContentEmbed}, pChan);
+                MessageUtilities.sendThenDelete({embed: noContentEmbed}, pChan);
                 return;
             }
 
@@ -383,10 +385,10 @@ export class AdvancedCollector {
     }): (m: Message) => Promise<string | void> {
         return async (m: Message): Promise<string | void> => {
             if (m.content === null) {
-                const noContentEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
                     .setDescription("You did not provide any message content. Do not send any attachments.");
-                MessageUtil.sendThenDelete({embed: noContentEmbed}, pChan);
+                MessageUtilities.sendThenDelete({embed: noContentEmbed}, pChan);
                 return;
             }
 
@@ -394,20 +396,20 @@ export class AdvancedCollector {
                 if (options.min && m.content.length < options.min) {
                     const tooShortDesc = new StringBuilder().append(`Your message is too short. It needs to be at `)
                         .append(`least ${options.min} characters long.`);
-                    const tooShortEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                    const tooShortEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Short")
                         .setDescription(tooShortDesc.toString());
-                    MessageUtil.sendThenDelete({embed: tooShortEmbed}, pChan);
+                    MessageUtilities.sendThenDelete({embed: tooShortEmbed}, pChan);
                     return;
                 }
 
                 if (options.max && options.max < m.content.length) {
                     const tooLongDesc = new StringBuilder().append(`Your message is too long. It needs to be at `)
                         .append(`most ${options.max} characters long.`);
-                    const tooLongEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                    const tooLongEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Long")
                         .setDescription(tooLongDesc.toString());
-                    MessageUtil.sendThenDelete({embed: tooLongEmbed}, pChan);
+                    MessageUtilities.sendThenDelete({embed: tooLongEmbed}, pChan);
                     return;
                 }
             }
@@ -433,10 +435,10 @@ export class AdvancedCollector {
             else {
                 const resolveById = await msg.guild?.roles.fetch(m.content) ?? null;
                 if (!resolveById) {
-                    const noRoleFound = MessageUtil.generateBlankEmbed(m.author, "RED")
+                    const noRoleFound = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("No Role Found")
                         .setDescription("You didn't specify a role. Either mention the role or type its ID.");
-                    MessageUtil.sendThenDelete({embed: noRoleFound}, pChan);
+                    MessageUtilities.sendThenDelete({embed: noRoleFound}, pChan);
                     return;
                 }
 
@@ -459,27 +461,27 @@ export class AdvancedCollector {
         return async (m: Message): Promise<number | void> => {
             const num = Number.parseInt(m.content, 10);
             if (Number.isNaN(num)) {
-                const notNumberEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                const notNumberEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("Invalid Number Specified")
                     .setDescription("You did not provide a valid number. Please try again.");
-                MessageUtil.sendThenDelete({embed: notNumberEmbed}, channel);
+                MessageUtilities.sendThenDelete({embed: notNumberEmbed}, channel);
                 return;
             }
 
             if (options) {
                 if (typeof options.min !== "undefined" && num < options.min) {
-                    const lowerThanMinEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                    const lowerThanMinEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Number Too Low")
                         .setDescription(`The number that you provided is lower than ${options.min}. Try again.`);
-                    MessageUtil.sendThenDelete({embed: lowerThanMinEmbed}, channel);
+                    MessageUtilities.sendThenDelete({embed: lowerThanMinEmbed}, channel);
                     return;
                 }
 
                 if (typeof options.max !== "undefined" && options.max < num) {
-                    const higherThanMaxEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                    const higherThanMaxEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Number Too High")
                         .setDescription(`The number that you provided is higher than ${options.max}. Try again.`);
-                    MessageUtil.sendThenDelete({embed: higherThanMaxEmbed}, channel);
+                    MessageUtilities.sendThenDelete({embed: higherThanMaxEmbed}, channel);
                     return;
                 }
             }
@@ -512,10 +514,10 @@ export class AdvancedCollector {
                     const notTextChannelDesc = new StringBuilder()
                         .append("You did not specify a valid text channel. Note that a text channel is __not__ a news")
                         .append(" channel.");
-                    const notTextChannelEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                    const notTextChannelEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Invalid Text Channel Specified")
                         .setDescription(notTextChannelDesc.toString());
-                    MessageUtil.sendThenDelete({embed: notTextChannelEmbed}, channel);
+                    MessageUtilities.sendThenDelete({embed: notTextChannelEmbed}, channel);
                     return;
                 }
 
@@ -531,10 +533,10 @@ export class AdvancedCollector {
                             const noPermDesc = new StringBuilder()
                                 .append(`I do not have the \`${p}\` permission in the ${resolvedChannel} channel. `)
                                 .append("Please make sure I have the permission and then try again.");
-                            const noPermsEmbed = MessageUtil.generateBlankEmbed(m.author, "RED")
+                            const noPermsEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                                 .setTitle("No Permissions!")
                                 .setDescription(noPermDesc);
-                            MessageUtil.sendThenDelete({embed: noPermsEmbed}, channel);
+                            MessageUtilities.sendThenDelete({embed: noPermsEmbed}, channel);
                             return;
                         }
                     }

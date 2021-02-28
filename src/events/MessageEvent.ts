@@ -3,7 +3,7 @@ import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {OneRealmBot} from "../OneRealmBot";
 import {MongoManager} from "../managers/MongoManager";
 import {BaseCommand} from "../commands/BaseCommand";
-import {MessageUtil} from "../utilities/MessageUtilities";
+import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 
@@ -70,43 +70,43 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
     // Start with bot owner.
     const isBotOwner = OneRealmBot.BotInstance.config.ids.botOwnerIds.includes(msg.author.id);
     if (foundCommand.commandInfo.botOwnerOnly && !isBotOwner) {
-        const noBotOwnerEmbed = MessageUtil.generateBlankEmbed(msg.author, "RED")
+        const noBotOwnerEmbed = MessageUtilities.generateBlankEmbed(msg.author, "RED")
             .setTitle("Bot Owner Only Command.")
             .setDescription("The command you are trying to execute is for bot owners only.")
             .setTimestamp();
-        return MessageUtil.sendThenDelete({embed: noBotOwnerEmbed}, msg.channel);
+        return MessageUtilities.sendThenDelete({embed: noBotOwnerEmbed}, msg.channel);
     }
 
     // Check cooldown.
     const cooldownLeft = foundCommand.checkCooldownFor(msg.author);
     if (cooldownLeft !== -1) {
         const cooldownInSecRounded = Math.round(cooldownLeft) / 1000;
-        const onCooldownEmbed = MessageUtil.generateBlankEmbed(msg.author, "RED")
+        const onCooldownEmbed = MessageUtilities.generateBlankEmbed(msg.author, "RED")
             .setTitle("On Cooldown.")
             .setDescription("You are currently on cooldown.")
             .addField("Cooldown Remaining", StringUtil.codifyString(`${cooldownInSecRounded} Seconds.`))
             .setTimestamp();
-        return MessageUtil.sendThenDelete({embed: onCooldownEmbed}, msg.channel);
+        return MessageUtilities.sendThenDelete({embed: onCooldownEmbed}, msg.channel);
     }
 
     // Guild only?
     if (foundCommand.commandInfo.guildOnly && !msg.guild) {
-        const notInGuild = MessageUtil.generateBlankEmbed(msg.author, "RED")
+        const notInGuild = MessageUtilities.generateBlankEmbed(msg.author, "RED")
             .setTitle("Server Command Only.")
             .setDescription("The command you are trying to execute can only be executed in the server.")
             .addField("Message Content", StringUtil.codifyString(msg.content))
             .setTimestamp();
-        return MessageUtil.sendThenDelete({embed: notInGuild}, msg.channel);
+        return MessageUtilities.sendThenDelete({embed: notInGuild}, msg.channel);
     }
 
     // Is the command blocked?
     const botCmdNames = foundCommand.commandInfo.botCommandNames;
     if (msg.guild && guildDoc && guildDoc.properties.blockedCommands.some(x => botCmdNames.includes(x))) {
-        const commandBlockedEmbed = MessageUtil.generateBlankEmbed(msg.author, "RED")
+        const commandBlockedEmbed = MessageUtilities.generateBlankEmbed(msg.author, "RED")
             .setTitle("Command Blocked.")
             .setDescription("The command you are trying to execute is blocked by your server administrator.")
             .setTimestamp();
-        return MessageUtil.sendThenDelete({embed: commandBlockedEmbed}, msg.channel);
+        return MessageUtilities.sendThenDelete({embed: commandBlockedEmbed}, msg.channel);
     }
 
     // If not in guild, then we can just run it from here.
@@ -130,7 +130,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
     // Acknowledge any permission issues.
     const noPermSb = new StringBuilder()
         .append("You, or the bot, are missing permissions needed to run the command.");
-    const noPermissionEmbed = MessageUtil.generateBlankEmbed(member, "RED")
+    const noPermissionEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
         .setTitle("Missing Permissions.");
 
     if (canRunInfo.missingUserPerms.length !== 0 && canRunInfo.missingUserRoles.length !== 0) {
@@ -151,5 +151,5 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
 
     noPermissionEmbed.setDescription(noPermSb.toString())
         .addField("Command Used", StringUtil.codifyString(msg.content));
-    MessageUtil.sendThenDelete({embed: noPermissionEmbed}, msg.channel, 10 * 1000);
+    MessageUtilities.sendThenDelete({embed: noPermissionEmbed}, msg.channel, 10 * 1000);
 }

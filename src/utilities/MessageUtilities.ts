@@ -7,7 +7,7 @@ import {
     PartialTextBasedChannelFields, User
 } from "discord.js";
 
-export namespace MessageUtil {
+export namespace MessageUtilities {
     /**
      * Sends a message to a channel, automatically taking care of deletion of this message.
      * @param {MessageOptions} info The message content to send.

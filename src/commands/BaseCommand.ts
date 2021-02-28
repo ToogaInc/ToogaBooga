@@ -1,7 +1,7 @@
 import {Collection, Guild, GuildMember, Message, PermissionString, User} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {OneRealmBot} from "../OneRealmBot";
-import {MiscUtils} from "../utilities/MiscUtilities";
+import {MiscUtilities} from "../utilities/MiscUtilities";
 
 type RolePermissions = "Suspended"
     | "Raider"
@@ -163,7 +163,7 @@ export abstract class BaseCommand {
         ];
 
         // Get all leader roles.
-        const allSections = MiscUtils.getAllSections(guildDoc);
+        const allSections = MiscUtilities.getAllSections(guildDoc);
         // Add other head leader roles
         for (const section of allSections)
             roleOrder.push([section.roles.leaders.sectionHeadLeaderRoleId, "HeadRaidLeader"]);

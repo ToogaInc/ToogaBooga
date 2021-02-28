@@ -1,7 +1,7 @@
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
 
-export namespace MiscUtils {
+export namespace MiscUtilities {
 
     /**
      * Returns an array containing all sections. In particular, this function will give you a section representation

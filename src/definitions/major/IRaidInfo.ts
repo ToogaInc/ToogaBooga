@@ -21,4 +21,7 @@ export interface IRaidInfo {
     sectionIdentifier: string;
     // early location reactions
     earlyLocationReactions: { userId: string; reactCodeName: string; }[];
+    // For set interval purposes
+    controlPanelIntervalId: number | NodeJS.Timeout;
+    afkCheckIntervalId: number | NodeJS.Timeout;
 }

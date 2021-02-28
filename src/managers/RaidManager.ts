@@ -18,20 +18,20 @@ import {IMappedReactions, MappedReactions} from "../constants/MappedReactions";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {IReactionProps} from "../definitions/major/parts/IReactionProps";
-import {MiscUtils} from "../utilities/MiscUtilities";
+import {MiscUtilities} from "../utilities/MiscUtilities";
 import {OneRealmBot} from "../OneRealmBot";
-import {MessageUtil} from "../utilities/MessageUtilities";
+import {MessageUtilities} from "../utilities/MessageUtilities";
 import {Emojis} from "../constants/Emojis";
 import {AdvancedCollector} from "../utilities/AdvancedCollector";
-import {FetchUtilities} from "../utilities/FetchUtilities";
+import {FetchRequestUtilities} from "../utilities/FetchRequestUtilities";
+import {StringUtil} from "../utilities/StringUtilities";
 
 export namespace RaidManager {
     const ALL_CONTROL_PANEL_EMOJIS: EmojiResolvable[] = [
         Emojis.RIGHT_TRIANGLE_EMOJI,
         Emojis.LONG_RIGHT_TRIANGLE_EMOJI,
         Emojis.WASTEBIN_EMOJI,
-        Emojis.MAP_EMOJI,
-        Emojis.SPEECH_BUBBLE_EMOJI
+        Emojis.MAP_EMOJI
     ];
 
     export interface IAfkCheckOptions {
@@ -188,7 +188,7 @@ export namespace RaidManager {
 
         const descSb = new StringBuilder()
             .append(`⌛ **Prepare** to join the **\`${leaderName}'s Raid\`** voice channel. The channel will be `)
-            .append("unlocked in 10 seconds.");
+            .append("unlocked in 5 seconds.");
         const initialAfkCheckEmbed = new MessageEmbed()
             .setAuthor(`${leaderName} has started a ${details.dungeon.dungeonName} AFK check.`,
                 memberInitiated.user.displayAvatarURL())
@@ -202,7 +202,17 @@ export namespace RaidManager {
             embed: initialAfkCheckEmbed
         });
 
-        const raidInfo: IRaidInfo = {
+        const afkCheckInterval = setInterval(async () => {
+            await afkCheckMessage.edit(createAfkCheckEmbed(memberInitiated, details, guildDb, allReactions,
+                earlyLocReacts)).catch();
+        }, 4 * 1000);
+
+        const controlPanelInterval = setInterval(async () => {
+            await controlPanelMessage.edit(createControlPanelEmbedForAfkCheck(memberInitiated, details, raidVc,
+                allReactions, earlyLocReacts)).catch();
+        }, 4 * 1000);
+
+        await addRaidToDatabase(guild, {
             channels: details.section.channels.raids,
             afkCheckMessageId: afkCheckMessage.id,
             controlPanelMessageId: controlPanelMessage.id,
@@ -211,12 +221,13 @@ export namespace RaidManager {
             vcId: raidVc.id,
             location: details.location,
             sectionIdentifier: details.section.uniqueIdentifier,
-            earlyLocationReactions: []
-        };
-        await addRaidToDatabase(guild, raidInfo);
+            earlyLocationReactions: [],
+            controlPanelIntervalId: controlPanelInterval,
+            afkCheckIntervalId: afkCheckInterval
+        });
 
         // 10 seconds so people can prepare for the raid.
-        await MiscUtils.stopFor(10 * 1000);
+        await MiscUtilities.stopFor(5 * 1000);
         await raidVc.updateOverwrite(guild.roles.everyone, {
             CONNECT: null
         }, "Allow raiders to connect to raid VC.");
@@ -224,13 +235,15 @@ export namespace RaidManager {
         await afkCheckMessage.edit("@here An AFK Check is currently running.", {
             embed: createAfkCheckEmbed(memberInitiated, details, guildDb, allReactions, earlyLocReacts)
         });
+
+
         AdvancedCollector.reactFaster(afkCheckMessage, allReactions
             .map(x => MappedReactions[x.mappingEmojiName].emojiId));
         // begin the collectors
         const afkCheckFilterFunction = (_: MessageReaction, u: User) => !u.bot;
-        const controlPanelFilterFunction = (_: MessageReaction, u: User) => {
-            const member = guild.member(u);
-            if (member === null)
+        const controlPanelFilterFunction = async (_: MessageReaction, u: User) => {
+            const member = await FetchRequestUtilities.fetchGuildMember(guild, u);
+            if (!member)
                 return false;
 
             return member.voice.channelID === raidVc.id && ([
@@ -256,17 +269,213 @@ export namespace RaidManager {
             if (!ALL_CONTROL_PANEL_EMOJIS.includes(reaction.emoji.name))
                 return;
 
-            //     const ALL_CONTROL_PANEL_EMOJIS: EmojiResolvable[] = [
-            //        Emojis.RIGHT_TRIANGLE_EMOJI,
-            //        Emojis.LONG_RIGHT_TRIANGLE_EMOJI,
-            //        Emojis.WASTEBIN_EMOJI,
-            //        Emojis.MAP_EMOJI,
-            //        Emojis.SPEECH_BUBBLE_EMOJI
-            //    ];
+            const memberThatReacted = await FetchRequestUtilities.fetchGuildMember(guild, user);
+            if (!memberThatReacted)
+                return;
+
+            // End afk check normally.
+            if (reaction.emoji.name === Emojis.RIGHT_TRIANGLE_EMOJI) {
+                await endAfkCheck(memberThatReacted, raidVc, false);
+                return;
+            }
+
+            // End afk check without post afk check.
+            if (reaction.emoji.name === Emojis.LONG_RIGHT_TRIANGLE_EMOJI) {
+                await endAfkCheck(memberThatReacted, raidVc, true);
+                return;
+            }
+
+            // Abort afk check.
+            if (reaction.emoji.name === Emojis.WASTEBIN_EMOJI) {
+                await abortAfkCheck(memberThatReacted, raidVc);
+                return;
+            }
+
+            // Set location.
+            if (reaction.emoji.name === Emojis.MAP_EMOJI) {
+                // TODO
+                return;
+            }
         });
 
         afkCheckCollector.on("collect", async (reaction: MessageReaction, user: User) => {
+            const memberThatReacted = await FetchRequestUtilities.fetchGuildMember(guild, user);
+            if (!memberThatReacted)
+                return;
 
+            // Check to ensure the person is in a voice channel.
+            const notInVcEmbed = MessageUtilities.generateBlankEmbed(memberThatReacted, "RED")
+                .setTitle("Not In Raid VC")
+                .setDescription("In order to indicate your reaction preference, you need to be in the raid VC.")
+                .setTimestamp();
+
+            // Not in a VC = no go.
+            if (!memberThatReacted.voice.channelID) {
+                await memberThatReacted.send(notInVcEmbed).catch();
+                return;
+            }
+
+            // If the person is in the wrong VC AND people won't be moved in if VC is full, then no go.
+            if (memberThatReacted.voice.channelID !== raidVc.id
+                && !details.section.otherMajorConfig.afkCheckProperties.allowKeyReactsToBypassFullVc) {
+                await memberThatReacted.send(notInVcEmbed).catch();
+                return;
+            }
+
+            const emojiId = reaction.emoji.id;
+            // AFK check emojis should all be custom.
+            if (!emojiId) return;
+            let correctMapping: string | null = null;
+            // Get the correct code name.
+            for (const mapping in MappedReactions) {
+                if (MappedReactions[mapping].emojiId !== emojiId)
+                    continue;
+                correctMapping = mapping;
+                break;
+            }
+
+            // Mapping wasn't found.
+            if (!correctMapping)
+                return;
+
+            // If this isn't an early location reaction, ignore it.
+            if (!earlyLocReacts.has(correctMapping))
+                return;
+
+            const emoji = OneRealmBot.BotInstance.client.emojis.cache.get(MappedReactions[correctMapping].emojiId);
+            const reactionData = earlyLocReacts.get(correctMapping)!;
+
+            // This reaction is not accepting anymore people.
+            if (!reactionData[1])
+                return;
+
+            // This person already reacted to this emoji.
+            if (reactionData[0].findIndex(x => x.id === memberThatReacted.id) !== -1)
+                return;
+
+            // Ask if this person wants to contribute whatever s/he reacted to.
+            const askEmbedDesc = new StringBuilder()
+                .append("You have reacted with the following emoji:")
+                .appendLine()
+                .append(`${emoji} ${MappedReactions[correctMapping].emojiName}`)
+                .appendLine()
+                .appendLine()
+                .append("Review the raid details below and then **confirm** your selection by reacting to the ")
+                .append(`${Emojis.GREEN_CHECK_MARK_EMOJI} emoji. If this was a mistake, please react to the `)
+                .append(`${Emojis.X_EMOJI} or simply ignore this notice. This message will automatically disappear `)
+                .append("in 15 seconds.")
+                .toString();
+
+            const raidDetails = new StringBuilder()
+                .append(`⇒ **Guild:** ${guild.name}`)
+                .appendLine()
+                .append(`⇒ **Section:** ${details.section.sectionName}`)
+                .appendLine()
+                .append(`⇒ **Raid Leader:** ${memberInitiated} (${memberInitiated.displayName}`)
+                .appendLine()
+                .append(`⇒ **VC Name:** ${raidVc.name}`)
+                .appendLine()
+                .append(`⇒ **Dungeon:** ${details.dungeon.dungeonName}`)
+                .toString();
+
+            const askEmbed = MessageUtilities.generateBlankEmbed(memberThatReacted, "RANDOM")
+                .setTitle(`Confirm Reaction: ${MappedReactions[correctMapping].emojiName}`)
+                .setDescription(askEmbedDesc)
+                .addField("Raid Details", raidDetails)
+                .setTimestamp()
+                .setFooter(`${guild.name} AFK Check`);
+
+            const confirmMsg = await FetchRequestUtilities.trySend(memberThatReacted, {
+                embed: askEmbed
+            });
+
+            // Couldn't send the message.
+            if (!confirmMsg)
+                return;
+            // Begin a collector.
+            const resp = await new AdvancedCollector(confirmMsg.channel as DMChannel, memberThatReacted, 15, "S")
+                .waitForSingleReaction(confirmMsg, {
+                    reactToMsg: true,
+                    reactions: [Emojis.GREEN_CHECK_MARK_EMOJI, Emojis.X_EMOJI]
+                });
+
+            // No response or rejected.
+            if (!resp || resp.name === Emojis.X_EMOJI) {
+                const noConfirmDesc = new StringBuilder()
+                    .append("You reacted with the following emoji:")
+                    .appendLine()
+                    .append(`${emoji} ${MappedReactions[correctMapping].emojiName}`)
+                    .appendLine()
+                    .appendLine()
+                    .append("You have selected: `No`. ");
+                if (correctMapping === "NITRO")
+                    noConfirmDesc.append("You do not need to do anything else.");
+                else
+                    noConfirmDesc.append("This means that you are not required to bring whatever you reacted to.");
+                const noConfirmEmbed = MessageUtilities.generateBlankEmbed(memberThatReacted, "DARK_ORANGE")
+                    .setTitle(`Denied Confirmation for Reaction: ${MappedReactions[correctMapping].emojiName}`)
+                    .setDescription(noConfirmDesc.toString())
+                    .addField("Raid Details", raidDetails)
+                    .setTimestamp()
+                    .setFooter(`${guild.name} AFK Check`);
+                await confirmMsg.edit(noConfirmEmbed).catch();
+                return;
+            }
+
+            // Accepted.
+            // However, the emoji is no longer accepting. :(
+            if (!earlyLocReacts.get(correctMapping)![1]) {
+                const noMoreSlotsDesc = new StringBuilder()
+                    .append("You reacted with the following emoji:")
+                    .appendLine()
+                    .append(`${emoji} ${MappedReactions[correctMapping].emojiName}`)
+                    .appendLine()
+                    .appendLine()
+                    .append("You have selected: `Yes`. However, we no longer need this! ");
+                if (correctMapping === "NITRO")
+                    noMoreSlotsDesc.append("At this time, you are not able to get early location.");
+                else
+                    noMoreSlotsDesc.append("This means that you are not required to bring whatever you reacted to.");
+
+                const noMoreSlotsEmbed = MessageUtilities.generateBlankEmbed(memberThatReacted, "DARK_ORANGE")
+                    .setTitle(`Accepted Confirmation for Reaction: ${MappedReactions[correctMapping].emojiName}`)
+                    .setDescription(noMoreSlotsDesc.toString())
+                    .addField("Raid Details", raidDetails)
+                    .setTimestamp()
+                    .setFooter(`${guild.name} AFK Check`);
+                await confirmMsg.edit(noMoreSlotsEmbed).catch();
+                return;
+            }
+            // Enough slots to accomodate another person.
+            const emojiInfo = allReactions.find(x => x.mappingEmojiName === correctMapping)!;
+            earlyLocReacts.set(correctMapping, [
+                earlyLocReacts.get(correctMapping)![0].concat(memberThatReacted),
+                earlyLocReacts.get(correctMapping)![0].length + 1 < emojiInfo.maxEarlyLocation
+            ]);
+            await addEarlyLocationEntry(guild, raidVc.id, memberThatReacted, correctMapping);
+
+            const acceptedLocDesc = new StringBuilder()
+                .append("You reacted with the following emoji:")
+                .appendLine()
+                .append(`${emoji} ${MappedReactions[correctMapping].emojiName}`)
+                .appendLine()
+                .appendLine()
+                .append("You have selected: `Yes`. The location to this raid is shown below. ");
+            if (correctMapping !== "NITRO")
+                acceptedLocDesc.append("You must bring the class/gear choice that you indicated you would bring. ")
+                    .append("Failure to do so may result in consequences. ");
+            acceptedLocDesc.append("Also, do **not** share this location with anyone else. Doing so may result in ")
+                .append("serious consequences.");
+
+            const loc = (await getRaidObject(guild, raidVc.id))!.location;
+            const acceptedEmbed = MessageUtilities.generateBlankEmbed(memberThatReacted, "GREEN")
+                .setTitle(`Accepted Confirmation for Reaction: ${MappedReactions[correctMapping].emojiName}`)
+                .setDescription(acceptedLocDesc.toString())
+                .addField("Raid Details", raidDetails)
+                .addField("Location", StringUtil.codifyString(loc))
+                .setTimestamp()
+                .setFooter(`${guild.name} AFK Check`);
+            await confirmMsg.edit(acceptedEmbed).catch();
         });
     }
 
@@ -280,7 +489,7 @@ export namespace RaidManager {
         // V = the guild members
         const earlyLocReacts = new Collection<string, GuildMember[]>();
         for (const entry of raidObj.earlyLocationReactions) {
-            const member = await FetchUtilities.fetchGuildMember(endedBy.guild, entry.userId);
+            const member = await FetchRequestUtilities.fetchGuildMember(endedBy.guild, entry.userId);
             if (!member) continue;
 
             if (earlyLocReacts.has(entry.reactCodeName)) {
@@ -292,6 +501,10 @@ export namespace RaidManager {
         }
     }
 
+    export async function abortAfkCheck(endedBy: GuildMember, raidVc: VoiceChannel): Promise<void> {
+
+    }
+
     /**
      * Gets the raid object from the database.
      * @param {Guild} guild The guild.
@@ -299,7 +512,7 @@ export namespace RaidManager {
      * @return {Promise<IRaidInfo | null>} The raid object, if any. Null if not found.
      * @private
      */
-    async function getRaidObject(guild: Guild, raidVcId: string): Promise<IRaidInfo | null> {
+    export async function getRaidObject(guild: Guild, raidVcId: string): Promise<IRaidInfo | null> {
         const doc = await MongoManager.getGuildCollection()
             .findOne({guildId: guild.id});
         if (!doc) return null;
@@ -314,7 +527,7 @@ export namespace RaidManager {
      * @return {Promise<IGuildInfo>} The new guild document object.
      * @private
      */
-    async function updateLocation(guild: Guild, raidVc: VoiceChannel, newLoc: string): Promise<IGuildInfo> {
+    export async function updateLocation(guild: Guild, raidVc: VoiceChannel, newLoc: string): Promise<IGuildInfo> {
         const res = await MongoManager.getGuildCollection().findOneAndUpdate({
             guildId: guild.id,
             "activeRaids.vcId": raidVc.id
@@ -330,17 +543,17 @@ export namespace RaidManager {
     /**
      * Adds an early location entry.
      * @param {Guild} guild The guild object.
-     * @param {VoiceChannel} raidVc The raid VC (which raid object should be modified).
+     * @param {string} raidVcId The raid VC (which raid object should be modified).
      * @param {GuildMember} member The member that is entitled to early location.
      * @param {keyof IMappedReactions} prop The reaction that the member used.
      * @return {Promise<IGuildInfo>} The new guild document object.
      * @private
      */
-    async function addEarlyLocationEntry(guild: Guild, raidVc: VoiceChannel, member: GuildMember,
-                                         prop: keyof IMappedReactions): Promise<IGuildInfo> {
+    export async function addEarlyLocationEntry(guild: Guild, raidVcId: string, member: GuildMember,
+                                                prop: keyof IMappedReactions): Promise<IGuildInfo> {
         const res = await MongoManager.getGuildCollection().findOneAndUpdate({
             guildId: guild.id,
-            "activeRaids.vcId": raidVc.id
+            "activeRaids.vcId": raidVcId
         }, {
             $push: {
                 "activeRaids.$.earlyLocationReactions": {
@@ -394,7 +607,7 @@ export namespace RaidManager {
     }
 
     /**
-     * Cleans the raid up. This will remove the raid voice channels, delete the control panel message, and remove
+     * Cleans the raid up. This will remove the raid voice channel, delete the control panel message, and remove
      * the raid from the database.
      *
      * @param {Guild} guild The guild where the raid is being held.
@@ -424,11 +637,18 @@ export namespace RaidManager {
 
         // Step 1: Remove the control panel message.
         if (controlPanelChannel) {
-            const cpMsg = await FetchUtilities.fetchMessage(controlPanelChannel, resolvedRaidObj.controlPanelMessageId);
+            const cpMsg = await FetchRequestUtilities.fetchMessage(controlPanelChannel, resolvedRaidObj.controlPanelMessageId);
             if (cpMsg) await cpMsg.delete().catch();
         }
 
-        // Step 2: Move people out of raid VC and delete.
+        // Step 2: Unpin the AFK check message.
+        if (afkCheckChannel) {
+            const afkCheckMsg = await FetchRequestUtilities.fetchMessage(afkCheckChannel, resolvedRaidObj.afkCheckMessageId);
+            if (afkCheckMsg)
+                await afkCheckMsg.unpin({reason: "No longer need to pin."}).catch();
+        }
+
+        // Step 3: Move people out of raid VC and delete.
         if (raidVoiceChannel) {
             const vcParent = raidVoiceChannel.parent;
             let vcToMovePeopleTo: VoiceChannel | null = null;
@@ -457,13 +677,6 @@ export namespace RaidManager {
                 await raidVoiceChannel.delete().catch();
                 break;
             }
-        }
-
-        // Step 3: Unpin the AFK check message.
-        if (afkCheckChannel) {
-            const afkCheckMsg = await FetchUtilities.fetchMessage(afkCheckChannel, resolvedRaidObj.afkCheckMessageId);
-            if (afkCheckMsg)
-                await afkCheckMsg.unpin({reason: "No longer need to pin."}).catch();
         }
 
         // Step 4: Return the object.
@@ -500,14 +713,11 @@ export namespace RaidManager {
             .append("starting a raid.")
             .appendLine()
             .append(`⇨ **React** to the ${Emojis.MAP_EMOJI} if you want to change this raid's location. This will `)
-            .append("message everyone that is participating in this raid that has early location.")
-            .appendLine()
-            .append(`⇨ **React** to the ${Emojis.SPEECH_BUBBLE_EMOJI} if you want to __release__ this raid's `)
-            .append("location to everyone. You will **not** be able to undo this.");
+            .append("message everyone that is participating in this raid that has early location.");
 
         const maxVc = `${raidVc.userLimit === 0 ? "Unlimited" : raidVc.userLimit}`;
         const generalStatus = new StringBuilder()
-            .append(`⇨ Started At: ${MiscUtils.getTime(raidVc.createdTimestamp)} UTC`)
+            .append(`⇨ Started At: ${MiscUtilities.getTime(raidVc.createdTimestamp)} UTC`)
             .appendLine()
             .append(`⇨ VC Capacity: ${raidVc.members.size} / ${maxVc}`)
             .appendLine()
@@ -619,7 +829,7 @@ export namespace RaidManager {
      */
     export async function selectSection(msg: Message, member: GuildMember,
                                         guildDoc: IGuildInfo): Promise<ISectionInfo | null> {
-        const possibleSections = MiscUtils.getAllSections(guildDoc)
+        const possibleSections = MiscUtilities.getAllSections(guildDoc)
             .filter(x => canManageRaidsIn(x, member, guildDoc));
 
         if (possibleSections.length === 0)
@@ -636,7 +846,7 @@ export namespace RaidManager {
                 return section;
         }
 
-        const askSectionEmbed = MessageUtil.generateBlankEmbed(member.guild, "RANDOM")
+        const askSectionEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RANDOM")
             .setTitle("Select a Section")
             .setDescription("You are about to start an AFK check or headcount. However, you need to select a section" +
                 " where you want to start this AFK check or headcount.\n\nPlease react to the number emoji" +
