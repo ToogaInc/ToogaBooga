@@ -1,6 +1,10 @@
 import {IRaidChannels} from "./parts/IRaidChannels";
 
 export interface IRaidInfo {
+    // The dungeon that is being done.
+    dungeonCodeName: string;
+    // Member that init raid.
+    memberInit: string;
     // relevant channels
     channels: IRaidChannels;
     // should be in afk check channel

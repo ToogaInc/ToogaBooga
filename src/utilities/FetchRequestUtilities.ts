@@ -60,7 +60,7 @@ export namespace FetchRequestUtilities {
      * error occurred when trying to send the message (for example, no permissions or DMs disabled), then null will
      * be returned.
      */
-    export async function trySend(channel: PartialTextBasedChannelFields,
+    export async function sendMsg(channel: PartialTextBasedChannelFields,
                                   msgOptions: MessageOptions): Promise<Message | null> {
         try {
             return await channel.send(msgOptions.content, {
@@ -69,6 +69,19 @@ export namespace FetchRequestUtilities {
                 allowedMentions: msgOptions.allowedMentions,
                 disableMentions: msgOptions.disableMentions
             });
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * A simple function that attempts to fetch a guild. This will handle any exceptions that may occur.
+     * @param {string} guildId The ID corresponding to the guild that you want to fetch.
+     * @returns {Promise<Guild | null>} The guild object, if one exists. Null otherwise.
+     */
+    export async function fetchGuild(guildId: string): Promise<Guild | null> {
+        try {
+            return await OneRealmBot.BotInstance.client.guilds.fetch(guildId);
         } catch (e) {
             return null;
         }

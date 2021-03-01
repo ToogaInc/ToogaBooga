@@ -167,7 +167,7 @@ export class AdvancedCollector {
     public async startDoubleCollector<T>(
         msgOptions: MessageOptions,
         func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>,
-        options?: ICollectorArguments
+        options: ICollectorArguments
     ): Promise<T | Emoji | null> {
         const msgReactions: EmojiResolvable[] = [];
         let cancelFlag = "cancel";
