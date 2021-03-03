@@ -2,7 +2,7 @@ import {
     DMChannel,
     Guild,
     GuildMember,
-    Message, MessageOptions, PartialTextBasedChannelFields,
+    Message, MessageOptions, PartialTextBasedChannelFields, Role,
     TextChannel,
     User, UserResolvable
 } from "discord.js";
@@ -82,6 +82,20 @@ export namespace FetchRequestUtilities {
     export async function fetchGuild(guildId: string): Promise<Guild | null> {
         try {
             return await OneRealmBot.BotInstance.client.guilds.fetch(guildId);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * A simple function that attempts to fetch a role. This will handle any exceptions that may occur.
+     * @param {Guild} guild THe guild.
+     * @param {string} roleId The role to fetch.
+     * @return {Promise<Role | null>} The role, if found. Null otherwise.
+     */
+    export async function fetchRole(guild: Guild, roleId: string): Promise<Role | null> {
+        try {
+            return await guild.roles.fetch(roleId);
         } catch (e) {
             return null;
         }
