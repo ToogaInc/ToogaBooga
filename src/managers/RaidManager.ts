@@ -5,7 +5,7 @@ import {
     Guild,
     GuildMember,
     Message,
-    MessageEmbed, MessageReaction, OverwriteResolvable, PermissionResolvable, ReactionCollector,
+    MessageEmbed, MessageReaction, OverwriteResolvable, ReactionCollector,
     TextChannel, User,
     VoiceChannel
 } from "discord.js";
@@ -27,6 +27,7 @@ import {DungeonData} from "../constants/DungeonData";
 import {MongoManager} from "./MongoManager";
 import {UserManager} from "./UserManager";
 import {StringUtil} from "../utilities/StringUtilities";
+import {GeneralConstants} from "../constants/GeneralConstants";
 
 /**
  * This class represents a raid.
@@ -159,6 +160,7 @@ export class RaidManager {
         rm._raidVc = raidVc;
         rm._afkCheckMsg = afkCheckMsg;
         rm._controlPanelMsg = controlPanelMsg;
+        rm._raidStatus = raidInfo.status;
 
         // Add early location entries.
         for await (const entry of raidInfo.earlyLocationReactions) {
@@ -167,6 +169,11 @@ export class RaidManager {
             await rm.addEarlyLocationReaction(member, entry.reactCodeName, false);
         }
 
+        if (rm._raidStatus === RaidStatus.AFK_CHECK) {
+            rm.startIntervals(5 * 1000);
+            rm.startControlPanelAfkCheckModeCollector();
+            rm.startAfkCheckCollector();
+        }
         return rm;
     }
 
@@ -185,7 +192,7 @@ export class RaidManager {
         this._raidVc = await this._guild.channels.create(`🔒 ${this._leaderName}'s Raid`, {
             type: "voice",
             userLimit: this._raidSection.otherMajorConfig.afkCheckProperties.vcLimit,
-            permissionOverwrites: this.getPermissionsForRaidVc(),
+            permissionOverwrites: this.getPermissionsForRaidVc(true),
             parent: this._afkCheckChannel!.parent!
         });
 
@@ -229,6 +236,17 @@ export class RaidManager {
         // Begin the AFK check collector.
         this.startAfkCheckCollector();
         this.startControlPanelAfkCheckModeCollector();
+    }
+
+    /**
+     * Ends the AFK check, optionally starting the post AFK check.
+     * @param {boolean} skipPostAfk Whether to skip the post AFK check.
+     */
+    public async endAfkCheck(skipPostAfk: boolean): Promise<void> {
+        // No raid VC means we haven't started AFK check.
+        if (!this._raidVc || this._raidStatus !== RaidStatus.AFK_CHECK)
+            return;
+        this.stopAllIntervalsAndCollectors("AFK Check ended.");
     }
 
 
@@ -750,89 +768,6 @@ export class RaidManager {
     }
 
     /**
-     * Generates an array of permissions that will be used for the raid VC.
-     * @return {OverwriteResolvable[]} The list of permissions.
-     * @private
-     */
-    private getPermissionsForRaidVc(): OverwriteResolvable[] {
-        // Get permissions for the raid voice channel.
-        const permCol: OverwriteResolvable[] = [];
-        permCol.push(
-            {
-                id: this._guild.roles.everyone.id,
-                deny: ["VIEW_CHANNEL", "SPEAK", "STREAM", "CONNECT"]
-            },
-            {
-                id: this._raidSection.roles.verifiedRoleId,
-                allow: ["VIEW_CHANNEL"]
-            },
-            // general staff roles
-            {
-                id: this._guildDoc.roles.staffRoles.moderation.securityRoleId,
-                allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "STREAM"]
-            },
-            {
-                id: this._guildDoc.roles.staffRoles.moderation.officerRoleId,
-                allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"]
-            },
-            {
-                id: this._guildDoc.roles.staffRoles.moderation.moderatorRoleId,
-                allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"]
-            },
-            // universal leader roles
-            {
-                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-                allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "STREAM"]
-            },
-            {
-                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-                allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "DEAFEN_MEMBERS", "STREAM"]
-            },
-            {
-                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
-                allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"]
-            },
-            // section leader roles
-            {
-                id: this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
-                allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "STREAM"]
-            },
-            {
-                id: this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
-                allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "DEAFEN_MEMBERS", "STREAM"]
-            },
-            {
-                id: this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
-                allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"]
-            }
-        );
-
-        const updatePerms = (r: string, p: PermissionResolvable) => {
-            const idx = permCol.findIndex(x => x.id === r);
-            if (idx === -1) {
-                permCol.push({
-                    id: r,
-                    allow: p
-                });
-
-                return;
-            }
-
-            const thisPerms = permCol[idx].allow;
-            if (Array.isArray(thisPerms) && !thisPerms.includes(p))
-                permCol[idx].allow = thisPerms.concat(p);
-        };
-
-        for (const r of this._guildDoc.roles.speakingRoles)
-            updatePerms(r, ["SPEAK"]);
-
-        for (const r of this._guildDoc.roles.streamingRoles)
-            updatePerms(r, ["STREAM"]);
-
-        return permCol.filter(x => this._guild.roles.cache.has(x.id as string));
-    }
-
-    /**
      * Checks whether a person can manage raids in the specified section. The section must have a control panel and
      * AFK check channel defined, the person must have at least one leader role, and the channels must be under a
      * category.
@@ -876,6 +811,81 @@ export class RaidManager {
             guildInfo.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
         ].some(x => member.roles.cache.has(x));
+    }
+
+
+    /**
+     * Gets the relevant permissions for this AFK check.
+     * @param {boolean} isNormalAfk Whether the permissions are for a regular AFK check. Use false if using for
+     * post/pre-AFK check.
+     * @return {OverwriteResolvable[]} The permissions.
+     */
+    public getPermissionsForRaidVc(isNormalAfk: boolean): OverwriteResolvable[] {
+        const permsToEvaluate = isNormalAfk
+            ? this._raidSection.otherMajorConfig.afkCheckProperties.afkCheckPermissions
+            : this._raidSection.otherMajorConfig.afkCheckProperties.prePostAfkCheckPermissions;
+        const permsToReturn: OverwriteResolvable[] = [
+            {
+                id: this._raidSection.roles.verifiedRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.deny,
+            },
+            {
+                id: this._guildDoc.roles.staffRoles.moderation.securityRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.deny,
+            },
+            {
+                id: this._guildDoc.roles.staffRoles.moderation.officerRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.deny,
+            },
+            {
+                id: this._guildDoc.roles.staffRoles.moderation.moderatorRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.deny,
+            },
+            {
+                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.deny,
+            },
+            {
+                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.deny,
+            },
+            {
+                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.deny,
+            },
+            {
+                id: this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_ALMOST_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_ALMOST_LEADER_ROLE)?.value.deny,
+            },
+            {
+                id: this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_LEADER_ROLE)?.value.deny,
+            },
+            {
+                id: this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_HEAD_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_HEAD_LEADER_ROLE)?.value.deny,
+            },
+        ].filter(y => this._guild.roles.cache.has(y.id)
+            && ((y.allow && y.allow.length !== 0) || (y.deny && y.deny.length !== 0)));
+        permsToEvaluate.filter(x => !x.key.startsWith("PD-"))
+            .filter(x => x.value.allow.length !== 0 || x.value.deny.length !== 0)
+            .forEach(perm => permsToReturn.push({
+                id: perm.key,
+                allow: perm.value.allow,
+                deny: perm.value.deny
+            }));
+
+        return permsToReturn;
     }
 
     // ============================================================================================================= //

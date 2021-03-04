@@ -38,12 +38,8 @@ export interface IGuildInfo {
                 moderatorRoleId: string;
             };
         };
-        // these people can talk during raids
-        speakingRoles: string[];
         // these people can get early location
         earlyLocationRoles: string[];
-        // these people can stream.
-        streamingRoles: string[];
     };
     // all channels
     channels: {

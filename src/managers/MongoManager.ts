@@ -3,6 +3,9 @@ import {IUserInfo} from "../definitions/major/IUserInfo";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {IBotInfo} from "../definitions/major/IBotInfo";
 import {OneRealmBot} from "../OneRealmBot";
+import {GeneralConstants} from "../constants/GeneralConstants";
+import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
+import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
 
 export namespace MongoManager {
     let ThisMongoClient: MongoClient | null = null;
@@ -143,6 +146,20 @@ export namespace MongoManager {
      * @return {IGuildInfo} The guild configuration object.
      */
     export function getDefaultGuildConfig(guildId: string): IGuildInfo {
+        const prePostAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
+        GeneralConstants.DEFAULT_AFK_CHECK_PERMISSIONS.forEach(permObj => {
+            prePostAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
+        });
+
+        const generalAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
+        const tempPerms = GeneralConstants.DEFAULT_AFK_CHECK_PERMISSIONS.slice();
+        // Using .slice to make a copy of this array.
+        // Get everyone role and allow people to connect
+        tempPerms[0].deny = ["VIEW_CHANNEL", "SPEAK", "STREAM"];
+        tempPerms.forEach(permObj => {
+            generalAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
+        });
+
         return {
             activeRaids: [],
             channels: {
@@ -241,7 +258,9 @@ export namespace MongoManager {
                     allowedDungeons: [],
                     dungeonReactionOverride: [],
                     defaultDungeon: "",
-                    allowKeyReactsToBypassFullVc: true
+                    allowKeyReactsToBypassFullVc: true,
+                    afkCheckPermissions: generalAfkCheckPerms,
+                    prePostAfkCheckPermissions: prePostAfkCheckPerms
                 }
             },
             properties: {
@@ -256,7 +275,6 @@ export namespace MongoManager {
             roles: {
                 earlyLocationRoles: [],
                 mutedRoleId: "",
-                speakingRoles: [],
                 staffRoles: {
                     moderation: {moderatorRoleId: "", officerRoleId: "", securityRoleId: ""},
                     otherStaffRoleIds: [],
@@ -268,7 +286,6 @@ export namespace MongoManager {
                     teamRoleId: "",
                     universalLeaderRoleIds: {almostLeaderRoleId: "", headLeaderRoleId: "", leaderRoleId: ""},
                 },
-                streamingRoles: [],
                 suspendedRoleId: "",
                 verifiedRoleId: ""
             }
