@@ -5,7 +5,7 @@ import {
     Guild,
     GuildMember,
     Message,
-    MessageEmbed, MessageReaction, OverwriteResolvable, ReactionCollector,
+    MessageEmbed, MessageOptions, MessageReaction, OverwriteResolvable, ReactionCollector,
     TextChannel, User,
     VoiceChannel
 } from "discord.js";
@@ -28,16 +28,24 @@ import {MongoManager} from "./MongoManager";
 import {UserManager} from "./UserManager";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
+import {RealmSharperWrapper} from "../private_api/RealmSharperWrapper";
 
 /**
  * This class represents a raid.
  */
 export class RaidManager {
-    private static readonly ALL_CONTROL_PANEL_EMOJIS: EmojiResolvable[] = [
-        Emojis.RIGHT_TRIANGLE_EMOJI,
+    private static readonly ALL_CONTROL_PANEL_AFK_EMOJIS: EmojiResolvable[] = [
         Emojis.LONG_RIGHT_TRIANGLE_EMOJI,
         Emojis.WASTEBIN_EMOJI,
         Emojis.MAP_EMOJI
+    ];
+
+    private static readonly ALL_CONTROL_PANEL_RAID_EMOJIS: EmojiResolvable[] = [
+        Emojis.RED_SQUARE_EMOJI,
+        Emojis.MAP_EMOJI,
+        Emojis.LOCK_EMOJI,
+        Emojis.UNLOCK_EMOJI,
+        Emojis.PRINTER_EMOJI
     ];
 
     private readonly _guild: Guild;
@@ -51,7 +59,6 @@ export class RaidManager {
 
     private _guildDoc: IGuildInfo;
     private _location: string;
-    private _raidMsg: string;
     private _raidStatus: RaidStatus;
 
     private _raidVc: VoiceChannel | null;
@@ -66,6 +73,9 @@ export class RaidManager {
 
     private readonly _memberInit: GuildMember;
     private readonly _leaderName: string;
+    private readonly _raidMsg: string;
+
+    private readonly _membersThatJoined: string[] = [];
 
     /**
      * Creates a new `RaidManager` object.
@@ -170,9 +180,9 @@ export class RaidManager {
         }
 
         if (rm._raidStatus === RaidStatus.AFK_CHECK) {
-            rm.startIntervals(5 * 1000);
+            rm.startIntervalsForAfkCheck(5 * 1000);
             rm.startControlPanelAfkCheckModeCollector();
-            rm.startAfkCheckCollector();
+            rm.startAfkCheckCollectorDuringAfk();
         }
         return rm;
     }
@@ -200,7 +210,7 @@ export class RaidManager {
         this._controlPanelMsg = await this._controlPanelChannel.send({
             embed: this.createControlPanelEmbedForAfkCheck()!
         });
-        AdvancedCollector.reactFaster(this._controlPanelMsg, RaidManager.ALL_CONTROL_PANEL_EMOJIS);
+        AdvancedCollector.reactFaster(this._controlPanelMsg, RaidManager.ALL_CONTROL_PANEL_AFK_EMOJIS);
 
         // Create our initial AFK check message.
         const descSb = new StringBuilder()
@@ -215,7 +225,7 @@ export class RaidManager {
             .setFooter("AFK Check Started.")
             .setTimestamp();
         if (this._raidMsg)
-            initialAfkCheckEmbed.addField("Raid Message", this._raidMsg);
+            initialAfkCheckEmbed.addField("Message From Your Leader", this._raidMsg);
         this._afkCheckMsg = await this._afkCheckChannel.send("@here An AFK Check is starting soon.", {
             embed: initialAfkCheckEmbed
         });
@@ -223,7 +233,7 @@ export class RaidManager {
         // Add this raid to the database so we can refer to it in the future.
         await this.addRaidToDatabase();
         // Start our intervals so we can continuously update the embeds.
-        this.startIntervals(5 * 1000);
+        this.startIntervalsForAfkCheck(5 * 1000);
         // Wait 5 seconds so people can prepare.
         await MiscUtilities.stopFor(5 * 1000);
         // Update the message and react to the AFK check message. Note that the only reason why we are doing this is
@@ -234,37 +244,70 @@ export class RaidManager {
         AdvancedCollector.reactFaster(this._afkCheckMsg, this._allReactions
             .map(x => MappedReactions[x.mappingEmojiName].emojiId));
         // Begin the AFK check collector.
-        this.startAfkCheckCollector();
+        this.startAfkCheckCollectorDuringAfk();
         this.startControlPanelAfkCheckModeCollector();
     }
 
     /**
-     * Ends the AFK check, optionally starting the post AFK check.
-     * @param {boolean} skipPostAfk Whether to skip the post AFK check.
+     * Ends the AFK check. There will be no post-AFK check.
      */
-    public async endAfkCheck(skipPostAfk: boolean): Promise<void> {
+    public async endAfkCheck(): Promise<void> {
         // No raid VC means we haven't started AFK check.
-        if (!this._raidVc || this._raidStatus !== RaidStatus.AFK_CHECK)
+        if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg || this._raidStatus !== RaidStatus.AFK_CHECK)
             return;
+
+        // Add all members that were in the VC at the time.
+        this._membersThatJoined.push(...Array.from(this._raidVc.members.values()).map(x => x.id));
+        // End the collector since it's useless. We'll use it again though.
         this.stopAllIntervalsAndCollectors("AFK Check ended.");
+        // Remove reactions.
+        await this._controlPanelMsg.reactions.removeAll().catch();
+        await this._afkCheckMsg.reactions.removeAll().catch();
+        // Edit the control panel accordingly and re-react and start collector + intervals again.
+        await this._controlPanelMsg.edit(this.createControlPanelEmbedForRaid()!).catch();
+        this.startControlPanelRaidCollector();
+        this.startIntervalsForRaid();
+        AdvancedCollector.reactFaster(this._controlPanelMsg, RaidManager.ALL_CONTROL_PANEL_RAID_EMOJIS);
+        // Update the database so it is clear that we are in raid mode.
+        await this.setRaidStatus(RaidStatus.IN_RUN);
+
+        const afkEndedEnded = new MessageEmbed()
+            .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
+            .setAuthor(`${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
+                this._memberInit.user.displayAvatarURL())
+            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} AFK Check.`)
+            .setTimestamp()
+            .setDescription("The AFK check is now over and the raid is currently in progress.");
+
+        if (this._raidMsg)
+            afkEndedEnded.addField("Message From Your Leader", this._raidMsg);
+
+        const rejoinRaidSb = new StringBuilder()
+            .append("If you disconnected from this raid voice channel, you will have **one** minute to reconnect. ")
+            .append("To reconnect, please **join** any available voice channels and **then** react to the ")
+            .append(`${Emojis.INBOX_EMOJI} emoji. If you need to rejoin but it has been more than one minute, contact `)
+            .append("the raid leader or a staff member for assistance.")
+            .appendLine()
+            .appendLine()
+            .append("If you did not make it into the raid voice channel before the AFK check is over, then reacting ")
+            .append("to the emoji will not do anything.");
+        afkEndedEnded.addField("Rejoin Raid", rejoinRaidSb.toString());
+
+        // And edit the AFK check message + start the collector.
+        await this._afkCheckMsg.edit("The AFK check is now over.", {embed: afkEndedEnded}).catch();
+        await this._afkCheckMsg.react(Emojis.INBOX_EMOJI).catch();
+        this.startAfkCheckCollectorDuringRaid();
+        // TODO finish this.
     }
 
-
-    // ============================================================================================================= //
-    //                                  HELPER METHODS ARE BELOW                                                     //
-    // ============================================================================================================= //
-
-
-    // ============================================================================================================= //
-    //                                 COLLECTORS & INTERVAL METHODS                                                 //
-    // ============================================================================================================= //
+    //#region AFK CHECK COLLECTORS & INTERVAL METHODS
 
     /**
      * Starts the AFK check collector.
      * @return {boolean} Whether the collector was started.
      * @private
      */
-    private startAfkCheckCollector(): boolean {
+    private startAfkCheckCollectorDuringAfk(): boolean {
         if (!this._afkCheckMsg)
             return false;
 
@@ -325,6 +368,10 @@ export class RaidManager {
             // If this isn't an early location reaction, ignore it.
             if (!this._earlyLocationReactions.has(correctMapping))
                 return;
+
+            // Remove the reaction if we have to.
+            if (this._raidSection.otherMajorConfig.afkCheckProperties.removeKeyReactsDuringAfk)
+                await reaction.users.remove(user).catch();
 
             const emoji = OneRealmBot.BotInstance.client.emojis.cache.get(MappedReactions[correctMapping].emojiId);
             const reactionData = this._earlyLocationReactions.get(correctMapping)!;
@@ -434,6 +481,10 @@ export class RaidManager {
             // Add to the database.
             await this.addEarlyLocationReaction(memberThatReacted, correctMapping, true);
 
+            // Again, we check to make sure the emoji is still accepting. If the emoji is not accepting, remove it.
+            if (!reactionData[1])
+                await reaction.remove();
+
             const acceptedLocDesc = new StringBuilder()
                 .append("You reacted with the following emoji:")
                 .appendLine()
@@ -471,24 +522,10 @@ export class RaidManager {
         if (this._controlPanelReactionCollector)
             return false;
 
-        const cpFilterFunction = async (_: MessageReaction, u: User) => {
-            const member = await FetchRequestUtilities.fetchGuildMember(this._guild, u);
-            if (!member || !this._raidVc)
-                return false;
-
-            return member.voice.channelID === this._raidVc.id && ([
-                this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
-                this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
-                this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
-                this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
-                this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-                this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            ].some(x => member.roles.cache.has(x)) || member.hasPermission("ADMINISTRATOR"));
-        };
-
-        this._controlPanelReactionCollector = this._controlPanelMsg.createReactionCollector(cpFilterFunction, {
-            time: this._raidSection.otherMajorConfig.afkCheckProperties.afkCheckTimeout * 60 * 1000
-        });
+        this._controlPanelReactionCollector = this._controlPanelMsg
+            .createReactionCollector(this.controlPanelCollectorFilter, {
+                time: this._raidSection.otherMajorConfig.afkCheckProperties.afkCheckTimeout * 60 * 1000
+            });
 
         this._controlPanelReactionCollector.on("collect", async (reaction: MessageReaction, user: User) => {
             if (!this._controlPanelMsg) {
@@ -497,22 +534,16 @@ export class RaidManager {
             }
 
             // Not a valid emoji = leave.
-            if (!RaidManager.ALL_CONTROL_PANEL_EMOJIS.includes(reaction.emoji.name))
+            if (!RaidManager.ALL_CONTROL_PANEL_AFK_EMOJIS.includes(reaction.emoji.name))
                 return;
 
             const memberThatReacted = await FetchRequestUtilities.fetchGuildMember(this._guild, user);
             if (!memberThatReacted)
                 return;
 
-            // End afk check normally.
-            if (reaction.emoji.name === Emojis.RIGHT_TRIANGLE_EMOJI) {
-                // TODO
-                return;
-            }
-
-            // End afk check without post afk check.
+            // End afk check
             if (reaction.emoji.name === Emojis.LONG_RIGHT_TRIANGLE_EMOJI) {
-                // TODO
+                await this.endAfkCheck();
                 return;
             }
 
@@ -524,8 +555,22 @@ export class RaidManager {
 
             // Set location.
             if (reaction.emoji.name === Emojis.MAP_EMOJI) {
-                await this.getNewLocation(this._controlPanelMsg);
-                // TODO send new loc to members
+                const res = await this.getNewLocation(this._controlPanelMsg);
+                if (res) {
+                    const sb = new StringBuilder()
+                        .append(`Your raid leader, ${this._memberInit}, has set a new location for your `)
+                        .append(`${this._dungeon.dungeonName} raid. The new location is:`)
+                        .append(StringUtil.codifyString(this._location))
+                        .appendLine()
+                        .append("As the AFK check has not ended, please follow all directions your raid leader has ")
+                        .append("for you. Failure to do so may result in consequences.");
+                    const newLocationEmbed = MessageUtilities.generateBlankEmbed(this._memberInit, "RANDOM")
+                        .setTitle("New Location Set")
+                        .setDescription(sb.toString())
+                        .setFooter(`AFK Check - Section: ${this._raidSection.sectionName}`)
+                        .setTimestamp();
+                    this.sendMsgToEarlyLocationPeople({embed: newLocationEmbed});
+                }
                 return;
             }
         });
@@ -533,11 +578,12 @@ export class RaidManager {
     }
 
     /**
-     * Starts the intervals, which automatically edit the AFK check and control panel message.
+     * Starts the intervals for the AFK check, which automatically edits the AFK check and control panel message at the
+     * specified delay.
      * @return {boolean} Whether the intervals have been started.
      * @private
      */
-    private startIntervals(delay: number = 4 * 1000): boolean {
+    private startIntervalsForAfkCheck(delay: number = 4 * 1000): boolean {
         if (this._intervalsAreRunning || !this._raidVc)
             return false;
 
@@ -563,25 +609,179 @@ export class RaidManager {
         return true;
     }
 
+    //#endregion
+
+    //#region RAID COLLECTORS & INTERVALS
+
     /**
-     * Stops all intervals and collectors.
+     * Starts the intervals for a raid, which automatically edits the control panel message at the specified delay.
+     * @return {boolean} Whether the intervals have been started.
+     * @private
+     */
+    private startIntervalsForRaid(delay: number = 4 * 1000): boolean {
+        if (this._intervalsAreRunning || !this._raidVc)
+            return false;
+        this._intervalsAreRunning = true;
+        this._controlPanelInterval = setInterval(async () => {
+            if (!this._controlPanelMsg || !this._raidVc) {
+                this.stopAllIntervalsAndCollectors();
+                return;
+            }
+
+            await this._controlPanelMsg.edit(this.createControlPanelEmbedForRaid()!).catch();
+        }, delay);
+
+        return true;
+    }
+
+    /**
+     * Starts the control panel collector during a raid.
+     * @return {boolean} Whether the collector was started.
+     * @private
+     */
+    private startControlPanelRaidCollector(): boolean {
+        if (!this._controlPanelMsg)
+            return false;
+
+        if (this._controlPanelReactionCollector)
+            return false;
+
+        this._controlPanelReactionCollector = this._controlPanelMsg
+            .createReactionCollector(this.controlPanelCollectorFilter);
+
+        this._controlPanelReactionCollector.on("collect", async (reaction: MessageReaction, user: User) => {
+            if (!this._controlPanelMsg) {
+                this.stopAllIntervalsAndCollectors();
+                return;
+            }
+
+            // Not a valid emoji = leave.
+            if (!RaidManager.ALL_CONTROL_PANEL_RAID_EMOJIS.includes(reaction.emoji.name))
+                return;
+
+            const memberThatReacted = await FetchRequestUtilities.fetchGuildMember(this._guild, user);
+            if (!memberThatReacted)
+                return;
+
+            // End the run.
+            if (reaction.emoji.name === Emojis.RED_SQUARE_EMOJI) {
+                // TODO
+                return;
+            }
+
+            // Ask for a location.
+            if (reaction.emoji.name === Emojis.MAP_EMOJI) {
+                const res = await this.getNewLocation(this._controlPanelMsg);
+                if (res) {
+                    const sb = new StringBuilder()
+                        .append(`Your raid leader, ${this._memberInit}, has set a new location for your `)
+                        .append(`${this._dungeon.dungeonName} raid. The new location is:`)
+                        .append(StringUtil.codifyString(this._location))
+                        .appendLine()
+                        .append("Follow your raid leader's directions, if any. Do not share this location unless ")
+                        .append("your leader permits it.");
+                    const newLocationEmbed = MessageUtilities.generateBlankEmbed(this._memberInit, "RANDOM")
+                        .setTitle("New Location Set")
+                        .setDescription(sb.toString())
+                        .setFooter(`AFK Check - Section: ${this._raidSection.sectionName}`)
+                        .setTimestamp();
+                    this.sendMsgToEarlyLocationPeople({embed: newLocationEmbed});
+                }
+                return;
+            }
+
+            // Locks VC
+            if (reaction.emoji.name === Emojis.LOCK_EMOJI) {
+                await this._raidVc!.updateOverwrite(this._guild.roles.everyone, {
+                    CONNECT: false
+                });
+                return;
+            }
+
+            // Unlock VC.
+            if (reaction.emoji.name === Emojis.UNLOCK_EMOJI) {
+                await this._raidVc!.updateOverwrite(this._guild.roles.everyone, {
+                    CONNECT: null
+                });
+                return;
+            }
+
+            // Parse screenshot.
+            if (reaction.emoji.name === Emojis.PRINTER_EMOJI) {
+                // TODO implement this.
+                return;
+            }
+        });
+
+        return true;
+    }
+
+    /**
+     * Starts the AFK check collector for during a raid.
+     * @return {boolean} Whether the collector was started.
+     * @private
+     */
+    private startAfkCheckCollectorDuringRaid(): boolean {
+        if (!this._afkCheckMsg)
+            return false;
+
+        if (this._afkCheckReactionCollector)
+            return false;
+
+        const afkCheckFilterFunction = (r: MessageReaction, u: User) => !u.bot
+            && this._membersThatJoined.includes(u.id)
+            && r.emoji.id === Emojis.INBOX_EMOJI;
+
+        this._afkCheckReactionCollector = this._afkCheckMsg.createReactionCollector(afkCheckFilterFunction);
+        this._afkCheckReactionCollector.on("collect", async (reaction: MessageReaction, user: User) => {
+            const memberThatReacted = await FetchRequestUtilities.fetchGuildMember(this._guild, user);
+            if (!memberThatReacted)
+                return;
+            if (!memberThatReacted.voice.channel) {
+                const notInVcEmbed = MessageUtilities.generateBlankEmbed(memberThatReacted, "RED")
+                    .setTitle("Not In VC")
+                    .setDescription("In order to rejoin the raid VC, you need to be in a voice channel.")
+                    .setTimestamp();
+                await FetchRequestUtilities.sendMsg(memberThatReacted, {embed: notInVcEmbed});
+                return;
+            }
+            await memberThatReacted.voice.setChannel(this._raidVc, "Joining back raid.").catch();
+        });
+
+        return true;
+    }
+
+    //#endregion
+
+    //#region UNIVERSAL COLLECTORS
+
+    /**
+     * Stops all intervals and collectors that is being used and set the intervals and collectors instance variables
+     * to null.
      * @param {string} [reason] The reason.
      * @private
      */
     private stopAllIntervalsAndCollectors(reason?: string): void {
         if (this._intervalsAreRunning) {
-            if (this._afkCheckInterval)
+            if (this._afkCheckInterval) {
                 clearInterval(this._afkCheckInterval);
-            if (this._controlPanelInterval)
+                this._afkCheckInterval = null;
+            }
+
+            if (this._controlPanelInterval) {
                 clearInterval(this._controlPanelInterval);
+                this._controlPanelInterval = null;
+            }
         }
         this._controlPanelReactionCollector?.stop(reason);
+        this._controlPanelReactionCollector = null;
         this._afkCheckReactionCollector?.stop(reason);
+        this._afkCheckReactionCollector = null;
     }
 
-    // ============================================================================================================= //
-    //                                 DATABASE METHODS                                                              //
-    // ============================================================================================================= //
+    //#endregion
+
+    //#region DATABASE METHODS
 
     /**
      * Adds an early location entry to the early location map, optionally also saving it to the database.
@@ -677,9 +877,43 @@ export class RaidManager {
             });
     }
 
-    // ============================================================================================================= //
-    //                                 UTILITY METHODS                                                               //
-    // ============================================================================================================= //
+    /**
+     * Sets the raid status to an ongoing raid. This should only be called once per raid.
+     * @param {RaidStatus} status The status to set this raid to.
+     * @private
+     */
+    private async setRaidStatus(status: RaidStatus): Promise<void> {
+        if (!this._raidVc) return;
+        this._raidStatus = status;
+        // Update the location in the database.
+        await MongoManager.getGuildCollection().findOneAndUpdate({
+            guildId: this._guild.id,
+            "activeRaids.vcId": this._raidVc.id
+        }, {
+            $set: {
+                "activeRaids.$.status": status
+            }
+        });
+    }
+
+    //#endregion
+
+    //#region UTILITY
+
+    /**
+     * Sends a message to all early location people.
+     * @param {MessageOptions} msgOpt The message content to send.
+     * @private
+     */
+    private sendMsgToEarlyLocationPeople(msgOpt: MessageOptions): void {
+        const sentMsgTo: string[] = [];
+        this._earlyLocationReactions.map(x => x[0]).flatMap(x => x).forEach(async person => {
+            if (sentMsgTo.includes(person.id))
+                return;
+            sentMsgTo.push(person.id);
+            await person.send(msgOpt).catch();
+        });
+    }
 
     /**
      * Gets the corresponding `IRaidInfo` object. Everything should be initialized before this is called or this
@@ -721,13 +955,58 @@ export class RaidManager {
     }
 
     /**
+     * Parses a screenshot.
+     * @param {string} url The url to the screenshot.
+     * @return {Promise<IParseResponse>} An object containing the parse results.
+     */
+    public async parseScreenshot(url: string): Promise<IParseResponse> {
+        const toReturn: IParseResponse = {inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false};
+        // No raid VC = no parse.
+        if (!this._raidVc) return toReturn;
+        // Make sure the image exists.
+        try {
+            const result = await OneRealmBot.AxiosClient.head(url);
+            if (result.status < 300)
+                return toReturn;
+        } catch (e) {
+            return toReturn;
+        }
+
+        // Make the request.
+        const parsedNames = await RealmSharperWrapper.parseWhoScreenshot({url});
+        if (parsedNames.length === 0) return toReturn;
+        // Parse results means the picture must be valid.
+        toReturn.isValid = true;
+        // Begin parsing.
+        // Get people in raid VC but not in the raid itself. Could be alts.
+        this._raidVc.members.forEach(member => {
+            const igns = UserManager.getAllNames(member.displayName)
+                .map(x => x.toLowerCase());
+            const idx = parsedNames.findIndex(name => igns.includes(name.toLowerCase()));
+            if (idx === -1) return;
+            toReturn.inVcButNotInRaid.push(member);
+        });
+
+        // Get people in raid but not in the VC. Could be crashers.
+        const allIgnsInVc = this._raidVc.members.map(x => UserManager.getAllNames(x.displayName.toLowerCase())).flat();
+        parsedNames.forEach(name => {
+            if (allIgnsInVc.includes(name.toLowerCase())) return;
+            toReturn.inRaidButNotInVC.push(name);
+        });
+
+        return toReturn;
+    }
+
+
+    /**
      * Cleans the raid up. This will remove the raid voice channel, delete the control panel message, and remove
      * the raid from the database.
-     * @private
      */
-    private async cleanUpRaid(): Promise<void> {
+    public async cleanUpRaid(): Promise<void> {
         // Step 0: Remove the raid object. We don't need it anymore.
+        // Also stop all collectors.
         await this.removeRaidFromDatabase();
+        await this.stopAllIntervalsAndCollectors();
 
         // Step 1: Remove the control panel message.
         await this._controlPanelMsg?.delete().catch();
@@ -813,7 +1092,6 @@ export class RaidManager {
         ].some(x => member.roles.cache.has(x));
     }
 
-
     /**
      * Gets the relevant permissions for this AFK check.
      * @param {boolean} isNormalAfk Whether the permissions are for a regular AFK check. Use false if using for
@@ -888,9 +1166,9 @@ export class RaidManager {
         return permsToReturn;
     }
 
-    // ============================================================================================================= //
-    //                                 INTERACTIVE METHODS                                                           //
-    // ============================================================================================================= //
+    //#endregion
+
+    //#region INTERACTIVE METHODS
 
     /**
      * Asks the user for a new location.
@@ -1006,34 +1284,114 @@ export class RaidManager {
         return null;
     }
 
-
-    // ============================================================================================================= //
-    //                                 EMBED/MSG METHODS                                                             //
-    // ============================================================================================================= //
     /**
-     * Creates a control panel embed.
+     * A collector that should be used for the control panel.
+     * @param {MessageReaction} _ The message reaction. Not used but required.
+     * @param {User} u The user.
+     * @return {Promise<boolean>} Whether the collector is satisfied with the given variables.
+     * @private
+     */
+    private async controlPanelCollectorFilter(_: MessageReaction, u: User): Promise<boolean> {
+        if (u.bot) return false;
+
+        const member = await FetchRequestUtilities.fetchGuildMember(this._guild, u);
+        if (!member || !this._raidVc)
+            return false;
+
+        return member.voice.channelID === this._raidVc.id && ([
+            this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
+            this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
+            this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
+            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
+        ].some(x => member.roles.cache.has(x)) || member.hasPermission("ADMINISTRATOR"));
+    }
+
+    //#endregion
+
+    //#region EMBED/MSG METHODS
+
+    /**
+     * Creates a control panel embed for a raid.
+     * @returns {MessageEmbed | null} The message embed if the raid VC is initialized. Null otherwise.
+     * @private
+     */
+    private createControlPanelEmbedForRaid(): MessageEmbed | null {
+        if (!this._raidVc) return null;
+        const descSb = new StringBuilder()
+            .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice channel.`)
+            .appendLine()
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.RED_SQUARE_EMOJI} emoji if you want to end this raid. This will `)
+            .append("move everyone out if applicable and delete the raid VC.")
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.MAP_EMOJI} emoji if you want to change this raid's location. This `)
+            .append("will ask you for a new location and then forward that location to all early location people.")
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.LOCK_EMOJI} emoji if you want to lock the raid voice channel. `)
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.UNLOCK_EMOJI} emoji if you want to unlock the raid voice channel. `)
+            .appendLine()
+            .append(`⇨ **React** to the ${Emojis.PRINTER_EMOJI} emoji if you want to parse a /who screenshot for `)
+            .append("this run. You will be asked to provide a /who screenshot; please provide a cropped screenshot ")
+            .append("so only the /who results are shown.");
+
+        const maxVc = `${this._raidVc.userLimit === 0 ? "Unlimited" : this._raidVc.userLimit}`;
+        const generalStatus = new StringBuilder()
+            .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
+            .appendLine()
+            .append(`⇨ Location: **\`${this._location}\`**`);
+
+        const controlPanelEmbed = new MessageEmbed()
+            .setAuthor(`${this._leaderName}'s Control Panel - ${this._raidVc.name}`,
+                this._memberInit.user.displayAvatarURL())
+            .setTitle(`**${this._dungeon.dungeonName}** Raid.`)
+            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`)
+            .setTimestamp()
+            .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
+            .setDescription(descSb.toString())
+            .setThumbnail(this._controlPanelMsg
+                ? this._controlPanelMsg.embeds[0].thumbnail!.url
+                : ArrayUtilities.getRandomElement(this._dungeon.bossLinks.concat(this._dungeon.portalEmojiId)))
+            .addField("General Status", generalStatus.toString());
+
+        for (const [emojiCodeName, [peopleThatReacted,]] of this._earlyLocationReactions) {
+            const mappedEmojiInfo = MappedReactions[emojiCodeName];
+            const emoji = OneRealmBot.BotInstance.client.emojis.cache.get(mappedEmojiInfo.emojiId)!;
+            const reactionInfo = this._allReactions.findIndex(x => x.mappingEmojiName === emojiCodeName);
+            const amtTakenAmtMax = `${peopleThatReacted.length} / ${this._allReactions[reactionInfo].maxEarlyLocation}`;
+            const info = new StringBuilder()
+                .append(emoji).append(" ")
+                .append(peopleThatReacted.slice(0, 50).join(", "));
+            if (peopleThatReacted.length > 50)
+                info.append(` and ${peopleThatReacted.length - 50} more.`);
+            const title = `Early Location Reaction: ${mappedEmojiInfo.emojiName} (${amtTakenAmtMax})`;
+            controlPanelEmbed.addField(title, info.toString());
+        }
+
+        return controlPanelEmbed;
+    }
+
+    /**
+     * Creates a control panel embed for an AFK check..
      * @returns {MessageEmbed | null} The message embed if the raid VC is initialized. Null otherwise.
      * @private
      */
     private createControlPanelEmbedForAfkCheck(): MessageEmbed | null {
         if (!this._raidVc) return null;
-        const brokenUpNames = UserManager.getAllNames(this._memberInit.displayName)[0];
-        const nameToUse = brokenUpNames.length === 0 ? this._memberInit.displayName : brokenUpNames[0];
         const descSb = new StringBuilder()
             .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice channel.`)
             .appendLine()
             .appendLine()
-            .append(`⇨ **React** to the ${Emojis.RIGHT_TRIANGLE_EMOJI} if you want to end the AFK check and start `)
-            .append("the raid. This will initiate the post-AFK check.")
+            .append(`⇨ **React** to the ${Emojis.LONG_RIGHT_TRIANGLE_EMOJI} emoji if you want to end the AFK check `)
+            .append("and start the raid. There is no post-AFK check.")
             .appendLine()
-            .append(`⇨ **React** to the ${Emojis.LONG_RIGHT_TRIANGLE_EMOJI} if you want to end the AFK check and `)
-            .append("start the raid. __This will skip the post-AFK check.__")
+            .append(`⇨ **React** to the ${Emojis.WASTEBIN_EMOJI} emoji if you want to end the AFK check __without__ `)
+            .append("starting a raid. Use this option if you don't have enough raiders or reactions.")
             .appendLine()
-            .append(`⇨ **React** to the ${Emojis.WASTEBIN_EMOJI} if you want to end the AFK check __without__ `)
-            .append("starting a raid.")
-            .appendLine()
-            .append(`⇨ **React** to the ${Emojis.MAP_EMOJI} if you want to change this raid's location. This will `)
-            .append("message everyone that is participating in this raid that has early location.");
+            .append(`⇨ **React** to the ${Emojis.MAP_EMOJI} emoji if you want to change this raid's location. This `)
+            .append("will message everyone that is participating in this raid that has early location.");
 
         const maxVc = `${this._raidVc.userLimit === 0 ? "Unlimited" : this._raidVc.userLimit}`;
         const generalStatus = new StringBuilder()
@@ -1043,13 +1401,16 @@ export class RaidManager {
             .appendLine()
             .append(`⇨ Location: **\`${this._location}\`**`);
         const controlPanelEmbed = new MessageEmbed()
-            .setAuthor(`${nameToUse}'s Control Panel - ${this._raidVc.name}`,
+            .setAuthor(`${this._leaderName}'s Control Panel - ${this._raidVc.name}`,
                 this._memberInit.user.displayAvatarURL())
+            .setTitle(`**${this._dungeon.dungeonName}** Raid.`)
             .setDescription(descSb.toString())
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`)
             .setTimestamp()
-            .setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks
-                .concat(this._dungeon.portalEmojiId)))
+            .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
+            .setThumbnail(this._controlPanelMsg
+                ? this._controlPanelMsg.embeds[0].thumbnail!.url
+                : ArrayUtilities.getRandomElement(this._dungeon.bossLinks.concat(this._dungeon.portalEmojiId)))
             .addField("General Status", generalStatus.toString());
 
         for (const [emojiCodeName, [peopleThatReacted, isAcceptingMore]] of this._earlyLocationReactions) {
@@ -1106,12 +1467,14 @@ export class RaidManager {
             .setDescription(descSb.toString())
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} AFK Check.`)
             .setTimestamp()
-            .setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks
-                .concat(this._dungeon.portalEmojiId)))
+            .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
+            .setThumbnail(this._afkCheckMsg
+                ? this._afkCheckMsg.embeds[0].thumbnail!.url
+                : ArrayUtilities.getRandomElement(this._dungeon.bossLinks.concat(this._dungeon.portalEmojiId)))
             .addField("Optional Reactions", optSb.toString());
 
         if (this._raidMsg)
-            afkCheckEmbed.addField("Raid Message", this._raidMsg);
+            afkCheckEmbed.addField("Message From Your Leader", this._raidMsg);
 
         const neededReactionsSb = new StringBuilder();
         for (const [emojiCodeName, [peopleThatReacted, isAcceptingMore]] of this._earlyLocationReactions) {
@@ -1134,10 +1497,18 @@ export class RaidManager {
 
         return afkCheckEmbed;
     }
+
+    //#endregion
 }
 
 enum RaidStatus {
     NOTHING,
     AFK_CHECK,
     IN_RUN
+}
+
+interface IParseResponse {
+    inVcButNotInRaid: GuildMember[];
+    inRaidButNotInVC: string[];
+    isValid: boolean;
 }

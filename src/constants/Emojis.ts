@@ -23,7 +23,13 @@ export namespace Emojis {
     export const WASTEBIN_EMOJI: EmojiResolvable = "🗑️";
     export const MAP_EMOJI: EmojiResolvable = "🗺️";
     export const SPEECH_BUBBLE_EMOJI: EmojiResolvable = "🗨️";
-
+    export const LOCK_EMOJI: EmojiResolvable = "🔒";
+    export const UNLOCK_EMOJI: EmojiResolvable = "🔓";
+    export const PRINTER_EMOJI: EmojiResolvable = "🖨️";
+    export const KEY_EMOJI: EmojiResolvable = "🔑";
+    export const PENCIL_PAPER_EMOJI: EmojiResolvable = "📝";
+    export const PENCIL_EMOJI: EmojiResolvable = "✏";
+    export const INBOX_EMOJI: EmojiResolvable = "📥";
 
     // specific classes
     export const ROGUE: EmojiResolvable = "";

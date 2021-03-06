@@ -100,4 +100,32 @@ export namespace FetchRequestUtilities {
             return null;
         }
     }
+
+    /**
+     * A simple function that attempts to execute a given synchronous function. This will handle any exceptions that
+     * may occur.
+     * @param {() => void} func The function to run.
+     * @return {T | null} The result, if any. Null otherwise.
+     */
+    export function tryExecute<T = void>(func: () => T): T | null {
+        try {
+            return func();
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * A simple function that attempts to execute a given asynchronous function. This will handle any exceptions that
+     * may occur.
+     * @param {() => void} func The function to run.
+     * @return {Promise<T | null>} The result, if any. Null otherwise.
+     */
+    export async function tryExecuteAsync<T = void>(func: () => Promise<T>): Promise<T | null> {
+        try {
+            return await func();
+        } catch (e) {
+            return null;
+        }
+    }
 }

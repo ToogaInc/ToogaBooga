@@ -5,7 +5,7 @@ export namespace PrivateApiDefinitions {
         name: string;
     }
 
-    export interface IApiStatus extends IRealmEyePlayerResponse {
+    export interface IApiStatus {
         online: boolean;
     }
 
