@@ -7,6 +7,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {Queue} from "../utilities/Queue";
 import {ISuspendedUser} from "../definitions/ISuspendedUser";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
+import {FetchRequestUtilities} from "../utilities/FetchRequestUtilities";
 
 // TODO read through this to make sure it works conceptually.
 export namespace PunishmentManager {
@@ -66,11 +67,10 @@ export namespace PunishmentManager {
                 // If the guild couldn't be found, that's a problem.
                 if (!guild) continue;
 
-                // Get the member. I think the fetch method throws an error if the member isn't found so try/catch.
-                let suspendedMember: GuildMember;
-                try {
-                    suspendedMember = await guild.members.fetch(id.split("_")[0]);
-                } catch (e) {
+                // Get the member.
+                const suspendedMember: GuildMember | null = await FetchRequestUtilities
+                    .fetchGuildMember(guild, id.split("_")[0]);
+                if (!suspendedMember) {
                     idsToRemove.enqueue([id, false]);
                     continue;
                 }
