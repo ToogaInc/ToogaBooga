@@ -4,7 +4,7 @@ export namespace UserManager {
 
     /**
      * Gets all names from a raw name. This will automatically remove any symbols.
-     * @returns {Array<string>}
+     * @returns {string[]} All names.
      */
     export function getAllNames(rawName: string): string[] {
         const parsedNames: string[] = [];

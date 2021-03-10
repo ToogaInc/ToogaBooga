@@ -6,6 +6,7 @@ import {BaseCommand} from "../commands/BaseCommand";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
+import {ModmailManager} from "../managers/ModmailManager";
 
 export async function onMessageEvent(msg: Message): Promise<void> {
     // We don't care about non-regular messages, bot messages, or webhook messages.
@@ -19,6 +20,10 @@ export async function onMessageEvent(msg: Message): Promise<void> {
         const guildDoc = await MongoManager.getDefaultGuildConfig(msg.guild.id);
         return await commandHandler(msg, msg.guild, guildDoc);
     }
+
+    // TODO make modmail better.
+    if (ModmailManager.isInModmail(msg.author.id))
+        return;
 
     return await commandHandler(msg);
 }

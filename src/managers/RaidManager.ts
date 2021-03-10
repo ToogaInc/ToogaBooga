@@ -30,6 +30,8 @@ import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private_api/RealmSharperWrapper";
 
+// TODO Get votes.
+
 /**
  * This class represents a raid.
  */
@@ -250,8 +252,9 @@ export class RaidManager {
 
     /**
      * Ends the AFK check. There will be no post-AFK check.
+     * @param {GuildMember} memberEnded The member that ended the AFK check.
      */
-    public async endAfkCheck(): Promise<void> {
+    public async endAfkCheck(memberEnded: GuildMember): Promise<void> {
         // No raid VC means we haven't started AFK check.
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg || this._raidStatus !== RaidStatus.AFK_CHECK)
             return;
@@ -277,16 +280,14 @@ export class RaidManager {
                 this._memberInit.user.displayAvatarURL())
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} AFK Check.`)
             .setTimestamp()
-            .setDescription("The AFK check is now over and the raid is currently in progress.");
+            .setDescription(`The AFK check has been ended by ${memberEnded} and the raid is currently in progress.`);
 
         if (this._raidMsg)
             afkEndedEnded.addField("Message From Your Leader", this._raidMsg);
 
         const rejoinRaidSb = new StringBuilder()
-            .append("If you disconnected from this raid voice channel, you will have **one** minute to reconnect. ")
-            .append("To reconnect, please **join** any available voice channels and **then** react to the ")
-            .append(`${Emojis.INBOX_EMOJI} emoji. If you need to rejoin but it has been more than one minute, contact `)
-            .append("the raid leader or a staff member for assistance.")
+            .append("If you disconnected from this raid voice channel, you are able to reconnect by reacting to the ")
+            .append(`${Emojis.INBOX_EMOJI} emoji.`)
             .appendLine()
             .appendLine()
             .append("If you did not make it into the raid voice channel before the AFK check is over, then reacting ")
@@ -297,7 +298,45 @@ export class RaidManager {
         await this._afkCheckMsg.edit("The AFK check is now over.", {embed: afkEndedEnded}).catch();
         await this._afkCheckMsg.react(Emojis.INBOX_EMOJI).catch();
         this.startAfkCheckCollectorDuringRaid();
-        // TODO finish this.
+    }
+
+    /**
+     * Ends the raid.
+     * @param {GuildMember} memberEnded The member that ended the raid or aborted the AFK check.
+     */
+    public async endRaid(memberEnded: GuildMember): Promise<void> {
+        // No raid VC means we haven't started AFK check.
+        if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg)
+            return;
+        // Get the name.
+        const name = UserManager.getAllNames(memberEnded.displayName);
+        const leaderName = name.length === 0 ? memberEnded.displayName : name[0];
+        // Stop the collector.
+        // We don't care about the result of this function, just that it should run.
+        this.cleanUpRaid().then();
+
+        // If this method was called during the AFK check, simply abort the AFK check.
+        if (this._raidStatus === RaidStatus.AFK_CHECK) {
+            const abortAfkEmbed = new MessageEmbed()
+                .setAuthor(`${leaderName} has aborted the ${this._dungeon.dungeonName} AFK check.`,
+                    memberEnded.user.displayAvatarURL())
+                .setDescription("There was probably not enough keys or raiders. Check back at a later time.")
+                .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} AFK Check Aborted.`)
+                .setTimestamp()
+                .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
+            await this._afkCheckMsg.edit(abortAfkEmbed).catch();
+            return;
+        }
+
+        // Otherwise, we treat it as if the raid is officially over.
+        const endAfkEmbed = new MessageEmbed()
+            .setAuthor(`${this._leaderName} has ended the ${this._dungeon.dungeonName} run.`,
+                memberEnded.user.displayAvatarURL())
+            .setDescription("The raid is now over. Thank you all for attending.")
+            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Run Ended.`)
+            .setTimestamp()
+            .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
+        await this._afkCheckMsg.edit(endAfkEmbed).catch();
     }
 
     //#region AFK CHECK COLLECTORS & INTERVAL METHODS
@@ -543,13 +582,13 @@ export class RaidManager {
 
             // End afk check
             if (reaction.emoji.name === Emojis.LONG_RIGHT_TRIANGLE_EMOJI) {
-                await this.endAfkCheck();
+                await this.endAfkCheck(memberThatReacted);
                 return;
             }
 
             // Abort afk check.
             if (reaction.emoji.name === Emojis.WASTEBIN_EMOJI) {
-                // TODO
+                await this.endRaid(memberThatReacted);
                 return;
             }
 
@@ -665,7 +704,7 @@ export class RaidManager {
 
             // End the run.
             if (reaction.emoji.name === Emojis.RED_SQUARE_EMOJI) {
-                // TODO
+                await this.endRaid(memberThatReacted);
                 return;
             }
 
@@ -1012,7 +1051,7 @@ export class RaidManager {
         await this._controlPanelMsg?.delete().catch();
 
         // Step 2: Unpin the AFK check message.
-        await this._afkCheckMsg?.delete().catch();
+        await this._afkCheckMsg?.unpin().catch();
 
         // Step 3: Move people out of raid VC and delete.
         if (this._raidVc) {
