@@ -3,7 +3,7 @@ export interface IMappedReactions {
         /**
          * The emoji type.
          */
-        emojiType: "KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "SPECIAL";
+        emojiType: "KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "SPECIAL" | "UTILITY";
 
         /**
          * The emoji ID. This is needed for getting the emoji object.
@@ -382,5 +382,26 @@ export const MappedReactions: IMappedReactions = {
         emojiType: "KEY",
         emojiId: "",
         emojiName: "Helm Rune"
+    },
+    // Shatters specific stuff
+    SHATTERS_SWITCH_1: {
+        emojiType: "UTILITY",
+        emojiId: "",
+        emojiName: "Shatters Switch #1"
+    },
+    SHATTERS_SWITCH_2: {
+        emojiType: "UTILITY",
+        emojiId: "",
+        emojiName: "Shatters Switch #2"
+    },
+    SHATTERS_SWITCH_SEC: {
+        emojiType: "UTILITY",
+        emojiId: "",
+        emojiName: "Shatters Secret Switch"
+    },
+    SHATTERS_DRAG: {
+        emojiType: "UTILITY",
+        emojiId: "",
+        emojiName: "Shatters Drag"
     }
 };
