@@ -7,6 +7,9 @@ import {IRaidInfo} from "./IRaidInfo";
 import {ISuspendedUser} from "../ISuspendedUser";
 import {IQuotaLoggingInfo} from "../IQuotaLoggingInfo";
 import {IOtherMajorConfig} from "./parts/IOtherMajorConfig";
+import {IDungeonInfo} from "./parts/IDungeonInfo";
+import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
+import {ICmdPermOverwrite} from "../ICmdPermOverwrite";
 
 export interface IGuildInfo {
     // the guild id suffices as an identifier
@@ -89,4 +92,7 @@ export interface IGuildInfo {
     // sections
     guildSections: ISectionInfo[];
     activeRaids: IRaidInfo[];
+    // custom dungeons.
+    customDungeons: IDungeonInfo[];
+    customCmdPermissions: IPropertyKeyValuePair<string, ICmdPermOverwrite>[];
 }

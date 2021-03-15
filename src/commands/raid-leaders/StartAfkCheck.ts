@@ -5,6 +5,7 @@ import {IGuildInfo} from "../../definitions/major/IGuildInfo";
 export class StartAfkCheck extends BaseCommand {
     public constructor() {
         super({
+            cmdCode: "AFK_CHECK_START",
             formalCommandName: "Start AFK Check Command",
             botCommandNames: ["startafkcheck", "afkcheck"],
             description: "Starts a wizard that can be used to start an AFK check.",

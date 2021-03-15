@@ -142,15 +142,29 @@ export abstract class BaseCommand {
             return results;
         }
 
+        // See if custom permissions are defined.
+        // If so, use it.
+        const customPermData = guildDoc.customCmdPermissions.find(x => x.key === this.commandInfo.cmdCode);
+        const rolePermissions = customPermData
+            ? customPermData.value.useDefaultRolePerms
+                ? this.commandInfo.rolePermissions
+                : customPermData.value.rolePermsNeeded
+            : this.commandInfo.rolePermissions;
+        const serverPermissions = customPermData
+            ? customPermData.value.useDefaultServerPerms
+                ? this.commandInfo.generalPermissions
+                : customPermData.value.serverPermsNeeded
+            : this.commandInfo.generalPermissions;
+
         // If no user permissions are defined whatsoever, then the person can run the command.
-        if (this.commandInfo.rolePermissions.length === 0 && this.commandInfo.generalPermissions.length === 0) {
+        if (rolePermissions.length === 0 && serverPermissions.length === 0) {
             results.canRun = results.missingBotPerms.length === 0;
             return results;
         }
 
         // Check user permissions.
         const myPerms = userToTest.permissions.toArray();
-        for (const perm of this.commandInfo.generalPermissions) {
+        for (const perm of serverPermissions) {
             if (!myPerms.includes(perm))
                 results.missingUserPerms.push(perm);
         }
@@ -188,10 +202,12 @@ export abstract class BaseCommand {
         if (this.commandInfo.isRoleInclusive) {
             // Check if the person has at least one role, starting from the lowest role to the top role.
             // A command that allows for role inclusion should only have one role.
-            if (this.commandInfo.rolePermissions.length !== 1)
+            if (rolePermissions.length !== 1)
                 throw new Error(`Command ${this.commandInfo.formalCommandName} has more than one role permission.`);
 
-            let i = roleOrder.findIndex(x => x[1] === this.commandInfo.rolePermissions[0]);
+            // Role Permissions better have valid role permissions.
+            // All we do is check to make sure rolePermissions[0] is in roleOrder.
+            let i = roleOrder.findIndex(x => x[1] === rolePermissions[0]);
             if (i === -1)
                 throw new Error(`Command ${this.commandInfo.formalCommandName} has invalid role permissions.`);
 
@@ -204,7 +220,7 @@ export abstract class BaseCommand {
         }
         else {
             // Check if the person has at least one role.
-            for (const perm of this.commandInfo.rolePermissions) {
+            for (const perm of rolePermissions) {
                 // Get the correct role name
                 const associatedId = roleOrder.find(x => x[1] === perm);
                 if (!associatedId)
@@ -220,12 +236,12 @@ export abstract class BaseCommand {
         // If both role and general perms are defined, then we just need to see if one or the other is fulfilled.
         // Otherwise, we either check role OR general permissions and see if the person has THOSE permissions.
         // We already covered the case where no permissions (user or role) are defined.
-        if (this.commandInfo.rolePermissions.length !== 0 && this.commandInfo.generalPermissions.length !== 0)
+        if (rolePermissions.length !== 0 && serverPermissions.length !== 0)
             // Must either have 0 missing role perms or 0 missing user perms.
             results.canRun = (results.missingUserRoles.length === 0 || results.missingUserPerms.length === 0);
         else {
             // Check one or the other.
-            if (this.commandInfo.rolePermissions.length !== 0)
+            if (rolePermissions.length !== 0)
                 results.canRun = results.missingUserRoles.length === 0;
             else
                 results.canRun = results.missingUserPerms.length === 0;
@@ -246,6 +262,12 @@ interface ICanRunResult {
 }
 
 interface ICommandInfo {
+    /**
+     * An identifier for this command.
+     * @type {string}
+     */
+    cmdCode: string;
+
     /**
      * The formal, human-readable, command name.
      * @type {string}

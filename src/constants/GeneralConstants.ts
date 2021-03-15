@@ -1,7 +1,7 @@
 import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
 
 export namespace GeneralConstants {
-    // These will be used for role permissions.
+    // These will be used for AFK check channel permissions.
     // PD = Program defined. These are essentially constants that will be used as placeholders for the actual
     // section or guild role IDs and will be stored in the database as the PD type.
     // User-defined role IDs will be defined in the database as the role ID.
