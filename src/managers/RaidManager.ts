@@ -186,6 +186,11 @@ export class RaidManager {
             rm.startControlPanelAfkCheckModeCollector();
             rm.startAfkCheckCollectorDuringAfk();
         }
+        else if (rm._raidStatus === RaidStatus.IN_RUN) {
+            rm.startIntervalsForRaid(5 * 1000);
+            rm.startControlPanelRaidCollector();
+            rm.startAfkCheckCollectorDuringRaid();
+        }
         return rm;
     }
 

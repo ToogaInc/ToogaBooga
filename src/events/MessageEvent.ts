@@ -6,7 +6,6 @@ import {BaseCommand} from "../commands/BaseCommand";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {ModmailManager} from "../managers/ModmailManager";
 import {InteractionManager} from "../managers/InteractionManager";
 
 export async function onMessageEvent(msg: Message): Promise<void> {
@@ -23,7 +22,7 @@ export async function onMessageEvent(msg: Message): Promise<void> {
     }
 
     // TODO make modmail better.
-    if (InteractionManager.isInteracting(msg.author.id))
+    if (InteractionManager.InteractiveMenu.has(msg.author.id))
         return;
 
     return await commandHandler(msg);

@@ -19,7 +19,8 @@ export namespace MiscUtilities {
             isMainSection: true,
             otherMajorConfig: guildDb.otherMajorConfig,
             properties: {
-                sectionSuspended: []
+                sectionSuspended: [],
+                manualVerificationEntries: guildDb.manualVerificationEntries
             },
             roles: {
                 leaders: guildDb.roles.staffRoles.sectionLeaderRoleIds,

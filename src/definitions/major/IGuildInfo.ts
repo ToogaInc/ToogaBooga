@@ -10,6 +10,7 @@ import {IOtherMajorConfig} from "./parts/IOtherMajorConfig";
 import {IDungeonInfo} from "./parts/IDungeonInfo";
 import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
 import {ICmdPermOverwrite} from "../ICmdPermOverwrite";
+import {IManualVerificationEntry} from "./parts/IManualVerificationEntry";
 
 export interface IGuildInfo {
     // the guild id suffices as an identifier
@@ -89,10 +90,9 @@ export interface IGuildInfo {
         // you only need to reference *one* possible bot command name to block an entire command
         blockedCommands: string[];
     };
-    // sections
     guildSections: ISectionInfo[];
     activeRaids: IRaidInfo[];
-    // custom dungeons.
+    manualVerificationEntries: IManualVerificationEntry[];
     customDungeons: IDungeonInfo[];
     customCmdPermissions: IPropertyKeyValuePair<string, ICmdPermOverwrite>[];
 }

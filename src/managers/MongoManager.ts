@@ -164,6 +164,7 @@ export namespace MongoManager {
             activeRaids: [],
             customCmdPermissions: [],
             customDungeons: [],
+            manualVerificationEntries: [],
             channels: {
                 botUpdatesChannelId: "",
                 manualVerificationChannelId: "",
