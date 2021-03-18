@@ -1,11 +1,8 @@
-import {IRealmIgn} from "../IRealmIgn";
 import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
+import {IIdNameInfo} from "./IIdNameInfo";
 
-export interface IUserInfo {
-    discordUserId: string;
-    rotmgNames: IRealmIgn[];
+export interface IUserInfo extends IIdNameInfo {
     loggedInfo: IPropertyKeyValuePair<string, number>[];
-
     details: {
         moderationHistory: {
             guildId: string;
@@ -22,6 +19,7 @@ export interface IUserInfo {
             duration: number;
             // When this punishment was issued.
             issued: number;
+            endedAt: number;
         }[];
         settings: IPropertyKeyValuePair<string, boolean>[];
     };

@@ -1243,7 +1243,7 @@ export class RaidManager {
                 max: 500
             }), {
                 reactions: [Emojis.X_EMOJI],
-                deleteBaseMsg: true
+                deleteBaseMsgAfterComplete: true
             });
 
         // No response or emoji = canceled.

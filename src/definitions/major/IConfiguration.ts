@@ -15,6 +15,7 @@ export interface IConfiguration {
             botCollection: string;
             userCollection: string;
             guildCollection: string;
+            idNameCollection: string;
         };
     };
 

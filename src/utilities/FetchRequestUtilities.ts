@@ -24,6 +24,19 @@ export namespace FetchRequestUtilities {
     }
 
     /**
+     * A simple function that attempts to start a DM with a person. This will handle any exceptions that may occur.
+     * @param {GuildMember} member The member.
+     * @return {Promise<DMChannel | null>} The DM channel, if any.
+     */
+    export async function tryStartDm(member: GuildMember): Promise<DMChannel | null> {
+        try {
+            return await member.createDM(false);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
      * A simple function that fetches a user. This will handle any exceptions that may occur.
      * @param {string} targetId The target user ID.
      * @return {Promise<GuildMember | null>} The user, if found. Otherwise, null.

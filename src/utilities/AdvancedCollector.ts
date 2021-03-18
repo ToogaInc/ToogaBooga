@@ -48,7 +48,7 @@ type ICollectorArguments = {
     /**
      * Deletes the bot-sent message after the collector expires.
      */
-    deleteBaseMsg?: boolean;
+    deleteBaseMsgAfterComplete?: boolean;
 
     /**
      * Whether to remove ALL reactions after the collector is done or not. If `deleteMsg` is `true`, `deleteMsg`
@@ -146,7 +146,7 @@ export class AdvancedCollector {
             });
 
             msgCollector.on("end", (c, r) => {
-                if (otherOptions && otherOptions.deleteBaseMsg && botMsg.deletable) botMsg.delete();
+                if (otherOptions && otherOptions.deleteBaseMsgAfterComplete && botMsg.deletable) botMsg.delete();
                 if (r === "time") return resolve(null);
             });
         });
@@ -187,8 +187,8 @@ export class AdvancedCollector {
         if (options) {
             if (typeof options.cancelFlag !== "undefined")
                 cancelFlag = options.cancelFlag;
-            if (typeof options.deleteBaseMsg !== "undefined")
-                deleteBotMsgAfterComplete = options.deleteBaseMsg;
+            if (typeof options.deleteBaseMsgAfterComplete !== "undefined")
+                deleteBotMsgAfterComplete = options.deleteBaseMsgAfterComplete;
             if (typeof options.reactToMsg !== "undefined")
                 reactToMsg = options.reactToMsg;
             if (typeof options.removeAllReactionAfterReact !== "undefined")
@@ -227,10 +227,11 @@ export class AdvancedCollector {
             }
 
             msgCollector.on("collect", async (c: Message) => {
-                if (options && options.deleteResponseMessage)
+                if (options && deleteResponseMsg)
                     await c.delete().catch();
 
                 if (cancelFlag.toLowerCase() === c.content.toLowerCase()) {
+                    if (reactCollector) reactCollector.stop();
                     msgCollector.stop();
                     return resolve(null);
                 }
@@ -250,7 +251,7 @@ export class AdvancedCollector {
 
             msgCollector.on("end", async (c, r) => {
                 if (removeReactionsAfter) await botMsg.reactions.removeAll();
-                if (deleteResponseMsg && botMsg.deletable) await botMsg.delete();
+                if (deleteBotMsgAfterComplete && botMsg.deletable) await botMsg.delete();
                 if (r === "time") return resolve(null);
             });
         });
@@ -453,7 +454,8 @@ export class AdvancedCollector {
      * A built-in function, to be used as a parameter for the `send` method, that will wait for someone to respond
      * with a number and returns that number.
      * @param {PartialTextBasedChannelFields} channel The channel where any messages should be sent to.
-     * @param {{min?: number, max?: number}} options Any options.
+     * @param {{min?: number, max?: number}} options Any options. The min value is inclusive and the max value is
+     * exclusive.
      * @return {Function} A function that takes in a message and returns a number, if any.
      */
     public static getNumberPrompt(channel: PartialTextBasedChannelFields,
@@ -469,18 +471,18 @@ export class AdvancedCollector {
             }
 
             if (options) {
-                if (typeof options.min !== "undefined" && num < options.min) {
+                if (typeof options.min !== "undefined" && options.min > num) {
                     const lowerThanMinEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Number Too Low")
-                        .setDescription(`The number that you provided is lower than ${options.min}. Try again.`);
+                        .setDescription(`The number that you provided is lower than ${options.min}.`);
                     MessageUtilities.sendThenDelete({embed: lowerThanMinEmbed}, channel);
                     return;
                 }
 
-                if (typeof options.max !== "undefined" && options.max < num) {
+                if (typeof options.max !== "undefined" && num >= options.max) {
                     const higherThanMaxEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Number Too High")
-                        .setDescription(`The number that you provided is higher than ${options.max}. Try again.`);
+                        .setDescription(`The number that you provided is higher than or equal to ${options.max}.`);
                     MessageUtilities.sendThenDelete({embed: higherThanMaxEmbed}, channel);
                     return;
                 }

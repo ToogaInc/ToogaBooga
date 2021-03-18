@@ -64,7 +64,8 @@ export class OneRealmBot {
             dbName: this._config.database.dbName,
             guildColName: this._config.database.collectionNames.guildCollection,
             userColName: this._config.database.collectionNames.userCollection,
-            botColName: this._config.database.collectionNames.botCollection
+            botColName: this._config.database.collectionNames.botCollection,
+            idNameColName: this.config.database.collectionNames.idNameCollection
         });
         // make sure the database is connected
         assert(MongoManager.isConnected());

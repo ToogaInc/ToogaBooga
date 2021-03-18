@@ -6,12 +6,14 @@ import {OneRealmBot} from "../OneRealmBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
 import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
+import {IIdNameInfo} from "../definitions/major/IIdNameInfo";
 
 export namespace MongoManager {
     let ThisMongoClient: MongoClient | null = null;
     let UserCollection: Collection<IUserInfo> | null = null;
     let GuildCollection: Collection<IGuildInfo> | null = null;
     let BotCollection: Collection<IBotInfo> | null = null;
+    let IdNameCollection: Collection<IIdNameInfo> | null = null;
 
     interface IDbConfiguration {
         dbUrl: string;
@@ -19,6 +21,7 @@ export namespace MongoManager {
         guildColName: string;
         userColName: string;
         botColName: string;
+        idNameColName: string;
     }
 
     /**
@@ -103,7 +106,9 @@ export namespace MongoManager {
         BotCollection = ThisMongoClient
             .db(config.dbName)
             .collection<IBotInfo>(config.botColName);
-
+        IdNameCollection = ThisMongoClient
+            .db(config.idNameColName)
+            .collection<IIdNameInfo>(config.idNameColName);
         return true;
     }
 
@@ -111,7 +116,7 @@ export namespace MongoManager {
      * Finds any user documents that contains the given name.
      *
      * @param {string} name The name to search up.
-     * @returns {Array<IUserInfo>} The search results.
+     * @returns {Array<IUserInfo[]>} The search results.
      * @throws {ReferenceError} If the Mongo instance isn't connected.
      */
     export async function getUserDb(name: string): Promise<IUserInfo[]> {
@@ -123,6 +128,23 @@ export namespace MongoManager {
 
         return await UserCollection.find({
             "rotmgNames.lowercaseIgn": name.toLowerCase()
+        }).toArray();
+    }
+
+    /**
+     * Finds any user documents that contains the given name. This should be preferred over `getUserDb` as anyone
+     * that verifies through the bot will have an entry.
+     *
+     * @param {string} discordId The Discord ID to search up.
+     * @returns {Array<IIdNameInfo[]>} The search results.
+     * @throws {ReferenceError} If the Mongo instance isn't connected.
+     */
+    export async function getIdNameInfo(discordId: string): Promise<IIdNameInfo[]> {
+        if (IdNameCollection === null)
+            throw new ReferenceError("IDNameCollection null. Use connect method first.");
+
+        return await IdNameCollection.find({
+            discordUserId: discordId
         }).toArray();
     }
 
@@ -297,16 +319,29 @@ export namespace MongoManager {
 
     /**
      * Gets the default user configuration object.
-     * @param {string} ign The IGN of the person.
      * @param {string} userId The person's Discord ID.
-     * @return {IGuildInfo} The user configuration object.
+     * @param {string} [ign] The IGN of the person, if any.
+     * @return {IUserInfo} The user configuration object.
      */
-    export function getDefaultUserConfig(ign: string, userId: string): IUserInfo {
+    export function getDefaultUserConfig(userId: string, ign?: string): IUserInfo {
         return {
             details: {moderationHistory: [], settings: []},
             discordUserId: userId,
             loggedInfo: [],
-            rotmgNames: [{lowercaseIgn: ign.toLowerCase(), ign: ign}]
+            rotmgNames: ign ? [{lowercaseIgn: ign.toLowerCase(), ign: ign}] : []
+        };
+    }
+
+    /**
+     * Gets the default basic user configuration object.
+     * @param {string} userId The person's Discord ID.
+     * @param {string} ign The IGN of the person.
+     * @return {IIdNameInfo} The basic user configuration object.
+     */
+    export function getDefaultIdNameObj(userId: string, ign: string): IIdNameInfo {
+        return {
+            rotmgNames: [{lowercaseIgn: ign.toLowerCase(), ign: ign}],
+            discordUserId: userId
         };
     }
 
