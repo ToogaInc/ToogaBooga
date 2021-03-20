@@ -28,4 +28,19 @@ export namespace UserManager {
 
         return parsedNames;
     }
+
+
+    /**
+     * Whether the given name is valid or not.
+     *
+     * @param {string} name The name to check.
+     * @returns {boolean} Whether the name is valid.
+     */
+    export function isValidRealmName(name: string): boolean {
+        if (name.length > 14 || name.length === 0)
+            return false;
+
+        // only letters
+        return /^[a-zA-Z]*$/.test(name);
+    }
 }

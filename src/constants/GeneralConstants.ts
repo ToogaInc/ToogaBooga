@@ -1,6 +1,39 @@
 import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
 
 export namespace GeneralConstants {
+    export const NUMBER_OF_STATS: number = 8;
+
+    export const ALL_CHARACTERS: string[] = [
+        ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+        ..."abcdefghijklmnopqrstuvwxyz".split(""),
+        ..."0123456789".split("")
+    ];
+
+
+    // These are from the IVerificationRequirements.ts file
+    export const GY_HIST_DUNGEON_MAP: { [s: string]: string } = {
+        "minOryxKills": "Minimum Oryx Kills",
+        "minLostHalls": "Minimum Lost Halls Completed",
+        "minVoids": "Minimum Voids Completed",
+        "minCults": "Minimum Cultist Hideout Completed",
+        "minNests": "Minimum Nests Completed",
+        "minShatters": "Minimum Shatters Completed",
+        "minFungal": "Minimum Fungal Caverns Completed",
+        "minCrystal": "Minimum Crystal Caverns Completed"
+    };
+
+    // These are from the IVerificationRequirements.ts file
+    export const SHORT_STAT_TO_LONG: { [s: string]: string } = {
+        "att": "Attack",
+        "def": "Defense",
+        "spd": "Speed",
+        "dex": "Dexterity",
+        "vit": "Vitality",
+        "wis": "Wisdom",
+        "hp": "Health",
+        "mp": "Magic"
+    };
+
     // These will be used for AFK check channel permissions.
     // PD = Program defined. These are essentially constants that will be used as placeholders for the actual
     // section or guild role IDs and will be stored in the database as the PD type.
@@ -31,7 +64,7 @@ export namespace GeneralConstants {
         SECTION_HEAD_LEADER_ROLE
     ];
 
-    export const DEFAULT_AFK_CHECK_PERMISSIONS: (IPermAllowDeny & {id: string;})[] = [
+    export const DEFAULT_AFK_CHECK_PERMISSIONS: (IPermAllowDeny & { id: string; })[] = [
         {
             id: EVERYONE_ROLE,
             allow: [],

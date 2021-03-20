@@ -7,6 +7,7 @@ import {GeneralConstants} from "../constants/GeneralConstants";
 import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
 import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
 import {IIdNameInfo} from "../definitions/major/IIdNameInfo";
+import {UserManager} from "./UserManager";
 
 export namespace MongoManager {
     let ThisMongoClient: MongoClient | null = null;
@@ -123,7 +124,7 @@ export namespace MongoManager {
         if (UserCollection === null)
             throw new ReferenceError("UserCollection null. Use connect method first.");
 
-        if (!isValidRealmName(name))
+        if (!UserManager.isValidRealmName(name))
             return [];
 
         return await UserCollection.find({
@@ -149,17 +150,25 @@ export namespace MongoManager {
     }
 
     /**
-     * Whether the given name is valid or not.
-     *
-     * @param {string} name The name to check.
-     * @returns {boolean} Whether the name is valid.
+     * Finds a name in the IDName collection.
+     * @param {string} name The name to look for.
+     * @return {Promise<IIdNameInfo[]>} The results, if any.
+     * @throws {ReferenceError} If the Mongo instance isn't connected.
      */
-    export function isValidRealmName(name: string): boolean {
-        if (name.length > 14 || name.length === 0)
-            return false;
+    export async function findNameInIdNameCollection(name: string): Promise<IIdNameInfo[]> {
+        if (IdNameCollection === null)
+            throw new ReferenceError("IDNameCollection null. Use connect method first.");
 
-        // only letters
-        return /^[a-zA-Z]*$/.test(name);
+        return await IdNameCollection.find({
+            $or: [
+                {
+                    "rotmgNames.rotmgNames": name
+                },
+                {
+                    "rotmgNames.lowercaseIgn": name.toLowerCase()
+                }
+            ]
+        }).toArray();
     }
 
     /**
@@ -214,7 +223,6 @@ export namespace MongoManager {
             moderation: {blacklistedUsers: [], suspendedUsers: []},
             otherMajorConfig: {
                 verificationProperties: {
-                    showVerificationRequirements: true,
                     additionalVerificationInfo: "",
                     verificationSuccessMessage: "",
                     verificationRequirements: {
@@ -256,8 +264,7 @@ export namespace MongoManager {
                                 spd: 0,
                                 vit: 0,
                                 wis: 0,
-                            },
-                            requireAll: false
+                            }
                         },
                         graveyardSummary: {
                             checkThis: false,

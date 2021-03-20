@@ -43,6 +43,7 @@ export interface IVerificationRequirements {
     exaltations: {
         checkThis: boolean;
         minimum: {
+            [stat: string]: number;
             hp: number;
             mp: number;
             def: number;
@@ -52,17 +53,13 @@ export interface IVerificationRequirements {
             vit: number;
             wis: number;
         };
-
-        // if true, all "minimum" must be
-        // achieved. otherwise, only 1.
-        requireAll: boolean;
     };
 
     // graveyard summary info
     graveyardSummary: {
         checkThis: boolean;
-
         minimum: {
+            [m: string]: number;
             minOryxKills: number;
             minLostHalls: number;
             minVoids: number;

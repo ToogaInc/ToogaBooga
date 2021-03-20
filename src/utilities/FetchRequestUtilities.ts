@@ -24,19 +24,6 @@ export namespace FetchRequestUtilities {
     }
 
     /**
-     * A simple function that attempts to start a DM with a person. This will handle any exceptions that may occur.
-     * @param {GuildMember} member The member.
-     * @return {Promise<DMChannel | null>} The DM channel, if any.
-     */
-    export async function tryStartDm(member: GuildMember): Promise<DMChannel | null> {
-        try {
-            return await member.createDM(false);
-        } catch (e) {
-            return null;
-        }
-    }
-
-    /**
      * A simple function that fetches a user. This will handle any exceptions that may occur.
      * @param {string} targetId The target user ID.
      * @return {Promise<GuildMember | null>} The user, if found. Otherwise, null.
@@ -120,7 +107,7 @@ export namespace FetchRequestUtilities {
      * @param {() => void} func The function to run.
      * @return {T | null} The result, if any. Null otherwise.
      */
-    export function tryExecute<T = void>(func: () => T): T | null {
+    export function tryExecute<T = void>(func: () => T | null): T | null {
         try {
             return func();
         } catch (e) {
@@ -134,7 +121,7 @@ export namespace FetchRequestUtilities {
      * @param {() => void} func The function to run.
      * @return {Promise<T | null>} The result, if any. Null otherwise.
      */
-    export async function tryExecuteAsync<T = void>(func: () => Promise<T>): Promise<T | null> {
+    export async function tryExecuteAsync<T = void>(func: () => Promise<T | null>): Promise<T | null> {
         try {
             return await func();
         } catch (e) {
