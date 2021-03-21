@@ -11,7 +11,7 @@ import {
 } from "discord.js";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
 import {IDungeonInfo} from "../definitions/major/parts/IDungeonInfo";
-import {AdvancedCollector} from "../utilities/AdvancedCollector";
+import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";

@@ -1,4 +1,4 @@
-import {DMChannel, Emoji, EmojiResolvable, GuildMember, TextChannel} from "discord.js";
+import {DMChannel, Emoji, EmojiResolvable, GuildMember, MessageReaction, TextChannel, User} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
 import {InteractionManager} from "./InteractionManager";
@@ -7,11 +7,12 @@ import {MongoManager} from "./MongoManager";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {Emojis} from "../constants/Emojis";
-import {AdvancedCollector} from "../utilities/AdvancedCollector";
+import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {UserManager} from "./UserManager";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {IVerificationRequirements} from "../definitions/major/parts/IVerificationRequirements";
+import {GeneralCollectorBuilder} from "../utilities/collectors/GeneralCollectorBuilder";
 
 export namespace VerifyManager {
 
@@ -215,14 +216,40 @@ export namespace VerifyManager {
             .addField("2. Check Profile Settings", new StringBuilder().append("Please make sure your profile ")
                 .append("is set so everyone can see the above listed requirements. You may view your profile's ")
                 .append(`settings page [here](https://www.realmeye.com/settings-of/${nameToUse}).`))
-            .addField("3. Wait",  new StringBuilder("RealmEye may take upwards of 30 seconds to fully ")
+            .addField("3. Wait", new StringBuilder("RealmEye may take upwards of 30 seconds to fully ")
                 .append("update. Please wait for at least 30 seconds before you move to the next step."))
             .addField("4. Confirm", new StringBuilder().append(`React to the ${Emojis.GREEN_CHECK_MARK_EMOJI} `)
                 .append("emoji to begin the verification check. If you have already reacted, please un-react and ")
                 .append("then react again."))
             .setFooter("Verification Session Ends At:")
             .setTimestamp(currDateTime + 15 * 60 * 1000);
+        const reactions: EmojiResolvable[] = [Emojis.GREEN_CHECK_MARK_EMOJI, Emojis.X_EMOJI];
         const verificationMsg = await dmChannel.send(verificationIntroEmbed);
+        AdvancedCollector.reactFaster(verificationMsg, reactions);
+        // Start the reaction collectors.
+        const collector = new GeneralCollectorBuilder()
+            .setMessage(verificationMsg)
+            .setTime(15 * 60 * 1000)
+            .setReactionFilter((r, u) => reactions.includes(r.emoji) && u.id === member.id)
+            .addReactionHandler(Emojis.GREEN_CHECK_MARK_EMOJI, (user, instance) => {
+
+            })
+            .addReactionHandler(Emojis.X_EMOJI, (user, instance) => {
+                instance.stop("CANCEL_PROCESS");
+            })
+            .setEndOfCollectorFunc(r => {
+                if (r === "time") {
+
+                    return;
+                }
+
+                if (r === "CANCEL_PROCESS") {
+
+                    return;
+                }
+            })
+            .build();
+        collector.start();
     }
 
     async function verifySection(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {

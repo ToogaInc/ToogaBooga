@@ -15,8 +15,8 @@ import {
     TextChannel,
     User
 } from "discord.js";
-import {MessageUtilities} from "./MessageUtilities";
-import {StringBuilder} from "./StringBuilder";
+import {MessageUtilities} from "../MessageUtilities";
+import {StringBuilder} from "../StringBuilder";
 
 type ICollectorArguments = {
     /**
@@ -130,7 +130,8 @@ export class AdvancedCollector {
                 if (otherOptions && otherOptions.deleteResponseMessage)
                     await c.delete().catch();
 
-                if (otherOptions && otherOptions.cancelFlag && otherOptions.cancelFlag.toLowerCase() === c.content.toLowerCase()) {
+                if (otherOptions && otherOptions.cancelFlag
+                    && otherOptions.cancelFlag.toLowerCase() === c.content.toLowerCase()) {
                     msgCollector.stop();
                     return resolve(null);
                 }
