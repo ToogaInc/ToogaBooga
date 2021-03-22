@@ -1,3 +1,5 @@
+import {IPropertyKeyValuePair} from "../../IPropertyKeyValuePair";
+
 export interface IVerificationRequirements {
     // all alive fame
     aliveFame: {
@@ -33,6 +35,7 @@ export interface IVerificationRequirements {
     // characters
     characters: {
         checkThis: boolean;
+        // [hp, mp, att, def, spd, vit, wis, dex]
         statsNeeded: [number, number, number, number, number, number, number, number, number];
         // if true
         // dead characters can fulfil the above reqs
@@ -58,16 +61,6 @@ export interface IVerificationRequirements {
     // graveyard summary info
     graveyardSummary: {
         checkThis: boolean;
-        minimum: {
-            [m: string]: number;
-            minOryxKills: number;
-            minLostHalls: number;
-            minVoids: number;
-            minCults: number;
-            minNests: number;
-            minShatters: number;
-            minFungal: number;
-            minCrystal: number;
-        };
+        minimum: IPropertyKeyValuePair<string, number>[];
     };
 }

@@ -39,6 +39,7 @@ export namespace PrivateApiDefinitions {
             class: string;
             exaltationAmount: string;
             exaltationStats: {
+                [s: string]: number;
                 health: number;
                 magic: number;
                 attack: number;

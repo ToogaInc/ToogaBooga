@@ -1,4 +1,4 @@
-import {DMChannel, Emoji, EmojiResolvable, GuildMember, MessageReaction, TextChannel, User} from "discord.js";
+import {DMChannel, Emoji, EmojiResolvable, GuildMember, TextChannel} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
 import {InteractionManager} from "./InteractionManager";
@@ -13,10 +13,20 @@ import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {IVerificationRequirements} from "../definitions/major/parts/IVerificationRequirements";
 import {GeneralCollectorBuilder} from "../utilities/collectors/GeneralCollectorBuilder";
+import {RealmSharperWrapper} from "../private_api/RealmSharperWrapper";
+import {PrivateApiDefinitions} from "../private_api/PrivateApiDefinitions";
 
 export namespace VerifyManager {
+    const GUILD_ROLES: string[] = [
+        "Founder",
+        "Leader",
+        "Officer",
+        "Member",
+        "Initiate"
+    ];
 
     export async function verify(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
+        // TODO check if API is online
         // If the person is currently interacting with something, don't let them verify.
         if (InteractionManager.InteractiveMenu.has(member.id))
             return;
@@ -47,14 +57,6 @@ export namespace VerifyManager {
         // No verified role = no go. Or, if the person is verified, no need for them to get verified.
         if (!verifiedRole || member.roles.cache.has(verifiedRole.id))
             return;
-
-        // Get relevant channels.
-        const verificationAttemptsChannel = member.guild.channels.cache
-            .get(section.channels.verification.verificationLogsChannelId);
-        const verificationSuccessChannel = member.guild.channels.cache
-            .get(section.channels.verification.verificationSuccessChannelId);
-        const manualVerificationChannel = member.guild.channels.cache
-            .get(section.channels.verification.manualVerificationChannelId);
 
         // Check if this person is currently being manually verified.
         const manualVerifyEntry = section.properties.manualVerificationEntries
@@ -227,12 +229,66 @@ export namespace VerifyManager {
         const verificationMsg = await dmChannel.send(verificationIntroEmbed);
         AdvancedCollector.reactFaster(verificationMsg, reactions);
         // Start the reaction collectors.
+        let lastChecked = 0;
         const collector = new GeneralCollectorBuilder()
             .setMessage(verificationMsg)
             .setTime(15 * 60 * 1000)
             .setReactionFilter((r, u) => reactions.includes(r.emoji) && u.id === member.id)
-            .addReactionHandler(Emojis.GREEN_CHECK_MARK_EMOJI, (user, instance) => {
+            .addReactionHandler(Emojis.GREEN_CHECK_MARK_EMOJI, async (user, instance) => {
+                const timeDiff = Date.now() - lastChecked;
+                if (timeDiff < 30 * 1000) {
+                    const needToWaitEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                        .setTitle("Need To Wait.")
+                        .setDescription(new StringBuilder().append("Slow down! You need to wait at least ")
+                            .append(`${30 - Math.round(timeDiff / 1000)} seconds before you can try again.`))
+                        .setFooter(`Verifying In: ${member.guild.name}`);
+                    MessageUtilities.sendThenDelete({embed: needToWaitEmbed}, dmChannel);
+                    return;
+                }
+                lastChecked = Date.now();
+                if (!(await RealmSharperWrapper.isOnline())) {
+                    const notConnectedEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                        .setTitle("Unable to Reach RealmSharper API Service")
+                        .setDescription(new StringBuilder().append("I am currently unable to reach the RealmEye API. ")
+                            .append("Verification has been canceled. Please try verifying at a later time."))
+                        .setFooter("Verification Terminated.");
+                    MessageUtilities.sendThenDelete({embed: notConnectedEmbed}, dmChannel);
+                    await verificationMsg.edit(notConnectedEmbed).catch();
+                    instance.stop("NOT_CONNECTED");
+                    return;
+                }
 
+                // Make initial request to RealmEye.
+                const resp = await RealmSharperWrapper.getPlayerInfo(nameToUse!);
+                if (!resp) {
+                    const noPlayerDataEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                        .setTitle("Unable to Fetch RealmEye Profile")
+                        .setDescription(new StringBuilder().append("I couldn't fetch your RealmEye profile. Make ")
+                            .append("sure your profile is public. If you typed your name incorrectly, please restart ")
+                            .append("the verification process."))
+                        .setFooter("Profile Not Found.");
+                    MessageUtilities.sendThenDelete({embed: noPlayerDataEmbed}, dmChannel);
+                    return;
+                }
+
+                // Search description for valid verification code.
+                if (!resp.description.some(x => x.includes(verificationCode))) {
+                    const codeNotFoundEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                        .setTitle("Description Not Found")
+                        .setDescription(new StringBuilder().append("I couldn't find the verification code in your ")
+                            .append("description. Please update your description so it contains this verification ")
+                            .append("code:")
+                            .append(StringUtil.codifyString(verificationCode)))
+                        .setFooter("Verification Code Not Found.");
+                    MessageUtilities.sendThenDelete({embed: codeNotFoundEmbed}, dmChannel);
+                    return;
+                }
+
+                // Check all requirements.
+                const res = await checkRequirements(member, dmChannel, verifReq, resp);
+                if (!res) return;
+
+                instance.stop("PASSED_ALL");
             })
             .addReactionHandler(Emojis.X_EMOJI, (user, instance) => {
                 instance.stop("CANCEL_PROCESS");
@@ -247,6 +303,15 @@ export namespace VerifyManager {
 
                     return;
                 }
+
+                if (r === "NOT_CONNECTED") {
+
+                    return;
+                }
+
+                if (r === "PASSED_ALL") {
+
+                }
             })
             .build();
         collector.start();
@@ -254,6 +319,218 @@ export namespace VerifyManager {
 
     async function verifySection(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
 
+    }
+
+    /**
+     * Checks a series of requirements to ensure that they are fulfilled.
+     * @param {GuildMember} member The member to check.
+     * @param {DMChannel} dmChannel The DM channel.
+     * @param {IVerificationRequirements} verifReq The verification requirements to check against.
+     * @param {PrivateApiDefinitions.IPlayerData} resp The player's stats.
+     * @return {Promise<boolean>} Whether the person passes all verification requirements.
+     * @private
+     */
+    async function checkRequirements(member: GuildMember, dmChannel: DMChannel, verifReq: IVerificationRequirements,
+                                     resp: PrivateApiDefinitions.IPlayerData): Promise<boolean> {
+
+        // Check requirements.
+        if (verifReq.lastSeen.mustBeHidden && resp.lastSeen !== "hidden") {
+            const codeNotFoundEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                .setTitle("Last Seen Location Not Hidden")
+                .setDescription(new StringBuilder().append("Your last seen location is not hidden. Please ")
+                    .append("make sure it is hidden and then try again."))
+                .setFooter("Verification Code Not Found.");
+            MessageUtilities.sendThenDelete({embed: codeNotFoundEmbed}, dmChannel);
+            return false;
+        }
+
+        if (verifReq.guild.checkThis) {
+            if (verifReq.guild.guildName.checkThis
+                && resp.guild.toLowerCase() !== verifReq.guild.guildName.name.toLowerCase()) {
+                const notInRightGuildEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                    .setTitle("Invalid Guild")
+                    .setDescription(new StringBuilder().append("You are currently in the guild:")
+                        .append(StringUtil.codifyString(resp.guild))
+                        .append("However, in order to gain access to this section, you must be in the guild: ")
+                        .append(StringUtil.codifyString(verifReq.guild.guildName)))
+                    .setFooter("Incorrect Guild.");
+                MessageUtilities.sendThenDelete({embed: notInRightGuildEmbed}, dmChannel);
+                return false;
+            }
+
+            if (verifReq.guild.guildRank.checkThis
+                && !isValidGuildRank(verifReq.guild.guildRank.minRank, resp.guildRank)) {
+                const notValidRankEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                    .setTitle("Invalid Guild Rank")
+                    .setDescription(new StringBuilder().append("You currently have the following guild rank: ")
+                        .append(StringUtil.codifyString(resp.guildRank))
+                        .append("However, you need to have the following rank or higher:")
+                        .append(StringUtil.codifyString(verifReq.guild.guildRank.minRank)))
+                    .setFooter("Incorrect Guild Rank.");
+                MessageUtilities.sendThenDelete({embed: notValidRankEmbed}, dmChannel);
+                return false;
+            }
+        }
+
+        if (verifReq.rank.checkThis && resp.rank < verifReq.rank.minRank) {
+            const tooLowRankEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                .setTitle("Rank Too Low")
+                .setDescription(new StringBuilder().append(`You currently have **\`${resp.rank}\`** stars, `)
+                    .append("which is lower than what is required."))
+                .setFooter("Rank Too Low.");
+            MessageUtilities.sendThenDelete({embed: tooLowRankEmbed}, dmChannel);
+            return false;
+        }
+
+        if (verifReq.aliveFame.checkThis && resp.fame < verifReq.aliveFame.minFame) {
+            const tooLowAliveFameEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                .setTitle("Alive Fame Too Low")
+                .setDescription(new StringBuilder().append(`You currently have **\`${resp.fame}\`** alive fame, `)
+                    .append("which is lower than what is required."))
+                .setFooter("Alive Fame Too Low.");
+            MessageUtilities.sendThenDelete({embed: tooLowAliveFameEmbed}, dmChannel);
+            return false;
+        }
+
+        const gyHist = await RealmSharperWrapper.getGraveyardSummary(resp.name);
+        if (verifReq.characters.checkThis) {
+            // Clone copy since arrays are passed by reference/values.
+            const neededStats: number[] = [];
+            for (const stat of verifReq.characters.statsNeeded)
+                neededStats.push(stat);
+
+            if (verifReq.characters.checkPastDeaths) {
+                if (gyHist) {
+                    const stats = gyHist.statsCharacters.map(x => x.stats);
+                    for (const statInfo of stats)
+                        for (let i = 0; i < statInfo.length; i++)
+                            neededStats[i] -= statInfo[i];
+                }
+            }
+
+            for (const character of resp.characters)
+                neededStats[character.statsMaxed]--;
+
+            if (neededStats.some(x => x > 0)) {
+                const descSB = new StringBuilder().append("You did not meet the minimum stats requirement needed to ")
+                    .append("verify in this section. You are missing the following:");
+                const missingStats = new StringBuilder();
+                for (let i = 0; i < neededStats.length; i++) {
+                    if (neededStats[i] <= 0) continue;
+                    missingStats.append(`- Need ${neededStats[i]} ${i}/${GeneralConstants.NUMBER_OF_STATS}s`)
+                        .appendLine();
+                }
+                descSB.append(StringUtil.codifyString(neededStats.toString()));
+                if (verifReq.characters.checkPastDeaths)
+                    descSB.append("For this section, you are allowed to use your past dead characters to fulfill ")
+                        .append("your stats requirements. If you haven't already, make sure to make your graveyard ")
+                        .append("public.");
+
+                const statsNotMetEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                    .setTitle("Stats Requirement Not Met")
+                    .setDescription(descSB.toString())
+                    .setFooter("Stats Requirement Not Met.");
+                MessageUtilities.sendThenDelete({embed: statsNotMetEmbed}, dmChannel);
+                return false;
+            }
+        }
+
+        if (verifReq.graveyardSummary.checkThis) {
+            if (!gyHist) {
+                const noGySummaryEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                    .setTitle("Unable to Get Graveyard Summary")
+                    .setDescription(new StringBuilder().append("I was unable to access your graveyard summary. ")
+                        .append("Please make sure your graveyard is set so anyone can see it."))
+                    .setFooter("Graveyard Summary Inaccessible.");
+                MessageUtilities.sendThenDelete({embed: noGySummaryEmbed}, dmChannel);
+                return false;
+            }
+
+            const issues: string[] = [];
+            for (const gyStat of verifReq.graveyardSummary.minimum) {
+                if (!(gyStat.key in GeneralConstants.GY_HIST_ACHIEVEMENTS)) continue;
+                const gyHistKey = GeneralConstants.GY_HIST_ACHIEVEMENTS[gyStat.key];
+                const data = gyHist.properties.find(x => x.achievement === gyHistKey);
+                // Doesn't qualify because dungeon doesn't exist.
+                if (!data) {
+                    issues.push(`- You do not have any ${gyStat.key} completions.`);
+                    continue;
+                }
+
+                // Doesn't qualify because not enough
+                if (gyStat.value > data.total)
+                    issues.push(`- You have ${data.total} / ${gyStat.key} total ${gyStat.key} completions needed.`);
+            }
+
+            if (issues.length > 0) {
+                const dgnHistoryLowEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                    .setTitle("Dungeon Completions Not Satisfied.")
+                    .setDescription(new StringBuilder().append("You haven't completed enough of one or more of the ")
+                        .append("following dungeons.")
+                        .append(StringUtil.codifyString(issues.join("\n"))))
+                    .setFooter("Graveyard Summary Not Satisfied.");
+                MessageUtilities.sendThenDelete({embed: dgnHistoryLowEmbed}, dmChannel);
+                return false;
+            }
+        }
+
+        if (verifReq.exaltations.checkThis) {
+            const exaltData = await RealmSharperWrapper.getExaltation(resp.name);
+            if (!exaltData) {
+                const noGySummaryEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                    .setTitle("Unable to Get Exaltation Data")
+                    .setDescription(new StringBuilder().append("I was unable to access your exaltation data. ")
+                        .append("Please make sure your exaltation data is set so anyone can see it."))
+                    .setFooter("Exaltation Data Inaccessible.");
+                MessageUtilities.sendThenDelete({embed: noGySummaryEmbed}, dmChannel);
+                return false;
+            }
+
+            const sum: { [s: string]: number } = {};
+            for (const d of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
+                sum[d] = verifReq.exaltations.minimum[d];
+
+            // For each character...
+            for (const entry of exaltData.exaltations) {
+                // For each stat...
+                for (const actExaltStat of Object.keys(entry.exaltationStats)) {
+                    for (const stat of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
+                        if (actExaltStat === GeneralConstants.SHORT_STAT_TO_LONG[stat].toLowerCase())
+                            sum[stat] -= entry.exaltationStats[actExaltStat];
+                }
+            }
+
+            const notMetExaltations = Object.keys(sum)
+                .filter(x => sum[x] > 0);
+            if (notMetExaltations.length > 0) {
+                const issuesExaltations = new StringBuilder();
+                for (const statNotFulfilled of notMetExaltations) {
+                    const statName = GeneralConstants.SHORT_STAT_TO_LONG[statNotFulfilled];
+                    issuesExaltations.append(`- Need ${sum[statNotFulfilled]} ${statName} Exaltations.`)
+                        .appendLine();
+                }
+
+                const dgnHistoryLowEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                    .setTitle("Exaltation Requirement Not Satisfied.")
+                    .setDescription(new StringBuilder().append("You haven't fulfilled one or more of the following ")
+                        .append("exaltation requirements.")
+                        .append(StringUtil.codifyString(issuesExaltations.toString())))
+                    .setFooter("Exaltation Requirement Not Satisfied.");
+                MessageUtilities.sendThenDelete({embed: dgnHistoryLowEmbed}, dmChannel);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    export function isValidGuildRank(minNeeded: string, actual: string): boolean {
+        if (minNeeded === actual) return true;
+        for (let i = GUILD_ROLES.length - 1; i >= 0; i--) {
+            if (GUILD_ROLES[i] !== minNeeded) continue;
+            if (GUILD_ROLES[i] === actual) return true;
+        }
+        return false;
     }
 
     /**
@@ -292,7 +569,7 @@ export namespace VerifyManager {
 
         // Show exaltation requirements.
         if (verifyReqs.exaltations.checkThis) {
-            for (const stat in verifyReqs.exaltations.minimum) {
+            for (const stat of Object.keys(verifyReqs.exaltations.minimum)) {
                 if (verifyReqs.exaltations.minimum[stat] <= 0) continue;
                 const statName = GeneralConstants.SHORT_STAT_TO_LONG[stat];
                 requirementInfo.append(`• ${verifyReqs.exaltations.minimum[stat]} ${statName} Exaltations`)
@@ -302,21 +579,21 @@ export namespace VerifyManager {
 
         // Graveyard summary.
         if (verifyReqs.graveyardSummary.checkThis) {
-            for (const gyStat in verifyReqs.graveyardSummary.minimum) {
-                if (verifyReqs.graveyardSummary.minimum[gyStat] <= 0) continue;
-                const dungeonName = GeneralConstants.GY_HIST_DUNGEON_MAP[gyStat];
-                requirementInfo.append(`• ${verifyReqs.graveyardSummary.minimum[gyStat]} ${dungeonName}`)
+            for (const gyStat of verifyReqs.graveyardSummary.minimum) {
+                if (gyStat.value <= 0) continue;
+                if (!(gyStat.key in GeneralConstants.GY_HIST_ACHIEVEMENTS)) continue;
+                requirementInfo.append(`• ${gyStat.value} ${gyStat.key} Completed`)
                     .appendLine();
             }
         }
 
         if (verifyReqs.guild.checkThis) {
             requirementInfo.appendLine();
-            if (verifyReqs.guild.guildName)
+            if (verifyReqs.guild.guildName.checkThis && verifyReqs.guild.guildName)
                 requirementInfo.append(`• In Guild: ${verifyReqs.guild.guildName}`)
                     .appendLine();
 
-            if (verifyReqs.guild.guildName && verifyReqs.guild.guildRank)
+            if (verifyReqs.guild.guildRank.checkThis && verifyReqs.guild.guildName && verifyReqs.guild.guildRank)
                 requirementInfo.append(`• With Guild Rank: ${verifyReqs.guild.guildRank}`);
         }
 

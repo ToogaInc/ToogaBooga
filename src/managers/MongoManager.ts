@@ -268,16 +268,7 @@ export namespace MongoManager {
                         },
                         graveyardSummary: {
                             checkThis: false,
-                            minimum: {
-                                minOryxKills: 0,
-                                minLostHalls: 0,
-                                minVoids: 0,
-                                minCults: 0,
-                                minNests: 0,
-                                minShatters: 0,
-                                minFungal: 0,
-                                minCrystal: 0,
-                            }
+                            minimum: []
                         }
                     }
                 },

@@ -17,7 +17,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x29c71e
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Godland Dungeons"
     },
     {
         codeName: "MAGIC_WOODS",
@@ -35,7 +35,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x1fcfcc
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Godland Dungeons"
     },
     {
         codeName: "SPRITE_WORLD",
@@ -56,7 +56,7 @@ export const DungeonData: IDungeonInfo[] = [
             0,
             0xe6df15
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Godland Dungeons"
     },
     {
         codeName: "ANCIENT_RUINS",
@@ -80,7 +80,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xb7934b,
             0x94643a
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Basic Dungeons"
     },
     {
         codeName: "CANDYLAND_HUNTING_GROUNDS",
@@ -105,7 +105,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xde1dc1,
             0xbdf7fc
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Basic Dungeons"
     },
     {
         codeName: "CAVE_THOUSAND_TREASURES",
@@ -125,7 +125,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x8a1d1d,
             0x3d3434
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Godland Dungeons"
     },
     {
         codeName: "UNDEAD_LAIR",
@@ -145,7 +145,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x2b1e1e,
             0
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Godland Dungeons"
     },
     {
         codeName: "HEROIC_UNDEAD_LAIR",
@@ -166,7 +166,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x3d3434,
             0x2b1e1e
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Heroic Dungeons"
     },
     {
         codeName: "ABYSS_OF_DEMONS",
@@ -185,7 +185,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xe30707,
             0xe09a19
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Godland Dungeons"
     },
     {
         codeName: "HEROIC_ABYSS_OF_DEMONS",
@@ -205,7 +205,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xe09a19,
             0xf5d311
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Heroic Dungeons"
     },
     {
         codeName: "MANOR_OF_THE_IMMORTALS",
@@ -226,7 +226,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x8b4fc9,
             0x3f2e52
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Godland Dungeons"
     },
     {
         codeName: "PUPPET_MASTERS_THEATRE",
@@ -245,7 +245,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xe31b1f,
             0xad3638
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "TOXIC_SEWERS",
@@ -264,7 +264,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x074f2a,
             0x228753
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Event Dungeons"
     },
     {
         codeName: "HAUNTED_CEMETERY",
@@ -287,7 +287,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x0e9c53
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Event Dungeons"
     },
     {
         codeName: "MAD_LAB",
@@ -309,7 +309,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x06bd5f,
             0x0db4ba
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Godland Dungeons"
     },
     {
         codeName: "PARASITE_CHAMBERS",
@@ -329,7 +329,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x7d1935,
             0xeb1551
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Event Dungeons"
     },
     {
         codeName: "DAVY_JONES_LOCKER",
@@ -347,7 +347,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x2376a6
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Event Dungeons"
     },
     {
         codeName: "MOUNTAIN_TEMPLE",
@@ -365,7 +365,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x12634e
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Event Dungeons"
     },
     {
         codeName: "LAIR_OF_DRACONIS",
@@ -393,7 +393,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xffffff,
             0x1e1adb
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Event Dungeons"
     },
     {
         codeName: "DEADWATER_DOCKS",
@@ -412,7 +412,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xe4e4f5,
             0xded799
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Epic Dungeons"
     },
     {
         codeName: "WOODLAND_LABYRINTH",
@@ -430,7 +430,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x31d43c,
             0x3eb847
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Epic Dungeons"
     },
     {
         codeName: "CRAWLING_DEPTHS",
@@ -449,7 +449,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x3eb847,
             0x1dcf2a
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Epic Dungeons"
     },
     {
         codeName: "OCEAN_TRENCH",
@@ -469,7 +469,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x188ec4,
             0xd41c78
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Event Dungeons"
     },
     {
         codeName: "ICE_CAVE",
@@ -489,7 +489,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xe1f0f5,
             0x79c7e0
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Event Dungeons"
     },
     {
         codeName: "TOMB_OF_THE_ANCIENTS",
@@ -514,7 +514,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x28b84c,
             0x17adab
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Event Dungeons"
     },
     {
         codeName: "LAIR_OF_SHAITAN",
@@ -533,7 +533,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xd92130,
             0xe0912f
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "PUPPET_MASTERS_ENCORE",
@@ -551,7 +551,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x912121
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "CNIDARIAN_REEF",
@@ -570,7 +570,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xf5b120,
             0x1980a6
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "SECLUDED_THICKET",
@@ -593,7 +593,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x289e67,
             0x14a341
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "HIGH_TECH_TERROR",
@@ -614,7 +614,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x06bd5f,
             0x0db4ba
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "BATTLE_FOR_THE_NEXUS",
@@ -638,7 +638,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0xdfe30e,
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "BELLADONNAS_GARDEN",
@@ -657,7 +657,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xd42c56,
             0x08d41d
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "ICE_TOMB",
@@ -680,7 +680,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x1ab8b5,
             0x23deda
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "MAD_GOD_MAYHEM",
@@ -707,7 +707,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x13a813,
             0x2a852a
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "SHATTERS",
@@ -730,7 +730,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x137d13,
             0x054205
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Endgame Dungeons"
     },
     {
         codeName: "MACHINE",
@@ -749,7 +749,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x2ade2a,
             0x0ffc0f
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Mini Dungeons"
     },
     {
         codeName: "NEST",
@@ -773,7 +773,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xe3e019,
             0xbd0d30
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Endgame Dungeons"
     },
     {
         codeName: "CURSED_LIBRARY",
@@ -794,7 +794,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x1b8094
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Godland Dungeons"
     },
     {
         codeName: "CULTIST_HIDEOUT",
@@ -825,7 +825,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x18adb5,
             0xebf2f2
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Endgame Dungeons"
     },
     {
         codeName: "THE_VOID",
@@ -847,7 +847,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x0810ff
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Endgame Dungeons"
     },
     {
         codeName: "FUNGAL_CAVERN",
@@ -876,7 +876,7 @@ export const DungeonData: IDungeonInfo[] = [
             0x24a353,
             0xc71c91
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Endgame Dungeons"
     },
     {
         codeName: "MISCELLANEOUS_DUNGEON",
@@ -894,7 +894,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x1dbfaa
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Basic Dungeons"
     },
     {
         codeName: "ORYX_3",
@@ -930,6 +930,6 @@ export const DungeonData: IDungeonInfo[] = [
             0xb5471b,
             0x000000
         ],
-        dungeonCategory: ""
+        dungeonCategory: "Endgame Dungeons"
     }
 ];

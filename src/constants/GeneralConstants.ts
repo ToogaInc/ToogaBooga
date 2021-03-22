@@ -9,19 +9,6 @@ export namespace GeneralConstants {
         ..."0123456789".split("")
     ];
 
-
-    // These are from the IVerificationRequirements.ts file
-    export const GY_HIST_DUNGEON_MAP: { [s: string]: string } = {
-        "minOryxKills": "Minimum Oryx Kills",
-        "minLostHalls": "Minimum Lost Halls Completed",
-        "minVoids": "Minimum Voids Completed",
-        "minCults": "Minimum Cultist Hideout Completed",
-        "minNests": "Minimum Nests Completed",
-        "minShatters": "Minimum Shatters Completed",
-        "minFungal": "Minimum Fungal Caverns Completed",
-        "minCrystal": "Minimum Crystal Caverns Completed"
-    };
-
     // These are from the IVerificationRequirements.ts file
     export const SHORT_STAT_TO_LONG: { [s: string]: string } = {
         "att": "Attack",
@@ -32,6 +19,52 @@ export namespace GeneralConstants {
         "wis": "Wisdom",
         "hp": "Health",
         "mp": "Magic"
+    };
+
+    export const GY_HIST_ACHIEVEMENTS: { [s: string]: string } = {
+        "Lost Halls": "Lost Halls completed",
+        "Voids": "Voids completed",
+        "Cultist Hideouts": "Cultist Hideouts completed",
+        "Nests": "Nests completed2",
+        "Shatters": "Shatters completed1",
+        "Tomb of the Ancients": "Tombs completed",
+        "Ocean Trenches": "Ocean Trenches completed",
+        "Parasite Chambers": "Parasite chambers completed4",
+        "Lair of Shaitans": "Lairs of Shaitan completed4",
+        "Puppet Master's Encores": "Puppet Master's Encores completed4",
+        "Cnidarian Reefs": "Cnidarian Reefs completed",
+        "Secluded Thickets": "Secluded Thickets completed",
+        "Cursed Libraries": "Cursed Libraries completed",
+        "Fungal Caverns": "Fungal Caverns completed",
+        "Crystal Caverns": "Crystal Caverns completed",
+        "Lair of Draconis (Hard)": "Lairs of Draconis (hard mode) completed2",
+        "Lair of Draconis (Easy)": "Lairs of Draconis (easy mode) completed1",
+        "Mountain Temples": "Mountain Temples completed2",
+        "Crawling Depths": "Crawling Depths completed1",
+        "Woodland Labyrinths": "Woodland Labyrinths completed1",
+        "Deadwater Docks": "Deadwater Docks completed1",
+        "Ice Cave": "Ice Caves completed1",
+        "Belladonna's Gardens": "Bella Donnas completed3",
+        "Davy Jones' Lockers": "Davy Jones's Lockers completed1",
+        "Battle of the Nexus": "Battle for the Nexuses completed1",
+        "Candyland Hunting Grounds": "Candyland Hunting Grounds completed",
+        "Puppet Master's Theatres": "Puppet Master's Theatres completed1",
+        "Toxic Sewers": "Toxic Sewers completed1",
+        "Haunted Cemetaries": "Haunted Cemeteries completed1",
+        "Mad Labs": "Mad Labs completed1",
+        "Abyss of Demons": "Abysses of Demons completed",
+        "Manor of the Immortals": "Manors of the Immortals completed",
+        "Ancient Ruins": "Ancient Ruins completed",
+        "Undead Lairs": "Undead Lairs completed",
+        "Sprite Worlds": "Sprite Worlds completed",
+        "Snake Pits": "Snake Pits completed",
+        "Cave of a Thousand Treasures": "Caves of a Thousand Treasures completed1",
+        "Magic Woods": "Magic Woods completed",
+        "Hives": "Hives completed1",
+        "Spider Dens": "Spider Dens completed",
+        "Forbidden Jungles": "Forbidden Jungles completed",
+        "Forest Mazes": "Forest Mazes completed1",
+        "Pirate Caves": "Pirate Caves completed"
     };
 
     // These will be used for AFK check channel permissions.
