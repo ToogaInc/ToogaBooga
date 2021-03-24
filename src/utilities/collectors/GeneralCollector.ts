@@ -1,5 +1,5 @@
 import {GeneralCollectorBuilder} from "./GeneralCollectorBuilder";
-import {Emoji, MessageCollector, ReactionCollector, TextChannel} from "discord.js";
+import {Emoji, MessageCollector, ReactionCollector, TextChannel, User} from "discord.js";
 
 export class GeneralCollector {
     private static END_EXPLICITLY_REASON: string = "END_EXPLICITLY_DUE_TO_INTERVENTION";
@@ -91,11 +91,25 @@ export class GeneralCollector {
         return this;
     }
 
-    public stop(reason?: string): void {
+    /**
+     * Stops the collector.
+     * @param {string} reason The reason for stopping the collector.
+     * @param {string[]} args Any optional arguments.
+     */
+    public stop(reason?: string, ...args: string[]): void {
         this._isRunning = false;
         this._msgCollector?.stop(GeneralCollector.END_EXPLICITLY_REASON);
         this._reactionCollector?.stop(GeneralCollector.END_EXPLICITLY_REASON);
         if (this._opt.onEndFunc)
-            this._opt.onEndFunc(reason);
+            this._opt.onEndFunc(reason, ...args);
+    }
+
+    /**
+     * Calls the helper function.
+     * @param {User} u The user.
+     * @param {string} r The reason.
+     */
+    public async callHelperFunction(u: User, r?: string): Promise<void> {
+        if (this._opt.helperFunc) await this._opt.helperFunc(u, r);
     }
 }

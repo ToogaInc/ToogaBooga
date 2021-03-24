@@ -68,6 +68,8 @@ export interface IGuildInfo {
         blacklistedUsers: IBlacklistedUser[];
     };
     properties: {
+        // promote demote stuff
+        promoteDemoteRules: IPropertyKeyValuePair<string, string[]>[];
         // quotas
         quotasAndLogging: {
             runsLed: {

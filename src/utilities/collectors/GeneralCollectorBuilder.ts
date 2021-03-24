@@ -1,20 +1,22 @@
 import {GeneralCollector} from "./GeneralCollector";
-import {Collection, EmojiResolvable, Message, MessageReaction, Snowflake, User} from "discord.js";
+import {Collection, EmojiResolvable, Message, MessageReaction, User} from "discord.js";
 
 type ReactionCollectorFilter = (r: MessageReaction, u: User) => boolean | Promise<boolean>;
 type MessageCollectorFilter = (m: Message) => boolean | Promise<boolean>;
 type MessageOnCollectFunc = (m: Message, instance: GeneralCollector) => void | Promise<void>;
 type ReactionFunction = (u: User, instance: GeneralCollector) => void | Promise<void>;
-type OnEndFunction = (r?: string) => void | Promise<void>;
+type OnEndFunction = (r?: string, ...args: string[]) => void | Promise<void>;
+type UserReasonHelperFunction = (u: User, c?: string) => void | Promise<void>;
 
 export class GeneralCollectorBuilder {
     private _reactCollFilter: ReactionCollectorFilter | null;
-    private _reactionMapping: Collection<EmojiResolvable, ReactionFunction>;
+    private readonly _reactionMapping: Collection<EmojiResolvable, ReactionFunction>;
 
     private _msgCollFilter: MessageCollectorFilter | null;
     private _msgOnCollectFunc: MessageOnCollectFunc | null;
 
     private _onEndFunction: OnEndFunction | null;
+    private _helperFunction: UserReasonHelperFunction | null;
 
     private _time: number;
     private _msg: Message | null;
@@ -29,6 +31,7 @@ export class GeneralCollectorBuilder {
         this._msgCollFilter = null;
         this._msgOnCollectFunc = null;
         this._onEndFunction = null;
+        this._helperFunction = null;
         this._time = 5 * 60 * 1000;
         this._msg = null;
         this._reactionMapping = new Collection<EmojiResolvable, ReactionFunction>();
@@ -94,6 +97,16 @@ export class GeneralCollectorBuilder {
      */
     public setMessageCollectorOnCollectFunc(func: MessageOnCollectFunc): this {
         this._msgOnCollectFunc = func;
+        return this;
+    }
+
+    /**
+     * Sets the function that can be called in the regular function collectors.
+     * @param {UserReasonHelperFunction} func The helper function.
+     * @return {this} This object.
+     */
+    public setHelperFunction(func: UserReasonHelperFunction): this {
+        this._helperFunction = func;
         return this;
     }
 
@@ -176,5 +189,13 @@ export class GeneralCollectorBuilder {
      */
     public get onEndFunc(): OnEndFunction | null {
         return this._onEndFunction;
+    }
+
+    /**
+     * The helper function.
+     * @return {UserReasonHelperFunction | null} The helper function, if defined.
+     */
+    public get helperFunc(): UserReasonHelperFunction | null {
+        return this._helperFunction;
     }
 }

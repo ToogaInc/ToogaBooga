@@ -8,6 +8,8 @@ import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
 import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
 import {IIdNameInfo} from "../definitions/major/IIdNameInfo";
 import {UserManager} from "./UserManager";
+import {GuildMember} from "discord.js";
+import * as assert from "assert";
 
 export namespace MongoManager {
     let ThisMongoClient: MongoClient | null = null;
@@ -133,14 +135,14 @@ export namespace MongoManager {
     }
 
     /**
-     * Finds any user documents that contains the given name. This should be preferred over `getUserDb` as anyone
+     * Finds any user documents that contains the given ID. This should be preferred over `getUserDb` as anyone
      * that verifies through the bot will have an entry.
      *
      * @param {string} discordId The Discord ID to search up.
      * @returns {Array<IIdNameInfo[]>} The search results.
      * @throws {ReferenceError} If the Mongo instance isn't connected.
      */
-    export async function getIdNameInfo(discordId: string): Promise<IIdNameInfo[]> {
+    export async function findIdInIdNameCollection(discordId: string): Promise<IIdNameInfo[]> {
         if (IdNameCollection === null)
             throw new ReferenceError("IDNameCollection null. Use connect method first.");
 
@@ -160,15 +162,83 @@ export namespace MongoManager {
             throw new ReferenceError("IDNameCollection null. Use connect method first.");
 
         return await IdNameCollection.find({
+            "rotmgNames.lowercaseIgn": name.toLowerCase()
+        }).toArray();
+    }
+
+    /**
+     * Adds the specified name and ID to the IDName collection. This will take care of any potential duplicate entries.
+     * @param {GuildMember} member The member.
+     * @param {string} ign The in-game name.
+     * @throws {ReferenceError} If the Mongo instance isn't connected.
+     */
+    export async function addIdNameToTheCollection(member: GuildMember, ign: string): Promise<void> {
+        if (IdNameCollection === null)
+            throw new ReferenceError("IDNameCollection null. Use connect method first.");
+
+        const idEntries = await findIdInIdNameCollection(member.id);
+        const ignEntries = await findNameInIdNameCollection(ign);
+
+        // There are three cases to consider.
+        // Case 1: No entries found.
+        if (idEntries.length === 0 && ignEntries.length === 0) {
+            await IdNameCollection.insertOne(getDefaultIdNameObj(member.id, ign));
+            return;
+        }
+
+        // Case 2: ID found, IGN not.
+        if (idEntries.length > 0 && ignEntries.length === 0) {
+            await IdNameCollection.updateOne({discordUserId: idEntries[0].discordUserId}, {
+                $push: {
+                    rotmgNames: {
+                        lowercaseIgn: ign.toLowerCase(),
+                        ign: ign
+                    }
+                }
+            });
+            return;
+        }
+
+        // Case 3: ID not found, IGN found.
+        if (idEntries.length === 0 && ignEntries.length > 0) {
+            await IdNameCollection.updateOne({"rotmgNames.lowercaseIgn": ign.toLowerCase()}, {
+                $set: {
+                    discordUserId: member.id
+                }
+            });
+            return;
+        }
+
+        // Case 4: ID and IGN found. In this case, we just merge the objects together.
+        const newObj = getDefaultIdNameObj(member.id, ign);
+        const allEntries: IIdNameInfo[] = [...idEntries, ...ignEntries];
+        for (const entry of allEntries) {
+            for (const name of entry.rotmgNames) {
+                if (newObj.rotmgNames.some(x => x.lowercaseIgn === name.lowercaseIgn))
+                    continue;
+                newObj.rotmgNames.push({
+                    lowercaseIgn: name.lowercaseIgn,
+                    ign: name.ign
+                });
+            }
+        }
+
+        await IdNameCollection.deleteMany({
             $or: [
                 {
-                    "rotmgNames.rotmgNames": name
+                    discordUserId: {
+                        $in: allEntries.map(x => x.discordUserId)
+                    }
                 },
                 {
-                    "rotmgNames.lowercaseIgn": name.toLowerCase()
+                    rotmgNames: {
+                        $in: allEntries.map(x => x.rotmgNames)
+                    }
                 }
             ]
-        }).toArray();
+        });
+
+        await IdNameCollection.insertOne(newObj);
     }
 
     /**
@@ -287,6 +357,7 @@ export namespace MongoManager {
                 }
             },
             properties: {
+                promoteDemoteRules: [],
                 quotasAndLogging: {
                     logging: {topKeysWeek: [], topKeysWeeklyMessageId: ""},
                     runsDone: {topRunsCompletedMessageId: "", topRunsCompletedWeek: []},

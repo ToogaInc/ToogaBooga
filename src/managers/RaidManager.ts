@@ -436,7 +436,7 @@ export class RaidManager {
                 .appendLine()
                 .appendLine()
                 .append("Review the raid details below and then **confirm** your selection by reacting to the ")
-                .append(`${Emojis.GREEN_CHECK_MARK_EMOJI} emoji. If this was a mistake, please react to the `)
+                .append(`${Emojis.GREEN_CHECK_EMOJI} emoji. If this was a mistake, please react to the `)
                 .append(`${Emojis.X_EMOJI} or simply ignore this notice. This message will automatically disappear `)
                 .append("in 15 seconds.")
                 .toString();
@@ -471,7 +471,7 @@ export class RaidManager {
             const resp = await new AdvancedCollector(confirmMsg.channel as DMChannel, memberThatReacted, 15, "S")
                 .waitForSingleReaction(confirmMsg, {
                     reactToMsg: true,
-                    reactions: [Emojis.GREEN_CHECK_MARK_EMOJI, Emojis.X_EMOJI]
+                    reactions: [Emojis.GREEN_CHECK_EMOJI, Emojis.X_EMOJI]
                 });
 
             // No response or rejected.
@@ -1469,7 +1469,7 @@ export class RaidManager {
                 .append(peopleThatReacted.slice(0, 50).join(", "));
             if (peopleThatReacted.length > 50)
                 info.append(` and ${peopleThatReacted.length - 50} more.`);
-            const emojiForTitle = isAcceptingMore ? Emojis.HOURGLASS_EMOJI : Emojis.GREEN_CHECK_MARK_EMOJI;
+            const emojiForTitle = isAcceptingMore ? Emojis.HOURGLASS_EMOJI : Emojis.GREEN_CHECK_EMOJI;
             const title = `${emojiForTitle} Reaction: ${mappedEmojiInfo.emojiName} (${amtTakenAmtMax})`;
             controlPanelEmbed.addField(title, info.toString());
         }

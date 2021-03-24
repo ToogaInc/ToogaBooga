@@ -25,8 +25,22 @@ export namespace VerifyManager {
         "Initiate"
     ];
 
+    /**
+     * The function where verification begins.
+     * @param {GuildMember} member The member to verify.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ISectionInfo} section The section to verify in.
+     */
     export async function verify(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
-        // TODO check if API is online
+        if (!(await RealmSharperWrapper.isOnline())) {
+            await FetchRequestUtilities.sendMsg(member, {
+                embed: MessageUtilities.generateBlankEmbed(member, "RED")
+                    .setTitle("Verification Unavailable.")
+                    .setDescription("Verification is currently unavailable. Please try again later.")
+                    .setTimestamp()
+            });
+            return;
+        }
         // If the person is currently interacting with something, don't let them verify.
         if (InteractionManager.InteractiveMenu.has(member.id))
             return;
@@ -70,7 +84,7 @@ export namespace VerifyManager {
             await verifyMain(member, guildDoc, dmChannel);
             return;
         }
-        else await verifySection(member, guildDoc, section);
+        else await verifySection(member, section, dmChannel);
     }
 
     /**
@@ -81,8 +95,16 @@ export namespace VerifyManager {
      * @private
      */
     async function verifyMain(member: GuildMember, guildDoc: IGuildInfo, dmChannel: DMChannel): Promise<void> {
+        // Make note of the verification logs channel.
+        const veriAttemptsChannel = member.guild.channels.cache
+            .get(guildDoc.channels.verificationChannels.verificationLogsChannelId) as TextChannel | undefined;
+        const veriSuccessChannel = member.guild.channels.cache
+            .get(guildDoc.channels.verificationChannels.verificationSuccessChannelId) as TextChannel | undefined;
+
+        veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[Main]\`** `)
+            .append(`${member} has started the verification process.`).toString());
         let nameToUse: string | null = null;
-        const entry = await MongoManager.getIdNameInfo(member.id);
+        const entry = await MongoManager.findIdInIdNameCollection(member.id);
         // See if we want to use a previously registered name.
         if (entry.length !== 0) {
             const descOldNameSb = new StringBuilder()
@@ -93,6 +115,7 @@ export namespace VerifyManager {
                 .append("If you do __not__ want to verify with one of the names shown below, react to the ")
                 .append(`${Emojis.X_EMOJI} emoji or type "cancel." Otherwise, Otherwise, react to the emoji `)
                 .append("corresponding to the name that you want to use.");
+
             const useOldNameEmbed = MessageUtilities.generateBlankEmbed(member, "GREEN")
                 .setTitle("Verification: Old Name(s) Found")
                 .setDescription(descOldNameSb.toString())
@@ -122,7 +145,11 @@ export namespace VerifyManager {
                     removeAllReactionAfterReact: false
                 });
             // No response or cancel.
-            if (colRes === null) return;
+            if (colRes === null) {
+                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.X_EMOJI} **\`[Main]\`** `)
+                    .append(`${member} has canceled the verification process.`).toString());
+                return;
+            }
             // Got an emoji
             if (colRes instanceof Emoji) {
                 const selectedIdx = emojisToUse.findIndex(x => x === colRes.name);
@@ -180,8 +207,11 @@ export namespace VerifyManager {
                 });
 
             // null or Emoji (which is the X) means cancel
-            if (!selected || selected instanceof Emoji)
+            if (!selected || selected instanceof Emoji) {
+                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.X_EMOJI} **\`[Main]\`** `)
+                    .append(`${member} has canceled the verification process.`).toString());
                 return;
+            }
             nameToUse = selected;
         }
 
@@ -208,6 +238,11 @@ export namespace VerifyManager {
 
         const currDateTime = Date.now();
         const verificationCode = StringUtil.generateRandomString(15);
+
+        veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[Main]\`** `)
+            .append(`${member} has selected the name: **\`${nameToUse}\`**. This person's verification code is `)
+            .append(`**\`${verificationCode}\`**.`).toString());
+
         const verificationIntroEmbed = MessageUtilities.generateBlankEmbed(member, "RANDOM")
             .setTitle(`${Emojis.HOURGLASS_EMOJI} Verifying For: **${member.guild.name}**`)
             .setDescription(verifIntroDesc.toString())
@@ -220,40 +255,40 @@ export namespace VerifyManager {
                 .append(`settings page [here](https://www.realmeye.com/settings-of/${nameToUse}).`))
             .addField("3. Wait", new StringBuilder("RealmEye may take upwards of 30 seconds to fully ")
                 .append("update. Please wait for at least 30 seconds before you move to the next step."))
-            .addField("4. Confirm", new StringBuilder().append(`React to the ${Emojis.GREEN_CHECK_MARK_EMOJI} `)
+            .addField("4. Confirm", new StringBuilder().append(`React to the ${Emojis.GREEN_CHECK_EMOJI} `)
                 .append("emoji to begin the verification check. If you have already reacted, please un-react and ")
                 .append("then react again."))
             .setFooter("Verification Session Ends At:")
             .setTimestamp(currDateTime + 15 * 60 * 1000);
-        const reactions: EmojiResolvable[] = [Emojis.GREEN_CHECK_MARK_EMOJI, Emojis.X_EMOJI];
+        const reactions: EmojiResolvable[] = [Emojis.GREEN_CHECK_EMOJI, Emojis.X_EMOJI];
         const verificationMsg = await dmChannel.send(verificationIntroEmbed);
         AdvancedCollector.reactFaster(verificationMsg, reactions);
+
         // Start the reaction collectors.
         let lastChecked = 0;
         const collector = new GeneralCollectorBuilder()
             .setMessage(verificationMsg)
             .setTime(15 * 60 * 1000)
             .setReactionFilter((r, u) => reactions.includes(r.emoji) && u.id === member.id)
-            .addReactionHandler(Emojis.GREEN_CHECK_MARK_EMOJI, async (user, instance) => {
+            .addReactionHandler(Emojis.GREEN_CHECK_EMOJI, async (user, instance) => {
                 const timeDiff = Date.now() - lastChecked;
                 if (timeDiff < 30 * 1000) {
+                    const timeLeft = 30 - Math.round(timeDiff / 1000);
                     const needToWaitEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
                         .setTitle("Need To Wait.")
                         .setDescription(new StringBuilder().append("Slow down! You need to wait at least ")
-                            .append(`${30 - Math.round(timeDiff / 1000)} seconds before you can try again.`))
+                            .append(`${timeLeft} seconds before you can try again.`))
                         .setFooter(`Verifying In: ${member.guild.name}`);
                     MessageUtilities.sendThenDelete({embed: needToWaitEmbed}, dmChannel);
+
+                    veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[Main]\`** `)
+                        .append(`${member} still needs to wait ${timeLeft} seconds until he or she can attempt to `)
+                        .append("verify again.").toString());
                     return;
                 }
+
                 lastChecked = Date.now();
                 if (!(await RealmSharperWrapper.isOnline())) {
-                    const notConnectedEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                        .setTitle("Unable to Reach RealmSharper API Service")
-                        .setDescription(new StringBuilder().append("I am currently unable to reach the RealmEye API. ")
-                            .append("Verification has been canceled. Please try verifying at a later time."))
-                        .setFooter("Verification Terminated.");
-                    MessageUtilities.sendThenDelete({embed: notConnectedEmbed}, dmChannel);
-                    await verificationMsg.edit(notConnectedEmbed).catch();
                     instance.stop("NOT_CONNECTED");
                     return;
                 }
@@ -268,6 +303,9 @@ export namespace VerifyManager {
                             .append("the verification process."))
                         .setFooter("Profile Not Found.");
                     MessageUtilities.sendThenDelete({embed: noPlayerDataEmbed}, dmChannel);
+
+                    veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[Main]\`** `)
+                        .append(`${member}'s profile could not be found.`).toString());
                     return;
                 }
 
@@ -281,59 +319,113 @@ export namespace VerifyManager {
                             .append(StringUtil.codifyString(verificationCode)))
                         .setFooter("Verification Code Not Found.");
                     MessageUtilities.sendThenDelete({embed: codeNotFoundEmbed}, dmChannel);
+
+                    veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[Main]\`** `)
+                        .append(`${member} (**\`${resp.name}\`**) does not have the verification code in his or her `)
+                        .append(`description. The verification code is: **\`${verificationCode}\`**.`).toString());
                     return;
                 }
 
                 // Check all requirements.
-                const res = await checkRequirements(member, dmChannel, verifReq, resp);
+                const res = await checkRequirements(member, dmChannel, guildDoc, resp);
                 if (!res) return;
 
+                nameToUse = resp.name;
                 instance.stop("PASSED_ALL");
             })
-            .addReactionHandler(Emojis.X_EMOJI, (user, instance) => {
+            .addReactionHandler(Emojis.X_EMOJI, async (user, instance) => {
                 instance.stop("CANCEL_PROCESS");
             })
-            .setEndOfCollectorFunc(r => {
+            .setEndOfCollectorFunc(async r => {
+                if (r === "MANUAL") {
+                    await handleManualVerification(member);
+                    return;
+                }
+
+                // Default timed out
                 if (r === "time") {
+                    const timedOutEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                        .setTitle("Verification Timed Out")
+                        .setDescription(new StringBuilder().append("Your verification process has timed out. Please ")
+                            .append("restart the verification process."))
+                        .setFooter("Verification Timed Out.");
+                    MessageUtilities.sendThenDelete({embed: timedOutEmbed}, dmChannel);
 
+                    veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.X_EMOJI} **\`[Main]\`** `)
+                        .append(`${member}'s verification process has been timed out. He or she will need to restart `)
+                        .append("the verification process.").toString());
                     return;
                 }
 
+                // Process canceled by the user.
                 if (r === "CANCEL_PROCESS") {
-
+                    await verificationMsg.delete().catch();
+                    veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.X_EMOJI} **\`[Main]\`** `)
+                        .append(`${member}'s verification process has been canceled.`).toString());
                     return;
                 }
 
+                // RealmSharper not connected.
                 if (r === "NOT_CONNECTED") {
+                    const notConnectedEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                        .setTitle("Unable to Reach RealmSharper API Service")
+                        .setDescription(new StringBuilder().append("I am currently unable to reach the RealmEye API. ")
+                            .append("Verification has been canceled. Please try verifying at a later time."))
+                        .setFooter("Verification Terminated.");
+                    MessageUtilities.sendThenDelete({embed: notConnectedEmbed}, dmChannel);
+                    await verificationMsg.edit(notConnectedEmbed).catch();
 
+                    veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.X_EMOJI} **\`[Main]\`** `)
+                        .append(`${member} tried to verify, but there was a problem trying to reach the RealmEye API.`)
+                        .toString());
                     return;
                 }
 
+                // Passed all!
                 if (r === "PASSED_ALL") {
+                    await verificationMsg.delete().catch();
+                    await member.setNickname(member.user.username === nameToUse
+                        ? `${nameToUse!}.`
+                        : nameToUse!).catch();
+                    await member.roles.add(guildDoc.roles.verifiedRoleId).catch();
 
+                    veriSuccessChannel?.send(new StringBuilder().append(`${Emojis.GREEN_CHECK_EMOJI} **\`[Main]\`** `)
+                        .append(`${member} (**\`${nameToUse!}\`**) has successfully verified.`).toString());
                 }
             })
             .build();
         collector.start();
     }
 
-    async function verifySection(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
+    async function verifySection(member: GuildMember, section: ISectionInfo, dmChannel: DMChannel): Promise<void> {
 
     }
+
+    async function handleManualVerification(member: GuildMember): Promise<void> {
+
+    }
+
 
     /**
      * Checks a series of requirements to ensure that they are fulfilled.
      * @param {GuildMember} member The member to check.
      * @param {DMChannel} dmChannel The DM channel.
-     * @param {IVerificationRequirements} verifReq The verification requirements to check against.
+     * @param {ISectionInfo | IGuildInfo} section The section to check the requirements for.
      * @param {PrivateApiDefinitions.IPlayerData} resp The player's stats.
      * @return {Promise<boolean>} Whether the person passes all verification requirements.
      * @private
      */
-    async function checkRequirements(member: GuildMember, dmChannel: DMChannel, verifReq: IVerificationRequirements,
+    async function checkRequirements(member: GuildMember, dmChannel: DMChannel, section: ISectionInfo | IGuildInfo,
                                      resp: PrivateApiDefinitions.IPlayerData): Promise<boolean> {
+        const verifReq = section.otherMajorConfig.verificationProperties.verificationRequirements;
+        const veriAttemptsChannel = member.guild.channels.cache
+            .get("guildId" in section
+                ? section.channels.verificationChannels.verificationLogsChannelId
+                : section.channels.verification.verificationLogsChannelId) as TextChannel | undefined;
+        const secName = "guildId" in section ? "Main" : section.sectionName;
 
         // Check requirements.
+        // Start with generic requirements.
         if (verifReq.lastSeen.mustBeHidden && resp.lastSeen !== "hidden") {
             const codeNotFoundEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
                 .setTitle("Last Seen Location Not Hidden")
@@ -341,6 +433,9 @@ export namespace VerifyManager {
                     .append("make sure it is hidden and then try again."))
                 .setFooter("Verification Code Not Found.");
             MessageUtilities.sendThenDelete({embed: codeNotFoundEmbed}, dmChannel);
+
+            veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
+                .append(`${member}'s (**\`${resp.name}\`**) last seen location is not hidden.`).toString());
             return false;
         }
 
@@ -355,6 +450,13 @@ export namespace VerifyManager {
                         .append(StringUtil.codifyString(verifReq.guild.guildName)))
                     .setFooter("Incorrect Guild.");
                 MessageUtilities.sendThenDelete({embed: notInRightGuildEmbed}, dmChannel);
+
+                const logMsg = new StringBuilder(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `);
+                if (resp.guild) logMsg.append(`${member} (**\`${resp.name}\`**) is in guild **\`${resp.guild}\`** `)
+                    .append(`but is expected to be in guild **\`${verifReq.guild.guildName.name}\`**.`);
+                else logMsg.append(`${member} (**\`${resp.name}\`**) is not in a guild but is expected to be in `)
+                    .append(`guild **\`${verifReq.guild.guildName.name}\`**.`);
+                veriAttemptsChannel?.send(logMsg.toString());
                 return false;
             }
 
@@ -368,6 +470,12 @@ export namespace VerifyManager {
                         .append(StringUtil.codifyString(verifReq.guild.guildRank.minRank)))
                     .setFooter("Incorrect Guild Rank.");
                 MessageUtilities.sendThenDelete({embed: notValidRankEmbed}, dmChannel);
+
+                const logMsg = new StringBuilder(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `);
+                if (resp.guild) logMsg.append(`${member} (**\`${resp.name}\`**) has rank **\`${resp.guildRank}\`** `)
+                    .append(`but must have at least the **\`${verifReq.guild.guildRank.minRank}\`** rank.`);
+                else logMsg.append(`${member} (**\`${resp.name}\`**) is not in a guild so he/she doesn't have a rank.`);
+                veriAttemptsChannel?.send(logMsg.toString());
                 return false;
             }
         }
@@ -379,6 +487,10 @@ export namespace VerifyManager {
                     .append("which is lower than what is required."))
                 .setFooter("Rank Too Low.");
             MessageUtilities.sendThenDelete({embed: tooLowRankEmbed}, dmChannel);
+
+            veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
+                .append(`${member} (**\`${resp.name}\`**) has **\`${resp.rank}\`** stars but must have at least `)
+                .append(`${verifReq.rank.minRank} stars to verify.`).toString());
             return false;
         }
 
@@ -389,6 +501,10 @@ export namespace VerifyManager {
                     .append("which is lower than what is required."))
                 .setFooter("Alive Fame Too Low.");
             MessageUtilities.sendThenDelete({embed: tooLowAliveFameEmbed}, dmChannel);
+
+            veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
+                .append(`${member} (**\`${resp.name}\`**) has **\`${resp.fame}\`** alive fame but must have at least `)
+                .append(`${verifReq.aliveFame.minFame} alive fame to verify.`).toString());
             return false;
         }
 
@@ -399,6 +515,7 @@ export namespace VerifyManager {
             for (const stat of verifReq.characters.statsNeeded)
                 neededStats.push(stat);
 
+            // If we can check past deaths, let's update the array of neededStats to reflect that.
             if (verifReq.characters.checkPastDeaths) {
                 if (gyHist) {
                     const stats = gyHist.statsCharacters.map(x => x.stats);
@@ -408,7 +525,8 @@ export namespace VerifyManager {
                 }
             }
 
-            for (const character of resp.characters)
+            // Here, we can check each character's stats.
+            for (const character of resp.characters.filter(x => x.statsMaxed !== -1))
                 neededStats[character.statsMaxed]--;
 
             if (neededStats.some(x => x > 0)) {
@@ -431,6 +549,11 @@ export namespace VerifyManager {
                     .setDescription(descSB.toString())
                     .setFooter("Stats Requirement Not Met.");
                 MessageUtilities.sendThenDelete({embed: statsNotMetEmbed}, dmChannel);
+
+                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
+                    .append(`${member} (**\`${resp.name}\`**) did not meet the minimum stats requirement. This `)
+                    .append("person needs the following stats to pass this requirement:")
+                    .append(StringUtil.codifyString(neededStats.toString())).toString());
                 return false;
             }
         }
@@ -443,10 +566,15 @@ export namespace VerifyManager {
                         .append("Please make sure your graveyard is set so anyone can see it."))
                     .setFooter("Graveyard Summary Inaccessible.");
                 MessageUtilities.sendThenDelete({embed: noGySummaryEmbed}, dmChannel);
+
+                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
+                    .append(`${member} (**\`${resp.name}\`**) does not have his or her graveyard summary set to `)
+                    .append("public.").toString());
                 return false;
             }
 
             const issues: string[] = [];
+            const logIssues: string[] = [];
             for (const gyStat of verifReq.graveyardSummary.minimum) {
                 if (!(gyStat.key in GeneralConstants.GY_HIST_ACHIEVEMENTS)) continue;
                 const gyHistKey = GeneralConstants.GY_HIST_ACHIEVEMENTS[gyStat.key];
@@ -454,12 +582,15 @@ export namespace VerifyManager {
                 // Doesn't qualify because dungeon doesn't exist.
                 if (!data) {
                     issues.push(`- You do not have any ${gyStat.key} completions.`);
+                    logIssues.push(`- No ${gyStat.key} completions.`);
                     continue;
                 }
 
                 // Doesn't qualify because not enough
-                if (gyStat.value > data.total)
+                if (gyStat.value > data.total) {
                     issues.push(`- You have ${data.total} / ${gyStat.key} total ${gyStat.key} completions needed.`);
+                    logIssues.push(`- ${data.total} / ${gyStat.key} total ${gyStat.key} completions.`);
+                }
             }
 
             if (issues.length > 0) {
@@ -470,6 +601,11 @@ export namespace VerifyManager {
                         .append(StringUtil.codifyString(issues.join("\n"))))
                     .setFooter("Graveyard Summary Not Satisfied.");
                 MessageUtilities.sendThenDelete({embed: dgnHistoryLowEmbed}, dmChannel);
+
+                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
+                    .append(`${member} (**\`${resp.name}\`**) did not satisfy the dungeon completion requirement `)
+                    .append("as shown in graveyard summary. The following list represents what is not satisfied:")
+                    .append(StringUtil.codifyString(logIssues.join("\n"))).toString());
                 return false;
             }
         }
@@ -483,12 +619,17 @@ export namespace VerifyManager {
                         .append("Please make sure your exaltation data is set so anyone can see it."))
                     .setFooter("Exaltation Data Inaccessible.");
                 MessageUtilities.sendThenDelete({embed: noGySummaryEmbed}, dmChannel);
+
+                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
+                    .append(`${member} (**\`${resp.name}\`**) does not have his or her exaltation data set to `)
+                    .append("public.").toString());
                 return false;
             }
 
-            const sum: { [s: string]: number } = {};
+            // We use this variable to keep track of each stat and corresponding exaltations needed.
+            const neededExalt: { [s: string]: number } = {};
             for (const d of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
-                sum[d] = verifReq.exaltations.minimum[d];
+                neededExalt[d] = verifReq.exaltations.minimum[d];
 
             // For each character...
             for (const entry of exaltData.exaltations) {
@@ -496,17 +637,18 @@ export namespace VerifyManager {
                 for (const actExaltStat of Object.keys(entry.exaltationStats)) {
                     for (const stat of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
                         if (actExaltStat === GeneralConstants.SHORT_STAT_TO_LONG[stat].toLowerCase())
-                            sum[stat] -= entry.exaltationStats[actExaltStat];
+                            neededExalt[stat] -= entry.exaltationStats[actExaltStat];
                 }
             }
 
-            const notMetExaltations = Object.keys(sum)
-                .filter(x => sum[x] > 0);
+            // If we happen to have any stats whose exaltation number is > 0, then we want to show them.
+            const notMetExaltations = Object.keys(neededExalt)
+                .filter(x => neededExalt[x] > 0);
             if (notMetExaltations.length > 0) {
                 const issuesExaltations = new StringBuilder();
                 for (const statNotFulfilled of notMetExaltations) {
                     const statName = GeneralConstants.SHORT_STAT_TO_LONG[statNotFulfilled];
-                    issuesExaltations.append(`- Need ${sum[statNotFulfilled]} ${statName} Exaltations.`)
+                    issuesExaltations.append(`- Need ${neededExalt[statNotFulfilled]} ${statName} Exaltations.`)
                         .appendLine();
                 }
 
@@ -517,6 +659,11 @@ export namespace VerifyManager {
                         .append(StringUtil.codifyString(issuesExaltations.toString())))
                     .setFooter("Exaltation Requirement Not Satisfied.");
                 MessageUtilities.sendThenDelete({embed: dgnHistoryLowEmbed}, dmChannel);
+
+                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
+                    .append(`${member} (**\`${resp.name}\`**) did not satisfy the dungeon completion requirement `)
+                    .append("as shown in graveyard summary. The following list represents what is not satisfied:")
+                    .append(StringUtil.codifyString(issuesExaltations.toString())).toString());
                 return false;
             }
         }
@@ -524,6 +671,12 @@ export namespace VerifyManager {
         return true;
     }
 
+    /**
+     * Checks whether a person has the required guild rank or higher.
+     * @param {string} minNeeded The minimum rank needed.
+     * @param {string} actual The person's rank.
+     * @return {boolean} Whether the rank is good.
+     */
     export function isValidGuildRank(minNeeded: string, actual: string): boolean {
         if (minNeeded === actual) return true;
         for (let i = GUILD_ROLES.length - 1; i >= 0; i--) {
