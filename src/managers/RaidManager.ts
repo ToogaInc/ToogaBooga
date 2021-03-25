@@ -142,7 +142,7 @@ export class RaidManager {
      */
     public static async createNewLivingInstance(guildDoc: IGuildInfo,
                                                 raidInfo: IRaidInfo): Promise<RaidManager | null> {
-        const guild = await FetchRequestUtilities.fetchGuild(guildDoc.guildId);
+        const guild = await FetchRequestUtilities.fetchGuild(guildDoc._id);
         if (!guild) return null;
 
         const memberInit = await FetchRequestUtilities.fetchGuildMember(guild, raidInfo.memberInit);
@@ -853,7 +853,7 @@ export class RaidManager {
             return true;
 
         await MongoManager.getGuildCollection().updateOne({
-            guildId: this._guild.id,
+            _id: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
             $push: {
@@ -877,7 +877,7 @@ export class RaidManager {
             return;
         // Update the location in the database.
         await MongoManager.getGuildCollection().findOneAndUpdate({
-            guildId: this._guild.id,
+            _id: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
             $set: {
@@ -895,7 +895,7 @@ export class RaidManager {
         if (!obj) return;
         const res = await MongoManager
             .getGuildCollection()
-            .findOneAndUpdate({guildId: this._guild.id}, {
+            .findOneAndUpdate({_id: this._guild.id}, {
                 $push: {
                     activeRaids: obj
                 }
@@ -912,7 +912,7 @@ export class RaidManager {
         if (!this._raidVc) return;
         await MongoManager
             .getGuildCollection()
-            .updateOne({guildId: this._guild.id}, {
+            .updateOne({_id: this._guild.id}, {
                 $pull: {
                     activeRaids: {
                         vcId: this._raidVc.id
@@ -931,7 +931,7 @@ export class RaidManager {
         this._raidStatus = status;
         // Update the location in the database.
         await MongoManager.getGuildCollection().findOneAndUpdate({
-            guildId: this._guild.id,
+            _id: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
             $set: {

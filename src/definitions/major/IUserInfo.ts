@@ -1,7 +1,8 @@
 import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
-import {IIdNameInfo} from "./IIdNameInfo";
+import {IDocument} from "./IDocument";
 
-export interface IUserInfo extends IIdNameInfo {
+export interface IUserInfo extends IDocument<string> {
+    _id: string;
     loggedInfo: IPropertyKeyValuePair<string, number>[];
     details: {
         moderationHistory: {

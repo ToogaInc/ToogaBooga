@@ -9,7 +9,6 @@ import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
 import {IIdNameInfo} from "../definitions/major/IIdNameInfo";
 import {UserManager} from "./UserManager";
 import {GuildMember} from "discord.js";
-import * as assert from "assert";
 
 export namespace MongoManager {
     let ThisMongoClient: MongoClient | null = null;
@@ -147,7 +146,7 @@ export namespace MongoManager {
             throw new ReferenceError("IDNameCollection null. Use connect method first.");
 
         return await IdNameCollection.find({
-            discordUserId: discordId
+            _id: discordId
         }).toArray();
     }
 
@@ -188,7 +187,7 @@ export namespace MongoManager {
 
         // Case 2: ID found, IGN not.
         if (idEntries.length > 0 && ignEntries.length === 0) {
-            await IdNameCollection.updateOne({discordUserId: idEntries[0].discordUserId}, {
+            await IdNameCollection.updateOne({_id: idEntries[0]._id}, {
                 $push: {
                     rotmgNames: {
                         lowercaseIgn: ign.toLowerCase(),
@@ -203,7 +202,7 @@ export namespace MongoManager {
         if (idEntries.length === 0 && ignEntries.length > 0) {
             await IdNameCollection.updateOne({"rotmgNames.lowercaseIgn": ign.toLowerCase()}, {
                 $set: {
-                    discordUserId: member.id
+                    _id: member.id
                 }
             });
             return;
@@ -226,8 +225,8 @@ export namespace MongoManager {
         await IdNameCollection.deleteMany({
             $or: [
                 {
-                    discordUserId: {
-                        $in: allEntries.map(x => x.discordUserId)
+                    _id: {
+                        $in: allEntries.map(x => x._id)
                     }
                 },
                 {
@@ -237,6 +236,8 @@ export namespace MongoManager {
                 }
             ]
         });
+
+        await getUserCollection().updateOne({asdasdasdad: "asdads"}, {});
 
         await IdNameCollection.insertOne(newObj);
     }
@@ -288,7 +289,7 @@ export namespace MongoManager {
                     blacklistLoggingChannelId: ""
                 }
             },
-            guildId: guildId,
+            _id: guildId,
             guildSections: [],
             moderation: {blacklistedUsers: [], suspendedUsers: []},
             otherMajorConfig: {
@@ -395,9 +396,8 @@ export namespace MongoManager {
     export function getDefaultUserConfig(userId: string, ign?: string): IUserInfo {
         return {
             details: {moderationHistory: [], settings: []},
-            discordUserId: userId,
-            loggedInfo: [],
-            rotmgNames: ign ? [{lowercaseIgn: ign.toLowerCase(), ign: ign}] : []
+            _id: userId,
+            loggedInfo: []
         };
     }
 
@@ -410,7 +410,7 @@ export namespace MongoManager {
     export function getDefaultIdNameObj(userId: string, ign: string): IIdNameInfo {
         return {
             rotmgNames: [{lowercaseIgn: ign.toLowerCase(), ign: ign}],
-            discordUserId: userId
+            _id: userId
         };
     }
 
@@ -421,7 +421,7 @@ export namespace MongoManager {
      * @throws {Error} If adding a new guild document is not possible.
      */
     export async function getOrCreateGuildDb(guildId: string): Promise<IGuildInfo> {
-        const docs = await getGuildCollection().find({guildId: guildId}).toArray();
+        const docs = await getGuildCollection().find({_id: guildId}).toArray();
         if (docs.length === 0) {
             const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(guildId));
             if (insertRes.ops.length > 0)

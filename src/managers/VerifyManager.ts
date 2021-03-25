@@ -192,7 +192,7 @@ export namespace VerifyManager {
                     // If we have results and ALL results do not have this member's ID, then we stop the person from
                     // using this name.
                     const dbResults = await MongoManager.findNameInIdNameCollection(m.content);
-                    if (dbResults.length > 0 && dbResults.every(x => x.discordUserId !== member.id)) {
+                    if (dbResults.length > 0 && dbResults.every(x => x._id !== member.id)) {
                         await MessageUtilities.sendThenDelete({embed: nameInUseEmbed}, dmChannel);
                         return;
                     }
@@ -419,10 +419,10 @@ export namespace VerifyManager {
                                      resp: PrivateApiDefinitions.IPlayerData): Promise<boolean> {
         const verifReq = section.otherMajorConfig.verificationProperties.verificationRequirements;
         const veriAttemptsChannel = member.guild.channels.cache
-            .get("guildId" in section
+            .get("guildSections" in section
                 ? section.channels.verificationChannels.verificationLogsChannelId
                 : section.channels.verification.verificationLogsChannelId) as TextChannel | undefined;
-        const secName = "guildId" in section ? "Main" : section.sectionName;
+        const secName = "guildSections" in section ? "Main" : section.sectionName;
 
         // Check requirements.
         // Start with generic requirements.
