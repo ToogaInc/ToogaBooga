@@ -1,7 +1,7 @@
 import {IRealmIgn} from "../IRealmIgn";
-import {IDocument} from "./IDocument";
+import {IBaseDocument} from "./IBaseDocument";
 
-export interface IIdNameInfo extends IDocument<string> {
-    _id: string;
+export interface IIdNameInfo extends IBaseDocument {
+    discordId: string;
     rotmgNames: IRealmIgn[];
 }

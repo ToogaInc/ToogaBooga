@@ -79,7 +79,7 @@ export namespace PunishmentManager {
                 // If this is greater than 0, the person still needs to serve time.
                 if (details.endsAt - currentDateTime.getTime() > 0) continue;
 
-                const guildDbArr = await MongoManager.getGuildCollection().find({_id: guild.id})
+                const guildDbArr = await MongoManager.getGuildCollection().find({guildId: guild.id})
                     .toArray();
                 // This should never hit.
                 if (guildDbArr.length === 0) {
@@ -156,7 +156,7 @@ export namespace PunishmentManager {
                 if (shouldRemove) {
                     const data = SectionSuspendedPeople.get(id) as ISectionSuspendedDetails;
                     await MongoManager.getGuildCollection().findOneAndUpdate({
-                        _id: data.guild, "guildSections.uniqueIdentifier": data.sectionId
+                        guildId: data.guild, "guildSections.uniqueIdentifier": data.sectionId
                     }, {
                         $pull: {
                             "guildSections.$.properties.sectionSuspended": {
@@ -189,7 +189,7 @@ export namespace PunishmentManager {
                 // If this is greater than 0, the person still needs to serve time.
                 if (details.endsAt - Date.now() > 0) continue;
 
-                const guildDbArr = await MongoManager.getGuildCollection().find({_id: guild.id})
+                const guildDbArr = await MongoManager.getGuildCollection().find({guildId: guild.id})
                     .toArray();
                 if (guildDbArr.length === 0) {
                     idsToRemove.enqueue([id, false]);
@@ -249,7 +249,7 @@ export namespace PunishmentManager {
                 const [id, shouldRemove] = idsToRemove.dequeue();
                 if (shouldRemove) {
                     const data = SuspendedPeople.get(id) as ISuspendedDetails;
-                    await MongoManager.getGuildCollection().findOneAndUpdate({_id: data.guild}, {
+                    await MongoManager.getGuildCollection().findOneAndUpdate({guildId: data.guild}, {
                         $pull: {
                             "guildSections.moderation.suspendedUsers": {
                                 discordId: id.split("_")[0]

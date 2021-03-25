@@ -1,8 +1,8 @@
 import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
-import {IDocument} from "./IDocument";
+import {IBaseDocument} from "./IBaseDocument";
 
-export interface IUserInfo extends IDocument<string> {
-    _id: string;
+export interface IUserInfo extends IBaseDocument {
+    discordId: string;
     loggedInfo: IPropertyKeyValuePair<string, number>[];
     details: {
         moderationHistory: {

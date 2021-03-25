@@ -142,7 +142,7 @@ export class RaidManager {
      */
     public static async createNewLivingInstance(guildDoc: IGuildInfo,
                                                 raidInfo: IRaidInfo): Promise<RaidManager | null> {
-        const guild = await FetchRequestUtilities.fetchGuild(guildDoc._id);
+        const guild = await FetchRequestUtilities.fetchGuild(guildDoc.guildId);
         if (!guild) return null;
 
         const memberInit = await FetchRequestUtilities.fetchGuildMember(guild, raidInfo.memberInit);
@@ -853,7 +853,7 @@ export class RaidManager {
             return true;
 
         await MongoManager.getGuildCollection().updateOne({
-            _id: this._guild.id,
+            guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
             $push: {
@@ -877,7 +877,7 @@ export class RaidManager {
             return;
         // Update the location in the database.
         await MongoManager.getGuildCollection().findOneAndUpdate({
-            _id: this._guild.id,
+            guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
             $set: {
@@ -895,7 +895,7 @@ export class RaidManager {
         if (!obj) return;
         const res = await MongoManager
             .getGuildCollection()
-            .findOneAndUpdate({_id: this._guild.id}, {
+            .findOneAndUpdate({guildId: this._guild.id}, {
                 $push: {
                     activeRaids: obj
                 }
@@ -912,7 +912,7 @@ export class RaidManager {
         if (!this._raidVc) return;
         await MongoManager
             .getGuildCollection()
-            .updateOne({_id: this._guild.id}, {
+            .updateOne({guildId: this._guild.id}, {
                 $pull: {
                     activeRaids: {
                         vcId: this._raidVc.id
@@ -931,7 +931,7 @@ export class RaidManager {
         this._raidStatus = status;
         // Update the location in the database.
         await MongoManager.getGuildCollection().findOneAndUpdate({
-            _id: this._guild.id,
+            guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
             $set: {
@@ -1146,6 +1146,7 @@ export class RaidManager {
         const permsToEvaluate = isNormalAfk
             ? this._raidSection.otherMajorConfig.afkCheckProperties.afkCheckPermissions
             : this._raidSection.otherMajorConfig.afkCheckProperties.prePostAfkCheckPermissions;
+        // Declare all permissions which are declared as a necessary role (all bot-defined roles)
         const permsToReturn: OverwriteResolvable[] = [
             {
                 id: this._raidSection.roles.verifiedRoleId,
@@ -1211,6 +1212,7 @@ export class RaidManager {
             }
         ].filter(y => this._guild.roles.cache.has(y.id)
             && ((y.allow && y.allow.length !== 0) || (y.deny && y.deny.length !== 0)));
+        // And then define any additional roles.
         permsToEvaluate.filter(x => !x.key.startsWith("PD-"))
             .filter(x => x.value.allow.length !== 0 || x.value.deny.length !== 0)
             .forEach(perm => permsToReturn.push({

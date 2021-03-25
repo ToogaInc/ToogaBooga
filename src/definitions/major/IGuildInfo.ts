@@ -11,11 +11,11 @@ import {IDungeonInfo} from "./parts/IDungeonInfo";
 import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
 import {ICmdPermOverwrite} from "../ICmdPermOverwrite";
 import {IManualVerificationEntry} from "./parts/IManualVerificationEntry";
-import {IDocument} from "./IDocument";
+import {IBaseDocument} from "./IBaseDocument";
 
-export interface IGuildInfo extends IDocument<string> {
+export interface IGuildInfo extends IBaseDocument {
     // the guild id suffices as an identifier
-    _id: string;
+    guildId: string;
     // all possible roles
     roles: {
         mutedRoleId: string;

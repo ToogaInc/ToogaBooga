@@ -1,4 +1,4 @@
-import {Collection, MongoClient} from "mongodb";
+import {Collection, FilterQuery, MongoClient, ObjectID} from "mongodb";
 import {IUserInfo} from "../definitions/major/IUserInfo";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {IBotInfo} from "../definitions/major/IBotInfo";
@@ -146,7 +146,7 @@ export namespace MongoManager {
             throw new ReferenceError("IDNameCollection null. Use connect method first.");
 
         return await IdNameCollection.find({
-            _id: discordId
+            discordId: discordId
         }).toArray();
     }
 
@@ -187,7 +187,7 @@ export namespace MongoManager {
 
         // Case 2: ID found, IGN not.
         if (idEntries.length > 0 && ignEntries.length === 0) {
-            await IdNameCollection.updateOne({_id: idEntries[0]._id}, {
+            await IdNameCollection.updateOne({discordId: idEntries[0].discordId}, {
                 $push: {
                     rotmgNames: {
                         lowercaseIgn: ign.toLowerCase(),
@@ -199,12 +199,24 @@ export namespace MongoManager {
         }
 
         // Case 3: ID not found, IGN found.
+        // In this case, we need to also modify the ID of the document found in the UserManager doc.
         if (idEntries.length === 0 && ignEntries.length > 0) {
-            await IdNameCollection.updateOne({"rotmgNames.lowercaseIgn": ign.toLowerCase()}, {
+            const oldDoc = await IdNameCollection.findOneAndUpdate({
+                "rotmgNames.lowercaseIgn": ign.toLowerCase()
+            }, {
                 $set: {
-                    _id: member.id
+                    discordId: member.id
                 }
-            });
+            }, {returnOriginal: true});
+
+            if (oldDoc.value) {
+                await getUserCollection().updateOne({discordId: oldDoc.value.discordId}, {
+                    $set: {
+                        discordId: member.id
+                    }
+                });
+            }
+
             return;
         }
 
@@ -225,8 +237,8 @@ export namespace MongoManager {
         await IdNameCollection.deleteMany({
             $or: [
                 {
-                    _id: {
-                        $in: allEntries.map(x => x._id)
+                    discordId: {
+                        $in: allEntries.map(x => x.discordId)
                     }
                 },
                 {
@@ -237,9 +249,69 @@ export namespace MongoManager {
             ]
         });
 
-        await getUserCollection().updateOne({asdasdasdad: "asdads"}, {});
-
         await IdNameCollection.insertOne(newObj);
+
+        // And now create a new User document.
+        const filterQuery: FilterQuery<IUserInfo>[] = [];
+        const searchedIds = new Set<string>();
+        for (const entry of allEntries) {
+            if (searchedIds.has(entry.discordId))
+                continue;
+
+            filterQuery.push({
+                discordId: entry.discordId
+            });
+            searchedIds.add(entry.discordId);
+        }
+
+        // Get all relevant documents.
+        const foundDocs = await getUserCollection().find({
+            $or: filterQuery
+        }).toArray();
+
+        const userDoc = getDefaultUserConfig(member.id, ign);
+        // Copy all old values to the new document
+        for (const doc of foundDocs) {
+            // Copy all logged info to the user document.
+            for (const loggedInfo of doc.loggedInfo) {
+                const idx = userDoc.loggedInfo.findIndex(x => x.key === loggedInfo.key);
+                if (idx === -1) {
+                    userDoc.loggedInfo.push({
+                        key: loggedInfo.key,
+                        value: loggedInfo.value
+                    });
+                    continue;
+                }
+
+                userDoc.loggedInfo[idx].value += loggedInfo.value;
+            }
+
+            // Copy all punishment history
+            for (const punishmentHist of doc.details.moderationHistory)
+                userDoc.details.moderationHistory.push(punishmentHist);
+
+            // Copy all settings
+            for (const setting of doc.details.settings) {
+                const idx = userDoc.details.settings.findIndex(x => x.key === setting.key);
+                if (idx === -1) {
+                    userDoc.details.settings.push({
+                        key: setting.key,
+                        value: setting.value
+                    });
+                    continue;
+                }
+
+                userDoc.details.settings[idx].value = setting.value;
+            }
+        }
+
+        // Delete all old documents.
+        await getUserCollection().deleteMany({
+            $or: filterQuery
+        });
+
+        // And add the new user document.
+        await getUserCollection().insertOne(userDoc);
     }
 
     /**
@@ -263,6 +335,7 @@ export namespace MongoManager {
         });
 
         return {
+            _id: new ObjectID(),
             activeRaids: [],
             customCmdPermissions: [],
             customDungeons: [],
@@ -289,7 +362,7 @@ export namespace MongoManager {
                     blacklistLoggingChannelId: ""
                 }
             },
-            _id: guildId,
+            guildId: guildId,
             guildSections: [],
             moderation: {blacklistedUsers: [], suspendedUsers: []},
             otherMajorConfig: {
@@ -401,8 +474,9 @@ export namespace MongoManager {
      */
     export function getDefaultUserConfig(userId: string, ign?: string): IUserInfo {
         return {
+            _id: new ObjectID(),
             details: {moderationHistory: [], settings: []},
-            _id: userId,
+            discordId: userId,
             loggedInfo: []
         };
     }
@@ -415,8 +489,9 @@ export namespace MongoManager {
      */
     export function getDefaultIdNameObj(userId: string, ign: string): IIdNameInfo {
         return {
+            _id: new ObjectID(),
             rotmgNames: [{lowercaseIgn: ign.toLowerCase(), ign: ign}],
-            _id: userId
+            discordId: userId
         };
     }
 
@@ -427,7 +502,7 @@ export namespace MongoManager {
      * @throws {Error} If adding a new guild document is not possible.
      */
     export async function getOrCreateGuildDb(guildId: string): Promise<IGuildInfo> {
-        const docs = await getGuildCollection().find({_id: guildId}).toArray();
+        const docs = await getGuildCollection().find({guildId: guildId}).toArray();
         if (docs.length === 0) {
             const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(guildId));
             if (insertRes.ops.length > 0)

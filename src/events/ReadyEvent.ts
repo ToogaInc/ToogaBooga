@@ -37,7 +37,7 @@ export async function onReadyEvent(): Promise<void> {
     const botGuilds = OneRealmBot.BotInstance.client.guilds.cache;
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
     for await (const [id] of botGuilds) {
-        if (guildDocs.find(x => x._id === id) || OneRealmBot.BotInstance.config.ids.exemptGuilds.includes(id))
+        if (guildDocs.find(x => x.guildId === id) || OneRealmBot.BotInstance.config.ids.exemptGuilds.includes(id))
             continue;
 
         await MongoManager.getGuildCollection().insertOne(MongoManager.getDefaultGuildConfig(id));
@@ -46,7 +46,7 @@ export async function onReadyEvent(): Promise<void> {
     // Delete guild documents corresponding to guilds that the bot is no longer in.
     // Also add suspended people to the timer system
     for await (const doc of guildDocs) {
-        const associatedGuild = botGuilds.find(x => x.id === doc._id);
+        const associatedGuild = botGuilds.find(x => x.id === doc.guildId);
         if (associatedGuild) {
             doc.moderation.suspendedUsers.forEach(x => {
                 if (PunishmentManager.isInSuspensionTimer(x.discordId, associatedGuild))
@@ -64,7 +64,7 @@ export async function onReadyEvent(): Promise<void> {
             continue;
         }
 
-        await MongoManager.getGuildCollection().deleteOne({_id: doc._id});
+        await MongoManager.getGuildCollection().deleteOne({guildId: doc.guildId});
     }
 
     PunishmentManager.startChecker();

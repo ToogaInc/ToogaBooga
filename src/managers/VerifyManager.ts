@@ -192,7 +192,7 @@ export namespace VerifyManager {
                     // If we have results and ALL results do not have this member's ID, then we stop the person from
                     // using this name.
                     const dbResults = await MongoManager.findNameInIdNameCollection(m.content);
-                    if (dbResults.length > 0 && dbResults.every(x => x._id !== member.id)) {
+                    if (dbResults.length > 0 && dbResults.every(x => x.discordId !== member.id)) {
                         await MessageUtilities.sendThenDelete({embed: nameInUseEmbed}, dmChannel);
                         return;
                     }
