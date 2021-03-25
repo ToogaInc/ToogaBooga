@@ -76,11 +76,15 @@ export namespace GeneralConstants {
     export const SECURITY_ROLE: string = "PD-{SECURITY_ROLE}";
     export const OFFICER_ROLE: string = "PD-{OFFICER_ROLE}";
     export const MODERATOR_ROLE: string = "PD-{MODERATOR_ROLE}";
+
     export const UNIVERSAL_LEADER_ROLE: string = "PD-{UNIVERSAL_RL}";
     export const UNIVERSAL_ALMOST_LEADER_ROLE: string = "PD-{UNIVERSAL_ARL}";
+    export const UNIVERSAL_VETERAN_LEADER_ROLE: string = "PD-{UNIVERSAL_VRL}";
     export const UNIVERSAL_HEAD_LEADER_ROLE: string = "PD-{UNIVERSAL_HRL}";
+
     export const SECTION_ALMOST_LEADER_ROLE: string = "PD-{SECTION_ARL}";
     export const SECTION_LEADER_ROLE: string = "PD-{SECTION_RL}";
+    export const SECTION_VETERAN_LEADER_ROLE: string = "PD-{SECTION_VRL}";
     export const SECTION_HEAD_LEADER_ROLE: string = "PD-{SECTION_HRL}";
 
     export const ALL_PD_DEFINED_ROLES: string[] = [
@@ -89,11 +93,15 @@ export namespace GeneralConstants {
         SECURITY_ROLE,
         OFFICER_ROLE,
         MODERATOR_ROLE,
+
         UNIVERSAL_ALMOST_LEADER_ROLE,
         UNIVERSAL_LEADER_ROLE,
+        UNIVERSAL_VETERAN_LEADER_ROLE,
         UNIVERSAL_HEAD_LEADER_ROLE,
+
         SECTION_ALMOST_LEADER_ROLE,
         SECTION_LEADER_ROLE,
+        SECTION_VETERAN_LEADER_ROLE,
         SECTION_HEAD_LEADER_ROLE
     ];
 
@@ -139,6 +147,11 @@ export namespace GeneralConstants {
             deny: []
         },
         {
+            id: UNIVERSAL_VETERAN_LEADER_ROLE,
+            allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"],
+            deny: []
+        },
+        {
             id: SECTION_ALMOST_LEADER_ROLE,
             allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "STREAM"],
             deny: []
@@ -150,6 +163,11 @@ export namespace GeneralConstants {
         },
         {
             id: SECTION_HEAD_LEADER_ROLE,
+            allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"],
+            deny: []
+        },
+        {
+            id: SECTION_VETERAN_LEADER_ROLE,
             allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"],
             deny: []
         }

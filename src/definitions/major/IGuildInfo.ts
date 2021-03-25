@@ -32,6 +32,7 @@ export interface IGuildInfo extends IDocument<string> {
                 almostLeaderRoleId: string;
                 leaderRoleId: string;
                 headLeaderRoleId: string;
+                vetLeaderRoleId: string;
             };
             // section leader roles -- will only work
             // in the specific section (i.e. main)

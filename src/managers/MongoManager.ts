@@ -376,10 +376,16 @@ export namespace MongoManager {
                     sectionLeaderRoleIds: {
                         sectionAlmostRaidLeaderRoleId: "",
                         sectionRaidLeaderRoleId: "",
-                        sectionHeadLeaderRoleId: ""
+                        sectionHeadLeaderRoleId: "",
+                        sectionVetLeaderRoleId: ""
                     },
                     teamRoleId: "",
-                    universalLeaderRoleIds: {almostLeaderRoleId: "", headLeaderRoleId: "", leaderRoleId: ""},
+                    universalLeaderRoleIds: {
+                        almostLeaderRoleId: "",
+                        headLeaderRoleId: "",
+                        leaderRoleId: "",
+                        vetLeaderRoleId: ""
+                    },
                 },
                 suspendedRoleId: "",
                 verifiedRoleId: ""

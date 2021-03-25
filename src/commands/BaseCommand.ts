@@ -8,6 +8,7 @@ type RolePermissions = "Suspended"
     | "Security"
     | "AlmostRaidLeader"
     | "RaidLeader"
+    | "VeteranRaidLeader"
     | "Officer"
     | "HeadRaidLeader"
     | "Moderator";
@@ -172,7 +173,6 @@ export abstract class BaseCommand {
         // Now check role permissions
         const roleOrder: [string, RolePermissions][] = [
             [guildDoc.roles.staffRoles.moderation.moderatorRoleId, "Moderator"],
-            [guildDoc.roles.staffRoles.moderation.officerRoleId, "Officer"],
             [guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId, "HeadRaidLeader"]
         ];
 
@@ -181,6 +181,14 @@ export abstract class BaseCommand {
         // Add other head leader roles
         for (const section of allSections)
             roleOrder.push([section.roles.leaders.sectionHeadLeaderRoleId, "HeadRaidLeader"]);
+
+        // Add officer role.
+        roleOrder.push([guildDoc.roles.staffRoles.moderation.officerRoleId, "Officer"]);
+
+        // Add vet role.
+        roleOrder.push([guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId, "VeteranRaidLeader"]);
+        for (const section of allSections)
+            roleOrder.push([section.roles.leaders.sectionVetLeaderRoleId, "VeteranRaidLeader"]);
 
         // Add leader roles
         roleOrder.push([guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId, "RaidLeader"]);

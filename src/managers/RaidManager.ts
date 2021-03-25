@@ -1150,53 +1150,65 @@ export class RaidManager {
             {
                 id: this._raidSection.roles.verifiedRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.securityRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.officerRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.moderatorRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.deny
             },
+            // Universal leader roles start here.
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.deny
             },
+            {
+                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_VETERAN_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_VETERAN_LEADER_ROLE)?.value.deny
+            },
+            // Section leader roles start here
             {
                 id: this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_ALMOST_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_ALMOST_LEADER_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_ALMOST_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_LEADER_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_HEAD_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_HEAD_LEADER_ROLE)?.value.deny,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_HEAD_LEADER_ROLE)?.value.deny
             },
+            {
+                id: this._raidSection.roles.leaders.sectionVetLeaderRoleId,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_VETERAN_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_VETERAN_LEADER_ROLE)?.value.deny
+            }
         ].filter(y => this._guild.roles.cache.has(y.id)
             && ((y.allow && y.allow.length !== 0) || (y.deny && y.deny.length !== 0)));
         permsToEvaluate.filter(x => !x.key.startsWith("PD-"))
@@ -1343,12 +1355,17 @@ export class RaidManager {
             return false;
 
         return member.voice.channelID === this._raidVc.id && ([
+            // This section's leader roles
             this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
             this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
             this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
+            this._raidSection.roles.leaders.sectionVetLeaderRoleId,
+
+            // Universal leader roles
             this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
             this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
             this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
+            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId
         ].some(x => member.roles.cache.has(x)) || member.hasPermission("ADMINISTRATOR"));
     }
 
