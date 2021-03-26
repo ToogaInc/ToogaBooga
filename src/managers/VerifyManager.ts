@@ -15,6 +15,7 @@ import {IVerificationRequirements} from "../definitions/major/parts/IVerificatio
 import {GeneralCollectorBuilder} from "../utilities/collectors/GeneralCollectorBuilder";
 import {RealmSharperWrapper} from "../private_api/RealmSharperWrapper";
 import {PrivateApiDefinitions} from "../private_api/PrivateApiDefinitions";
+import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
 
 export namespace VerifyManager {
     const GUILD_ROLES: string[] = [
@@ -328,10 +329,34 @@ export namespace VerifyManager {
 
                 // Check all requirements.
                 const res = await checkRequirements(member, dmChannel, guildDoc, resp);
-                if (!res) return;
+                if (res.conclusion === "PASS") {
+                    nameToUse = resp.name;
+                    instance.stop("PASSED_ALL");
+                    return;
+                }
 
-                nameToUse = resp.name;
-                instance.stop("PASSED_ALL");
+                const manualVerifyChannel = member.guild.channels.cache
+                    .has(guildDoc.channels.verificationChannels.manualVerificationChannelId);
+
+                // No manual verification channel means we can't have this person be manually verified.
+                if (res.conclusion === "MANUAL" && !manualVerifyChannel)
+                    res.conclusion = "FAIL";
+
+                if (res.conclusion === "MANUAL") {
+                    nameToUse = resp.name;
+                    instance.stop("MANUAL");
+                    return;
+                }
+
+                // This is handled automatically by the checkRequirements function.
+                if (res.conclusion === "TRY_AGAIN") {
+                    return;
+                }
+
+                // In this case, we end the collector because this person clearly doesn't deserve to be verified.
+                if (res.conclusion === "FAIL") {
+                    return;
+                }
             })
             .addReactionHandler(Emojis.X_EMOJI, async (user, instance) => {
                 instance.stop("CANCEL_PROCESS");
@@ -405,6 +430,11 @@ export namespace VerifyManager {
 
     }
 
+    interface IReqCheckResult {
+        conclusion: "PASS" | "TRY_AGAIN" | "MANUAL" | "FAIL";
+        manualIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
+        fatalIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
+    }
 
     /**
      * Checks a series of requirements to ensure that they are fulfilled.
@@ -412,17 +442,23 @@ export namespace VerifyManager {
      * @param {DMChannel} dmChannel The DM channel.
      * @param {ISectionInfo | IGuildInfo} section The section to check the requirements for.
      * @param {PrivateApiDefinitions.IPlayerData} resp The player's stats.
-     * @return {Promise<boolean>} Whether the person passes all verification requirements.
+     * @return {Promise<IReqCheckResult>} The results of this check.
      * @private
      */
     async function checkRequirements(member: GuildMember, dmChannel: DMChannel, section: ISectionInfo | IGuildInfo,
-                                     resp: PrivateApiDefinitions.IPlayerData): Promise<boolean> {
+                                     resp: PrivateApiDefinitions.IPlayerData): Promise<IReqCheckResult> {
+        // TODO might need to rewrite some of the log stuff
         const verifReq = section.otherMajorConfig.verificationProperties.verificationRequirements;
         const veriAttemptsChannel = member.guild.channels.cache
             .get("guildSections" in section
                 ? section.channels.verificationChannels.verificationLogsChannelId
                 : section.channels.verification.verificationLogsChannelId) as TextChannel | undefined;
         const secName = "guildSections" in section ? "Main" : section.sectionName;
+        const result: IReqCheckResult = {
+            conclusion: "PASS",
+            manualIssues: [],
+            fatalIssues: []
+        };
 
         // Check requirements.
         // Start with generic requirements.
@@ -436,79 +472,70 @@ export namespace VerifyManager {
 
             veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
                 .append(`${member}'s (**\`${resp.name}\`**) last seen location is not hidden.`).toString());
-            return false;
+            result.conclusion = "TRY_AGAIN";
+            return result;
         }
 
+        // Check guild.
         if (verifReq.guild.checkThis) {
             if (verifReq.guild.guildName.checkThis
                 && resp.guild.toLowerCase() !== verifReq.guild.guildName.name.toLowerCase()) {
-                const notInRightGuildEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                    .setTitle("Invalid Guild")
-                    .setDescription(new StringBuilder().append("You are currently in the guild:")
-                        .append(StringUtil.codifyString(resp.guild))
-                        .append("However, in order to gain access to this section, you must be in the guild: ")
-                        .append(StringUtil.codifyString(verifReq.guild.guildName)))
-                    .setFooter("Incorrect Guild.");
-                MessageUtilities.sendThenDelete({embed: notInRightGuildEmbed}, dmChannel);
-
-                const logMsg = new StringBuilder(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `);
-                if (resp.guild) logMsg.append(`${member} (**\`${resp.name}\`**) is in guild **\`${resp.guild}\`** `)
-                    .append(`but is expected to be in guild **\`${verifReq.guild.guildName.name}\`**.`);
-                else logMsg.append(`${member} (**\`${resp.name}\`**) is not in a guild but is expected to be in `)
-                    .append(`guild **\`${verifReq.guild.guildName.name}\`**.`);
-                veriAttemptsChannel?.send(logMsg.toString());
-                return false;
+                const guildInDisplay = `**\`${resp.guild}\`**`;
+                const guildNeededDisplay = `**\`${verifReq.guild.guildName.name}\`**`;
+                result.fatalIssues.push({
+                    key: "Not In Correct Guild",
+                    value: resp.guild
+                        ? `You are in the guild ${guildInDisplay} but must be in the guild ${guildNeededDisplay}.`
+                        : `You are not in a guild but must be in the guild ${guildNeededDisplay}.`,
+                    log: resp.guild
+                        ? `User is in guild ${guildInDisplay} but must be in the guild ${guildNeededDisplay}.`
+                        : `User is not in a guild but must be in the guild ${guildNeededDisplay}.`
+                });
+                result.conclusion = "FAIL";
+                return result;
             }
 
             if (verifReq.guild.guildRank.checkThis
                 && !isValidGuildRank(verifReq.guild.guildRank.minRank, resp.guildRank)) {
-                const notValidRankEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                    .setTitle("Invalid Guild Rank")
-                    .setDescription(new StringBuilder().append("You currently have the following guild rank: ")
-                        .append(StringUtil.codifyString(resp.guildRank))
-                        .append("However, you need to have the following rank or higher:")
-                        .append(StringUtil.codifyString(verifReq.guild.guildRank.minRank)))
-                    .setFooter("Incorrect Guild Rank.");
-                MessageUtilities.sendThenDelete({embed: notValidRankEmbed}, dmChannel);
-
-                const logMsg = new StringBuilder(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `);
-                if (resp.guild) logMsg.append(`${member} (**\`${resp.name}\`**) has rank **\`${resp.guildRank}\`** `)
-                    .append(`but must have at least the **\`${verifReq.guild.guildRank.minRank}\`** rank.`);
-                else logMsg.append(`${member} (**\`${resp.name}\`**) is not in a guild so he/she doesn't have a rank.`);
-                veriAttemptsChannel?.send(logMsg.toString());
-                return false;
+                const rankHasDisplay = `**\`${resp.rank}\`**`;
+                const rankNeedDisplay = `**\`${verifReq.rank}\`**`;
+                result.fatalIssues.push({
+                    key: "Not In Correct Guild",
+                    value: resp.guild
+                        ? `You have the rank ${rankHasDisplay} but must have at least rank ${rankNeedDisplay}.`
+                        : `You must be in the guild, **\`${verifReq.guild.guildName.name}\`**.`,
+                    log: resp.guild
+                        ? `User has the rank ${rankHasDisplay} but must have at least rank ${rankNeedDisplay}.`
+                        : `User is not in the guild **\`${verifReq.guild.guildName.name}\`**.`
+                });
+                result.conclusion = "FAIL";
+                return result;
             }
         }
 
+        // Check rank.
         if (verifReq.rank.checkThis && resp.rank < verifReq.rank.minRank) {
-            const tooLowRankEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                .setTitle("Rank Too Low")
-                .setDescription(new StringBuilder().append(`You currently have **\`${resp.rank}\`** stars, `)
-                    .append("which is lower than what is required."))
-                .setFooter("Rank Too Low.");
-            MessageUtilities.sendThenDelete({embed: tooLowRankEmbed}, dmChannel);
-
-            veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
-                .append(`${member} (**\`${resp.name}\`**) has **\`${resp.rank}\`** stars but must have at least `)
-                .append(`${verifReq.rank.minRank} stars to verify.`).toString());
-            return false;
+            result.manualIssues.push({
+                key: "Rank Too Low",
+                value: `You have **\`${resp.rank}\`** stars out of the ${verifReq.rank.minRank} required stars needed.`,
+                log: `User has **\`${resp.rank}\`**/${verifReq.rank.minRank} required stars needed.`
+            });
+            result.conclusion = "MANUAL";
         }
 
+        // Check alive fame.
         if (verifReq.aliveFame.checkThis && resp.fame < verifReq.aliveFame.minFame) {
-            const tooLowAliveFameEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                .setTitle("Alive Fame Too Low")
-                .setDescription(new StringBuilder().append(`You currently have **\`${resp.fame}\`** alive fame, `)
-                    .append("which is lower than what is required."))
-                .setFooter("Alive Fame Too Low.");
-            MessageUtilities.sendThenDelete({embed: tooLowAliveFameEmbed}, dmChannel);
-
-            veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
-                .append(`${member} (**\`${resp.name}\`**) has **\`${resp.fame}\`** alive fame but must have at least `)
-                .append(`${verifReq.aliveFame.minFame} alive fame to verify.`).toString());
-            return false;
+            result.manualIssues.push({
+                key: "Rank Too Low",
+                value: `You have **\`${resp.fame}\`** alive fame out of the ${verifReq.aliveFame.minFame} `
+                    + "required alive fame.",
+                log: `User has **\`${resp.fame}\`**/${verifReq.aliveFame.minFame} required alive fame.`
+            });
+            result.conclusion = "MANUAL";
         }
 
         const gyHist = await RealmSharperWrapper.getGraveyardSummary(resp.name);
+        // Check characters.
         if (verifReq.characters.checkThis) {
             // Clone copy since arrays are passed by reference/values.
             const neededStats: number[] = [];
@@ -516,45 +543,57 @@ export namespace VerifyManager {
                 neededStats.push(stat);
 
             // If we can check past deaths, let's update the array of neededStats to reflect that.
-            if (verifReq.characters.checkPastDeaths) {
-                if (gyHist) {
-                    const stats = gyHist.statsCharacters.map(x => x.stats);
-                    for (const statInfo of stats)
-                        for (let i = 0; i < statInfo.length; i++)
+            if (verifReq.characters.checkPastDeaths && gyHist) {
+                const stats = gyHist.statsCharacters.map(x => x.stats);
+                for (const statInfo of stats) {
+                    for (let i = 0; i < statInfo.length; i++) {
+                        if (neededStats[i] > 0) {
                             neededStats[i] -= statInfo[i];
+                            continue;
+                        }
+
+                        // If the stat in question is already fulfilled, we check if any of the lower stats need to
+                        // be checked.
+                        for (let j = i - 1; j >= 0; j--) {
+                            if (neededStats[j] > 0) {
+                                neededStats[j] -= statInfo[i];
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
-            // Here, we can check each character's stats.
-            for (const character of resp.characters.filter(x => x.statsMaxed !== -1))
-                neededStats[character.statsMaxed]--;
+            // Here, we can check each character's individual stats.
+            for (const character of resp.characters.filter(x => x.statsMaxed !== -1)) {
+                if (neededStats[character.statsMaxed] > 0) {
+                    neededStats[character.statsMaxed]--;
+                    continue;
+                }
+
+                for (let i = character.statsMaxed - 1; i >= 0; i--) {
+                    if (neededStats[i] > 0) {
+                        neededStats[i]--;
+                        break;
+                    }
+                }
+            }
 
             if (neededStats.some(x => x > 0)) {
-                const descSB = new StringBuilder().append("You did not meet the minimum stats requirement needed to ")
-                    .append("verify in this section. You are missing the following:");
                 const missingStats = new StringBuilder();
                 for (let i = 0; i < neededStats.length; i++) {
                     if (neededStats[i] <= 0) continue;
                     missingStats.append(`- Need ${neededStats[i]} ${i}/${GeneralConstants.NUMBER_OF_STATS}s`)
                         .appendLine();
                 }
-                descSB.append(StringUtil.codifyString(neededStats.toString()));
-                if (verifReq.characters.checkPastDeaths)
-                    descSB.append("For this section, you are allowed to use your past dead characters to fulfill ")
-                        .append("your stats requirements. If you haven't already, make sure to make your graveyard ")
-                        .append("public.");
 
-                const statsNotMetEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                    .setTitle("Stats Requirement Not Met")
-                    .setDescription(descSB.toString())
-                    .setFooter("Stats Requirement Not Met.");
-                MessageUtilities.sendThenDelete({embed: statsNotMetEmbed}, dmChannel);
-
-                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
-                    .append(`${member} (**\`${resp.name}\`**) did not meet the minimum stats requirement. This `)
-                    .append("person needs the following stats to pass this requirement:")
-                    .append(StringUtil.codifyString(neededStats.toString())).toString());
-                return false;
+                const displayStr = StringUtil.codifyString(missingStats.toString());
+                result.manualIssues.push({
+                    key: "Stats Requirement Not Fulfilled",
+                    value: `You need to fulfill the following stats requirements: ${displayStr}`,
+                    log: `User needs to fulfill the following stats requirements: ${displayStr}`
+                });
+                result.conclusion = "MANUAL";
             }
         }
 
@@ -570,7 +609,9 @@ export namespace VerifyManager {
                 veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
                     .append(`${member} (**\`${resp.name}\`**) does not have his or her graveyard summary set to `)
                     .append("public.").toString());
-                return false;
+
+                result.conclusion = "TRY_AGAIN";
+                return result;
             }
 
             const issues: string[] = [];
@@ -594,19 +635,15 @@ export namespace VerifyManager {
             }
 
             if (issues.length > 0) {
-                const dgnHistoryLowEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                    .setTitle("Dungeon Completions Not Satisfied.")
-                    .setDescription(new StringBuilder().append("You haven't completed enough of one or more of the ")
-                        .append("following dungeons.")
-                        .append(StringUtil.codifyString(issues.join("\n"))))
-                    .setFooter("Graveyard Summary Not Satisfied.");
-                MessageUtilities.sendThenDelete({embed: dgnHistoryLowEmbed}, dmChannel);
-
-                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
-                    .append(`${member} (**\`${resp.name}\`**) did not satisfy the dungeon completion requirement `)
-                    .append("as shown in graveyard summary. The following list represents what is not satisfied:")
-                    .append(StringUtil.codifyString(logIssues.join("\n"))).toString());
-                return false;
+                const normalDisplay = StringUtil.codifyString(issues.join("\n"));
+                const logDisplay = StringUtil.codifyString(logIssues.join("\n"));
+                result.manualIssues.push({
+                    key: "Dungeon Completion Requirement Not Fulfilled",
+                    value: `You still need to satisfy the following dungeon requirements: ${normalDisplay}`,
+                    log: `User has not fulfilled the following dungeon requirements: ${logDisplay}`
+                });
+                result.conclusion = "MANUAL";
+                return result;
             }
         }
 
@@ -623,7 +660,9 @@ export namespace VerifyManager {
                 veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
                     .append(`${member} (**\`${resp.name}\`**) does not have his or her exaltation data set to `)
                     .append("public.").toString());
-                return false;
+
+                result.conclusion = "TRY_AGAIN";
+                return result;
             }
 
             // We use this variable to keep track of each stat and corresponding exaltations needed.
@@ -652,23 +691,18 @@ export namespace VerifyManager {
                         .appendLine();
                 }
 
-                const dgnHistoryLowEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                    .setTitle("Exaltation Requirement Not Satisfied.")
-                    .setDescription(new StringBuilder().append("You haven't fulfilled one or more of the following ")
-                        .append("exaltation requirements.")
-                        .append(StringUtil.codifyString(issuesExaltations.toString())))
-                    .setFooter("Exaltation Requirement Not Satisfied.");
-                MessageUtilities.sendThenDelete({embed: dgnHistoryLowEmbed}, dmChannel);
-
-                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
-                    .append(`${member} (**\`${resp.name}\`**) did not satisfy the dungeon completion requirement `)
-                    .append("as shown in graveyard summary. The following list represents what is not satisfied:")
-                    .append(StringUtil.codifyString(issuesExaltations.toString())).toString());
-                return false;
+                const strDisplay = StringUtil.codifyString(issuesExaltations.toString());
+                result.manualIssues.push({
+                    key: "Exaltation Requirement Not Satisfied",
+                    value: `You did not satisfy one or more exaltation requirements: ${strDisplay}`,
+                    log: `User did not satisfy one or more exaltation requirements: ${strDisplay}`
+                });
+                result.conclusion = "MANUAL";
+                return result;
             }
         }
 
-        return true;
+        return result;
     }
 
     /**

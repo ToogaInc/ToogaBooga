@@ -29,6 +29,7 @@ import {UserManager} from "./UserManager";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private_api/RealmSharperWrapper";
+import {StartAfkCheck} from "../commands/raid-leaders/StartAfkCheck";
 
 // TODO Get votes.
 
@@ -1356,7 +1357,7 @@ export class RaidManager {
         if (!member || !this._raidVc)
             return false;
 
-        return member.voice.channelID === this._raidVc.id && ([
+        const neededRoles: string[] = [
             // This section's leader roles
             this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
             this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
@@ -1368,7 +1369,15 @@ export class RaidManager {
             this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
             this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
             this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId
-        ].some(x => member.roles.cache.has(x)) || member.hasPermission("ADMINISTRATOR"));
+        ];
+
+        const customPermData = this._guildDoc.customCmdPermissions
+            .find(x => x.key === StartAfkCheck.START_AFK_CMD_CODE);
+        if (customPermData && !customPermData.value.useDefaultRolePerms)
+            neededRoles.push(...customPermData.value.rolePermsNeeded);
+
+        return member.voice.channelID === this._raidVc.id
+            && (neededRoles.some(x => member.roles.cache.has(x)) || member.hasPermission("ADMINISTRATOR"));
     }
 
     //#endregion

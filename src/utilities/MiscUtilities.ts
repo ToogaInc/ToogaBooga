@@ -1,5 +1,8 @@
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
+import {StringBuilder} from "./StringBuilder";
+import {GeneralConstants} from "../constants/GeneralConstants";
+import {ArrayUtilities} from "./ArrayUtilities";
 
 export namespace MiscUtilities {
 
@@ -94,5 +97,16 @@ export namespace MiscUtilities {
         } catch (ex) {
             return false;
         }
+    }
+
+    /**
+     * Generates a somewhat unique ID.
+     * @return {string} The ID.
+     */
+    export function generateUniqueId(): string {
+        const id = new StringBuilder(Date.now().toString());
+        for (let i = 0; i < 30; i++)
+            id.append(ArrayUtilities.getRandomElement(GeneralConstants.ALL_CHARACTERS));
+        return id.toString();
     }
 }

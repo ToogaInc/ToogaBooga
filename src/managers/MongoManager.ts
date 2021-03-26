@@ -93,6 +93,9 @@ export namespace MongoManager {
      * @returns {Promise<boolean>} Whether the instance is connected.
      */
     export async function connect(config: IDbConfiguration): Promise<boolean> {
+        if (ThisMongoClient && ThisMongoClient.isConnected())
+            return true;
+
         const mongoDbClient: MongoClient = new MongoClient(config.dbUrl, {
             useNewUrlParser: true,
             useUnifiedTopology: true
@@ -166,7 +169,8 @@ export namespace MongoManager {
     }
 
     /**
-     * Adds the specified name and ID to the IDName collection. This will take care of any potential duplicate entries.
+     * Adds the specified name and ID to the IDName collection. This will take care of any potential duplicate
+     * entries that may exist in both IDNameCollection and UserCollection.
      * @param {GuildMember} member The member.
      * @param {string} ign The in-game name.
      * @throws {ReferenceError} If the Mongo instance isn't connected.
