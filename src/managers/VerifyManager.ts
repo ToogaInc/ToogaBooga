@@ -562,7 +562,6 @@ export namespace VerifyManager {
      */
     async function checkRequirements(member: GuildMember, dmChannel: DMChannel, section: ISectionInfo | IGuildInfo,
                                      resp: PrivateApiDefinitions.IPlayerData): Promise<IReqCheckResult> {
-        // TODO might need to rewrite some of the log stuff
         const verifReq = section.otherMajorConfig.verificationProperties.verificationRequirements;
         const result: IReqCheckResult = {
             conclusion: "PASS",
