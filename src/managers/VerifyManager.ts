@@ -1,4 +1,4 @@
-import {DMChannel, Emoji, EmojiResolvable, GuildMember, TextChannel} from "discord.js";
+import {DMChannel, Emoji, EmojiResolvable, GuildMember, MessageEmbed, TextChannel} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {ISectionInfo} from "../definitions/major/ISectionInfo";
 import {InteractionManager} from "./InteractionManager";
@@ -16,6 +16,7 @@ import {GeneralCollectorBuilder} from "../utilities/collectors/GeneralCollectorB
 import {RealmSharperWrapper} from "../private_api/RealmSharperWrapper";
 import {PrivateApiDefinitions} from "../private_api/PrivateApiDefinitions";
 import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
+import {MiscUtilities} from "../utilities/MiscUtilities";
 
 export namespace VerifyManager {
     const GUILD_ROLES: string[] = [
@@ -81,11 +82,13 @@ export namespace VerifyManager {
             return;
 
         // This has to be a verification channel so we don't need to double check.
+        InteractionManager.InteractiveMenu.set(member.id, "VERIFICATION");
         if (section.isMainSection) {
             await verifyMain(member, guildDoc, dmChannel);
             return;
         }
-        else await verifySection(member, section, dmChannel);
+
+        await verifySection(member, section, dmChannel);
     }
 
     /**
@@ -294,68 +297,183 @@ export namespace VerifyManager {
                     return;
                 }
 
+                const logEmbed = new MessageEmbed()
+                    .setAuthor(member.user.username, member.user.displayAvatarURL())
+                    .addField("Basic Information", new StringBuilder()
+                        .append(`- IGN: **\`${nameToUse}\`**`)
+                        .appendLine()
+                        .append(`- Discord: ${member} (${member.id})`));
+
+                const statusEmbed = MessageUtilities.generateBlankEmbed(member, "GREEN")
+                    .setTitle(`${Emojis.HOURGLASS_EMOJI} Checking Your RealmEye`)
+                    .setDescription("I am currently checking your RealmEye. This may take up to 30 seconds.")
+                    .setFooter(`Verifying In: ${member.guild.name}`)
+                    .setTimestamp();
+                const statusMessage = await dmChannel.send(statusEmbed);
+                await MiscUtilities.stopFor(2 * 1000);
+
                 // Make initial request to RealmEye.
                 const resp = await RealmSharperWrapper.getPlayerInfo(nameToUse!);
                 if (!resp) {
+                    const errorMsg = new StringBuilder().append("I couldn't fetch your RealmEye profile. Make ")
+                        .append("sure your profile is public. If you typed your name incorrectly, please restart ")
+                        .append("the verification process.");
                     const noPlayerDataEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                        .setTitle("Unable to Fetch RealmEye Profile")
-                        .setDescription(new StringBuilder().append("I couldn't fetch your RealmEye profile. Make ")
-                            .append("sure your profile is public. If you typed your name incorrectly, please restart ")
-                            .append("the verification process."))
-                        .setFooter("Profile Not Found.");
-                    MessageUtilities.sendThenDelete({embed: noPlayerDataEmbed}, dmChannel);
+                        .setTitle(`${Emojis.WARNING_EMOJI} Verification Failed.`)
+                        .setDescription("You failed to meet one or more requirements. Please acknowledge these issues "
+                            + "and then try again.")
+                        .addField("Profile Not Found", errorMsg.toString())
+                        .setFooter(`Verifying In: ${member.guild.name}`);
+                    statusMessage.edit(noPlayerDataEmbed).then(x => x.delete({timeout: 10 * 1000}));
 
-                    veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[Main]\`** `)
-                        .append(`${member}'s profile could not be found.`).toString());
+                    logEmbed.setTitle("[Main] Profile Not Found.")
+                        .setDescription(`${member}'s profile could not be found. Is his or her profile private?`)
+                        .setColor("DARK_RED")
+                        .setTimestamp();
+                    veriAttemptsChannel?.send(logEmbed);
                     return;
                 }
 
                 // Search description for valid verification code.
                 if (!resp.description.some(x => x.includes(verificationCode))) {
+                    const errorMsg = new StringBuilder().append("I couldn't find the verification code in your ")
+                        .append("description. Please update your description so it contains this verification ")
+                        .append("code:")
+                        .append(StringUtil.codifyString(verificationCode));
                     const codeNotFoundEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                        .setTitle("Description Not Found")
-                        .setDescription(new StringBuilder().append("I couldn't find the verification code in your ")
-                            .append("description. Please update your description so it contains this verification ")
-                            .append("code:")
-                            .append(StringUtil.codifyString(verificationCode)))
-                        .setFooter("Verification Code Not Found.");
-                    MessageUtilities.sendThenDelete({embed: codeNotFoundEmbed}, dmChannel);
+                        .setTitle(`${Emojis.WARNING_EMOJI} Verification Failed.`)
+                        .setDescription("You failed to meet one or more requirements. Please acknowledge these issues "
+                            + "and then try again.")
+                        .addField("Verification Code Not Found", errorMsg.toString())
+                        .setFooter(`Verifying In: ${member.guild.name}`);
+                    statusMessage.edit(codeNotFoundEmbed).then(x => x.delete({timeout: 10 * 1000}));
 
-                    veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[Main]\`** `)
-                        .append(`${member} (**\`${resp.name}\`**) does not have the verification code in his or her `)
-                        .append(`description. The verification code is: **\`${verificationCode}\`**.`).toString());
+                    logEmbed.setTitle("[Main] Verification Code Not Found.")
+                        .setDescription(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[Main]\`** `)
+                            .append(`${member} (**\`${resp.name}\`**) does not have the verification code in his or `)
+                            .append(`her description. The verification code is: **\`${verificationCode}\`**.`)
+                            .toString())
+                        .setColor("DARK_RED")
+                        .setTimestamp();
+                    veriAttemptsChannel?.send(logEmbed);
                     return;
                 }
 
                 // Check all requirements.
                 const res = await checkRequirements(member, dmChannel, guildDoc, resp);
+
+                // And then validate the results.
                 if (res.conclusion === "PASS") {
+                    const welcomeMsg = guildDoc.otherMajorConfig.verificationProperties.verificationSuccessMessage
+                        ? new StringBuilder()
+                            .append(guildDoc.otherMajorConfig.verificationProperties.verificationSuccessMessage)
+                        : new StringBuilder()
+                            .append(`You have successfully been verified at: **\`${member.guild.name}\`**. Please `)
+                            .append("make sure you read all rules and guidelines. Good luck and have fun.");
+                    const passEmbed = MessageUtilities.generateBlankEmbed(member, "GREEN")
+                        .setTitle(`${Emojis.GREEN_CHECK_EMOJI} Successful Verification: **${member.guild.name}**.`)
+                        .setDescription(welcomeMsg.toString())
+                        .setFooter(`Verifying In: ${member.guild.name}`);
+                    await statusMessage.delete().catch();
+                    MessageUtilities.sendThenDelete({embed: passEmbed}, dmChannel);
+                    await verificationMsg.edit(passEmbed).catch();
+
+                    logEmbed.setTitle("[Main] Successful Verification.")
+                        .setDescription(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[Main]\`** `)
+                            .append(`${member} has successfully verified.`)
+                            .toString())
+                        .setColor("DARK_GREEN")
+                        .setTimestamp();
+                    veriSuccessChannel?.send(logEmbed);
+
                     nameToUse = resp.name;
                     instance.stop("PASSED_ALL");
                     return;
                 }
 
-                const manualVerifyChannel = member.guild.channels.cache
+                // This line is way too long so putting into a variable for ease of readability.
+                const hasManualVerify = member.guild.channels.cache
                     .has(guildDoc.channels.verificationChannels.manualVerificationChannelId);
 
-                // No manual verification channel means we can't have this person be manually verified.
-                if (res.conclusion === "MANUAL" && !manualVerifyChannel)
+                let originallyManual = false;
+                if (!hasManualVerify && res.conclusion === "MANUAL") {
                     res.conclusion = "FAIL";
+                    originallyManual = true;
+                }
+
+                const failEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                    .setTitle(`${Emojis.X_EMOJI} Unsuccessful Verification: **${member.guild.name}**`)
+                    .setFooter(`Verifying In: ${member.guild.name}`)
+                    .setTimestamp();
+
+                logEmbed.setTitle("[Main] Unsuccessful Verification.")
+                    .setColor("DARK_RED");
+                if (res.conclusion === "FAIL") {
+                    failEmbed.setDescription("You have failed one or more major verification requirements and cannot "
+                        + "be verified at this time. Please review the below issues.");
+
+                    logEmbed.setDescription("The user has failed one or more major verification requirements and" +
+                        " cannot be verified at this time. If you believe this person should be verified, please" +
+                        " manually verify this person.");
+
+                    for (const fatalIssue of res.fatalIssues) {
+                        failEmbed.addField(fatalIssue.key, fatalIssue.value);
+                        logEmbed.addField(fatalIssue.key, fatalIssue.log);
+                    }
+
+                    if (originallyManual) {
+                        for (const manualIssue of res.manualIssues) {
+                            failEmbed.addField(manualIssue.key, manualIssue.value);
+                            logEmbed.addField(manualIssue.key, manualIssue.log);
+                        }
+                    }
+
+                    statusMessage.edit(failEmbed).then(x => x.delete({timeout: 20 * 1000}));
+                    await verificationMsg.edit(failEmbed).catch();
+                    await veriAttemptsChannel?.send(logEmbed);
+
+                    instance.stop("FAIL");
+                    return;
+                }
 
                 if (res.conclusion === "MANUAL") {
-                    nameToUse = resp.name;
+                    failEmbed.setDescription("You have failed one or more major verification requirements. However," +
+                        " we will manually verify your verification application. Do not attempt to verify until we" +
+                        " have fully inspected your profile. Once we look through your profile, we will" +
+                        " send you a message indicating whether you have been manually verified or not.");
+
+                    logEmbed.setDescription("The user has failed one or more major verification requirements and has" +
+                        " been sent to manual verification for manual inspection.");
+
+                    for (const manualIssue of res.manualIssues) {
+                        failEmbed.addField(manualIssue.key, manualIssue.value);
+                        logEmbed.addField(manualIssue.key, manualIssue.log);
+                    }
+
+                    statusMessage.edit(failEmbed).then(x => x.delete({timeout: 20 * 1000}));
+                    await verificationMsg.edit(failEmbed).catch();
+                    await veriAttemptsChannel?.send(logEmbed);
+
                     instance.stop("MANUAL");
                     return;
                 }
 
-                // This is handled automatically by the checkRequirements function.
                 if (res.conclusion === "TRY_AGAIN") {
-                    return;
-                }
+                    failEmbed.setDescription("Your profile has one or more sections that we either could not" +
+                        " definitively check or need to be fixed. In this case, please fix the following issues and" +
+                        " then un-react and re-react to the check emoji above.");
 
-                // In this case, we end the collector because this person clearly doesn't deserve to be verified.
-                if (res.conclusion === "FAIL") {
-                    return;
+                    logEmbed.setDescription("The user has one or more sections in his or her profile that either" +
+                        " could not be checked or has minor issues that can be resolved quickly.");
+
+                    for (const taIssue of res.taIssues) {
+                        failEmbed.addField(taIssue.key, taIssue.value);
+                        logEmbed.addField(taIssue.key, taIssue.log);
+                    }
+
+                    statusMessage.edit(failEmbed).then(x => x.delete({timeout: 20 * 1000}));
+                    await verificationMsg.edit(failEmbed).catch();
+                    await veriAttemptsChannel?.send(logEmbed);
                 }
             })
             .addReactionHandler(Emojis.X_EMOJI, async (user, instance) => {
@@ -408,14 +526,10 @@ export namespace VerifyManager {
 
                 // Passed all!
                 if (r === "PASSED_ALL") {
-                    await verificationMsg.delete().catch();
                     await member.setNickname(member.user.username === nameToUse
                         ? `${nameToUse!}.`
                         : nameToUse!).catch();
                     await member.roles.add(guildDoc.roles.verifiedRoleId).catch();
-
-                    veriSuccessChannel?.send(new StringBuilder().append(`${Emojis.GREEN_CHECK_EMOJI} **\`[Main]\`** `)
-                        .append(`${member} (**\`${nameToUse!}\`**) has successfully verified.`).toString());
                 }
             })
             .build();
@@ -434,6 +548,7 @@ export namespace VerifyManager {
         conclusion: "PASS" | "TRY_AGAIN" | "MANUAL" | "FAIL";
         manualIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
         fatalIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
+        taIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
     }
 
     /**
@@ -449,34 +564,24 @@ export namespace VerifyManager {
                                      resp: PrivateApiDefinitions.IPlayerData): Promise<IReqCheckResult> {
         // TODO might need to rewrite some of the log stuff
         const verifReq = section.otherMajorConfig.verificationProperties.verificationRequirements;
-        const veriAttemptsChannel = member.guild.channels.cache
-            .get("guildSections" in section
-                ? section.channels.verificationChannels.verificationLogsChannelId
-                : section.channels.verification.verificationLogsChannelId) as TextChannel | undefined;
-        const secName = "guildSections" in section ? "Main" : section.sectionName;
         const result: IReqCheckResult = {
             conclusion: "PASS",
             manualIssues: [],
-            fatalIssues: []
+            fatalIssues: [],
+            taIssues: []
         };
 
         // Check requirements.
         // Start with generic requirements.
         if (verifReq.lastSeen.mustBeHidden && resp.lastSeen !== "hidden") {
-            const codeNotFoundEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                .setTitle("Last Seen Location Not Hidden")
-                .setDescription(new StringBuilder().append("Your last seen location is not hidden. Please ")
-                    .append("make sure it is hidden and then try again."))
-                .setFooter("Verification Code Not Found.");
-            MessageUtilities.sendThenDelete({embed: codeNotFoundEmbed}, dmChannel);
-
-            veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
-                .append(`${member}'s (**\`${resp.name}\`**) last seen location is not hidden.`).toString());
-            result.conclusion = "TRY_AGAIN";
-            return result;
+            result.taIssues.push({
+                key: "Last Seen Location is Not Private",
+                value: "Your last seen location is not hidden. Please make sure no one can see it and then try again.",
+                log: "User's last seen location is public."
+            });
         }
 
-        // Check guild.
+        // Check guild. Failure to pass these tests will result in a fail.
         if (verifReq.guild.checkThis) {
             if (verifReq.guild.guildName.checkThis
                 && resp.guild.toLowerCase() !== verifReq.guild.guildName.name.toLowerCase()) {
@@ -520,18 +625,16 @@ export namespace VerifyManager {
                 value: `You have **\`${resp.rank}\`** stars out of the ${verifReq.rank.minRank} required stars needed.`,
                 log: `User has **\`${resp.rank}\`**/${verifReq.rank.minRank} required stars needed.`
             });
-            result.conclusion = "MANUAL";
         }
 
         // Check alive fame.
         if (verifReq.aliveFame.checkThis && resp.fame < verifReq.aliveFame.minFame) {
             result.manualIssues.push({
-                key: "Rank Too Low",
+                key: "Alive Fame Too Low",
                 value: `You have **\`${resp.fame}\`** alive fame out of the ${verifReq.aliveFame.minFame} `
                     + "required alive fame.",
                 log: `User has **\`${resp.fame}\`**/${verifReq.aliveFame.minFame} required alive fame.`
             });
-            result.conclusion = "MANUAL";
         }
 
         const gyHist = await RealmSharperWrapper.getGraveyardSummary(resp.name);
@@ -593,115 +696,106 @@ export namespace VerifyManager {
                     value: `You need to fulfill the following stats requirements: ${displayStr}`,
                     log: `User needs to fulfill the following stats requirements: ${displayStr}`
                 });
-                result.conclusion = "MANUAL";
             }
         }
 
         if (verifReq.graveyardSummary.checkThis) {
             if (!gyHist) {
-                const noGySummaryEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                    .setTitle("Unable to Get Graveyard Summary")
-                    .setDescription(new StringBuilder().append("I was unable to access your graveyard summary. ")
-                        .append("Please make sure your graveyard is set so anyone can see it."))
-                    .setFooter("Graveyard Summary Inaccessible.");
-                MessageUtilities.sendThenDelete({embed: noGySummaryEmbed}, dmChannel);
-
-                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
-                    .append(`${member} (**\`${resp.name}\`**) does not have his or her graveyard summary set to `)
-                    .append("public.").toString());
-
-                result.conclusion = "TRY_AGAIN";
-                return result;
-            }
-
-            const issues: string[] = [];
-            const logIssues: string[] = [];
-            for (const gyStat of verifReq.graveyardSummary.minimum) {
-                if (!(gyStat.key in GeneralConstants.GY_HIST_ACHIEVEMENTS)) continue;
-                const gyHistKey = GeneralConstants.GY_HIST_ACHIEVEMENTS[gyStat.key];
-                const data = gyHist.properties.find(x => x.achievement === gyHistKey);
-                // Doesn't qualify because dungeon doesn't exist.
-                if (!data) {
-                    issues.push(`- You do not have any ${gyStat.key} completions.`);
-                    logIssues.push(`- No ${gyStat.key} completions.`);
-                    continue;
-                }
-
-                // Doesn't qualify because not enough
-                if (gyStat.value > data.total) {
-                    issues.push(`- You have ${data.total} / ${gyStat.key} total ${gyStat.key} completions needed.`);
-                    logIssues.push(`- ${data.total} / ${gyStat.key} total ${gyStat.key} completions.`);
-                }
-            }
-
-            if (issues.length > 0) {
-                const normalDisplay = StringUtil.codifyString(issues.join("\n"));
-                const logDisplay = StringUtil.codifyString(logIssues.join("\n"));
-                result.manualIssues.push({
-                    key: "Dungeon Completion Requirement Not Fulfilled",
-                    value: `You still need to satisfy the following dungeon requirements: ${normalDisplay}`,
-                    log: `User has not fulfilled the following dungeon requirements: ${logDisplay}`
+                result.taIssues.push({
+                    key: "Graveyard History Private",
+                    value: "I am not able to access your graveyard summary. Make sure your graveyard is set so anyone "
+                        + "can see it and then try again.",
+                    log: "User's graveyard information is private."
                 });
-                result.conclusion = "MANUAL";
-                return result;
+            }
+            else {
+                const issues: string[] = [];
+                const logIssues: string[] = [];
+                for (const gyStat of verifReq.graveyardSummary.minimum) {
+                    if (!(gyStat.key in GeneralConstants.GY_HIST_ACHIEVEMENTS)) continue;
+                    const gyHistKey = GeneralConstants.GY_HIST_ACHIEVEMENTS[gyStat.key];
+                    const data = gyHist.properties.find(x => x.achievement === gyHistKey);
+                    // Doesn't qualify because dungeon doesn't exist.
+                    if (!data) {
+                        issues.push(`- You do not have any ${gyStat.key} completions.`);
+                        logIssues.push(`- No ${gyStat.key} completions.`);
+                        continue;
+                    }
+
+                    // Doesn't qualify because not enough
+                    if (gyStat.value > data.total) {
+                        issues.push(`- You have ${data.total} / ${gyStat.key} total ${gyStat.key} completions needed.`);
+                        logIssues.push(`- ${data.total} / ${gyStat.key} total ${gyStat.key} completions.`);
+                    }
+                }
+
+                if (issues.length > 0) {
+                    const normalDisplay = StringUtil.codifyString(issues.join("\n"));
+                    const logDisplay = StringUtil.codifyString(logIssues.join("\n"));
+                    result.manualIssues.push({
+                        key: "Dungeon Completion Requirement Not Fulfilled",
+                        value: `You still need to satisfy the following dungeon requirements: ${normalDisplay}`,
+                        log: `User has not fulfilled the following dungeon requirements: ${logDisplay}`
+                    });
+                }
             }
         }
 
         if (verifReq.exaltations.checkThis) {
             const exaltData = await RealmSharperWrapper.getExaltation(resp.name);
             if (!exaltData) {
-                const noGySummaryEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
-                    .setTitle("Unable to Get Exaltation Data")
-                    .setDescription(new StringBuilder().append("I was unable to access your exaltation data. ")
-                        .append("Please make sure your exaltation data is set so anyone can see it."))
-                    .setFooter("Exaltation Data Inaccessible.");
-                MessageUtilities.sendThenDelete({embed: noGySummaryEmbed}, dmChannel);
-
-                veriAttemptsChannel?.send(new StringBuilder().append(`${Emojis.HOURGLASS_EMOJI} **\`[${secName}]\`** `)
-                    .append(`${member} (**\`${resp.name}\`**) does not have his or her exaltation data set to `)
-                    .append("public.").toString());
-
-                result.conclusion = "TRY_AGAIN";
-                return result;
-            }
-
-            // We use this variable to keep track of each stat and corresponding exaltations needed.
-            const neededExalt: { [s: string]: number } = {};
-            for (const d of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
-                neededExalt[d] = verifReq.exaltations.minimum[d];
-
-            // For each character...
-            for (const entry of exaltData.exaltations) {
-                // For each stat...
-                for (const actExaltStat of Object.keys(entry.exaltationStats)) {
-                    for (const stat of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
-                        if (actExaltStat === GeneralConstants.SHORT_STAT_TO_LONG[stat].toLowerCase())
-                            neededExalt[stat] -= entry.exaltationStats[actExaltStat];
-                }
-            }
-
-            // If we happen to have any stats whose exaltation number is > 0, then we want to show them.
-            const notMetExaltations = Object.keys(neededExalt)
-                .filter(x => neededExalt[x] > 0);
-            if (notMetExaltations.length > 0) {
-                const issuesExaltations = new StringBuilder();
-                for (const statNotFulfilled of notMetExaltations) {
-                    const statName = GeneralConstants.SHORT_STAT_TO_LONG[statNotFulfilled];
-                    issuesExaltations.append(`- Need ${neededExalt[statNotFulfilled]} ${statName} Exaltations.`)
-                        .appendLine();
-                }
-
-                const strDisplay = StringUtil.codifyString(issuesExaltations.toString());
-                result.manualIssues.push({
-                    key: "Exaltation Requirement Not Satisfied",
-                    value: `You did not satisfy one or more exaltation requirements: ${strDisplay}`,
-                    log: `User did not satisfy one or more exaltation requirements: ${strDisplay}`
+                result.taIssues.push({
+                    key: "Exaltation Information Private",
+                    value: "I am not able to access your exaltation data. Make sure anyone can see your exaltation "
+                        + "data and then try again.",
+                    log: "User's exaltation information is private."
                 });
-                result.conclusion = "MANUAL";
-                return result;
+            }
+            else {
+                // We use this variable to keep track of each stat and corresponding exaltations needed.
+                const neededExalt: { [s: string]: number } = {};
+                for (const d of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
+                    neededExalt[d] = verifReq.exaltations.minimum[d];
+
+                // For each character...
+                for (const entry of exaltData.exaltations) {
+                    // For each stat...
+                    for (const actExaltStat of Object.keys(entry.exaltationStats)) {
+                        for (const stat of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
+                            if (actExaltStat === GeneralConstants.SHORT_STAT_TO_LONG[stat].toLowerCase())
+                                neededExalt[stat] -= entry.exaltationStats[actExaltStat];
+                    }
+                }
+
+                // If we happen to have any stats whose exaltation number is > 0, then we want to show them.
+                const notMetExaltations = Object.keys(neededExalt)
+                    .filter(x => neededExalt[x] > 0);
+                if (notMetExaltations.length > 0) {
+                    const issuesExaltations = new StringBuilder();
+                    for (const statNotFulfilled of notMetExaltations) {
+                        const statName = GeneralConstants.SHORT_STAT_TO_LONG[statNotFulfilled];
+                        issuesExaltations.append(`- Need ${neededExalt[statNotFulfilled]} ${statName} Exaltations.`)
+                            .appendLine();
+                    }
+
+                    const strDisplay = StringUtil.codifyString(issuesExaltations.toString());
+                    result.manualIssues.push({
+                        key: "Exaltation Requirement Not Satisfied",
+                        value: `You did not satisfy one or more exaltation requirements: ${strDisplay}`,
+                        log: `User did not satisfy one or more exaltation requirements: ${strDisplay}`
+                    });
+                }
             }
         }
 
+        // Assess whether this person passed verification requirements.
+        result.conclusion = result.fatalIssues.length > 0
+            ? "FAIL"
+            : result.taIssues.length > 0
+                ? "TRY_AGAIN"
+                : result.manualIssues.length > 0
+                    ? "MANUAL"
+                    : "PASS";
         return result;
     }
 
