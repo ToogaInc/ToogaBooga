@@ -302,7 +302,9 @@ export namespace VerifyManager {
                     .addField("Basic Information", new StringBuilder()
                         .append(`- IGN: **\`${nameToUse}\`**`)
                         .appendLine()
-                        .append(`- Discord: ${member} (${member.id})`));
+                        .append(`- Discord: ${member} (${member.id})`))
+                    .setFooter("Section: Main")
+                    .setTimestamp();
 
                 const statusEmbed = MessageUtilities.generateBlankEmbed(member, "GREEN")
                     .setTitle(`${Emojis.HOURGLASS_EMOJI} Checking Your RealmEye`)
@@ -537,7 +539,73 @@ export namespace VerifyManager {
     }
 
     async function verifySection(member: GuildMember, section: ISectionInfo, dmChannel: DMChannel): Promise<void> {
+        const veriAttemptsChannel = member.guild.channels.cache
+            .get(section.channels.verification.verificationLogsChannelId) as TextChannel | undefined;
+        const veriSuccessChannel = member.guild.channels.cache
+            .get(section.channels.verification.verificationSuccessChannelId) as TextChannel | undefined;
 
+        const logEmbed = new MessageEmbed()
+            .setAuthor(member.user.username, member.user.displayAvatarURL())
+            .addField("Basic Information", new StringBuilder()
+                .append(`- Discord: ${member} (${member.id})`))
+            .setFooter(`Section: ${section.sectionName}`)
+            .setTimestamp();
+
+        const entry = await MongoManager.findIdInIdNameCollection(member.id);
+        const names = UserManager.getAllNames(member.displayName);
+        const nameToUse = entry.length === 0
+            ? names.length === 0
+                ? null
+                : names[0]
+            : entry[0].rotmgNames[0].ign;
+
+        if (!nameToUse) {
+            const failEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                .setTitle(`${Emojis.WARNING_EMOJI} Verification Failed.`)
+                .setDescription("You do not have a valid in-game name on file. You might need to re-verify with the" +
+                    " bot perform this action.")
+                .setFooter("Verification Failed.")
+                .setTimestamp();
+            await FetchRequestUtilities.sendMsg(dmChannel, {embed: failEmbed});
+
+
+            logEmbed.setTitle(`[${section.sectionName}] Unable to Find Valid Name`)
+                .setDescription("The user does not have a well-defined name. That is, this user's ID could not be" +
+                    " found in the database and, additionally, their nickname does not have a valid name.");
+            await veriAttemptsChannel?.send(logEmbed);
+
+            return;
+        }
+
+
+        // Make initial request to RealmEye.
+        const resp = await RealmSharperWrapper.getPlayerInfo(nameToUse);
+        if (!resp) {
+            const errorMsg = new StringBuilder().append("I couldn't fetch your RealmEye profile. Make ")
+                .append("sure your profile is public. If you typed your name incorrectly, please restart ")
+                .append("the verification process.");
+            const noPlayerDataEmbed = MessageUtilities.generateBlankEmbed(member, "RED")
+                .setTitle(`${Emojis.WARNING_EMOJI} Verification Failed.`)
+                .setDescription("You failed to meet one or more requirements. Please acknowledge these issues "
+                    + "and then try again.")
+                .addField("Profile Not Found", errorMsg.toString())
+                .setFooter(`Verifying In: ${member.guild.name}`);
+            await FetchRequestUtilities.sendMsg(dmChannel, {embed: noPlayerDataEmbed});
+
+            logEmbed.setTitle(`[${section.sectionName}] Profile Not Found.`)
+                .setDescription(`${member}'s profile could not be found. Is his or her profile private?`)
+                .setColor("DARK_RED")
+                .addField("Name Used", StringUtil.codifyString(nameToUse));
+            veriAttemptsChannel?.send(logEmbed);
+            return;
+        }
+
+        const res = await checkRequirements(member, dmChannel, section, resp);
+
+        // Passed just fine.
+        if (res.conclusion === "PASS") {
+
+        }
     }
 
     async function handleManualVerification(member: GuildMember): Promise<void> {
