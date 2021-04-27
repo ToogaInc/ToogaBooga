@@ -157,13 +157,13 @@ export namespace ModmailManager {
             .addField("Last Response By", "None.");
         const modMailMessage = await modmailChannel.send(modMailEmbed);
         // respond reaction
-        await modMailMessage.react("📝").catch();
+        await modMailMessage.react(Emojis.CLIPBOARD_EMOJI).catch();
         // garbage reaction
-        await modMailMessage.react("🗑️").catch();
+        await modMailMessage.react(Emojis.WASTEBIN_EMOJI).catch();
         // blacklist
-        await modMailMessage.react("🚫").catch();
+        await modMailMessage.react(Emojis.DENIED_EMOJI).catch();
         // redirect
-        await modMailMessage.react("🔀").catch();
+        await modMailMessage.react(Emojis.REDIRECT_EMOJI).catch();
     }
 
     /**
