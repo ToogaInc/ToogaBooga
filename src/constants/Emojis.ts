@@ -31,6 +31,9 @@ export namespace Emojis {
     export const PENCIL_EMOJI: EmojiResolvable = "✏";
     export const INBOX_EMOJI: EmojiResolvable = "📥";
     export const WARNING_EMOJI: EmojiResolvable = "⚠";
+    export const DENIED_EMOJI: EmojiResolvable = "⛔";
+    export const MAIL_EMOJI: EmojiResolvable = "📧";
+    export const CLIPBOARD_EMOJI: EmojiResolvable = "📝";
 
     // specific classes
     export const ROGUE: EmojiResolvable = "";

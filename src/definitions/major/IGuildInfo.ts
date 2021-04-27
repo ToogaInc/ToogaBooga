@@ -12,6 +12,8 @@ import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
 import {ICmdPermOverwrite} from "../ICmdPermOverwrite";
 import {IManualVerificationEntry} from "./parts/IManualVerificationEntry";
 import {IBaseDocument} from "./IBaseDocument";
+import {IBlacklistedModmailUser} from "../IBlacklistedModmailUser";
+import {IModmailThread} from "../IModmailThread";
 
 export interface IGuildInfo extends IBaseDocument {
     // the guild id suffices as an identifier
@@ -68,6 +70,7 @@ export interface IGuildInfo extends IBaseDocument {
     moderation: {
         suspendedUsers: ISuspendedUser[];
         blacklistedUsers: IBlacklistedUser[];
+        blacklistedModmailUsers: IBlacklistedModmailUser[];
     };
     properties: {
         // promote demote stuff
@@ -93,6 +96,8 @@ export interface IGuildInfo extends IBaseDocument {
         // any blocked commands
         // you only need to reference *one* possible bot command name to block an entire command
         blockedCommands: string[];
+        // modmail stuff
+        modmailThreads: IModmailThread[];
     };
     guildSections: ISectionInfo[];
     activeRaids: IRaidInfo[];

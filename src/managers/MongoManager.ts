@@ -368,7 +368,7 @@ export namespace MongoManager {
             },
             guildId: guildId,
             guildSections: [],
-            moderation: {blacklistedUsers: [], suspendedUsers: []},
+            moderation: {blacklistedUsers: [], suspendedUsers: [], blacklistedModmailUsers: []},
             otherMajorConfig: {
                 verificationProperties: {
                     additionalVerificationInfo: "",
@@ -442,7 +442,8 @@ export namespace MongoManager {
                     runsLed: {noRunsWeeklyMessageId: "", topRunsLedWeek: [], topRunsLedWeeklyMessageId: ""}
                 },
                 prefix: OneRealmBot.BotInstance.config.misc.defaultPrefix,
-                blockedCommands: []
+                blockedCommands: [],
+                modmailThreads: []
             },
             roles: {
                 earlyLocationRoles: [],
