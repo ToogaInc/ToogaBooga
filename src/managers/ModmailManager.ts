@@ -1,4 +1,4 @@
-import {DMChannel, Guild, Message, MessageEmbed, TextChannel, User} from "discord.js";
+import {DMChannel, Guild, GuildMember, Message, MessageEmbed, TextChannel, User} from "discord.js";
 import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
@@ -7,6 +7,10 @@ import {MessageUtilities} from "../utilities/MessageUtilities";
 import {Emojis} from "../constants/Emojis";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {StringBuilder} from "../utilities/StringBuilder";
+import {StringUtil} from "../utilities/StringUtilities";
+import {MiscUtilities} from "../utilities/MiscUtilities";
+import {IModmailThread} from "../definitions/IModmailThread";
+import {FetchRequestUtilities} from "../utilities/FetchRequestUtilities";
 
 export namespace ModmailManager {
 
@@ -14,6 +18,7 @@ export namespace ModmailManager {
      * This function should be called when someone DMs the bot. This will:
      * - Forward the message to the designated guild.
      * - Update the database to account for the new modmail message.
+     *
      * We assume that the DM channel is open (i.e. there is no need to validate that the author's DMs are open to
      * the public).
      *
@@ -164,6 +169,176 @@ export namespace ModmailManager {
         await modMailMessage.react(Emojis.DENIED_EMOJI).catch();
         // redirect
         await modMailMessage.react(Emojis.REDIRECT_EMOJI).catch();
+    }
+
+    /**
+     * A function that creates a modmail thread. This will:
+     * - Create a new channel where all modmail messages sent to/from `targetMember` will be redirected to.
+     *
+     * This should be called if a staff member wants to start a modmail thread with a person.
+     *
+     * @param {GuildMember} targetMember The member to target.
+     * @param {GuildMember} initiatedBy The person that started this thread.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {string} [content] The contents of the message, if any.
+     */
+    export async function startThreadedModmailWithMember(targetMember: GuildMember, initiatedBy: GuildMember,
+                                                         guildDoc: IGuildInfo, content?: string): Promise<void> {
+        // If the modmail channel doesn't exists, then return.
+        const modmailChannel = initiatedBy.guild.channels.cache
+            .get(guildDoc.channels.modmailChannels.modmailChannelId) as TextChannel | undefined;
+        if (!modmailChannel) {
+            const mmChannelNoExistEmbed = MessageUtilities.generateBlankEmbed(initiatedBy, "RED")
+                .setTitle("Modmail Channel Doesn't Exist")
+                .setDescription("The modmail channel doesn't exist. Please configure one and then try again.")
+                .setFooter("Modmail");
+            MessageUtilities.sendThenDelete({embed: mmChannelNoExistEmbed}, initiatedBy, 20 * 1000);
+            return;
+        }
+
+        const modmailCategory = modmailChannel.parent;
+        if (!modmailCategory) {
+            const categoryNoExistEmbed = MessageUtilities.generateBlankEmbed(initiatedBy, "RED")
+                .setTitle("No Modmail Category")
+                .setDescription("Your modmail channel doesn't have a category. Please put your modmail channel in a "
+                    + "dedicated modmail category.")
+                .setFooter("Modmail");
+            MessageUtilities.sendThenDelete({embed: categoryNoExistEmbed}, initiatedBy, 20 * 1000);
+            return;
+        }
+
+        // Step 1: is the person blacklisted?
+        const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers
+            .find(x => x.discordId === targetMember.id);
+        if (blacklistInfo) {
+            const blModmailEmbed = MessageUtilities.generateBlankEmbed(targetMember, "RED")
+                .setTitle("User Blacklisted From Modmail")
+                .setDescription(`${targetMember} is blacklisted from using modmail. You are not able to create a `
+                    + "thread for this person.")
+                .addField("Reason", StringUtil.codifyString(blacklistInfo.reason))
+                .setFooter("Modmail");
+            MessageUtilities.sendThenDelete({embed: blModmailEmbed}, initiatedBy, 30 * 1000);
+            return;
+        }
+
+        // Step 2: Does the person already have a modmail thread channel?
+        const modmailInfo = guildDoc.properties.modmailThreads.find(x => x.initiatorId === targetMember.id);
+        if (modmailInfo) {
+            const channel = targetMember.guild.channels.cache.get(modmailInfo.channel) as TextChannel | undefined;
+            // If the channel exists:
+            if (channel) {
+                const channelExistsEmbed = MessageUtilities.generateBlankEmbed(targetMember, "RED")
+                    .setTitle("Modmail Thread Exists")
+                    .setDescription(`A modmail thread for ${targetMember} already exists. You can find the channel`
+                        + `here: ${channel}.`)
+                    .setFooter("Modmail Thread Already Exists.");
+                MessageUtilities.sendThenDelete({embed: channelExistsEmbed}, initiatedBy, 30 * 1000);
+                return;
+            }
+
+            // Otherwise, the channel doesn't exist.
+            // So remove it.
+            await MongoManager.getGuildCollection().updateOne({
+                guildId: targetMember.guild.id
+            }, {
+                $pull: {
+                    "properties.modmailThreads": {
+                        channel: modmailInfo.channel
+                    }
+                }
+            });
+        }
+
+        // Create a new channel. Put it in same category as the modmail channel.
+        const createdTime = Date.now();
+        const channelName = `${targetMember.user.username}-${targetMember.user.discriminator}`;
+        const threadChannel = await initiatedBy.guild.channels.create(channelName, {
+            type: "text",
+            parent: modmailCategory,
+            topic: new StringBuilder().append(`Modmail Thread For: ${targetMember}`).appendLine()
+                .append(`Created By: ${initiatedBy}`).appendLine()
+                .append(`Created Time: ${MiscUtilities.getTime(createdTime)}`)
+                .toString()
+        });
+        await threadChannel.lockPermissions().catch();
+
+        const descSb = new StringBuilder(`⇒ **Initiated By:** ${initiatedBy}`)
+            .appendLine()
+            .append(`⇒ **Recipient:** ${targetMember}`)
+            .appendLine()
+            .append(`⇒ **Thread Creation Time:** ${MiscUtilities.getTime(createdTime)}`);
+        const reactionSb = new StringBuilder()
+            .append(`⇒ React with ${Emojis.CLIPBOARD_EMOJI} to send a message. You may also use the \`;respond\` `)
+            .append("command.")
+            .appendLine()
+            .append(`⇒ React with ${Emojis.STOP_SIGN_EMOJI} to close this thread.`)
+            .appendLine()
+            .append(`⇒ React with ${Emojis.DENIED_EMOJI} to modmail blacklist the author of this modmail.`);
+
+        const baseMsgEmbed = MessageUtilities.generateBlankEmbed(targetMember.user)
+            .setTitle(`Modmail Thread ⇒ ${targetMember.user.tag}`)
+            .setDescription(descSb.toString())
+            .addField("Reactions", reactionSb.toString())
+            .setTimestamp()
+            .setFooter("Modmail Thread • Created");
+        const baseMessage: Message = await threadChannel.send(baseMsgEmbed);
+        AdvancedCollector.reactFaster(baseMessage, [
+            Emojis.CLIPBOARD_EMOJI,
+            Emojis.STOP_SIGN_EMOJI,
+            Emojis.DENIED_EMOJI
+        ]);
+        await baseMessage.pin().catch();
+
+        // Don't inline in case we need to change any properties of this object.
+        const modmailObj: IModmailThread = {
+            initiatorId: targetMember.id,
+            baseMsg: baseMessage.id,
+            startedOn: createdTime,
+            channel: threadChannel.id,
+            originalModmailMessageId: baseMessage.id,
+            messages: content ? [
+                {
+                    authorId: initiatedBy.id,
+                    attachments: [],
+                    tag: initiatedBy.user.tag,
+                    content: content,
+                    timeSent: new Date().getTime()
+                }
+            ] : []
+        };
+        await MongoManager.getGuildCollection().updateOne({
+            guildId: targetMember.guild.id
+        }, {
+            $push: {
+                "properties.modmailThreads": modmailObj
+            }
+        });
+
+        // Ping the person that created this.
+        MessageUtilities.sendThenDelete({content: initiatedBy.toString()}, threadChannel, 2000);
+
+        // If no content, exit.
+        if (!content) return;
+
+        const replyEmbed: MessageEmbed = MessageUtilities.generateBlankEmbed(initiatedBy.guild)
+            .setTitle(`${initiatedBy.guild.name} ⇒ You`)
+            .setDescription(content)
+            .setFooter("Modmail");
+
+        // Validate that the message has been sent.
+        const msgResult = await FetchRequestUtilities.sendMsg(targetMember, {embed: replyEmbed});
+        const replyRecordsEmbed = MessageUtilities.generateBlankEmbed(initiatedBy.user, msgResult ? "GREEN" : "YELLOW")
+            .setTitle(`${initiatedBy.displayName} ⇒ ${targetMember.user.tag}`)
+            .setDescription(content)
+            .setFooter("Sent Anonymously")
+            .setTimestamp();
+
+        if (!msgResult)
+            replyRecordsEmbed.addField(`${Emojis.WARNING_EMOJI} Error`, "Something went wrong when trying to send" +
+                " this modmail message. The recipient has either blocked the bot or prevented server members from" +
+                " DMing him/her.");
+
+        await threadChannel.send(replyRecordsEmbed).catch();
     }
 
     /**
