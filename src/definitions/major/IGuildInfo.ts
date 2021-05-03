@@ -94,7 +94,7 @@ export interface IGuildInfo extends IBaseDocument {
         // default prefix
         prefix: string;
         // any blocked commands
-        // you only need to reference *one* possible bot command name to block an entire command
+        // reference the cmdCode
         blockedCommands: string[];
         // modmail stuff
         modmailThreads: IModmailThread[];

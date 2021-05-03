@@ -105,8 +105,8 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
     }
 
     // Is the command blocked?
-    const botCmdNames = foundCommand.commandInfo.botCommandNames;
-    if (msg.guild && guildDoc && guildDoc.properties.blockedCommands.some(x => botCmdNames.includes(x))) {
+    const cmdInfo = foundCommand.commandInfo;
+    if (msg.guild && guildDoc && guildDoc.properties.blockedCommands.some(x => cmdInfo.cmdCode === x)) {
         const commandBlockedEmbed = MessageUtilities.generateBlankEmbed(msg.author, "RED")
             .setTitle("Command Blocked.")
             .setDescription("The command you are trying to execute is blocked by your server administrator.")
