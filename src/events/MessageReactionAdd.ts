@@ -1,4 +1,5 @@
-import {MessageReaction, PartialUser, User} from "discord.js";
+import {MessageReaction, NewsChannel, PartialUser, User} from "discord.js";
+import {FetchRequestUtilities} from "../utilities/FetchRequestUtilities";
 
 export async function onMessageReactionAdd(reaction: MessageReaction,
                                            user: User | PartialUser): Promise<void> {
@@ -8,9 +9,14 @@ export async function onMessageReactionAdd(reaction: MessageReaction,
     if (reaction.message.author.bot || user.bot)
         return;
 
-    const guild = await reaction.message.guild.fetch();
-    const message = await reaction.message.fetch();
-    const resolvedUser = await user.fetch();
-    const resolvedMember = await guild.members.fetch(user.id);
+    const guild = reaction.message.guild;
+    const resolvedUser = await FetchRequestUtilities.fetchUser(user.id);
+    const resolvedMember = await FetchRequestUtilities.fetchGuildMember(guild, user.id);
+    if (!resolvedUser || !resolvedMember)
+        return;
+    const message = await FetchRequestUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
+    if (!message)
+        return;
+
     const peopleThatReacted = await reaction.users.fetch();
 }
