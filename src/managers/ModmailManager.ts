@@ -7,7 +7,6 @@ import {
     GuildMember,
     Message, MessageAttachment,
     MessageEmbed,
-    MessageEmbedFooter,
     TextChannel,
     User
 } from "discord.js";
@@ -176,14 +175,12 @@ export namespace ModmailManager {
             // responses -- any mods that have responded
             .addField("Last Response By", "None.");
         const modMailMessage = await modmailChannel.send(modMailEmbed);
-        // respond reaction
-        await modMailMessage.react(Emojis.CLIPBOARD_EMOJI).catch();
-        // garbage reaction
-        await modMailMessage.react(Emojis.WASTEBIN_EMOJI).catch();
-        // blacklist
-        await modMailMessage.react(Emojis.DENIED_EMOJI).catch();
-        // redirect
-        await modMailMessage.react(Emojis.REDIRECT_EMOJI).catch();
+        AdvancedCollector.reactFaster(modMailMessage, [
+            Emojis.CLIPBOARD_EMOJI,
+            Emojis.WASTEBIN_EMOJI,
+            Emojis.DENIED_EMOJI,
+            Emojis.REDIRECT_EMOJI
+        ]);
     }
 
     /**
@@ -366,7 +363,7 @@ export namespace ModmailManager {
         if (!convertedToThreadBy.guild.me || !convertedToThreadBy.guild.me.hasPermission("MANAGE_CHANNELS"))
             return;
         const oldEmbed = originalMmMsg.embeds[0];
-        const authorOfModmailId = ((oldEmbed.footer as MessageEmbedFooter).text as string).split("•")[0].trim();
+        const authorOfModmailId = oldEmbed.footer!.text!.split("•")[0].trim();
         const guild = originalMmMsg.guild as Guild;
         const guildDoc = await MongoManager.getOrCreateGuildDb(guild.id);
 
@@ -536,7 +533,7 @@ export namespace ModmailManager {
         const oldEmbed = origMmMessage.embeds[0];
         const authorOfModmailId = threadInfo
             ? threadInfo.originalModmailMessageId
-            : ((oldEmbed.footer as MessageEmbedFooter).text as string).split("•")[0].trim();
+            : oldEmbed.footer!.text!.split("•")[0].trim();
         await origMmMessage.reactions.removeAll().catch();
 
         // Start by asking if we want to blacklist.
@@ -656,81 +653,10 @@ export namespace ModmailManager {
 
         CurrentlyRespondingToModMail.set(memberThatWillRespond.id, modmailThread.initiatorId);
 
-        // Create instructions string for function.
-        const instructionsStr = new StringBuilder()
-            .append("Please respond to the above message by typing a message here. ")
-            .append("When you are finished, simply send it here. You will have 10 minutes. You are not able to ")
-            .append("send images or attachments directly.")
-            .appendLine()
-            .append(`⇒ React to ${Emojis.GREEN_CHECK_EMOJI} once you are satisfied with your response above.`)
-            .appendLine()
-            .append(`⇒ React to ${Emojis.X_EMOJI} to cancel this process.`)
-            .appendLine()
-            .append(`⇒ React to ${Emojis.EYES_EMOJI} to show or hide your identity.`);
+        const response = await getResponseMessage(memberThatWillRespond, threadChannel);
+        if (!response) return;
+        const [responseToMail, anonymous] = response;
 
-        // Local function that creates display embed for person that wants to respond to modmail message.
-        function getRespEmbed(resp: string, anony: boolean): MessageEmbed {
-            return MessageUtilities.generateBlankEmbed(memberThatWillRespond.user)
-                .setTitle("Your Response")
-                .setDescription(resp === "" ? "N/A" : resp)
-                .setFooter("Modmail Response System")
-                .addField("Instructions", instructionsStr.toString())
-                .addField("Identity", anony
-                    ? "Your identity will be __hidden__. The recipient will not know who sent this message."
-                    : "Your identity will be __displayed__. The recipient will know who sent this message.");
-        }
-
-        let responseToMail = "";
-        let anonymous = true;
-        let botMsg: Message | null = null;
-        let hasReactedToMessage = false;
-        while (true) {
-            const responseEmbed = getRespEmbed(responseToMail, anonymous);
-
-            if (botMsg) botMsg = await botMsg.edit(responseEmbed);
-            else botMsg = await threadChannel.send(responseEmbed);
-
-            const response = await new AdvancedCollector(
-                threadChannel,
-                memberThatWillRespond,
-                10,
-                "M"
-            ).startDoubleCollector({embed: responseEmbed}, AdvancedCollector.getPureMessage(), {
-                reactions: ["✅", "❌", "👀"],
-                cancelFlag: "--cancel",
-                reactToMsg: !hasReactedToMessage,
-                deleteBaseMsgAfterComplete: true,
-                removeAllReactionAfterReact: false,
-                oldMsg: botMsg
-            });
-
-            if (hasReactedToMessage) hasReactedToMessage = !hasReactedToMessage;
-            if (response instanceof Emoji) {
-                if (response.name === Emojis.X_EMOJI) {
-                    await botMsg.delete().catch();
-                    CurrentlyRespondingToModMail.delete(memberThatWillRespond.id);
-                    return;
-                }
-
-                if (response.name === Emojis.EYES_EMOJI) {
-                    anonymous = !anonymous;
-                    continue;
-                }
-
-                if (responseToMail.length !== 0) break;
-                continue;
-            }
-
-            if (!response) {
-                await botMsg.delete().catch();
-                return;
-            }
-
-            if (response.content.length !== 0)
-                responseToMail = response.content;
-        } // end while
-
-        await botMsg.delete().catch(console.error);
         const replyEmbed = MessageUtilities.generateBlankEmbed(anonymous
             ? memberThatWillRespond.guild
             : memberThatWillRespond.user)
@@ -777,14 +703,15 @@ export namespace ModmailManager {
     }
 
     /**
-     *
-     * @param {TextChannel} threadChannel
-     * @param {IModmailThread} threadInfo
-     * @param {IGuildInfo} guildDb
-     * @param {GuildMember} closedBy
+     * Closes a modmail thread. This will archive the conversation history, if possible, and delete the channel,
+     * restoring the original modmail message (in the modmail channel) to its original state.
+     * @param {TextChannel} threadChannel The thread channel.
+     * @param {IModmailThread} threadInfo The thread info.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {GuildMember} closedBy The person that closed this thread.
      */
     export async function closeModmailThread(threadChannel: TextChannel, threadInfo: IModmailThread,
-                                             guildDb: IGuildInfo, closedBy: GuildMember): Promise<void> {
+                                             guildDoc: IGuildInfo, closedBy: GuildMember): Promise<void> {
         const modMailChannel = threadChannel.guild.channels.cache
             .get(threadInfo.channel) as TextChannel | undefined;
         if (threadInfo.originalModmailMessageId !== "" && modMailChannel) {
@@ -811,7 +738,7 @@ export namespace ModmailManager {
                 // If one exists (and this should always be the case), then update it to include thread info
                 if (lastRespLastIdx !== -1) {
                     const modmailStorage = closedBy.guild.channels.cache
-                        .get(guildDb.channels.modmailChannels.modmailStorageChannelId) as TextChannel | undefined;
+                        .get(guildDoc.channels.modmailChannels.modmailStorageChannelId) as TextChannel | undefined;
 
                     let additionalRespInfo = "";
                     if (modmailStorage) {
@@ -823,6 +750,8 @@ export namespace ModmailManager {
                             .append(`⇒ Thread Creation Time: ${MiscUtilities.getTime(threadInfo.startedOn)}`)
                             .appendLine()
                             .append(`⇒ Converted To Thread By (ID): ${threadInfo.initiatedById}`)
+                            .appendLine()
+                            .append(`⇒ Closed By: ${closedBy.id} (${closedBy.displayName})`)
                             .appendLine()
                             .appendLine()
                             .append("========================================")
@@ -874,14 +803,12 @@ export namespace ModmailManager {
                     .setColor("GREEN")
                     .setFooter(`${threadInfo.originalModmailMessageId} • Modmail Message`);
                 await oldModmailMessage.edit(modmailEmbed).catch();
-                // respond reaction
-                await oldModmailMessage.react(Emojis.CLIPBOARD_EMOJI).catch();
-                // garbage reaction
-                await oldModmailMessage.react(Emojis.WASTEBIN_EMOJI).catch();
-                // blacklist
-                await oldModmailMessage.react(Emojis.DENIED_EMOJI).catch();
-                // redirect
-                await oldModmailMessage.react(Emojis.REDIRECT_EMOJI).catch();
+                AdvancedCollector.reactFaster(oldModmailMessage, [
+                    Emojis.CLIPBOARD_EMOJI,
+                    Emojis.WASTEBIN_EMOJI,
+                    Emojis.DENIED_EMOJI,
+                    Emojis.REDIRECT_EMOJI
+                ]);
             }
         }
 
@@ -894,6 +821,218 @@ export namespace ModmailManager {
             }
         });
         await threadChannel.delete().catch();
+    }
+
+    /**
+     * Allows a person to respond to a modmail message.
+     * @param {Message} originalMmMsg The message from the modmail channel that the person will respond to.
+     * @param {GuildMember} responder The person that will respond to this modmail message.
+     */
+    export async function respondToGeneralModmail(originalMmMsg: Message,
+                                                  responder: GuildMember): Promise<void> {
+        if (!responder.guild.me || !responder.guild.me.hasPermission("MANAGE_CHANNELS"))
+            return;
+        const oldEmbed = originalMmMsg.embeds[0];
+        const authorOfModmailId = oldEmbed.footer!.text!.split("•")[0].trim();
+        const guild = originalMmMsg.guild as Guild;
+
+        const origDescription = oldEmbed.description ? oldEmbed.description : "";
+        const authorOfModmail = await FetchRequestUtilities.fetchGuildMember(guild, authorOfModmailId);
+        if (!authorOfModmail) {
+            const notInGuildEmbed = MessageUtilities.generateBlankEmbed(responder, "RED")
+                .setTitle("Target Member Unavailable.")
+                .setDescription(`The person with ID \`${authorOfModmailId}\` is no longer in the server, so you cannot `
+                    + "respond to this person. This modmail entry will be deleted in 5 seconds.")
+                .setFooter("Failed to Respond.");
+            await originalMmMsg.edit(notInGuildEmbed)
+                .then(x => x.delete({timeout: 5 * 1000}))
+                .catch();
+            return;
+        }
+
+        await originalMmMsg.reactions.removeAll().catch();
+
+        // If the modmail message was responded to already, then ask if we want to still respond.
+        const lastResponseField = oldEmbed.fields.find(x => x.name === "Last Response By");
+        // If the field doesn't exist, then this modmail is currently being responded to.
+        if (!lastResponseField) return;
+        // Otherwise, we check if the modmail message has already been responded to.
+        if (lastResponseField.value !== "None.") {
+            const confirmWantToRespond = MessageUtilities.generateBlankEmbed(responder.user, "YELLOW")
+                .setTitle("Respond to Already-Responded Modmail")
+                .setDescription("This modmail entry has already been answered. Do you still want to answer this?")
+                .setFooter("Confirmation.");
+            await originalMmMsg.edit(confirmWantToRespond).catch();
+            const reactions: EmojiResolvable[] = [Emojis.GREEN_CHECK_EMOJI, Emojis.X_EMOJI];
+            const result: Emoji | null = await new AdvancedCollector(
+                originalMmMsg.channel as TextChannel, responder, 2, "M"
+            ).waitForSingleReaction(originalMmMsg, {
+                reactions: reactions,
+                reactToMsg: true,
+                removeAllReactionAfterReact: true
+            });
+            if (!result || result.name === Emojis.X_EMOJI) {
+                await originalMmMsg.edit(oldEmbed).catch();
+                AdvancedCollector.reactFaster(originalMmMsg, [
+                    Emojis.CLIPBOARD_EMOJI,
+                    Emojis.WASTEBIN_EMOJI,
+                    Emojis.DENIED_EMOJI,
+                    Emojis.REDIRECT_EMOJI
+                ]);
+                return;
+            }
+        }
+        CurrentlyRespondingToModMail.set(responder.id, authorOfModmailId);
+
+        // Update the old embed to indicate that someone is responding to the modmail.
+        const attachments = oldEmbed.fields.find(x => x.name === "Attachments");
+        const senderInfo = oldEmbed.fields.find(x => x.name === "Sender Information")!.value;
+        const respInProgressEmbed = MessageUtilities.generateBlankEmbed(responder.user)
+            .setTitle("📝 Response In Progress")
+            .setDescription(origDescription)
+            .setFooter("Modmail In Progress!");
+        if (attachments)
+            respInProgressEmbed.addField(attachments.name, attachments.value);
+        respInProgressEmbed.addField("Sender Info", senderInfo)
+            .addField("Current Responder", `${responder}: \`${MiscUtilities.getTime()}\``);
+
+        await originalMmMsg.edit(respInProgressEmbed).catch();
+
+        // Create a new channel where the person can write a message.
+        const channelName = `respond-${authorOfModmail.user.username}`;
+        const responseChannel: TextChannel = await responder.guild.channels.create(channelName, {
+            type: "text",
+            permissionOverwrites: [
+                {
+                    id: responder.guild.roles.everyone,
+                    deny: ["VIEW_CHANNEL"]
+                },
+                {
+                    id: responder,
+                    allow: ["VIEW_CHANNEL"]
+                },
+                {
+                    // when is this null
+                    id: responder.guild.me!,
+                    allow: ["VIEW_CHANNEL"]
+                }
+            ]
+        });
+
+        const introEmbed = MessageUtilities.generateBlankEmbed(responder.user)
+            .setTimestamp()
+            .setTitle("Responding to Modmail.")
+            .setFooter("Modmail Response System")
+            .setDescription(origDescription);
+        if (attachments) introEmbed.addField("Attachments", attachments.value);
+        introEmbed.addField("Sender Information", senderInfo);
+
+        const introMsg = await responseChannel.send(responder, {embed: introEmbed});
+        await introMsg.pin().catch();
+        const response = await getResponseMessage(responder, responseChannel);
+        if (!response) {
+            await originalMmMsg.edit(oldEmbed).catch();
+            AdvancedCollector.reactFaster(originalMmMsg, [
+                Emojis.CLIPBOARD_EMOJI,
+                Emojis.WASTEBIN_EMOJI,
+                Emojis.DENIED_EMOJI,
+                Emojis.REDIRECT_EMOJI
+            ]);
+            return;
+        }
+
+        const [responseToMail, anonymous] = response;
+
+        const replyEmbed = MessageUtilities.generateBlankEmbed(anonymous
+            ? responder.guild : responder.user)
+            .setTitle("Modmail Response")
+            .setDescription(responseToMail)
+            .addField("Original Message", origDescription.length === 0
+                ? "N/A"
+                : (origDescription.length > 1012 ? origDescription.substring(0, 1000) + "..." : origDescription))
+            .setFooter("Modmail Response");
+
+        const sentMsg = await FetchRequestUtilities.sendMsg(responder, replyEmbed);
+        await responseChannel.delete().catch();
+        CurrentlyRespondingToModMail.delete(responder.id);
+
+        // save response
+        const loggedRespStr: StringBuilder = new StringBuilder()
+            .append("========== RESPONSE ==========")
+            .appendLine()
+            .append(responseToMail)
+            .appendLine()
+            .appendLine()
+            .appendLine()
+            .append("====== ORIGINAL MESSAGE ======")
+            .appendLine()
+            .append(origDescription)
+            .appendLine()
+            .appendLine()
+            .appendLine()
+            .append("======== GENERAL INFO ========")
+            .appendLine()
+            .append(`Author ID: ${authorOfModmail.id}`)
+            .appendLine()
+            .append(`Author Tag: ${authorOfModmail.user.tag}`)
+            .appendLine()
+            .append(`Responder ID: ${responder.id}`)
+            .appendLine()
+            .append(`Responder Tag: ${responder.user.tag}`)
+            .appendLine()
+            .append(`Time: ${MiscUtilities.getTime()} (UTC)`)
+            .appendLine()
+            .append(`Sent Status: ${sentMsg ? "Message Sent Successfully" : "Message Failed To Send"}`);
+
+        const guildDoc = await MongoManager.getOrCreateGuildDb(guild.id);
+        // see if we should store this string.
+        const modMailStorage = responder.guild.channels.cache
+            .get(guildDoc.channels.modmailChannels.modmailStorageChannelId) as TextChannel | undefined;
+        let addLogStr = "";
+        if (modMailStorage) {
+            const logMsg = await FetchRequestUtilities.sendMsg(
+                modMailStorage,
+                {
+                    files: [
+                        new MessageAttachment(
+                            Buffer.from(loggedRespStr.toString(), "utf8"),
+                            `${authorOfModmail.id}_modmail_${Date.now()}.txt`)
+                    ]
+                }
+            );
+
+            if (logMsg && logMsg.attachments.size > 0)
+                addLogStr = `[[Response](${logMsg.attachments.first()!.url})]`;
+        }
+
+        // Get old responses and begin adding to it if needed.
+        let lastRespLastIdx = -1;
+        for (let i = oldEmbed.fields.length - 1; i >= 0; --i) {
+            if (oldEmbed.fields[i].value === "Last Response By") {
+                lastRespLastIdx = i;
+                break;
+            }
+        }
+
+        const timeStr = MiscUtilities.getTime();
+        const tempLastResp = `${responder} (${timeStr}) ${addLogStr} ${sentMsg ? "" : Emojis.WARNING_EMOJI}`;
+        if (oldEmbed.fields[lastRespLastIdx].value === "None.")
+            oldEmbed.fields[lastRespLastIdx].value = tempLastResp;
+        else {
+            if (oldEmbed.fields[lastRespLastIdx].value.length + tempLastResp.length > 1000)
+                oldEmbed.addField("Last Response By", tempLastResp);
+            else
+                oldEmbed.fields[lastRespLastIdx].value += `\n${tempLastResp}`;
+        }
+
+        await originalMmMsg.edit(oldEmbed.setTitle(`${Emojis.GREEN_CHECK_EMOJI} Modmail Entry`).setColor("GREEN"))
+            .catch();
+        AdvancedCollector.reactFaster(originalMmMsg, [
+            Emojis.CLIPBOARD_EMOJI,
+            Emojis.WASTEBIN_EMOJI,
+            Emojis.DENIED_EMOJI,
+            Emojis.REDIRECT_EMOJI
+        ]);
     }
 
     /**
@@ -945,5 +1084,101 @@ export namespace ModmailManager {
                 cancelFlag: "cancel"
             });
         return selectedGuildIdx === null ? "CANCEL" : guildsToChoose[selectedGuildIdx - 1];
+    }
+
+    /**
+     * Creates a response embed that is used to show the message that is being drafted.
+     * @param {string} resp The response message.
+     * @param {boolean} anony Whether the author will be anonymous.
+     * @param {GuildMember} responder The responder.
+     * @return {MessageEmbed} The embed.
+     * @private
+     */
+    function getRespEmbed(resp: string, anony: boolean, responder: GuildMember): MessageEmbed {
+        // Create instructions string for function.
+        const instructionsStr = new StringBuilder()
+            .append("Please respond to the above message by typing a message here. ")
+            .append("When you are finished, simply send it here. You will have 10 minutes. You are not able to ")
+            .append("send images or attachments directly.")
+            .appendLine()
+            .append(`⇒ React to ${Emojis.GREEN_CHECK_EMOJI} once you are satisfied with your response above.`)
+            .appendLine()
+            .append(`⇒ React to ${Emojis.X_EMOJI} to cancel this process.`)
+            .appendLine()
+            .append(`⇒ React to ${Emojis.EYES_EMOJI} to show or hide your identity.`);
+
+        return MessageUtilities.generateBlankEmbed(responder.user)
+            .setTitle(`${Emojis.CLIPBOARD_EMOJI} Your Response`)
+            .setDescription(resp === "" ? "N/A" : resp)
+            .setFooter("Modmail Response System")
+            .addField("Instructions", instructionsStr.toString())
+            .addField("Identity", anony
+                ? "Your identity will be __hidden__. The recipient will not know who sent this message."
+                : "Your identity will be __displayed__. The recipient will know who sent this message.");
+    }
+
+    /**
+     * An infinite loop that waits for a valid response to a modmail message.
+     * @param {GuildMember} responder The person that is sending this response.
+     * @param {TextChannel} responseChannel The response channel.
+     * @return {[string, boolean] | null} A tuple containing the response data, or null if no data is available.
+     * @private
+     */
+    async function getResponseMessage(responder: GuildMember,
+                                      responseChannel: TextChannel): Promise<[string, boolean] | null> {
+        let responseMsg = "";
+        let isAnonymous = true;
+        let botMsg: Message | null = null;
+        let hasReacted = false;
+        while (true) {
+            const responseEmbed = getRespEmbed(responseMsg, isAnonymous, responder);
+            if (botMsg) botMsg = await botMsg.edit(responseEmbed);
+            else botMsg = await responseChannel.send(responseEmbed);
+
+            const response = await new AdvancedCollector(
+                responseChannel,
+                responder,
+                10,
+                "M"
+            ).startDoubleCollector({embed: responseEmbed}, AdvancedCollector.getPureMessage(), {
+                reactions: ["✅", "❌", "👀"],
+                cancelFlag: "--cancel",
+                reactToMsg: !hasReacted,
+                deleteBaseMsgAfterComplete: true,
+                removeAllReactionAfterReact: false,
+                oldMsg: botMsg
+            });
+
+            if (!response) {
+                await botMsg.delete().catch();
+                CurrentlyRespondingToModMail.delete(responder.id);
+                return null;
+            }
+
+            if (hasReacted) hasReacted = !hasReacted;
+
+            if (response instanceof Emoji) {
+                if (response.name === Emojis.X_EMOJI) {
+                    await botMsg.delete().catch();
+                    CurrentlyRespondingToModMail.delete(responder.id);
+                    return null;
+                }
+
+                if (response.name === Emojis.EYES_EMOJI) {
+                    isAnonymous = !isAnonymous;
+                    continue;
+                }
+
+                if (responseMsg.length !== 0) break;
+                continue;
+            }
+
+            if (response.content.length !== 0)
+                responseMsg = response.content;
+        }
+
+        await botMsg.delete().catch(console.error);
+
+        return [responseMsg, isAnonymous];
     }
 }
