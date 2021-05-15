@@ -1,4 +1,14 @@
-import {DMChannel, Guild, GuildMember, Message, MessageEmbed, TextChannel, User} from "discord.js";
+import {
+    DMChannel, Emoji,
+    EmojiResolvable,
+    Guild,
+    GuildMember,
+    Message,
+    MessageEmbed,
+    MessageEmbedFooter,
+    TextChannel,
+    User
+} from "discord.js";
 import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
@@ -271,7 +281,7 @@ export namespace ModmailManager {
             .append(`⇒ React with ${Emojis.CLIPBOARD_EMOJI} to send a message. You may also use the \`;respond\` `)
             .append("command.")
             .appendLine()
-            .append(`⇒ React with ${Emojis.STOP_SIGN_EMOJI} to close this thread.`)
+            .append(`⇒ React with ${Emojis.RED_SQUARE_EMOJI} to close this thread.`)
             .appendLine()
             .append(`⇒ React with ${Emojis.DENIED_EMOJI} to modmail blacklist the author of this modmail.`);
 
@@ -284,7 +294,7 @@ export namespace ModmailManager {
         const baseMessage: Message = await threadChannel.send(baseMsgEmbed);
         AdvancedCollector.reactFaster(baseMessage, [
             Emojis.CLIPBOARD_EMOJI,
-            Emojis.STOP_SIGN_EMOJI,
+            Emojis.RED_SQUARE_EMOJI,
             Emojis.DENIED_EMOJI
         ]);
         await baseMessage.pin().catch();
@@ -339,6 +349,276 @@ export namespace ModmailManager {
                 " DMing him/her.");
 
         await threadChannel.send(replyRecordsEmbed).catch();
+    }
+
+    /**
+     * Converts a modmail message to a thread. Should be called when reacting to 🔀.
+     * @param originalMmMsg The original modmail message. This must be a valid modmail message.
+     * @param convertedToThreadBy The person that converted the modmail message to a thread.
+     */
+    export async function convertToThread(originalMmMsg: Message, convertedToThreadBy: GuildMember): Promise<void> {
+        if (!convertedToThreadBy.guild.me || !convertedToThreadBy.guild.me.hasPermission("MANAGE_CHANNELS"))
+            return;
+        const oldEmbed = originalMmMsg.embeds[0];
+        const authorOfModmailId = ((oldEmbed.footer as MessageEmbedFooter).text as string).split("•")[0].trim();
+        const guild = originalMmMsg.guild as Guild;
+        const guildDoc = await MongoManager.getOrCreateGuildDb(guild.id);
+
+        // Is the person still in the guild?
+        const authorOfModmail = await FetchRequestUtilities.fetchGuildMember(guild, authorOfModmailId);
+        if (!authorOfModmail) {
+            const notInGuildEmbed = MessageUtilities.generateBlankEmbed(convertedToThreadBy, "RED")
+                .setTitle("Target Member Unavailable.")
+                .setDescription(`The person with ID \`${authorOfModmailId}\` is not in the server anymore. This `
+                    + "modmail message will be deleted in 10 seconds.")
+                .setFooter("Unable to Convert Modmail Message.");
+            await originalMmMsg.edit(notInGuildEmbed)
+                .then(x => x.delete({timeout: 10 * 1000}))
+                .catch();
+            return;
+        }
+
+        // Is the person blacklisted?
+        const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers
+            .find(x => x.discordId === authorOfModmail.id);
+        if (blacklistInfo) {
+            const noUserFoundEmbed = MessageUtilities.generateBlankEmbed(convertedToThreadBy.user, "RED")
+                .setTitle("User Blacklisted From Modmail")
+                .setDescription(`${authorOfModmail} is currently blacklisted from using modmail. You are unable to `
+                    + "create a thread for this person.")
+                .addField("Reason", blacklistInfo.reason)
+                .setFooter("Modmail");
+            await originalMmMsg.edit(noUserFoundEmbed)
+                .then(x => x.delete({timeout: 5 * 1000}))
+                .catch();
+            return;
+        }
+
+        // Does this person have a thread already?
+        const modmailInfo = guildDoc.properties.modmailThreads.find(x => x.initiatorId === authorOfModmail.id);
+        if (modmailInfo) {
+            const channel = guild.channels.cache.get(modmailInfo.channel) as TextChannel | undefined;
+            // If the channel exists:
+            if (channel) {
+                await MessageUtilities.sendThenDelete({content: convertedToThreadBy}, channel);
+                return;
+            }
+
+            // Otherwise, the channel doesn't exist.
+            // So remove it.
+            await MongoManager.getGuildCollection().updateOne({guildId: guild.id}, {
+                $pull: {
+                    "properties.modmailThreads": {
+                        channel: modmailInfo.channel
+                    }
+                }
+            });
+        }
+
+        // Now we can begin.
+        const modmailChannel = convertedToThreadBy.guild.channels.cache
+            .get(guildDoc.channels.modmailChannels.modmailChannelId) as TextChannel | undefined;
+        if (!modmailChannel) return;
+        const modmailCategory = modmailChannel.parent;
+        if (modmailCategory === null) return;
+
+        // max size of category = 50
+        if (modmailCategory.children.size + 1 > 50) return;
+
+        // Create the channel.
+        const createdTime = new Date().getTime();
+        const channelName = `${authorOfModmail.user.username}-${authorOfModmail.user.discriminator}`;
+        const description = new StringBuilder()
+            .append(`⇒ **Modmail Thread for:** ${authorOfModmail}`)
+            .appendLine()
+            .append(`⇒ **Converted to Thread by:** ${convertedToThreadBy}`)
+            .appendLine()
+            .append(`⇒ **Created By:** ${MiscUtilities.getTime(createdTime)}`);
+        const threadChannel = await convertedToThreadBy.guild.channels.create(channelName, {
+            type: "text",
+            parent: modmailCategory,
+            topic: description.toString()
+        });
+        await threadChannel.lockPermissions().catch();
+
+        // Create the base message.
+        const reactionInfo = new StringBuilder()
+            .append(`⇒ React to ${Emojis.CLIPBOARD_EMOJI} to send a message.`)
+            .appendLine()
+            .append(`⇒ React to ${Emojis.RED_SQUARE_EMOJI} to close this thread.`)
+            .appendLine()
+            .append(`⇒ React to ${Emojis.DENIED_EMOJI} to modmail blacklist the author of this modmail thread.`);
+        const baseMsgEmbed = MessageUtilities.generateBlankEmbed(authorOfModmail.user)
+            .setTitle(`Modmail Thread ⇒ ${authorOfModmail.user.tag}`)
+            .setDescription(description.toString())
+            .addField("Reaction Guide", reactionInfo.toString())
+            .setTimestamp()
+            .setFooter("Modmail Thread • Converted");
+
+        const baseMessage = await threadChannel.send(baseMsgEmbed);
+        AdvancedCollector.reactFaster(baseMessage, [
+            Emojis.CLIPBOARD_EMOJI,
+            Emojis.RED_SQUARE_EMOJI,
+            Emojis.DENIED_EMOJI
+        ]);
+        await baseMessage.pin().catch();
+
+        // Now, send the first message (copy the message from modmail channel).
+        const firstMsgEmbed = MessageUtilities.generateBlankEmbed(authorOfModmail.user, "RED")
+            .setTitle(`${authorOfModmail.user.tag} ⇒ Modmail Thread`)
+            .setFooter(`${authorOfModmail.id} • Modmail Thread`)
+            .setTimestamp();
+        const attachmentsIndex = originalMmMsg.embeds[0].fields
+            .findIndex(x => x.name === "Attachments");
+        let desc = "";
+        if (originalMmMsg.embeds[0].description !== null) {
+            desc = originalMmMsg.embeds[0].description;
+            firstMsgEmbed.setDescription(originalMmMsg.embeds[0].description);
+        }
+
+        if (attachmentsIndex !== -1)
+            firstMsgEmbed.addField("Attachments", originalMmMsg.embeds[0].fields[attachmentsIndex].value);
+        const firstMsg = await threadChannel.send(firstMsgEmbed);
+        await firstMsg.react(Emojis.CLIPBOARD_EMOJI).catch();
+
+        const threadInfo: IModmailThread = {
+            initiatorId: authorOfModmail.id,
+            baseMsg: baseMessage.id,
+            startedOn: createdTime,
+            channel: threadChannel.id,
+            originalModmailMessageId: originalMmMsg.id,
+            messages: [
+                {
+                    authorId: authorOfModmail.id,
+                    tag: authorOfModmail.user.tag,
+                    timeSent: new Date().getTime(),
+                    content: desc,
+                    attachments: []
+                }
+            ]
+        };
+
+        // Update database + update old modmail message.
+        await MongoManager.getGuildCollection().updateOne({guildID: convertedToThreadBy.guild.id}, {
+            $push: {
+                "properties.modMail": threadInfo
+            }
+        });
+
+        oldEmbed.setFooter("Converted to Modmail Thread.");
+        oldEmbed.addField("Modmail Thread Information", new StringBuilder()
+            .append("This modmail message was converted to a thread.")
+            .appendLine()
+            .append(`⇒ **Converted to Thread by:** ${convertedToThreadBy}`)
+            .appendLine()
+            .append(`⇒ **Created By:** ${MiscUtilities.getTime(createdTime)}`)
+            .toString());
+        await originalMmMsg.edit(oldEmbed).catch();
+        await originalMmMsg.reactions.removeAll().catch();
+    }
+
+    /**
+     * Blacklists the author of the modmail message from using modmail.
+     * @param {Message} origMmMessage The original modmail message.
+     * @param {GuildMember} mod The moderator that wants to blacklist the author of the modmail message.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {IModmailThread} threadInfo The thread info, if any.
+     */
+    export async function blacklistFromModmail(origMmMessage: Message, mod: GuildMember, guildDoc: IGuildInfo,
+                                               threadInfo?: IModmailThread): Promise<void> {
+        const oldEmbed = origMmMessage.embeds[0];
+        const authorOfModmailId = threadInfo
+            ? threadInfo.originalModmailMessageId
+            : ((oldEmbed.footer as MessageEmbedFooter).text as string).split("•")[0].trim();
+        await origMmMessage.reactions.removeAll().catch();
+
+        // Start by asking if we want to blacklist.
+        const confirmBlacklistEmbed = MessageUtilities.generateBlankEmbed(mod.user, "RED")
+            .setTitle("Blacklist From Modmail")
+            .setDescription("Are you sure you want to blacklist the user (with ID " + authorOfModmailId + ") from "
+                + "using modmail? He or she will not be notified and this blacklist is indefinite.")
+            .setFooter("Confirmation");
+        await origMmMessage.edit(confirmBlacklistEmbed).catch();
+        const reactions: EmojiResolvable[] = [Emojis.GREEN_CHECK_EMOJI, Emojis.X_EMOJI];
+        const result: Emoji | null = await new AdvancedCollector(origMmMessage.channel as TextChannel, mod, 2, "M")
+            .waitForSingleReaction(origMmMessage, {
+                reactions: reactions,
+                reactToMsg: true,
+                removeAllReactionAfterReact: true
+            });
+
+        if (!result || result.name === Emojis.X_EMOJI) {
+            await origMmMessage.edit(oldEmbed).catch();
+            // Was thread
+            if (threadInfo) {
+                AdvancedCollector.reactFaster(origMmMessage, [
+                    Emojis.CLIPBOARD_EMOJI,
+                    Emojis.RED_SQUARE_EMOJI,
+                    Emojis.DENIED_EMOJI
+                ]);
+                return;
+            }
+            // Was normal message.
+            AdvancedCollector.reactFaster(origMmMessage, [
+                Emojis.CLIPBOARD_EMOJI,
+                Emojis.WASTEBIN_EMOJI,
+                Emojis.DENIED_EMOJI,
+                Emojis.REDIRECT_EMOJI
+            ]);
+            return;
+        }
+
+        const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers.find(x => x.discordId === authorOfModmailId);
+
+        // If this person was already blacklisted.
+        if (blacklistInfo) {
+            await origMmMessage.delete().catch();
+            return;
+        }
+
+        // Update databases accordingly
+        await MongoManager.getGuildCollection().updateOne({guildID: mod.guild.id}, {
+            $push: {
+                "moderation.blacklistedModmailUsers": {
+                    discordId: authorOfModmailId,
+                    moderatorName: mod.displayName,
+                    dateTime: new Date().getTime(),
+                    reason: "AUTO: Blacklisted from Modmail Control Panel."
+                }
+            }
+        });
+
+        if (threadInfo) {
+            await MongoManager.getGuildCollection().updateOne({guildDoc: mod.guild.id}, {
+                $pull: {
+                    "properties.modmailThreads": {
+                        channel: threadInfo.channel
+                    }
+                }
+            });
+        }
+
+        const embedToReplaceOld = MessageUtilities.generateBlankEmbed(mod.user)
+            .setTitle("Blacklisted From Modmail")
+            .setDescription("This modmail message has been deleted because the author of this modmail message has"
+                + " been blacklisted.")
+            .setFooter("Blacklisted from Modmail.");
+        await origMmMessage.edit(embedToReplaceOld)
+            .then(x => x.delete({timeout: 5 * 1000}))
+            .catch();
+
+        // Log this to moderation logs.
+        const blacklistLogsChannel = mod.guild.channels.cache
+            .get(guildDoc.channels.logging.blacklistLoggingChannelId) as TextChannel | undefined;
+        if (!blacklistLogsChannel) return;
+
+        const modLogEmbed = MessageUtilities.generateBlankEmbed(mod.user, "RED")
+            .setTitle("Modmail Blacklisted.")
+            .setDescription(`⇒ **Blacklisted ID:** ${authorOfModmailId}\n⇒ **Moderator:** ${mod} (${mod.id})`)
+            .addField("⇒ Reason", "AUTOMATIC: Blacklisted from Modmail Control Panel.")
+            .setFooter("Blacklisted from Modmail.")
+            .setTimestamp();
+        await blacklistLogsChannel.send(modLogEmbed).catch();
     }
 
     /**

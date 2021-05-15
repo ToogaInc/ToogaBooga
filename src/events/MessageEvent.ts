@@ -104,7 +104,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
         return MessageUtilities.sendThenDelete({embed: notInGuild}, msg.channel);
     }
 
-    // Is the command blocked?
+    // Is the command blocked
     const cmdInfo = foundCommand.commandInfo;
     if (msg.guild && guildDoc && guildDoc.properties.blockedCommands.some(x => cmdInfo.cmdCode === x)) {
         const commandBlockedEmbed = MessageUtilities.generateBlankEmbed(msg.author, "RED")

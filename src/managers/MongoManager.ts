@@ -516,4 +516,22 @@ export namespace MongoManager {
         }
         return docs[0];
     }
+
+    /**
+     * Validates that a field exists in a guild document. If the field does exist, nothing happens. Otherwise, the
+     * field is set with the specified default value.
+     * @param {string} guildId The guild ID.
+     * @param {string} property The field, or property, to check.
+     * @param {any} defaultValue The default value if the field doesn't exist.
+     */
+    export async function validateGuildField(guildId: string, property: string, defaultValue: any): Promise<void> {
+        await getGuildCollection().updateOne({
+            guildId: guildId,
+            [property]: {$exists: false}
+        }, {
+            $set: {
+                [property]: defaultValue
+            }
+        });
+    }
 }
