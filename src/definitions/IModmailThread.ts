@@ -1,6 +1,8 @@
 export interface IModmailThread {
-    // the person that started this
+    // the person who the modmail was aimed towards
     initiatorId: string;
+    // The person that created this thread.
+    initiatedById: string;
     // base message id
     // this contains reactions that allow
     // someone to close or blacklist

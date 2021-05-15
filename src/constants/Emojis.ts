@@ -36,6 +36,7 @@ export namespace Emojis {
     export const CLIPBOARD_EMOJI: EmojiResolvable = "📝";
     export const REDIRECT_EMOJI: EmojiResolvable = "🔀";
     export const STOP_SIGN_EMOJI: EmojiResolvable = "🛑";
+    export const EYES_EMOJI: EmojiResolvable = "👀";
 
     // specific classes
     export const ROGUE: EmojiResolvable = "";
