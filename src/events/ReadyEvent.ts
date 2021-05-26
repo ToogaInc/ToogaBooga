@@ -1,4 +1,4 @@
-import {OneRealmBot} from "../OneRealmBot";
+import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
 import {IBotInfo} from "../definitions/major/IBotInfo";
 import {StringBuilder} from "../utilities/StringBuilder";
@@ -6,7 +6,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {PunishmentManager} from "../managers/PunishmentManager";
 
 export async function onReadyEvent(): Promise<void> {
-    const botUser = OneRealmBot.BotInstance.client.user;
+    const botUser = OneLifeBot.BotInstance.client.user;
 
     // This should theoretically never hit.
     if (!botUser) {
@@ -34,10 +34,10 @@ export async function onReadyEvent(): Promise<void> {
     }
 
     // Now, we want to add any guild docs to the database <=> the guild isn't in the database.
-    const botGuilds = OneRealmBot.BotInstance.client.guilds.cache;
+    const botGuilds = OneLifeBot.BotInstance.client.guilds.cache;
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
     for await (const [id] of botGuilds) {
-        if (guildDocs.find(x => x.guildId === id) || OneRealmBot.BotInstance.config.ids.exemptGuilds.includes(id))
+        if (guildDocs.find(x => x.guildId === id) || OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(id))
             continue;
 
         await MongoManager.getGuildCollection().insertOne(MongoManager.getDefaultGuildConfig(id));

@@ -1,4 +1,4 @@
-import {OneRealmBot} from "../OneRealmBot";
+import {OneLifeBot} from "../OneLifeBot";
 import {PrivateApiDefinitions as PAD} from "./PrivateApiDefinitions";
 
 export namespace RealmSharperWrapper {
@@ -7,10 +7,10 @@ export namespace RealmSharperWrapper {
      * @returns {Promise<boolean>} True if the API is online; false otherwise.
      */
     export async function isOnline(): Promise<boolean> {
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi + "/" + config.privateApiLinks.pingOnline;
         try {
-            const resp = await OneRealmBot.AxiosClient.get<PAD.IApiStatus>(url);
+            const resp = await OneLifeBot.AxiosClient.get<PAD.IApiStatus>(url);
             return resp.data.online;
         } catch (e) {
             return false;
@@ -34,9 +34,9 @@ export namespace RealmSharperWrapper {
      * is private.
      */
     export async function getNameHistory(name: string): Promise<PAD.INameHistory | null> {
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi + "/" + config.privateApiLinks.realmEye.nameHistory + "/" + name;
-        const resp = await OneRealmBot.AxiosClient.get<PAD.INameHistory>(url);
+        const resp = await OneLifeBot.AxiosClient.get<PAD.INameHistory>(url);
         return getProperReturnType<PAD.INameHistory>(resp.data);
     }
 
@@ -47,9 +47,9 @@ export namespace RealmSharperWrapper {
      * is private.
      */
     export async function getRankHistory(name: string): Promise<PAD.IRankHistory | null> {
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi + "/" + config.privateApiLinks.realmEye.rankHistory + "/" + name;
-        const resp = await OneRealmBot.AxiosClient.get<PAD.IRankHistory>(url);
+        const resp = await OneLifeBot.AxiosClient.get<PAD.IRankHistory>(url);
         return getProperReturnType<PAD.IRankHistory>(resp.data);
     }
 
@@ -60,9 +60,9 @@ export namespace RealmSharperWrapper {
      * private.
      */
     export async function getGuildHistory(name: string): Promise<PAD.IGuildHistory | null> {
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi + "/" + config.privateApiLinks.realmEye.guildHistory + "/" + name;
-        const resp = await OneRealmBot.AxiosClient.get<PAD.IGuildHistory>(url);
+        const resp = await OneLifeBot.AxiosClient.get<PAD.IGuildHistory>(url);
         return getProperReturnType<PAD.IGuildHistory>(resp.data);
     }
 
@@ -73,9 +73,9 @@ export namespace RealmSharperWrapper {
      * is private.
      */
     export async function getExaltation(name: string): Promise<PAD.IExaltation | null> {
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi + "/" + config.privateApiLinks.realmEye.exaltations + "/" + name;
-        const resp = await OneRealmBot.AxiosClient.get<PAD.IExaltation>(url);
+        const resp = await OneLifeBot.AxiosClient.get<PAD.IExaltation>(url);
         return getProperReturnType<PAD.IExaltation>(resp.data);
     }
 
@@ -88,12 +88,12 @@ export namespace RealmSharperWrapper {
      */
     export async function getGraveyard(name: string, amount: number = 1): Promise<PAD.IGraveyard | null> {
         if (amount > 100) amount = 100;
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi
             + "/" + config.privateApiLinks.realmEye.graveyard
             + "/" + name
             + "/" + amount;
-        const resp = await OneRealmBot.AxiosClient.get<PAD.IGraveyard>(url);
+        const resp = await OneLifeBot.AxiosClient.get<PAD.IGraveyard>(url);
         return getProperReturnType<PAD.IGraveyard>(resp.data);
     }
 
@@ -104,11 +104,11 @@ export namespace RealmSharperWrapper {
      * data is private.
      */
     export async function getGraveyardSummary(name: string): Promise<PAD.IGraveyardSummary | null> {
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi
             + "/" + config.privateApiLinks.realmEye.graveyardSummary
             + "/" + name;
-        const resp = await OneRealmBot.AxiosClient.get<PAD.IGraveyardSummary>(url);
+        const resp = await OneLifeBot.AxiosClient.get<PAD.IGraveyardSummary>(url);
         return getProperReturnType<PAD.IGraveyardSummary>(resp.data);
     }
 
@@ -118,11 +118,11 @@ export namespace RealmSharperWrapper {
      * @returns {Promise<PrivateApiDefinitions.IPetYard | null>} The person's pet yard, or null if the data is private.
      */
     export async function getPetYard(name: string): Promise<PAD.IPetYard | null> {
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi
             + "/" + config.privateApiLinks.realmEye.petyard
             + "/" + name;
-        const resp = await OneRealmBot.AxiosClient.get<PAD.IPetYard>(url);
+        const resp = await OneLifeBot.AxiosClient.get<PAD.IPetYard>(url);
         return getProperReturnType<PAD.IPetYard>(resp.data);
     }
 
@@ -133,11 +133,11 @@ export namespace RealmSharperWrapper {
      * is empty.
      */
     export async function getPlayerInfo(name: string): Promise<PAD.IPlayerData | null> {
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi
             + "/" + config.privateApiLinks.realmEye.playerBasics
             + "/" + name;
-        const resp = await OneRealmBot.AxiosClient.get<PAD.IPlayerData>(url);
+        const resp = await OneLifeBot.AxiosClient.get<PAD.IPlayerData>(url);
         return getProperReturnType<PAD.IPlayerData>(resp.data);
     }
 
@@ -147,9 +147,9 @@ export namespace RealmSharperWrapper {
      * @returns {Promise<string[]>} The list of names found.
      */
     export async function parseWhoScreenshot(link: { url: string; }): Promise<string[]> {
-        const config = OneRealmBot.BotInstance.config;
+        const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi + "/raidutil/parsewho";
-        const resp = await OneRealmBot.AxiosClient.get<string[]>(url, {
+        const resp = await OneLifeBot.AxiosClient.get<string[]>(url, {
             data: link
         });
         return resp.data;

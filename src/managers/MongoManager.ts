@@ -2,7 +2,7 @@ import {Collection, FilterQuery, MongoClient, ObjectID} from "mongodb";
 import {IUserInfo} from "../definitions/major/IUserInfo";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {IBotInfo} from "../definitions/major/IBotInfo";
-import {OneRealmBot} from "../OneRealmBot";
+import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
 import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
@@ -440,7 +440,7 @@ export namespace MongoManager {
                     runsDone: {topRunsCompletedMessageId: "", topRunsCompletedWeek: []},
                     runsLed: {noRunsWeeklyMessageId: "", topRunsLedWeek: [], topRunsLedWeeklyMessageId: ""}
                 },
-                prefix: OneRealmBot.BotInstance.config.misc.defaultPrefix,
+                prefix: OneLifeBot.BotInstance.config.misc.defaultPrefix,
                 blockedCommands: [],
                 modmailThreads: []
             },

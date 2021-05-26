@@ -8,12 +8,12 @@ import {onMessageReactionAdd} from "./events/MessageReactionAdd";
 import axios, {AxiosInstance} from "axios";
 import {BaseCommand} from "./commands/BaseCommand";
 
-export class OneRealmBot {
+export class OneLifeBot {
     private readonly _config: IConfiguration;
     private readonly _bot: Client;
     private _eventsIsStarted: boolean = false;
 
-    public static BotInstance: OneRealmBot;
+    public static BotInstance: OneLifeBot;
     public static AxiosClient: AxiosInstance = axios.create();
     public static Commands: Collection<string, BaseCommand[]>;
 
@@ -36,8 +36,8 @@ export class OneRealmBot {
             restTimeOffset: 350
         });
 
-        OneRealmBot.BotInstance = this;
-        OneRealmBot.Commands = new Collection<string, BaseCommand[]>();
+        OneLifeBot.BotInstance = this;
+        OneLifeBot.Commands = new Collection<string, BaseCommand[]>();
     }
 
     /**

@@ -1,6 +1,6 @@
 import {GuildMember, MessageReaction, PartialUser, TextChannel, User} from "discord.js";
 import {FetchRequestUtilities} from "../utilities/FetchRequestUtilities";
-import {OneRealmBot} from "../OneRealmBot";
+import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
 import {ModmailManager} from "../managers/ModmailManager";
 import {Emojis} from "../constants/Emojis";
@@ -22,7 +22,7 @@ export async function onMessageReactionAdd(reaction: MessageReaction,
     if (!guild)
         return;
 
-    if (OneRealmBot.BotInstance.config.ids.exemptGuilds.includes(guild.id))
+    if (OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(guild.id))
         return;
 
     // User must exist.

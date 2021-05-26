@@ -1,5 +1,5 @@
 import {Collection, Guild, GuildMember, Role} from "discord.js";
-import {OneRealmBot} from "../OneRealmBot";
+import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "./MongoManager";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
@@ -63,7 +63,7 @@ export namespace PunishmentManager {
 
             // Check each section suspended person.
             for await (const [id, details] of SectionSuspendedPeople) {
-                const guild = OneRealmBot.BotInstance.client.guilds.cache.get(details.guild);
+                const guild = OneLifeBot.BotInstance.client.guilds.cache.get(details.guild);
                 // If the guild couldn't be found, that's a problem.
                 if (!guild) continue;
 
@@ -172,7 +172,7 @@ export namespace PunishmentManager {
             // Now, we will be checking the regular suspended people.
             for await (const [id, details] of SuspendedPeople) {
                 const actualId = id.split("_")[0];
-                const guild = OneRealmBot.BotInstance.client.guilds.cache.get(details.guild);
+                const guild = OneLifeBot.BotInstance.client.guilds.cache.get(details.guild);
 
                 // If the guild couldn't be found, that's a problem.
                 if (!guild) continue;

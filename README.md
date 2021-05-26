@@ -1,7 +1,10 @@
-# OneRealm
+# OneLife
 
 An open-source [Realm of the Mad God](https://www.realmofthemadgod.com/) designed for advanced cross-verification,
 moderation, and raid management.
+
+The name comes from how Realm of the Mad God is a perma-death game; that is, once you die, you need to rebuild your 
+character entirely. In this sense, you have *one life*. 
 
 ## Purpose
 
@@ -11,11 +14,11 @@ customization in mind.
 
 ## Technologies
 
-OneRealm actually consists of two projects: the bot itself (this repository);
+OneLife actually consists of two projects: the bot itself (this repository);
 and [RealmSharper](https://github.com/ewang2002/RealmEyeSharper/), which is how the bot gets its data from RealmEye and
 provides other services like screenshot parsing.
 
-### OneRealm
+### OneLife
 
 - [TypeScript](https://www.typescriptlang.org/)
 - [Node.js](https://nodejs.org/en/)

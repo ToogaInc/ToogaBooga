@@ -20,7 +20,7 @@ import {Emojis} from "../constants/Emojis";
 import {IReactionProps} from "../definitions/major/parts/IReactionProps";
 import {MappedReactions} from "../constants/MappedReactions";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {OneRealmBot} from "../OneRealmBot";
+import {OneLifeBot} from "../OneLifeBot";
 import {IRaidInfo} from "../definitions/major/IRaidInfo";
 import {FetchRequestUtilities} from "../utilities/FetchRequestUtilities";
 import {DungeonData} from "../constants/DungeonData";
@@ -121,7 +121,7 @@ export class RaidManager {
         // Reaction stuff.
         this._allReactions = (section.otherMajorConfig.afkCheckProperties.dungeonReactionOverride
             .find(x => x.dungeonCodeName === dungeon.codeName)?.reactions ?? dungeon.reactions)
-            .filter(x => OneRealmBot.BotInstance.client.emojis.cache
+            .filter(x => OneLifeBot.BotInstance.client.emojis.cache
                 .has(MappedReactions[x.mappingEmojiName].emojiId));
         this._earlyLocationReactions = new Collection<string, [GuildMember[], boolean]>();
         // Initialize all keys.
@@ -418,7 +418,7 @@ export class RaidManager {
             if (this._raidSection.otherMajorConfig.afkCheckProperties.removeKeyReactsDuringAfk)
                 await reaction.users.remove(user).catch();
 
-            const emoji = OneRealmBot.BotInstance.client.emojis.cache.get(MappedReactions[correctMapping].emojiId);
+            const emoji = OneLifeBot.BotInstance.client.emojis.cache.get(MappedReactions[correctMapping].emojiId);
             const reactionData = this._earlyLocationReactions.get(correctMapping)!;
 
             // This reaction is not accepting anymore people.
@@ -1010,7 +1010,7 @@ export class RaidManager {
         if (!this._raidVc) return toReturn;
         // Make sure the image exists.
         try {
-            const result = await OneRealmBot.AxiosClient.head(url);
+            const result = await OneLifeBot.AxiosClient.head(url);
             if (result.status < 300)
                 return toReturn;
         } catch (e) {
@@ -1430,7 +1430,7 @@ export class RaidManager {
 
         for (const [emojiCodeName, [peopleThatReacted,]] of this._earlyLocationReactions) {
             const mappedEmojiInfo = MappedReactions[emojiCodeName];
-            const emoji = OneRealmBot.BotInstance.client.emojis.cache.get(mappedEmojiInfo.emojiId)!;
+            const emoji = OneLifeBot.BotInstance.client.emojis.cache.get(mappedEmojiInfo.emojiId)!;
             const reactionInfo = this._allReactions.findIndex(x => x.mappingEmojiName === emojiCodeName);
             const amtTakenAmtMax = `${peopleThatReacted.length} / ${this._allReactions[reactionInfo].maxEarlyLocation}`;
             const info = new StringBuilder()
@@ -1487,7 +1487,7 @@ export class RaidManager {
 
         for (const [emojiCodeName, [peopleThatReacted, isAcceptingMore]] of this._earlyLocationReactions) {
             const mappedEmojiInfo = MappedReactions[emojiCodeName];
-            const emoji = OneRealmBot.BotInstance.client.emojis.cache.get(mappedEmojiInfo.emojiId)!;
+            const emoji = OneLifeBot.BotInstance.client.emojis.cache.get(mappedEmojiInfo.emojiId)!;
             const reactionInfo = this._allReactions.findIndex(x => x.mappingEmojiName === emojiCodeName);
             if (reactionInfo === -1)
                 continue;
@@ -1522,7 +1522,7 @@ export class RaidManager {
 
         const optSb = new StringBuilder();
         if (this._earlyLocationReactions.has("NITRO")) {
-            const nitroEmoji = OneRealmBot.BotInstance.client.emojis.cache.get(MappedReactions.NITRO.emojiId);
+            const nitroEmoji = OneLifeBot.BotInstance.client.emojis.cache.get(MappedReactions.NITRO.emojiId);
             const earlyLocRoleStr = this._guildDoc.roles.earlyLocationRoles
                 .filter(x => this._memberInit.roles.cache.has(x))
                 .map(x => this._memberInit.roles.cache.get(x))
@@ -1551,7 +1551,7 @@ export class RaidManager {
         const neededReactionsSb = new StringBuilder();
         for (const [emojiCodeName, [peopleThatReacted, isAcceptingMore]] of this._earlyLocationReactions) {
             const mappedEmojiInfo = MappedReactions[emojiCodeName];
-            const emoji = OneRealmBot.BotInstance.client.emojis.cache.get(mappedEmojiInfo.emojiId)!;
+            const emoji = OneLifeBot.BotInstance.client.emojis.cache.get(mappedEmojiInfo.emojiId)!;
             const reactionInfo = this._allReactions.findIndex(x => x.mappingEmojiName === emojiCodeName);
             // TODO test this to make sure.
             if (reactionInfo === -1 || !isAcceptingMore)

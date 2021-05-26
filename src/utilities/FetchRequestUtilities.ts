@@ -6,7 +6,7 @@ import {
     TextChannel,
     User, UserResolvable
 } from "discord.js";
-import {OneRealmBot} from "../OneRealmBot";
+import {OneLifeBot} from "../OneLifeBot";
 
 export namespace FetchRequestUtilities {
     /**
@@ -30,7 +30,7 @@ export namespace FetchRequestUtilities {
      */
     export async function fetchUser(targetId: string): Promise<User | null> {
         try {
-            return await OneRealmBot.BotInstance.client.users.fetch(targetId);
+            return await OneLifeBot.BotInstance.client.users.fetch(targetId);
         } catch (e) {
             return null;
         }
@@ -82,7 +82,7 @@ export namespace FetchRequestUtilities {
      */
     export async function fetchGuild(guildId: string): Promise<Guild | null> {
         try {
-            return await OneRealmBot.BotInstance.client.guilds.fetch(guildId);
+            return await OneLifeBot.BotInstance.client.guilds.fetch(guildId);
         } catch (e) {
             return null;
         }

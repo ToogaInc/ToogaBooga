@@ -1,6 +1,6 @@
 import {Collection, Guild, GuildMember, Message, PermissionString, User} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
-import {OneRealmBot} from "../OneRealmBot";
+import {OneLifeBot} from "../OneLifeBot";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 
 type RolePermissions = "Suspended"
@@ -101,7 +101,7 @@ export abstract class BaseCommand {
         };
 
         // If the command is bot owner only and the person isn't a bot owner, then this person can't run this command.
-        if (this.commandInfo.botOwnerOnly && !OneRealmBot.BotInstance.config.ids.botOwnerIds.includes(userToTest.id))
+        if (this.commandInfo.botOwnerOnly && !OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(userToTest.id))
             return results;
 
         // The person tried to run the command in DMs. See if the person can do so.

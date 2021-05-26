@@ -1,6 +1,6 @@
 import {Guild, Message} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
-import {OneRealmBot} from "../OneRealmBot";
+import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
 import {BaseCommand} from "../commands/BaseCommand";
 import {MessageUtilities} from "../utilities/MessageUtilities";
@@ -15,7 +15,7 @@ export async function onMessageEvent(msg: Message): Promise<void> {
         return;
 
     if (msg.guild) {
-        if (OneRealmBot.BotInstance.config.ids.exemptGuilds.includes(msg.guild.id))
+        if (OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(msg.guild.id))
             return;
 
         const guildDoc = await MongoManager.getDefaultGuildConfig(msg.guild.id);
@@ -36,7 +36,7 @@ export async function onMessageEvent(msg: Message): Promise<void> {
  * @param {IGuildInfo} guildDoc The guild database.
  */
 async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo): Promise<void> {
-    const prefixes = [OneRealmBot.BotInstance.config.misc.defaultPrefix];
+    const prefixes = [OneLifeBot.BotInstance.config.misc.defaultPrefix];
     if (guildDoc)
         prefixes.push(guildDoc.properties.prefix);
 
@@ -59,7 +59,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
 
     // Get the correct command.
     let foundCommand: BaseCommand | undefined;
-    outerLoop: for (const [, cmd] of OneRealmBot.Commands) {
+    outerLoop: for (const [, cmd] of OneLifeBot.Commands) {
         for (const c of cmd) {
             if (c.commandInfo.botCommandNames.includes(cmdWithNoPrefix)) {
                 foundCommand = c;
@@ -78,7 +78,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
 
     // Check some basic permission issues.
     // Start with bot owner.
-    const isBotOwner = OneRealmBot.BotInstance.config.ids.botOwnerIds.includes(msg.author.id);
+    const isBotOwner = OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(msg.author.id);
     if (foundCommand.commandInfo.botOwnerOnly && !isBotOwner) {
         const noBotOwnerEmbed = MessageUtilities.generateBlankEmbed(msg.author, "RED")
             .setTitle("Bot Owner Only Command.")
