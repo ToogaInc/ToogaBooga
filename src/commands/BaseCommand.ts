@@ -145,7 +145,7 @@ export abstract class BaseCommand {
 
         // See if custom permissions are defined.
         // If so, use it.
-        const customPermData = guildDoc.customCmdPermissions.find(x => x.key === this.commandInfo.cmdCode);
+        const customPermData = guildDoc.properties.customCmdPermissions.find(x => x.key === this.commandInfo.cmdCode);
         const rolePermissions = customPermData
             ? customPermData.value.useDefaultRolePerms
                 ? this.commandInfo.rolePermissions
@@ -353,4 +353,10 @@ interface ICommandInfo {
      * @type {boolean}
      */
     botOwnerOnly: boolean;
+
+    /**
+     * Minimum arguments needed.
+     * @type {number}
+     */
+    minArgs: number;
 }

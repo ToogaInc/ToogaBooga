@@ -213,6 +213,7 @@ export namespace MongoManager {
                 }
             }, {returnOriginal: true});
 
+            // Also update the user collection.
             if (oldDoc.value) {
                 await getUserCollection().updateOne({discordId: oldDoc.value.discordId}, {
                     $set: {
@@ -341,7 +342,6 @@ export namespace MongoManager {
         return {
             _id: new ObjectID(),
             activeRaids: [],
-            customCmdPermissions: [],
             customDungeons: [],
             manualVerificationEntries: [],
             channels: {
@@ -442,7 +442,8 @@ export namespace MongoManager {
                 },
                 prefix: OneLifeBot.BotInstance.config.misc.defaultPrefix,
                 blockedCommands: [],
-                modmailThreads: []
+                modmailThreads: [],
+                customCmdPermissions: []
             },
             roles: {
                 earlyLocationRoles: [],

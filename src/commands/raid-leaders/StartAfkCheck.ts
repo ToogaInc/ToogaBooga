@@ -20,7 +20,8 @@ export class StartAfkCheck extends BaseCommand {
             rolePermissions: ["RaidLeader", "AlmostRaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
             isRoleInclusive: false,
             guildOnly: true,
-            botOwnerOnly: false
+            botOwnerOnly: false,
+            minArgs: 0
         });
     }
 

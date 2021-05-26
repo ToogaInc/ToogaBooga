@@ -1371,8 +1371,9 @@ export class RaidManager {
             this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId
         ];
 
-        const customPermData = this._guildDoc.customCmdPermissions
+        const customPermData = this._guildDoc.properties.customCmdPermissions
             .find(x => x.key === StartAfkCheck.START_AFK_CMD_CODE);
+        // If you can start an AFK check, you should be able to manipulate control panel.
         if (customPermData && !customPermData.value.useDefaultRolePerms)
             neededRoles.push(...customPermData.value.rolePermsNeeded);
 

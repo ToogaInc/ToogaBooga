@@ -119,6 +119,16 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
         return MessageUtilities.sendThenDelete({embed: commandBlockedEmbed}, msg.channel);
     }
 
+    // Correct number of arguments?
+    if (args.length < cmdInfo.minArgs) {
+        const notEnoughArguments = MessageUtilities.generateBlankEmbed(msg.author, "RED")
+            .setTitle("Not Enough Arguments.")
+            .setDescription(`The command you are trying to execute requires at least ${cmdInfo.minArgs} arguments. `
+                + `You provided ${args.length} arguments. Please try again.`)
+            .setTimestamp();
+        return MessageUtilities.sendThenDelete({embed: notEnoughArguments}, msg.channel);
+    }
+
     // If not in guild, then we can just run it from here.
     if (!guild) {
         if (!isBotOwner) foundCommand.addToCooldown(msg.author);
