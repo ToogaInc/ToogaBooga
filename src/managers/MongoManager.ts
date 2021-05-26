@@ -346,7 +346,6 @@ export namespace MongoManager {
             manualVerificationEntries: [],
             channels: {
                 botUpdatesChannelId: "",
-                manualVerificationChannelId: "",
                 modmailChannels: {modmailChannelId: "", modmailLoggingId: "", modmailStorageChannelId: ""},
                 quotaLogsChannelId: "",
                 raidChannels: {
@@ -368,7 +367,7 @@ export namespace MongoManager {
             },
             guildId: guildId,
             guildSections: [],
-            moderation: {blacklistedUsers: [], suspendedUsers: []},
+            moderation: {blacklistedUsers: [], suspendedUsers: [], blacklistedModmailUsers: []},
             otherMajorConfig: {
                 verificationProperties: {
                     additionalVerificationInfo: "",
@@ -442,7 +441,8 @@ export namespace MongoManager {
                     runsLed: {noRunsWeeklyMessageId: "", topRunsLedWeek: [], topRunsLedWeeklyMessageId: ""}
                 },
                 prefix: OneRealmBot.BotInstance.config.misc.defaultPrefix,
-                blockedCommands: []
+                blockedCommands: [],
+                modmailThreads: []
             },
             roles: {
                 earlyLocationRoles: [],
@@ -514,5 +514,23 @@ export namespace MongoManager {
             throw new Error(`Insert failed: ${guildId}`);
         }
         return docs[0];
+    }
+
+    /**
+     * Validates that a field exists in a guild document. If the field does exist, nothing happens. Otherwise, the
+     * field is set with the specified default value.
+     * @param {string} guildId The guild ID.
+     * @param {string} property The field, or property, to check.
+     * @param {any} defaultValue The default value if the field doesn't exist.
+     */
+    export async function validateGuildField(guildId: string, property: string, defaultValue: any): Promise<void> {
+        await getGuildCollection().updateOne({
+            guildId: guildId,
+            [property]: {$exists: false}
+        }, {
+            $set: {
+                [property]: defaultValue
+            }
+        });
     }
 }

@@ -2,7 +2,7 @@ import {
     DMChannel,
     Guild,
     GuildMember,
-    Message, MessageOptions, PartialTextBasedChannelFields, Role,
+    Message, MessageOptions, NewsChannel, PartialTextBasedChannelFields, Role,
     TextChannel,
     User, UserResolvable
 } from "discord.js";
@@ -39,11 +39,12 @@ export namespace FetchRequestUtilities {
 
     /**
      * A simple function that fetches a message. This will handle any exceptions that may occur.
-     * @param {TextChannel | DMChannel} channel The channel.
+     * @param {TextChannel | DMChannel | NewsChannel} channel The channel.
      * @param {string} msgId The message to fetch.
      * @returns {Promise<Message | null>} The message object, if found. Null otherwise.
      */
-    export async function fetchMessage(channel: TextChannel | DMChannel, msgId: string): Promise<Message | null> {
+    export async function fetchMessage(channel: TextChannel | DMChannel | NewsChannel,
+                                       msgId: string): Promise<Message | null> {
         try {
             return await channel.messages.fetch(msgId);
         } catch (e) {

@@ -13,8 +13,8 @@ import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {IVerificationRequirements} from "../definitions/major/parts/IVerificationRequirements";
 import {GeneralCollectorBuilder} from "../utilities/collectors/GeneralCollectorBuilder";
-import {RealmSharperWrapper} from "../private_api/RealmSharperWrapper";
-import {PrivateApiDefinitions} from "../private_api/PrivateApiDefinitions";
+import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
+import {PrivateApiDefinitions} from "../private-api/PrivateApiDefinitions";
 import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 

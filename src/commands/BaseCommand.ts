@@ -49,10 +49,10 @@ export abstract class BaseCommand {
      * Executes a command.
      * @param {Message} msg The message object that initiated this command.
      * @param {string[]} args The arguments, if any.
-     * @param {IGuildInfo | null} guildDoc The guild document.
+     * @param {IGuildInfo} [guildDoc] The guild document.
      * @return {Promise<number>} The command result. 0 = success, any other number = fail.
      */
-    public abstract run(msg: Message, args: string[], guildDoc: IGuildInfo | null): Promise<number>;
+    public abstract run(msg: Message, args: string[], guildDoc?: IGuildInfo): Promise<number>;
 
     /**
      * Checks to see if the specified person is on cooldown.

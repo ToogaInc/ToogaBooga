@@ -7,6 +7,7 @@ import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {InteractionManager} from "../managers/InteractionManager";
+import {ModmailManager} from "../managers/ModmailManager";
 
 export async function onMessageEvent(msg: Message): Promise<void> {
     // We don't care about non-regular messages, bot messages, or webhook messages.
@@ -21,7 +22,7 @@ export async function onMessageEvent(msg: Message): Promise<void> {
         return await commandHandler(msg, msg.guild, guildDoc);
     }
 
-    // TODO make modmail better.
+    // If this person is in any interactive menus in DMs, then don't let them run commands in DMs.
     if (InteractionManager.InteractiveMenu.has(msg.author.id))
         return;
 
@@ -67,9 +68,13 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
         }
     }
 
-    // No command found = return.
-    if (!foundCommand)
+    // No command found = deal with modmail and return.
+    if (!foundCommand) {
+        if (msg.guild || InteractionManager.InteractiveMenu.has(msg.author.id))
+            return;
+        await ModmailManager.initiateModmailContact(msg.author, msg);
         return;
+    }
 
     // Check some basic permission issues.
     // Start with bot owner.
@@ -104,9 +109,9 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
         return MessageUtilities.sendThenDelete({embed: notInGuild}, msg.channel);
     }
 
-    // Is the command blocked?
-    const botCmdNames = foundCommand.commandInfo.botCommandNames;
-    if (msg.guild && guildDoc && guildDoc.properties.blockedCommands.some(x => botCmdNames.includes(x))) {
+    // Is the command blocked
+    const cmdInfo = foundCommand.commandInfo;
+    if (msg.guild && guildDoc && guildDoc.properties.blockedCommands.some(x => cmdInfo.cmdCode === x)) {
         const commandBlockedEmbed = MessageUtilities.generateBlankEmbed(msg.author, "RED")
             .setTitle("Command Blocked.")
             .setDescription("The command you are trying to execute is blocked by your server administrator.")
@@ -117,7 +122,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
     // If not in guild, then we can just run it from here.
     if (!guild) {
         if (!isBotOwner) foundCommand.addToCooldown(msg.author);
-        await foundCommand.run(msg, args, null);
+        await foundCommand.run(msg, args);
         return;
     }
 
@@ -128,7 +133,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
     // If no permission issues arise, then we can run like normal.
     if (canRunInfo.canRun) {
         if (!isBotOwner && !canRunInfo.hasAdmin) foundCommand.addToCooldown(msg.author);
-        await foundCommand.run(msg, args, guildDoc as IGuildInfo);
+        await foundCommand.run(msg, args, guildDoc);
         return;
     }
 
