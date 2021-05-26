@@ -28,7 +28,7 @@ import {MongoManager} from "./MongoManager";
 import {UserManager} from "./UserManager";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
-import {RealmSharperWrapper} from "../private_api/RealmSharperWrapper";
+import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {StartAfkCheck} from "../commands/raid-leaders/StartAfkCheck";
 
 // TODO Get votes.

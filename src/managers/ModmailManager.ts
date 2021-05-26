@@ -28,6 +28,19 @@ export namespace ModmailManager {
     // Value: the person that is being responded to.
     export const CurrentlyRespondingToModMail: Collection<string, string> = new Collection<string, string>();
 
+    const ModmailGeneralReactions: EmojiResolvable[] = [
+        Emojis.CLIPBOARD_EMOJI,
+        Emojis.WASTEBIN_EMOJI,
+        Emojis.DENIED_EMOJI,
+        Emojis.REDIRECT_EMOJI
+    ];
+
+    const ModmailThreadReactions = [
+        Emojis.CLIPBOARD_EMOJI,
+        Emojis.RED_SQUARE_EMOJI,
+        Emojis.DENIED_EMOJI
+    ];
+
     /**
      * This function should be called when someone DMs the bot. This will:
      * - Forward the message to the designated guild.
@@ -175,12 +188,7 @@ export namespace ModmailManager {
             // responses -- any mods that have responded
             .addField("Last Response By", "None.");
         const modMailMessage = await modmailChannel.send(modMailEmbed);
-        AdvancedCollector.reactFaster(modMailMessage, [
-            Emojis.CLIPBOARD_EMOJI,
-            Emojis.WASTEBIN_EMOJI,
-            Emojis.DENIED_EMOJI,
-            Emojis.REDIRECT_EMOJI
-        ]);
+        AdvancedCollector.reactFaster(modMailMessage, ModmailGeneralReactions);
     }
 
     /**
@@ -294,11 +302,7 @@ export namespace ModmailManager {
             .setTimestamp()
             .setFooter("Modmail Thread • Created");
         const baseMessage: Message = await threadChannel.send(baseMsgEmbed);
-        AdvancedCollector.reactFaster(baseMessage, [
-            Emojis.CLIPBOARD_EMOJI,
-            Emojis.RED_SQUARE_EMOJI,
-            Emojis.DENIED_EMOJI
-        ]);
+        AdvancedCollector.reactFaster(baseMessage, ModmailThreadReactions);
         await baseMessage.pin().catch();
 
         // Don't inline in case we need to change any properties of this object.
@@ -459,11 +463,7 @@ export namespace ModmailManager {
             .setFooter("Modmail Thread • Converted");
 
         const baseMessage = await threadChannel.send(baseMsgEmbed);
-        AdvancedCollector.reactFaster(baseMessage, [
-            Emojis.CLIPBOARD_EMOJI,
-            Emojis.RED_SQUARE_EMOJI,
-            Emojis.DENIED_EMOJI
-        ]);
+        AdvancedCollector.reactFaster(baseMessage, ModmailThreadReactions);
         await baseMessage.pin().catch();
 
         // Now, send the first message (copy the message from modmail channel).
@@ -555,20 +555,11 @@ export namespace ModmailManager {
             await origMmMessage.edit(oldEmbed).catch();
             // Was thread
             if (threadInfo) {
-                AdvancedCollector.reactFaster(origMmMessage, [
-                    Emojis.CLIPBOARD_EMOJI,
-                    Emojis.RED_SQUARE_EMOJI,
-                    Emojis.DENIED_EMOJI
-                ]);
+                AdvancedCollector.reactFaster(origMmMessage, ModmailThreadReactions);
                 return;
             }
             // Was normal message.
-            AdvancedCollector.reactFaster(origMmMessage, [
-                Emojis.CLIPBOARD_EMOJI,
-                Emojis.WASTEBIN_EMOJI,
-                Emojis.DENIED_EMOJI,
-                Emojis.REDIRECT_EMOJI
-            ]);
+            AdvancedCollector.reactFaster(origMmMessage, ModmailGeneralReactions);
             return;
         }
 
@@ -623,6 +614,37 @@ export namespace ModmailManager {
             .setFooter("Blacklisted from Modmail.")
             .setTimestamp();
         await blacklistLogsChannel.send(modLogEmbed).catch();
+    }
+
+    /**
+     * Asks the user if the modmail message should be deleted.
+     * @param {Message} message The modmail message.
+     * @param {GuildMember} member The member to ask.
+     */
+    export async function askDeleteModmailMessage(message: Message, member: GuildMember): Promise<void> {
+        if (message.embeds.length === 0) return;
+        // Remove all reactions because, well, you know, you don't need them.
+        message.reactions.removeAll().catch();
+        const oldEmbed = message.embeds[0];
+        const askDeleteEmbed = MessageUtilities.generateBlankEmbed(member)
+            .setTitle("Confirm Delete Modmail Message.")
+            .setDescription("Are you sure you want to delete this modmail message?")
+            .addField(`React With ${Emojis.GREEN_CHECK_EMOJI}`, "To delete this modmail message.")
+            .addField(`React With ${Emojis.X_EMOJI}`, "To cancel this process.");
+        await message.edit(askDeleteEmbed).catch();
+        const deleteResp = await new AdvancedCollector(message.channel as TextChannel | DMChannel, member, 1, "M")
+            .waitForSingleReaction(message, {
+                reactions: [Emojis.GREEN_CHECK_EMOJI, Emojis.X_EMOJI],
+                deleteBaseMsgAfterComplete: false,
+                removeAllReactionAfterReact: true
+            });
+        if (!deleteResp || deleteResp.name === Emojis.X_EMOJI) {
+            await message.edit(oldEmbed).catch();
+            AdvancedCollector.reactFaster(message, ModmailGeneralReactions);
+            return;
+        }
+
+        await message.delete().catch();
     }
 
     /**
@@ -803,12 +825,7 @@ export namespace ModmailManager {
                     .setColor("GREEN")
                     .setFooter(`${threadInfo.originalModmailMessageId} • Modmail Message`);
                 await oldModmailMessage.edit(modmailEmbed).catch();
-                AdvancedCollector.reactFaster(oldModmailMessage, [
-                    Emojis.CLIPBOARD_EMOJI,
-                    Emojis.WASTEBIN_EMOJI,
-                    Emojis.DENIED_EMOJI,
-                    Emojis.REDIRECT_EMOJI
-                ]);
+                AdvancedCollector.reactFaster(oldModmailMessage, ModmailGeneralReactions);
             }
         }
 
@@ -873,12 +890,7 @@ export namespace ModmailManager {
             });
             if (!result || result.name === Emojis.X_EMOJI) {
                 await originalMmMsg.edit(oldEmbed).catch();
-                AdvancedCollector.reactFaster(originalMmMsg, [
-                    Emojis.CLIPBOARD_EMOJI,
-                    Emojis.WASTEBIN_EMOJI,
-                    Emojis.DENIED_EMOJI,
-                    Emojis.REDIRECT_EMOJI
-                ]);
+                AdvancedCollector.reactFaster(originalMmMsg, ModmailGeneralReactions);
                 return;
             }
         }
@@ -932,12 +944,7 @@ export namespace ModmailManager {
         const response = await getResponseMessage(responder, responseChannel);
         if (!response) {
             await originalMmMsg.edit(oldEmbed).catch();
-            AdvancedCollector.reactFaster(originalMmMsg, [
-                Emojis.CLIPBOARD_EMOJI,
-                Emojis.WASTEBIN_EMOJI,
-                Emojis.DENIED_EMOJI,
-                Emojis.REDIRECT_EMOJI
-            ]);
+            AdvancedCollector.reactFaster(originalMmMsg, ModmailGeneralReactions);
             return;
         }
 
@@ -1027,12 +1034,7 @@ export namespace ModmailManager {
 
         await originalMmMsg.edit(oldEmbed.setTitle(`${Emojis.GREEN_CHECK_EMOJI} Modmail Entry`).setColor("GREEN"))
             .catch();
-        AdvancedCollector.reactFaster(originalMmMsg, [
-            Emojis.CLIPBOARD_EMOJI,
-            Emojis.WASTEBIN_EMOJI,
-            Emojis.DENIED_EMOJI,
-            Emojis.REDIRECT_EMOJI
-        ]);
+        AdvancedCollector.reactFaster(originalMmMsg, ModmailGeneralReactions);
     }
 
     /**

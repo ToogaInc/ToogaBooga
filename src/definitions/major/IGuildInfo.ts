@@ -62,7 +62,6 @@ export interface IGuildInfo extends IBaseDocument {
             suspensionLoggingChannelId: string;
             blacklistLoggingChannelId: string;
         };
-        manualVerificationChannelId: string;
         quotaLogsChannelId: string;
         botUpdatesChannelId: string;
     };

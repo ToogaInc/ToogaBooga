@@ -14,13 +14,11 @@
     "no-console": {
       "severity": "off"
     },
-
     "semicolon": {
       "severity": "error"
     },
-
     "no-trailing-whitespace": {
-      "severity": "warning"
+      "severity": "off"
     },
     "no-empty": {
       "severity": "warning"

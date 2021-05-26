@@ -178,10 +178,8 @@ export namespace PunishmentManager {
                 if (!guild) continue;
 
                 // Get the member. I think the fetch method throws an error if the member isn't found so try/catch.
-                let suspendedMember: GuildMember;
-                try {
-                    suspendedMember = await guild.members.fetch(actualId);
-                } catch (e) {
+                const suspendedMember = await FetchRequestUtilities.fetchGuildMember(guild, actualId);
+               if (!suspendedMember) {
                     idsToRemove.enqueue([id, false]);
                     continue;
                 }

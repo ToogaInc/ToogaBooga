@@ -346,7 +346,6 @@ export namespace MongoManager {
             manualVerificationEntries: [],
             channels: {
                 botUpdatesChannelId: "",
-                manualVerificationChannelId: "",
                 modmailChannels: {modmailChannelId: "", modmailLoggingId: "", modmailStorageChannelId: ""},
                 quotaLogsChannelId: "",
                 raidChannels: {
