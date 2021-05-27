@@ -1193,28 +1193,29 @@ export class RaidManager {
             // Section leader roles start here
             {
                 id: this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_ALMOST_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_ALMOST_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_HEAD_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_HEAD_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionVetLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_VETERAN_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECTION_VETERAN_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_VETERAN_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_VETERAN_LEADER_ROLE)?.value.deny
             }
         ].filter(y => this._guild.roles.cache.has(y.id)
             && ((y.allow && y.allow.length !== 0) || (y.deny && y.deny.length !== 0)));
         // And then define any additional roles.
-        permsToEvaluate.filter(x => !x.key.startsWith("PD-"))
+        // We only want role IDs here.
+        permsToEvaluate.filter(x => !Number.isNaN(x))
             .filter(x => x.value.allow.length !== 0 || x.value.deny.length !== 0)
             .forEach(perm => permsToReturn.push({
                 id: perm.key,

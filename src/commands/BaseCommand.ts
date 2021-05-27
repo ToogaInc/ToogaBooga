@@ -1,16 +1,10 @@
 import {Collection, Guild, GuildMember, Message, PermissionString, Role, User} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {OneLifeBot} from "../OneLifeBot";
+import {GeneralConstants} from "../constants/GeneralConstants";
 
-type RolePermissions = "Suspended"
-    | "Raider"
-    | "Security"
-    | "AlmostRaidLeader"
-    | "RaidLeader"
-    | "VeteranRaidLeader"
-    | "Officer"
-    | "HeadRaidLeader"
-    | "Moderator";
+// Type alias
+type RolePermissions = GeneralConstants.RolePermissions;
 
 export abstract class BaseCommand {
     private static readonly ROLE_ORDER: RolePermissions[] = [
@@ -22,7 +16,8 @@ export abstract class BaseCommand {
         "AlmostRaidLeader",
         "Security",
         "Raider",
-        "Suspended"
+        "Suspended",
+        "Everyone"
     ];
 
     /**
@@ -157,15 +152,13 @@ export abstract class BaseCommand {
         // See if custom permissions are defined.
         // If so, use it.
         const customPermData = guildDoc.properties.customCmdPermissions.find(x => x.key === this.commandInfo.cmdCode);
-        const useCustomRolePerms = customPermData && !customPermData.value.useDefaultRolePerms;
+        const useCustomRolePerms = Boolean(customPermData && !customPermData.value.useDefaultRolePerms);
         const rolePermissions = useCustomRolePerms
             ? customPermData!.value.rolePermsNeeded
             : this.commandInfo.rolePermissions;
         // This represents the roles that are needed to ensure that the command can be executed. The user must have
         // at least one of these roles.
-        const allRoleIds = useCustomRolePerms
-            ? rolePermissions
-            : this.getNeededPermissions(rolePermissions as RolePermissions[], guildDoc);
+        const allRoleIds = this.getNeededPermissionsBase(rolePermissions, guildDoc, useCustomRolePerms);
 
         const serverPermissions = customPermData && !customPermData.value.useDefaultServerPerms
             ? customPermData.value.serverPermsNeeded
@@ -219,32 +212,34 @@ export abstract class BaseCommand {
     }
 
     /**
-     * Gets all roles that are needed in order to run this command. This assumes that `rolePerms` only contains the
-     * contents of the `rolePermissions` array defined in this class.
-     * @param {RolePermissions[]} rolePerms The role permissions, which are defined in `rolePermissions`.
-     * @param {IGuildInfo} guildDb The guild document.
+     * Gets all roles that are needed in order to run this command.
+     * @param {string[]} rolePerms The role permissions. If role inclusion is enabled for the command, there must
+     * only be one role.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {boolean} usingCustomPermissions Whether we are using custom permissions.
      * @return {string[]} All roles that can be used to satisfy the requirement.
      * @private
      */
-    private getNeededPermissions(rolePerms: RolePermissions[], guildDb: IGuildInfo): string[] {
+    private getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo,
+                                     usingCustomPermissions: boolean): string[] {
         const allHrl: string[] = [
-            guildDb.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
-            guildDb.roles.staffRoles.sectionLeaderRoleIds.sectionHeadLeaderRoleId
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionHeadLeaderRoleId
         ];
         const allVrl: string[] = [
-            guildDb.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
-            guildDb.roles.staffRoles.sectionLeaderRoleIds.sectionVetLeaderRoleId
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
+            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionVetLeaderRoleId
         ];
         const allRl: string[] = [
-            guildDb.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-            guildDb.roles.staffRoles.sectionLeaderRoleIds.sectionRaidLeaderRoleId
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionRaidLeaderRoleId
         ];
         const allArl: string[] = [
-            guildDb.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            guildDb.roles.staffRoles.sectionLeaderRoleIds.sectionAlmostRaidLeaderRoleId
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
+            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionAlmostRaidLeaderRoleId
         ];
-        const allVerified: string[] = [guildDb.roles.verifiedRoleId];
-        for (const section of guildDb.guildSections) {
+        const allVerified: string[] = [guildDoc.roles.verifiedRoleId];
+        for (const section of guildDoc.guildSections) {
             allHrl.push(section.roles.leaders.sectionHeadLeaderRoleId);
             allRl.push(section.roles.leaders.sectionRaidLeaderRoleId);
             allVrl.push(section.roles.leaders.sectionVetLeaderRoleId);
@@ -253,17 +248,23 @@ export abstract class BaseCommand {
         }
 
         const roleCollection = new Collection<RolePermissions, string[]>();
-        roleCollection.set("Moderator", [guildDb.roles.staffRoles.moderation.moderatorRoleId]);
+        roleCollection.set("Moderator", [guildDoc.roles.staffRoles.moderation.moderatorRoleId]);
         roleCollection.set("HeadRaidLeader", allHrl);
-        roleCollection.set("Officer", [guildDb.roles.staffRoles.moderation.officerRoleId]);
+        roleCollection.set("Officer", [guildDoc.roles.staffRoles.moderation.officerRoleId]);
         roleCollection.set("VeteranRaidLeader", allVrl);
         roleCollection.set("RaidLeader", allRl);
         roleCollection.set("AlmostRaidLeader", allArl);
-        roleCollection.set("Security", [guildDb.roles.staffRoles.moderation.securityRoleId]);
+        roleCollection.set("Security", [guildDoc.roles.staffRoles.moderation.securityRoleId]);
         roleCollection.set("Raider", allVerified);
-        roleCollection.set("Suspended", [guildDb.roles.suspendedRoleId]);
+        roleCollection.set("Suspended", [guildDoc.roles.suspendedRoleId]);
 
-        if (this.commandInfo.isRoleInclusive) {
+        // If this is true, then we cannot have custom permissions.
+        // So we don't need to worry about ID roles and we can assume that
+        // there is only one element in rolePerms.
+        if (this.commandInfo.isRoleInclusive && !usingCustomPermissions) {
+            if (rolePerms.length !== 1)
+                throw new Error("rolePerms needs exactly one role for isRoleInclusive check.");
+
             // We want to specifically get rid of the lower roles so we are left with the lowest role possible
             // and the ones directly above said role.
             // Assume that the index exists.
@@ -274,14 +275,17 @@ export abstract class BaseCommand {
                 roleCollection.delete(BaseCommand.ROLE_ORDER[idx]);
         }
         else {
-            // We want to get rid of any roles from the collection that aren't needed at all.
+            // Here, we need to assume that there are both role IDs along with concrete role names.
+            // Best way to handle this is to simply delete any entries in roleCollection that isn't allowed
+            // And then add the IDs later.
+            // Begin by getting rid of any roles from the collection that aren't needed at all.
             for (const r of BaseCommand.ROLE_ORDER) {
                 if (rolePerms.includes(r)) continue;
                 roleCollection.delete(r);
             }
         }
 
-        return Array.from(roleCollection.values()).flat();
+        return Array.from(roleCollection.values()).flat().concat(rolePerms.filter(x => !Number.isNaN(x)));
     }
 }
 
