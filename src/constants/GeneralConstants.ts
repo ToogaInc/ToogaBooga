@@ -84,10 +84,10 @@ export namespace GeneralConstants {
     export const OFFICER_ROLE: RolePermissions = "Officer";
     export const MODERATOR_ROLE: RolePermissions = "Moderator";
 
-    export const UNIVERSAL_LEADER_ROLE: RolePermissions = "RaidLeader";
-    export const UNIVERSAL_ALMOST_LEADER_ROLE: RolePermissions = "AlmostRaidLeader";
-    export const UNIVERSAL_VETERAN_LEADER_ROLE: RolePermissions = "VeteranRaidLeader";
-    export const UNIVERSAL_HEAD_LEADER_ROLE: RolePermissions = "HeadRaidLeader";
+    export const LEADER_ROLE: RolePermissions = "RaidLeader";
+    export const ALMOST_LEADER_ROLE: RolePermissions = "AlmostRaidLeader";
+    export const VETERAN_LEADER_ROLE: RolePermissions = "VeteranRaidLeader";
+    export const HEAD_LEADER_ROLE: RolePermissions = "HeadRaidLeader";
 
     // Keep in mind that section RLs have the same power as regular RLs, just in their own sections.
     export const DEFAULT_AFK_CHECK_PERMISSIONS: (IPermAllowDeny & { id: string; })[] = [
@@ -117,22 +117,22 @@ export namespace GeneralConstants {
             deny: []
         },
         {
-            id: UNIVERSAL_ALMOST_LEADER_ROLE,
+            id: ALMOST_LEADER_ROLE,
             allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "STREAM"],
             deny: []
         },
         {
-            id: UNIVERSAL_LEADER_ROLE,
+            id: LEADER_ROLE,
             allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "DEAFEN_MEMBERS", "STREAM"],
             deny: []
         },
         {
-            id: UNIVERSAL_HEAD_LEADER_ROLE,
+            id: HEAD_LEADER_ROLE,
             allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"],
             deny: []
         },
         {
-            id: UNIVERSAL_VETERAN_LEADER_ROLE,
+            id: VETERAN_LEADER_ROLE,
             allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"],
             deny: []
         }

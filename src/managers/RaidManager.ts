@@ -119,7 +119,7 @@ export class RaidManager {
             .get(section.channels.raids.controlPanelChannelId)! as TextChannel;
 
         // Reaction stuff.
-        this._allReactions = (section.otherMajorConfig.afkCheckProperties.dungeonReactionOverride
+        this._allReactions = (section.otherMajorConfig.afkCheckProperties.dungeonSettingOverride
             .find(x => x.dungeonCodeName === dungeon.codeName)?.reactions ?? dungeon.reactions)
             .filter(x => OneLifeBot.BotInstance.client.emojis.cache
                 .has(MappedReactions[x.mappingEmojiName].emojiId));
@@ -1172,44 +1172,44 @@ export class RaidManager {
             // Universal leader roles start here.
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_VETERAN_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_VETERAN_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.deny
             },
             // Section leader roles start here
             {
                 id: this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_ALMOST_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_HEAD_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionVetLeaderRoleId,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_VETERAN_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.UNIVERSAL_VETERAN_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.deny
             }
         ].filter(y => this._guild.roles.cache.has(y.id)
             && ((y.allow && y.allow.length !== 0) || (y.deny && y.deny.length !== 0)));

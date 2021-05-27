@@ -17,7 +17,7 @@ export interface IAfkCheckProperties {
     // allowed dungeons (use codeName)
     allowedDungeons: string[];
     // any reaction overrides
-    dungeonReactionOverride: {
+    dungeonSettingOverride: {
         dungeonCodeName: string;
         reactions: IReactionProps[];
     }[];

@@ -419,6 +419,7 @@ export namespace MongoManager {
                         }
                     }
                 },
+                // TODO look into changing this.
                 afkCheckProperties: {
                     vcLimit: 60,
                     nitroEarlyLocationLimit: 3,
@@ -426,7 +427,7 @@ export namespace MongoManager {
                     removeKeyReactsDuringAfk: false,
                     afkCheckTimeout: 30 * 60 * 1000,
                     allowedDungeons: [],
-                    dungeonReactionOverride: [],
+                    dungeonSettingOverride: [],
                     defaultDungeon: "",
                     allowKeyReactsToBypassFullVc: true,
                     afkCheckPermissions: generalAfkCheckPerms,
