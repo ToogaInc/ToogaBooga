@@ -1,7 +1,6 @@
-import {Collection, Guild, GuildMember, Message, PermissionString, User} from "discord.js";
+import {Collection, Guild, GuildMember, Message, PermissionString, Role, User} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {OneLifeBot} from "../OneLifeBot";
-import {MiscUtilities} from "../utilities/MiscUtilities";
 
 type RolePermissions = "Suspended"
     | "Raider"
@@ -14,6 +13,18 @@ type RolePermissions = "Suspended"
     | "Moderator";
 
 export abstract class BaseCommand {
+    private static readonly ROLE_ORDER: RolePermissions[] = [
+        "Moderator",
+        "HeadRaidLeader",
+        "Officer",
+        "VeteranRaidLeader",
+        "RaidLeader",
+        "AlmostRaidLeader",
+        "Security",
+        "Raider",
+        "Suspended"
+    ];
+
     /**
      * The command info object.
      * @type {ICommandInfo}
@@ -146,19 +157,22 @@ export abstract class BaseCommand {
         // See if custom permissions are defined.
         // If so, use it.
         const customPermData = guildDoc.properties.customCmdPermissions.find(x => x.key === this.commandInfo.cmdCode);
-        const rolePermissions = customPermData
-            ? customPermData.value.useDefaultRolePerms
-                ? this.commandInfo.rolePermissions
-                : customPermData.value.rolePermsNeeded
+        const useCustomRolePerms = customPermData && !customPermData.value.useDefaultRolePerms;
+        const rolePermissions = useCustomRolePerms
+            ? customPermData!.value.rolePermsNeeded
             : this.commandInfo.rolePermissions;
-        const serverPermissions = customPermData
-            ? customPermData.value.useDefaultServerPerms
-                ? this.commandInfo.generalPermissions
-                : customPermData.value.serverPermsNeeded
+        // This represents the roles that are needed to ensure that the command can be executed. The user must have
+        // at least one of these roles.
+        const allRoleIds = useCustomRolePerms
+            ? rolePermissions
+            : this.getNeededPermissions(rolePermissions as RolePermissions[], guildDoc);
+
+        const serverPermissions = customPermData && !customPermData.value.useDefaultServerPerms
+            ? customPermData.value.serverPermsNeeded
             : this.commandInfo.generalPermissions;
 
         // If no user permissions are defined whatsoever, then the person can run the command.
-        if (rolePermissions.length === 0 && serverPermissions.length === 0) {
+        if (allRoleIds.length === 0 && serverPermissions.length === 0) {
             results.canRun = results.missingBotPerms.length === 0;
             return results;
         }
@@ -170,94 +184,104 @@ export abstract class BaseCommand {
                 results.missingUserPerms.push(perm);
         }
 
-        // Now check role permissions
-        const roleOrder: [string, RolePermissions][] = [
-            [guildDoc.roles.staffRoles.moderation.moderatorRoleId, "Moderator"],
-            [guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId, "HeadRaidLeader"]
-        ];
-
-        // Get all leader roles.
-        const allSections = MiscUtilities.getAllSections(guildDoc);
-        // Add other head leader roles
-        for (const section of allSections)
-            roleOrder.push([section.roles.leaders.sectionHeadLeaderRoleId, "HeadRaidLeader"]);
-
-        // Add officer role.
-        roleOrder.push([guildDoc.roles.staffRoles.moderation.officerRoleId, "Officer"]);
-
-        // Add vet role.
-        roleOrder.push([guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId, "VeteranRaidLeader"]);
-        for (const section of allSections)
-            roleOrder.push([section.roles.leaders.sectionVetLeaderRoleId, "VeteranRaidLeader"]);
-
-        // Add leader roles
-        roleOrder.push([guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId, "RaidLeader"]);
-        for (const section of allSections)
-            roleOrder.push([section.roles.leaders.sectionRaidLeaderRoleId, "RaidLeader"]);
-
-        // Add almost leader roles
-        roleOrder.push([guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId, "AlmostRaidLeader"]);
-        for (const section of allSections)
-            roleOrder.push([section.roles.leaders.sectionAlmostRaidLeaderRoleId, "AlmostRaidLeader"]);
-
-        // Add other roles
-        roleOrder.push([guildDoc.roles.staffRoles.moderation.securityRoleId, "Security"]);
-        roleOrder.push([guildDoc.roles.verifiedRoleId, "Raider"]);
-        roleOrder.push([guildDoc.roles.suspendedRoleId, "Suspended"]);
-
-        // Evaluate permissions.
+        const roleArr: Role[] = [];
         let hasPermission = false;
-        if (this.commandInfo.isRoleInclusive) {
-            // Check if the person has at least one role, starting from the lowest role to the top role.
-            // A command that allows for role inclusion should only have one role.
-            if (rolePermissions.length !== 1)
-                throw new Error(`Command ${this.commandInfo.formalCommandName} has more than one role permission.`);
-
-            // Role Permissions better have valid role permissions.
-            // All we do is check to make sure rolePermissions[0] is in roleOrder.
-            let i = roleOrder.findIndex(x => x[1] === rolePermissions[0]);
-            if (i === -1)
-                throw new Error(`Command ${this.commandInfo.formalCommandName} has invalid role permissions.`);
-
-            for (; i >= 0; i--) {
-                if (userToTest.roles.cache.has(roleOrder[i][0])) {
-                    hasPermission = true;
-                    break;
-                }
+        for (const roleId of allRoleIds) {
+            if (userToTest.roles.cache.has(roleId)) {
+                hasPermission = true;
+                break;
             }
+
+            const role = guild.roles.cache.get(roleId);
+            if (!role) continue;
+            roleArr.push(role);
         }
-        else {
-            // Check if the person has at least one role.
-            for (const perm of rolePermissions) {
-                // Get the correct role name
-                const associatedId = roleOrder.find(x => x[1] === perm);
-                if (!associatedId)
-                    continue;
-                // Check associated role ID
-                if (userToTest.roles.cache.has(associatedId[1])) {
-                    hasPermission = true;
-                    break;
-                }
-            }
-        }
+
+        if (!hasPermission)
+            results.missingUserRoles.push(...roleArr.map(x => x.name));
+
 
         // If both role and general perms are defined, then we just need to see if one or the other is fulfilled.
         // Otherwise, we either check role OR general permissions and see if the person has THOSE permissions.
         // We already covered the case where no permissions (user or role) are defined.
-        if (rolePermissions.length !== 0 && serverPermissions.length !== 0)
+        if (allRoleIds.length !== 0 && serverPermissions.length !== 0)
             // Must either have 0 missing role perms or 0 missing user perms.
             results.canRun = (results.missingUserRoles.length === 0 || results.missingUserPerms.length === 0);
         else {
             // Check one or the other.
-            if (rolePermissions.length !== 0)
-                results.canRun = results.missingUserRoles.length === 0;
-            else
-                results.canRun = results.missingUserPerms.length === 0;
+            if (allRoleIds.length !== 0) results.canRun = results.missingUserRoles.length === 0;
+            else results.canRun = results.missingUserPerms.length === 0;
         }
 
         // Check to see if the bot can run.
-        results.canRun = results.canRun && results.missingBotPerms.length === 0;
+        results.canRun &&= results.missingBotPerms.length === 0;
         return results;
+    }
+
+    /**
+     * Gets all roles that are needed in order to run this command. This assumes that `rolePerms` only contains the
+     * contents of the `rolePermissions` array defined in this class.
+     * @param {RolePermissions[]} rolePerms The role permissions, which are defined in `rolePermissions`.
+     * @param {IGuildInfo} guildDb The guild document.
+     * @return {string[]} All roles that can be used to satisfy the requirement.
+     * @private
+     */
+    private getNeededPermissions(rolePerms: RolePermissions[], guildDb: IGuildInfo): string[] {
+        const allHrl: string[] = [
+            guildDb.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+            guildDb.roles.staffRoles.sectionLeaderRoleIds.sectionHeadLeaderRoleId
+        ];
+        const allVrl: string[] = [
+            guildDb.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
+            guildDb.roles.staffRoles.sectionLeaderRoleIds.sectionVetLeaderRoleId
+        ];
+        const allRl: string[] = [
+            guildDb.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+            guildDb.roles.staffRoles.sectionLeaderRoleIds.sectionRaidLeaderRoleId
+        ];
+        const allArl: string[] = [
+            guildDb.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
+            guildDb.roles.staffRoles.sectionLeaderRoleIds.sectionAlmostRaidLeaderRoleId
+        ];
+        const allVerified: string[] = [guildDb.roles.verifiedRoleId];
+        for (const section of guildDb.guildSections) {
+            allHrl.push(section.roles.leaders.sectionHeadLeaderRoleId);
+            allRl.push(section.roles.leaders.sectionRaidLeaderRoleId);
+            allVrl.push(section.roles.leaders.sectionVetLeaderRoleId);
+            allArl.push(section.roles.leaders.sectionAlmostRaidLeaderRoleId);
+            allVerified.push(section.roles.verifiedRoleId);
+        }
+
+        const roleCollection = new Collection<RolePermissions, string[]>();
+        roleCollection.set("Moderator", [guildDb.roles.staffRoles.moderation.moderatorRoleId]);
+        roleCollection.set("HeadRaidLeader", allHrl);
+        roleCollection.set("Officer", [guildDb.roles.staffRoles.moderation.officerRoleId]);
+        roleCollection.set("VeteranRaidLeader", allVrl);
+        roleCollection.set("RaidLeader", allRl);
+        roleCollection.set("AlmostRaidLeader", allArl);
+        roleCollection.set("Security", [guildDb.roles.staffRoles.moderation.securityRoleId]);
+        roleCollection.set("Raider", allVerified);
+        roleCollection.set("Suspended", [guildDb.roles.suspendedRoleId]);
+
+        if (this.commandInfo.isRoleInclusive) {
+            // We want to specifically get rid of the lower roles so we are left with the lowest role possible
+            // and the ones directly above said role.
+            // Assume that the index exists.
+            let idx = BaseCommand.ROLE_ORDER.findIndex(x => x === rolePerms[0]);
+            // Increment the index so we don't remove the lowest possible included role.
+            idx++;
+            for (; idx < BaseCommand.ROLE_ORDER.length; idx++)
+                roleCollection.delete(BaseCommand.ROLE_ORDER[idx]);
+        }
+        else {
+            // We want to get rid of any roles from the collection that aren't needed at all.
+            for (const r of BaseCommand.ROLE_ORDER) {
+                if (rolePerms.includes(r)) continue;
+                roleCollection.delete(r);
+            }
+        }
+
+        return Array.from(roleCollection.values()).flat();
     }
 }
 

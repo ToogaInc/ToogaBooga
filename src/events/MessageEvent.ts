@@ -8,6 +8,7 @@ import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {InteractionManager} from "../managers/InteractionManager";
 import {ModmailManager} from "../managers/ModmailManager";
+import {MessageConstants} from "../constants/MessageConstants";
 
 export async function onMessageEvent(msg: Message): Promise<void> {
     // We don't care about non-regular messages, bot messages, or webhook messages.
@@ -90,7 +91,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
     // Check cooldown.
     const cooldownLeft = foundCommand.checkCooldownFor(msg.author);
     if (cooldownLeft !== -1) {
-        const cooldownInSecRounded = Math.round(cooldownLeft) / 1000;
+        const cooldownInSecRounded = Math.round(cooldownLeft / 1000);
         const onCooldownEmbed = MessageUtilities.generateBlankEmbed(msg.author, "RED")
             .setTitle("On Cooldown.")
             .setDescription("You are currently on cooldown.")
@@ -101,22 +102,17 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
 
     // Guild only?
     if (foundCommand.commandInfo.guildOnly && !msg.guild) {
-        const notInGuild = MessageUtilities.generateBlankEmbed(msg.author, "RED")
-            .setTitle("Server Command Only.")
-            .setDescription("The command you are trying to execute can only be executed in the server.")
-            .addField("Message Content", StringUtil.codifyString(msg.content))
-            .setTimestamp();
-        return MessageUtilities.sendThenDelete({embed: notInGuild}, msg.channel);
+        return MessageUtilities.sendThenDelete({
+            embed: MessageConstants.NOT_IN_GUILD_EMBED.setTimestamp()
+        }, msg.channel);
     }
 
     // Is the command blocked
     const cmdInfo = foundCommand.commandInfo;
     if (msg.guild && guildDoc && guildDoc.properties.blockedCommands.some(x => cmdInfo.cmdCode === x)) {
-        const commandBlockedEmbed = MessageUtilities.generateBlankEmbed(msg.author, "RED")
-            .setTitle("Command Blocked.")
-            .setDescription("The command you are trying to execute is blocked by your server administrator.")
-            .setTimestamp();
-        return MessageUtilities.sendThenDelete({embed: commandBlockedEmbed}, msg.channel);
+        return MessageUtilities.sendThenDelete({
+            embed: MessageConstants.COMMAND_BLOCKED_EMBED.setTimestamp()
+        }, msg.channel);
     }
 
     // Correct number of arguments?

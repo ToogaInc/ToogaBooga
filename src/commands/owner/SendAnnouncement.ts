@@ -2,6 +2,7 @@ import {BaseCommand} from "../BaseCommand";
 import {Message, MessageEmbed} from "discord.js";
 import {MongoManager} from "../../managers/MongoManager";
 import {FetchRequestUtilities} from "../../utilities/FetchRequestUtilities";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 class SendAnnouncementCommand extends BaseCommand {
 
