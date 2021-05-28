@@ -2,7 +2,7 @@ import {Guild, Message} from "discord.js";
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
-import {BaseCommand} from "../commands/BaseCommand";
+import {BaseCommand} from "../commands";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";

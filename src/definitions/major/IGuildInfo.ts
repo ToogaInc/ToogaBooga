@@ -98,9 +98,10 @@ export interface IGuildInfo extends IBaseDocument {
         // modmail stuff
         modmailThreads: IModmailThread[];
         customCmdPermissions: IPropertyKeyValuePair<string, ICmdPermOverwrite>[];
+        // Any custom dungeons
+        customDungeons: IDungeonInfo[];
     };
     guildSections: ISectionInfo[];
     activeRaids: IRaidInfo[];
     manualVerificationEntries: IManualVerificationEntry[];
-    customDungeons: IDungeonInfo[];
 }

@@ -146,7 +146,7 @@ export namespace RealmSharperWrapper {
      * @param {{url: string}} link An object containing the URL to the screenshot.
      * @returns {Promise<string[]>} The list of names found.
      */
-    export async function parseWhoScreenshot(link: { url: string; }): Promise<string[]> {
+    export async function parseWhoScreenshot(link: { Url: string; }): Promise<string[]> {
         const config = OneLifeBot.BotInstance.config;
         const url = config.privateApiLinks.baseApi + "/raidutil/parsewho";
         const resp = await OneLifeBot.AxiosClient.get<string[]>(url, {

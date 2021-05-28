@@ -74,6 +74,7 @@ export class RaidManager {
     private _afkCheckReactionCollector: ReactionCollector | null;
     private _controlPanelReactionCollector: ReactionCollector | null;
 
+    private readonly _vcLimit: number;
     private readonly _memberInit: GuildMember;
     private readonly _leaderName: string;
     private readonly _raidMsg: string;
@@ -119,8 +120,12 @@ export class RaidManager {
             .get(section.channels.raids.controlPanelChannelId)! as TextChannel;
 
         // Reaction stuff.
-        this._allReactions = (section.otherMajorConfig.afkCheckProperties.dungeonSettingOverride
-            .find(x => x.dungeonCodeName === dungeon.codeName)?.reactions ?? dungeon.reactions)
+        const overrideSettings = section.otherMajorConfig.afkCheckProperties.dungeonSettingsOverride
+            .find(x => x.dungeonCodeName === dungeon.codeName);
+        this._vcLimit = overrideSettings
+            ? overrideSettings.vcLimit
+            : section.otherMajorConfig.afkCheckProperties.vcLimit;
+        this._allReactions = (overrideSettings?.reactions ?? dungeon.reactions)
             .filter(x => OneLifeBot.BotInstance.client.emojis.cache
                 .has(MappedReactions[x.mappingEmojiName].emojiId));
         this._earlyLocationReactions = new Collection<string, [GuildMember[], boolean]>();
@@ -209,7 +214,7 @@ export class RaidManager {
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
         this._raidVc = await this._guild.channels.create(`🔒 ${this._leaderName}'s Raid`, {
             type: "voice",
-            userLimit: this._raidSection.otherMajorConfig.afkCheckProperties.vcLimit,
+            userLimit: this._vcLimit,
             permissionOverwrites: this.getPermissionsForRaidVc(true),
             parent: this._afkCheckChannel!.parent!
         });
@@ -1010,15 +1015,16 @@ export class RaidManager {
         if (!this._raidVc) return toReturn;
         // Make sure the image exists.
         try {
+            // Make a request to see if this URL points to the right place.
             const result = await OneLifeBot.AxiosClient.head(url);
-            if (result.status < 300)
+            if (result.status > 300)
                 return toReturn;
         } catch (e) {
             return toReturn;
         }
 
         // Make the request.
-        const parsedNames = await RealmSharperWrapper.parseWhoScreenshot({url});
+        const parsedNames = await RealmSharperWrapper.parseWhoScreenshot({Url: url});
         if (parsedNames.length === 0) return toReturn;
         // Parse results means the picture must be valid.
         toReturn.isValid = true;

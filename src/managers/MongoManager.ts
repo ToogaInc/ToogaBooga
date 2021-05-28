@@ -342,7 +342,6 @@ export namespace MongoManager {
         return {
             _id: new ObjectID(),
             activeRaids: [],
-            customDungeons: [],
             manualVerificationEntries: [],
             channels: {
                 botUpdatesChannelId: "",
@@ -419,19 +418,18 @@ export namespace MongoManager {
                         }
                     }
                 },
-                // TODO look into changing this.
                 afkCheckProperties: {
                     vcLimit: 60,
                     nitroEarlyLocationLimit: 3,
                     additionalAfkCheckInfo: "",
                     removeKeyReactsDuringAfk: false,
                     afkCheckTimeout: 30 * 60 * 1000,
-                    allowedDungeons: [],
-                    dungeonSettingOverride: [],
                     defaultDungeon: "",
                     allowKeyReactsToBypassFullVc: true,
                     afkCheckPermissions: generalAfkCheckPerms,
-                    prePostAfkCheckPermissions: prePostAfkCheckPerms
+                    prePostAfkCheckPermissions: prePostAfkCheckPerms,
+                    allowedDungeons: [],
+                    dungeonSettingsOverride: []
                 }
             },
             properties: {
@@ -444,7 +442,8 @@ export namespace MongoManager {
                 prefix: OneLifeBot.BotInstance.config.misc.defaultPrefix,
                 blockedCommands: [],
                 modmailThreads: [],
-                customCmdPermissions: []
+                customCmdPermissions: [],
+                customDungeons: []
             },
             roles: {
                 earlyLocationRoles: [],
