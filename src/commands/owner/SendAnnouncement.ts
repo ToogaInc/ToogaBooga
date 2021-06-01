@@ -2,7 +2,8 @@ import {BaseCommand} from "../BaseCommand";
 import {Message, MessageEmbed} from "discord.js";
 import {MongoManager} from "../../managers/MongoManager";
 import {FetchRequestUtilities} from "../../utilities/FetchRequestUtilities";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
+import {OneLifeBot} from "../../OneLifeBot";
+import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 
 class SendAnnouncementCommand extends BaseCommand {
 
@@ -12,7 +13,7 @@ class SendAnnouncementCommand extends BaseCommand {
             formalCommandName: "Send Announcements Command",
             botCommandNames: ["sendannouncements", "announce"],
             description: "Sends an announcement to every server that has a set bot updates channel.",
-            usageGuide: ["sendannouncements <Content>"],
+            usageGuide: ["sendannouncements [Content: String]"],
             exampleGuide: ["sendannouncements Hello world!"],
             deleteCommandAfter: 10 * 1000,
             commandCooldown: 0,
@@ -34,6 +35,23 @@ class SendAnnouncementCommand extends BaseCommand {
             .setDescription(msg.content)
             .setTimestamp()
             .setAuthor("OneLife", msg.client.user?.displayAvatarURL());
+
+        // If there is an attachment, get its contents.
+        if (msg.attachments.size > 0) {
+            const firstAttachment = msg.attachments.first()!;
+            const stringData = await FetchRequestUtilities.tryExecuteAsync(async () => {
+                return OneLifeBot.AxiosClient.get<string>(firstAttachment.url);
+            });
+            if (stringData) {
+                const desc = stringData.data.substring(0, 2000);
+                embedToSend.setDescription(desc);
+                const data = ArrayUtilities.breakStringIntoChunks(stringData.data.substring(2000), 1000);
+                for (const f of data) {
+                    embedToSend.addField("Message", f);
+                }
+            }
+        }
+
         for await (const guildDoc of allGuildDocs) {
             // Guild must exist.
             const guild = await FetchRequestUtilities.fetchGuild(guildDoc.guildId);
@@ -49,5 +67,4 @@ class SendAnnouncementCommand extends BaseCommand {
 
         return 0;
     }
-
 }

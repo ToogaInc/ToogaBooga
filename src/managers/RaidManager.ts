@@ -1024,7 +1024,8 @@ export class RaidManager {
         }
 
         // Make the request.
-        const parsedNames = await RealmSharperWrapper.parseWhoScreenshot({Url: url});
+        const data = await RealmSharperWrapper.parseWhoScreenshot(url);
+        const parsedNames = data.whoResult;
         if (parsedNames.length === 0) return toReturn;
         // Parse results means the picture must be valid.
         toReturn.isValid = true;

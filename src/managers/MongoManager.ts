@@ -9,6 +9,7 @@ import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
 import {IIdNameInfo} from "../definitions/major/IIdNameInfo";
 import {UserManager} from "./UserManager";
 import {GuildMember} from "discord.js";
+import {DungeonData} from "../constants/DungeonData";
 
 export namespace MongoManager {
     let ThisMongoClient: MongoClient | null = null;
@@ -428,7 +429,7 @@ export namespace MongoManager {
                     allowKeyReactsToBypassFullVc: true,
                     afkCheckPermissions: generalAfkCheckPerms,
                     prePostAfkCheckPermissions: prePostAfkCheckPerms,
-                    allowedDungeons: [],
+                    allowedDungeons: DungeonData.map(x => x.codeName),
                     dungeonSettingsOverride: []
                 }
             },

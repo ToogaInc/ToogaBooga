@@ -71,6 +71,7 @@ export namespace GeneralConstants {
     export type RolePermissions = "Everyone"
         | "Suspended"
         | "Raider"
+        | "Team"
         | "Security"
         | "AlmostRaidLeader"
         | "RaidLeader"
@@ -78,6 +79,7 @@ export namespace GeneralConstants {
         | "Officer"
         | "HeadRaidLeader"
         | "Moderator";
+
     export const EVERYONE_ROLE: RolePermissions = "Everyone";
     export const MEMBER_ROLE: RolePermissions = "Raider";
     export const SECURITY_ROLE: RolePermissions = "Security";
@@ -88,6 +90,9 @@ export namespace GeneralConstants {
     export const ALMOST_LEADER_ROLE: RolePermissions = "AlmostRaidLeader";
     export const VETERAN_LEADER_ROLE: RolePermissions = "VeteranRaidLeader";
     export const HEAD_LEADER_ROLE: RolePermissions = "HeadRaidLeader";
+
+    // Essentially, any staff role.
+    export const TEAM_ROLE: RolePermissions = "Team";
 
     // Keep in mind that section RLs have the same power as regular RLs, just in their own sections.
     export const DEFAULT_AFK_CHECK_PERMISSIONS: (IPermAllowDeny & { id: string; })[] = [

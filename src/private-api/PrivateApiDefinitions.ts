@@ -145,4 +145,15 @@ export namespace PrivateApiDefinitions {
             statsMaxed: number;
         }[];
     }
+
+    export interface IParseWhoResult {
+        imageDownloadTime: number;
+        imageProcessingTime: number;
+        ocrRecognitionTime: number;
+        whoResult: string[];
+        rawOcrResult: string;
+        count: number;
+        code: string;
+        issues: string;
+    }
 }

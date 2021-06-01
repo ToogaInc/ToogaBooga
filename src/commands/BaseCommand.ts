@@ -255,6 +255,7 @@ export abstract class BaseCommand {
         roleCollection.set("RaidLeader", allRl);
         roleCollection.set("AlmostRaidLeader", allArl);
         roleCollection.set("Security", [guildDoc.roles.staffRoles.moderation.securityRoleId]);
+        roleCollection.set("Team", [guildDoc.roles.staffRoles.teamRoleId]);
         roleCollection.set("Raider", allVerified);
         roleCollection.set("Suspended", [guildDoc.roles.suspendedRoleId]);
 

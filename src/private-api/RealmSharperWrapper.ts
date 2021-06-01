@@ -143,14 +143,14 @@ export namespace RealmSharperWrapper {
 
     /**
      * Parses a /who screenshot for names.
-     * @param {{url: string}} link An object containing the URL to the screenshot.
-     * @returns {Promise<string[]>} The list of names found.
+     * @param {string} link The link to the screenshot.
+     * @returns {Promise<PrivateApiDefinitions.IParseWhoResult>} An object containing parse results.
      */
-    export async function parseWhoScreenshot(link: { Url: string; }): Promise<string[]> {
+    export async function parseWhoScreenshot(link: string): Promise<PAD.IParseWhoResult> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi + "/raidutil/parsewho";
-        const resp = await OneLifeBot.AxiosClient.get<string[]>(url, {
-            data: link
+        const url = config.privateApiLinks.baseApi + config.privateApiLinks.parseEndpoint;
+        const resp = await OneLifeBot.AxiosClient.get<PAD.IParseWhoResult>(url, {
+            data: { Url: link }
         });
         return resp.data;
     }
