@@ -153,7 +153,7 @@ export namespace PrivateApiDefinitions {
         whoResult: string[];
         rawOcrResult: string;
         count: number;
-        code: string;
+        code: "FAILED:INVALID_URL" | "FAILED:URL_INVALID_LOCATION" | "FAILED:NO_WHO_TEXT_FOUND" | "SUCCESS";
         issues: string;
     }
 }
