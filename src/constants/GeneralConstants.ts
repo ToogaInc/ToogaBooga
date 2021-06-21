@@ -1,4 +1,6 @@
 import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
+import {MessageButton} from "discord.js";
+import {Emojis} from "./Emojis";
 
 export namespace GeneralConstants {
     export const NUMBER_OF_STATS: number = 8;
@@ -141,5 +143,18 @@ export namespace GeneralConstants {
             allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"],
             deny: []
         }
+    ];
+
+    export const YesNoButtons: MessageButton[] = [
+        new MessageButton()
+            .setCustomID("yes")
+            .setStyle(MessageButtonStyles.SUCCESS)
+            .setEmoji(Emojis.GREEN_CHECK_EMOJI)
+            .setLabel("Yes"),
+        new MessageButton()
+            .setCustomID("no")
+            .setStyle(MessageButtonStyles.DANGER)
+            .setEmoji(Emojis.X_EMOJI)
+            .setLabel("No")
     ];
 }

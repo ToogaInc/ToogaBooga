@@ -1,138 +1,222 @@
 import {
+    ButtonInteraction,
     DMChannel,
-    Emoji,
     EmojiResolvable,
     Guild,
     GuildMember,
-    Message,
-    MessageCollector,
+    Message, MessageActionRow, MessageButton,
+    MessageCollector, MessageComponentInteraction,
     MessageOptions,
-    MessageReaction,
     PartialTextBasedChannelFields,
     PermissionResolvable,
-    ReactionCollector,
     Role,
     TextChannel,
     User
 } from "discord.js";
 import {MessageUtilities} from "../MessageUtilities";
 import {StringBuilder} from "../StringBuilder";
+import {FetchGetRequestUtilities} from "../FetchGetRequestUtilities";
+import {MiscUtilities} from "../MiscUtilities";
+import {Emojis} from "../../constants/Emojis";
 
-type ICollectorArguments = {
-    /**
-     * The cancel flag. Any message with the cancel flag as its content will force the method to return "CANCEL_CMD"
-     */
-    cancelFlag?: string;
+/**
+ * A series of helpful collector functions.
+ */
+export namespace AdvancedCollector {
+    interface ICollectorBaseArgument {
+        readonly targetChannel: TextChannel | DMChannel;
+        readonly targetAuthor: User | GuildMember;
+        readonly duration: number;
 
-    /**
-     * Whether to delete any messages the author sends (for the collector) after it has been sent or not.
-     */
-    deleteResponseMessage?: boolean;
+        /**
+         * The message options. If defined, this will send a message. If not defined, you must have `oldMsg` set to a
+         * message.
+         */
+        msgOptions?: MessageOptions & { split?: false | undefined };
 
-    /**
-     * Reactions to use for the ReactionCollector. If no reactions are specified, the ReactionCollector will not be
-     * used.
-     */
-    reactions?: EmojiResolvable[];
+        /**
+         * If defined, uses an old message instead of sending a new one.
+         */
+        oldMsg?: Message;
 
-    /**
-     * Whether to react to the message with the reactions defined in `<IGenericMsgCollectorArguments>.reactions`.
-     */
-    reactToMsg?: boolean;
+        /**
+         * Deletes the message after the collector expires.
+         */
+        deleteBaseMsgAfterComplete: boolean;
+    }
 
-    /**
-     * If defined, uses an old message instead of sending a new one.
-     */
-    oldMsg?: Message;
+    interface IMessageCollectorArgument extends ICollectorBaseArgument {
+        /**
+         * The cancel flag. Any message with the cancel flag as its content will force the method to return "CANCEL_CMD"
+         */
+        cancelFlag: string;
 
-    /**
-     * Deletes the bot-sent message after the collector expires.
-     */
-    deleteBaseMsgAfterComplete?: boolean;
+        /**
+         * Whether to delete any messages the author sends (for the collector) after it has been sent or not.
+         */
+        deleteResponseMessage: boolean;
+    }
 
-    /**
-     * Whether to remove ALL reactions after the collector is done or not. If `deleteMsg` is `true`, `deleteMsg`
-     * automatically overwrites whatever value is defined here. NOTE that if a user reacts to a message, the user's
-     * reaction will automatically be removed.
-     */
-    removeAllReactionAfterReact?: boolean;
+    interface IButtonCollectorArgument extends ICollectorBaseArgument {
+        /**
+         * All buttons. This is optional; if you do not specify a button, then you are expected to have provide the
+         * button some other way (either by already having it included in the Message object or via the `msgOptions`
+         * object.
+         */
+        buttons?: MessageButton[];
 
-    /**
-     * The time between each reaction.
-     */
-    reactDelay?: number;
-};
+        /**
+         * Whether to clear the buttons after the collector expires.
+         */
+        clearButtonsAfterComplete: boolean;
 
-export class AdvancedCollector {
-    private readonly _targetChannel: TextChannel | DMChannel;
-    private readonly _targetAuthor: User | GuildMember;
-    private readonly _duration: number;
+        /**
+         * Whether to acknowledge the button immediately after someone clicks it. This will call `deferUpdate` right
+         * after the button is pressed, so the loading state will disappear almost immediately after pressing.
+         */
+        acknowledgeImmediately: boolean;
+    }
 
-    /**
-     * Creates a new AdvancedCollector.
-     * @param {TextChannel | DMChannel} targetChannel The target channel.
-     * @param {GuildMember | User} targetMember The target member.
-     * @param {number} duration The duration. Specify the unit in the next argument.
-     * @param {"MS" | "S" | "M"} timeUnit The duration type.
-     */
-    public constructor(targetChannel: TextChannel | DMChannel,
-                       targetMember: GuildMember | User,
-                       duration: number,
-                       timeUnit: "MS" | "S" | "M" = "M") {
-        this._targetChannel = targetChannel;
-        this._targetAuthor = targetMember;
-        this._duration = duration;
+    interface IBoolFollowUp {
+        /**
+         * The content to send to the user. This is the "question" where the user will have to respond with Y/N.
+         * Only `content` and `embeds` will be used.
+         */
+        contentToSend: MessageOptions;
 
-        switch (timeUnit) {
-            case "MS":
-                this._duration = duration;
-                break;
-            case "S":
-                this._duration = duration * 1000;
-                break;
-            case "M":
-                this._duration = duration * 60 * 1000;
-                break;
-        }
+        /**
+         * The channel where this has occurred.
+         */
+        channel: TextChannel | DMChannel;
+
+        /**
+         * Time, in MS, for the person to respond.
+         */
+        time: number;
+
+        /**
+         * The interaction that led to this.
+         */
+        interaction: MessageComponentInteraction;
+
+        /**
+         * The message to edit the confirmation message with if time runs out. Only `content` and `embeds` will be
+         * used.
+         */
+        onTimeoutResponse: MessageOptions;
     }
 
     /**
      * Starts a message collector. This will wait for one message to be sent that fits the criteria specified by the
      * function parameter and then returns a value based on that message.
-     * @param msgOptions {MessageOptions} The message options.
-     * @param {Function} func The function that will essentially "filter" and "parse" a message.
-     * @param {ICollectorArguments | null} otherOptions Any options for this message collector.
+     * @param {IMessageCollectorArgument} options The message options.
+     * @param {Function} func The function used to filter the message.
      * @returns {Promise<T | null>} The parsed content specified by your filter, or null if the collector was
      * stopped due to time or via the "cancel" command.
      * @template T
      */
-    public async startNormalCollector<T>(
-        msgOptions: MessageOptions,
-        func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>,
-        otherOptions: ICollectorArguments | null = null
+    export async function startNormalCollector<T>(
+        options: IMessageCollectorArgument,
+        func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>
     ): Promise<T | null> {
         return new Promise(async (resolve) => {
-            const botMsg = otherOptions && otherOptions.oldMsg
-                ? otherOptions.oldMsg
-                // we need to specify each property because, otherwise, typescript will think this is
-                // an Array<Message>
-                : await this._targetChannel.send(msgOptions.content, {
-                    embed: msgOptions.embed,
-                    files: msgOptions.files,
-                    allowedMentions: msgOptions.allowedMentions,
-                    disableMentions: msgOptions.disableMentions
-                });
+            const cancelFlag = options.cancelFlag ?? "cancel";
+            const botMsg = await initSendCollectorMessage(options);
 
-            const msgCollector = new MessageCollector(this._targetChannel,
-                (m: Message) => m.author.id === this._targetAuthor.id, {time: this._duration});
+            const msgCollector = new MessageCollector(options.targetChannel,
+                (m: Message) => m.author.id === options.targetAuthor.id,
+                {time: options.duration, max: 1});
 
             msgCollector.on("collect", async (c: Message) => {
-                if (otherOptions && otherOptions.deleteResponseMessage)
+                if (options.deleteResponseMessage)
                     await c.delete().catch();
 
-                if (otherOptions && otherOptions.cancelFlag
-                    && otherOptions.cancelFlag.toLowerCase() === c.content.toLowerCase()) {
-                    msgCollector.stop();
+                if (cancelFlag.toLowerCase() === c.content.toLowerCase())
+                    return resolve(null);
+
+                const info: T | null = await new Promise(async res => {
+                    const attempt = await func(c);
+                    return res(attempt ? attempt : null);
+                });
+
+                if (!info) return;
+                resolve(info);
+            });
+
+            msgCollector.on("end", (c, r) => {
+                if (options.deleteBaseMsgAfterComplete && botMsg && botMsg.deletable)
+                    botMsg.delete().catch();
+                if (r === "time") return resolve(null);
+            });
+        });
+    }
+
+    /**
+     * Starts a button collector. This will wait for the user to click on one button and then returns the
+     * corresponding button.
+     * @param {IButtonCollectorArgument} options The button collector options.
+     * @return {Promise<ButtonInteraction | null>} The button, if available. `null` otherwise.
+     */
+    export async function startButtonCollector(options: IButtonCollectorArgument): Promise<ButtonInteraction | null> {
+        const botMsg = await initSendCollectorMessage(options);
+        if (!botMsg) return null;
+
+        let returnButton: ButtonInteraction | null = null;
+        try {
+            const clickedButton = await botMsg.awaitMessageComponentInteraction(
+                i => i.user.id === options.targetAuthor.id,
+                {time: options.duration}
+            );
+
+            if (clickedButton.isButton()) {
+                if (options.acknowledgeImmediately)
+                    await clickedButton.deferUpdate();
+
+                returnButton = clickedButton;
+            }
+        } catch (e) {
+            // Ignore the error; this is because the collector timed out.
+        } finally {
+            if (options.deleteBaseMsgAfterComplete)
+                await botMsg.delete().catch();
+            else if (options.clearButtonsAfterComplete && botMsg.editable)
+                await botMsg.edit(MiscUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
+        }
+
+        return returnButton;
+    }
+
+    /**
+     * Starts a button and message collector. The first collector to receive something will end both collectors.
+     * @param {IButtonCollectorArgument & IMessageCollectorArgument} options The collector options.
+     * @param {Function} func The function used to filter the message.
+     * @return {Promise<ButtonInteraction | T | null>} A `ButtonInteraction` if a button is pressed. `T` if the
+     * `MessageCollector` is fired. `null` otherwise.
+     */
+    export async function startDoubleCollector<T>(
+        options: IButtonCollectorArgument & IMessageCollectorArgument,
+        func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>
+    ): Promise<T | ButtonInteraction | null> {
+        const cancelFlag = options.cancelFlag ?? "cancel";
+        const botMsg = await initSendCollectorMessage(options);
+        if (!botMsg) return null;
+
+        return new Promise(async (resolve) => {
+            const msgCollector = new MessageCollector(options.targetChannel,
+                (m: Message) => m.author.id === options.targetAuthor.id,
+                {time: options.duration, max: 1}
+            );
+            const buttonCollector = botMsg.createMessageComponentInteractionCollector(
+                i => i.user.id === options.targetAuthor.id,
+                {max: 1, time: options.duration}
+            );
+
+            msgCollector.on("collect", async (c: Message) => {
+                if (options.deleteResponseMessage)
+                    await FetchGetRequestUtilities.tryExecuteAsync(() => c.delete());
+
+                if (cancelFlag.toLowerCase() === c.content.toLowerCase()) {
+                    buttonCollector.stop();
                     return resolve(null);
                 }
 
@@ -142,173 +226,95 @@ export class AdvancedCollector {
                 });
 
                 if (!info) return;
-                msgCollector.stop();
+                buttonCollector.stop();
                 resolve(info);
+            });
+
+            buttonCollector.on("collect", async i => {
+                if (!i.isButton()) return;
+                if (options.acknowledgeImmediately)
+                    await i.deferUpdate();
+                resolve(i);
+                msgCollector.stop();
             });
 
             msgCollector.on("end", (c, r) => {
-                if (otherOptions && otherOptions.deleteBaseMsgAfterComplete && botMsg.deletable) botMsg.delete();
+                acknowledgeDeletion(r);
+            });
+
+            buttonCollector.on("end", (c, r) => {
+                acknowledgeDeletion(r);
+            });
+
+            // The end function
+            let hasCalled = false;
+            function acknowledgeDeletion(r: string): void {
+                if (hasCalled) return;
+                hasCalled = true;
+                if (options.deleteBaseMsgAfterComplete && botMsg?.deletable)
+                    botMsg?.delete().catch();
+                else if (options.clearButtonsAfterComplete && botMsg?.editable)
+                    botMsg?.edit(MiscUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
                 if (r === "time") return resolve(null);
-            });
-        });
-    }
-
-    /**
-     * Starts a message and reaction collector. This function will wait for one message or reaction and returns
-     * either the parsed content from the message (specified by your filter) or the reaction (whichever one comes
-     * first).
-     * @param msgOptions {MessageOptions} The message options.
-     * @param {Function} func The function that will essentially "filter" and "parse" a message.
-     * @param {ICollectorArguments} options Any options for this collector. You will need to use this to
-     * specify the reactions that will be used.
-     * @returns {Promise<Emoji | T | null>} Either the parsed message content or an emoji, or null if the cancel
-     * command was used or time ran out.
-     * @template T
-     */
-    public async startDoubleCollector<T>(
-        msgOptions: MessageOptions,
-        func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>,
-        options: ICollectorArguments
-    ): Promise<T | Emoji | null> {
-        const msgReactions: EmojiResolvable[] = [];
-        let cancelFlag = "cancel";
-        let deleteResponseMsg = true;
-        let reactToMsg = false;
-        let deleteBotMsgAfterComplete = true;
-        let removeReactionsAfter = false;
-        const botMsg = options && options.oldMsg
-            ? options.oldMsg
-            : await this._targetChannel.send(msgOptions.content, {
-                embed: msgOptions.embed,
-                files: msgOptions.files,
-                allowedMentions: msgOptions.allowedMentions,
-                disableMentions: msgOptions.disableMentions
-            });
-
-        if (options) {
-            if (typeof options.cancelFlag !== "undefined")
-                cancelFlag = options.cancelFlag;
-            if (typeof options.deleteBaseMsgAfterComplete !== "undefined")
-                deleteBotMsgAfterComplete = options.deleteBaseMsgAfterComplete;
-            if (typeof options.reactToMsg !== "undefined")
-                reactToMsg = options.reactToMsg;
-            if (typeof options.removeAllReactionAfterReact !== "undefined")
-                removeReactionsAfter = options.removeAllReactionAfterReact;
-            if (typeof options.deleteResponseMessage !== "undefined")
-                deleteResponseMsg = options.deleteResponseMessage;
-            if (options.reactions)
-                msgReactions.push(...options.reactions);
-        }
-
-        // Deleting the message means we won't need to deal with reactions
-        if (deleteBotMsgAfterComplete) removeReactionsAfter = false;
-
-        return new Promise(async (resolve) => {
-            const msgCollector = new MessageCollector(this._targetChannel,
-                (m: Message) => m.author.id === this._targetAuthor.id, {time: this._duration});
-            let reactCollector: ReactionCollector | undefined;
-            if (msgReactions.length !== 0) {
-                if (reactToMsg) AdvancedCollector.reactFaster(botMsg, msgReactions, options?.reactDelay);
-                reactCollector = new ReactionCollector(
-                    botMsg,
-                    (r: MessageReaction, u: User) => msgReactions.includes(r.emoji.name)
-                        && u.id === this._targetAuthor.id,
-                    {
-                        time: this._duration,
-                        max: 1
-                    }
-                );
-
-                reactCollector.on("collect", async (reaction: MessageReaction, user: User) => {
-                    if (!removeReactionsAfter)
-                        await reaction.users.remove(user).catch();
-                    msgCollector.stop();
-                    return resolve(reaction.emoji);
-                });
             }
-
-            msgCollector.on("collect", async (c: Message) => {
-                if (options && deleteResponseMsg)
-                    await c.delete().catch();
-
-                if (cancelFlag.toLowerCase() === c.content.toLowerCase()) {
-                    if (reactCollector) reactCollector.stop();
-                    msgCollector.stop();
-                    return resolve(null);
-                }
-
-                const info: T | null = await new Promise(async res => {
-                    const attempt = await func(c);
-                    return res(attempt ? attempt : null);
-                });
-
-                if (!info)
-                    return;
-
-                if (reactCollector) reactCollector.stop();
-                msgCollector.stop();
-                resolve(info);
-            });
-
-            msgCollector.on("end", async (c, r) => {
-                if (removeReactionsAfter) await botMsg.reactions.removeAll();
-                if (deleteBotMsgAfterComplete && botMsg.deletable) await botMsg.delete();
-                if (r === "time") return resolve(null);
-            });
         });
     }
 
     /**
-     * Waits for a single reaction from the user.
-     * @param {Message} baseMsg The message that should be tracked.
-     * @param {ICollectorArguments} options The options. Any message-related options will be ignored.
-     * @return {Promise<Emoji | null>} The emoji, if any; otherwise, null.
+     * Asks a boolean true/false question via an interaction followup.
+     * @param {IBoolFollowUp} opt The options.
+     * @return {Promise<[(MessageComponentInteraction | null), boolean]>} A tuple containing the new interaction, if
+     * any, and the result of the question. If the interaction timed-out (i.e. the person didn't respond), then this
+     * will return `[null, false]`.
      */
-    public async waitForSingleReaction(baseMsg: Message, options: ICollectorArguments): Promise<Emoji | null> {
-        const msgReactions: EmojiResolvable[] = options.reactions
-            ? options.reactions
-            : [];
-        const reactToMessage: boolean = typeof options.reactToMsg !== "undefined"
-            ? options.reactToMsg
-            : true;
-        const removeReactionsAfter: boolean = typeof options.removeAllReactionAfterReact !== "undefined"
-            ? options.removeAllReactionAfterReact
-            : true;
+    export async function askBoolFollowUp(opt: IBoolFollowUp): Promise<[MessageComponentInteraction | null, boolean]> {
+        const i = opt.interaction;
+        if (!i.channel || !i.channel.isText()) return [null, false];
+        const channel = i.channel;
 
-        if (msgReactions.length === 0)
-            return null;
+        // Generate a random ID so we can associate this collector.
+        const id = MiscUtilities.generateUniqueId(30);
 
-        if (reactToMessage)
-            AdvancedCollector.reactFaster(baseMsg, msgReactions, options.reactDelay);
+        const yesButton = new MessageButton()
+            .setCustomID(id + "yes")
+            .setLabel("Yes")
+            .setStyle("SUCCESS")
+            .setEmoji(Emojis.GREEN_CHECK_EMOJI);
+        const noButton = new MessageButton()
+            .setCustomID(id + "no")
+            .setLabel("No")
+            .setStyle("DANGER")
+            .setEmoji(Emojis.X_EMOJI);
+        const actionRow = new MessageActionRow()
+            .addComponents(yesButton, noButton);
 
+        const user = i.user;
+        await i.reply({
+            components: [actionRow],
+            ephemeral: true,
+            content: opt.contentToSend.content,
+            embeds: opt.contentToSend.embeds
+        });
         return new Promise(async (resolve) => {
-            const reactCollector = new ReactionCollector(
-                baseMsg,
-                (r: MessageReaction, u: User) => msgReactions.includes(r.emoji.name)
-                    && u.id === this._targetAuthor.id,
-                {
-                    time: this._duration,
-                    max: 1
-                }
+            const resp = await channel.createMessageComponentInteractionCollector(
+                k => k.user.id === user.id && k.customID.startsWith(id),
+                {time: opt.time, max: 1}
             );
 
-            reactCollector.on("collect", async (reaction: MessageReaction, user: User) => {
-                if (!options.deleteResponseMessage) {
-                    if (removeReactionsAfter)
-                        await baseMsg.reactions.removeAll().catch();
-                    else
-                        await reaction.users.remove(user).catch();
-                }
-
-                return resolve(reaction.emoji);
+            resp.on("collect", interaction => {
+                resp.stop("done");
+                return resolve([interaction, interaction.customID.endsWith("yes")]);
             });
 
-            reactCollector.on("end", async (c, r) => {
-                if (options.deleteResponseMessage)
-                    await baseMsg.delete().catch();
+            resp.on("end", async (collected, reason) => {
+                if (reason === "done" || collected.size > 0) return;
 
-                if (r === "time")
-                    return resolve(null);
+                await i.editReply({
+                    components: [],
+                    content: opt.onTimeoutResponse.content,
+                    embeds: opt.onTimeoutResponse.embeds
+                }).catch();
+                return resolve([null, false]);
             });
         });
     }
@@ -319,7 +325,7 @@ export class AdvancedCollector {
      * @param {EmojiResolvable[]} reactions The reactions that you want to react with.
      * @param {number} intervalTime The delay between reactions.
      */
-    public static reactFaster(msg: Message, reactions: EmojiResolvable[], intervalTime: number = 550): void {
+    export function reactFaster(msg: Message, reactions: EmojiResolvable[], intervalTime: number = 550): void {
         intervalTime = Math.max(550, intervalTime);
         let i: number = 0;
         const interval = setInterval(() => {
@@ -347,13 +353,13 @@ export class AdvancedCollector {
      * @param {PartialTextBasedChannelFields} pChan The channel where any messages from this method should be sent to.
      * @returns {Function} A function that parses a message to a bool.
      */
-    public static getYesNoPrompt(pChan: PartialTextBasedChannelFields): (m: Message) => Promise<boolean | void> {
+    export function getYesNoPrompt(pChan: PartialTextBasedChannelFields): (m: Message) => Promise<boolean | void> {
         return async (m: Message): Promise<boolean | void> => {
             if (m.content === null) {
                 const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
                     .setDescription("You did not provide any message content. Do not send any attachments.");
-                MessageUtilities.sendThenDelete({embed: noContentEmbed}, pChan);
+                MessageUtilities.sendThenDelete({embeds: [noContentEmbed]}, pChan);
                 return;
             }
 
@@ -370,7 +376,7 @@ export class AdvancedCollector {
      * with a message and then return that message.
      * @return {Function} A function that returns a message that someone responds with.
      */
-    public static getPureMessage(): (m: Message) => Promise<Message | void> {
+    export function getPureMessage(): (m: Message) => Promise<Message | void> {
         return async (m: Message): Promise<Message | void> => m;
     }
 
@@ -381,7 +387,7 @@ export class AdvancedCollector {
      * @param {{min?: number, max?: number}} options Any options for this prompt.
      * @return {Function} A function that returns the message content from a message that someone responds with.
      */
-    public static getStringPrompt(pChan: PartialTextBasedChannelFields, options?: {
+    export function getStringPrompt(pChan: PartialTextBasedChannelFields, options?: {
         min?: number,
         max?: number
     }): (m: Message) => Promise<string | void> {
@@ -390,7 +396,7 @@ export class AdvancedCollector {
                 const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
                     .setDescription("You did not provide any message content. Do not send any attachments.");
-                MessageUtilities.sendThenDelete({embed: noContentEmbed}, pChan);
+                MessageUtilities.sendThenDelete({embeds: [noContentEmbed]}, pChan);
                 return;
             }
 
@@ -401,7 +407,7 @@ export class AdvancedCollector {
                     const tooShortEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Short")
                         .setDescription(tooShortDesc.toString());
-                    MessageUtilities.sendThenDelete({embed: tooShortEmbed}, pChan);
+                    MessageUtilities.sendThenDelete({embeds: [tooShortEmbed]}, pChan);
                     return;
                 }
 
@@ -411,7 +417,7 @@ export class AdvancedCollector {
                     const tooLongEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Long")
                         .setDescription(tooLongDesc.toString());
-                    MessageUtilities.sendThenDelete({embed: tooLongEmbed}, pChan);
+                    MessageUtilities.sendThenDelete({embeds: [tooLongEmbed]}, pChan);
                     return;
                 }
             }
@@ -428,19 +434,20 @@ export class AdvancedCollector {
      * @param {PartialTextBasedChannelFields} pChan The channel to send messages to.
      * @return {Function} A function that takes in a message and returns a Role, if any.
      */
-    public static getRolePrompt(msg: Message, pChan: PartialTextBasedChannelFields): (m: Message)
+    export function getRolePrompt(msg: Message, pChan: PartialTextBasedChannelFields): (m: Message)
         => Promise<Role | void> {
         return async (m: Message): Promise<void | Role> => {
             const origRole = m.mentions.roles.first();
+            const guild = msg.guild!;
             let resolvedRole: Role;
             if (origRole) resolvedRole = origRole;
             else {
-                const resolveById = await msg.guild?.roles.fetch(m.content) ?? null;
+                const resolveById = await FetchGetRequestUtilities.fetchRole(guild, m.content) ?? null;
                 if (!resolveById) {
                     const noRoleFound = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("No Role Found")
                         .setDescription("You didn't specify a role. Either mention the role or type its ID.");
-                    MessageUtilities.sendThenDelete({embed: noRoleFound}, pChan);
+                    MessageUtilities.sendThenDelete({embeds: [noRoleFound]}, pChan);
                     return;
                 }
 
@@ -459,15 +466,15 @@ export class AdvancedCollector {
      * exclusive.
      * @return {Function} A function that takes in a message and returns a number, if any.
      */
-    public static getNumberPrompt(channel: PartialTextBasedChannelFields,
-                                  options?: { min?: number, max?: number }): (m: Message) => Promise<number | void> {
+    export function getNumberPrompt(channel: PartialTextBasedChannelFields,
+                                    options?: { min?: number, max?: number }): (m: Message) => Promise<number | void> {
         return async (m: Message): Promise<number | void> => {
             const num = Number.parseInt(m.content, 10);
             if (Number.isNaN(num)) {
                 const notNumberEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("Invalid Number Specified")
                     .setDescription("You did not provide a valid number. Please try again.");
-                MessageUtilities.sendThenDelete({embed: notNumberEmbed}, channel);
+                MessageUtilities.sendThenDelete({embeds: [notNumberEmbed]}, channel);
                 return;
             }
 
@@ -476,7 +483,7 @@ export class AdvancedCollector {
                     const lowerThanMinEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Number Too Low")
                         .setDescription(`The number that you provided is lower than ${options.min}.`);
-                    MessageUtilities.sendThenDelete({embed: lowerThanMinEmbed}, channel);
+                    MessageUtilities.sendThenDelete({embeds: [lowerThanMinEmbed]}, channel);
                     return;
                 }
 
@@ -484,7 +491,7 @@ export class AdvancedCollector {
                     const higherThanMaxEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Number Too High")
                         .setDescription(`The number that you provided is higher than or equal to ${options.max}.`);
-                    MessageUtilities.sendThenDelete({embed: higherThanMaxEmbed}, channel);
+                    MessageUtilities.sendThenDelete({embeds: [higherThanMaxEmbed]}, channel);
                     return;
                 }
             }
@@ -501,18 +508,18 @@ export class AdvancedCollector {
      * order to be valid.
      * @return {(m: Message) => Promise<TextChannel | void>}
      */
-    public static getTextChannelPrompt(channel: PartialTextBasedChannelFields,
-                                       permissionsForBot: PermissionResolvable[] = []): (m: Message)
+    export function getTextChannelPrompt(channel: PartialTextBasedChannelFields,
+                                         permissionsForBot: PermissionResolvable[] = []): (m: Message)
         => Promise<TextChannel | void> {
         return async (m: Message): Promise<TextChannel | void> => {
             const guild = m.guild as Guild;
             const origChannel = m.mentions.channels.first();
             let resolvedChannel: TextChannel;
 
-            if (origChannel)
+            if (origChannel && origChannel instanceof TextChannel)
                 resolvedChannel = origChannel;
             else {
-                const resolvedChanById = guild.channels.resolve(m.content);
+                const resolvedChanById = FetchGetRequestUtilities.getCachedChannel(guild, m.content);
                 if (!(resolvedChanById instanceof TextChannel)) {
                     const notTextChannelDesc = new StringBuilder()
                         .append("You did not specify a valid text channel. Note that a text channel is __not__ a news")
@@ -520,7 +527,7 @@ export class AdvancedCollector {
                     const notTextChannelEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Invalid Text Channel Specified")
                         .setDescription(notTextChannelDesc.toString());
-                    MessageUtilities.sendThenDelete({embed: notTextChannelEmbed}, channel);
+                    MessageUtilities.sendThenDelete({embeds: [notTextChannelEmbed]}, channel);
                     return;
                 }
 
@@ -538,8 +545,8 @@ export class AdvancedCollector {
                                 .append("Please make sure I have the permission and then try again.");
                             const noPermsEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                                 .setTitle("No Permissions!")
-                                .setDescription(noPermDesc);
-                            MessageUtilities.sendThenDelete({embed: noPermsEmbed}, channel);
+                                .setDescription(noPermDesc.toString());
+                            MessageUtilities.sendThenDelete({embeds: [noPermsEmbed]}, channel);
                             return;
                         }
                     }
@@ -548,5 +555,35 @@ export class AdvancedCollector {
 
             return resolvedChannel;
         };
+    }
+
+    /**
+     * Sends the initial collector message.
+     * @param {IButtonCollectorArgument} options The options. If you have a `IMessageCollectorArgument` object,
+     * you can still pass it in (you may need to cast it).
+     * @return {Promise<Message | null>} The message, or `null`.
+     * @private
+     */
+    async function initSendCollectorMessage(
+        options: IButtonCollectorArgument | IMessageCollectorArgument
+    ): Promise<Message | null> {
+        let botMsg: Message | null = null;
+        if (options.msgOptions) {
+            if ("buttons" in options && options.buttons)
+                options.msgOptions.components = MiscUtilities.getActionRowsFromButtons(options.buttons);
+
+            botMsg = await options.targetChannel.send(options.msgOptions);
+        }
+        else if (options.oldMsg) {
+            botMsg = options.oldMsg;
+            if ("buttons" in options && options.buttons && botMsg.editable) {
+                await botMsg.edit(MiscUtilities.getMessageOptionsFromMessage(
+                    botMsg,
+                    MiscUtilities.getActionRowsFromButtons(options.buttons))
+                );
+            }
+        }
+
+        return botMsg;
     }
 }

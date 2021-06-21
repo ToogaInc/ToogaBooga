@@ -3,6 +3,8 @@ import {ISectionInfo} from "../definitions/major/ISectionInfo";
 import {StringBuilder} from "./StringBuilder";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {ArrayUtilities} from "./ArrayUtilities";
+import {Message, MessageActionRow, MessageButton, MessageOptions, Snowflake} from "discord.js";
+import {CommonRegex} from "../constants/CommonRegex";
 
 export namespace MiscUtilities {
 
@@ -101,12 +103,67 @@ export namespace MiscUtilities {
 
     /**
      * Generates a somewhat unique ID.
+     * @param {[number = 30]} num The length.
      * @return {string} The ID.
      */
-    export function generateUniqueId(): string {
+    export function generateUniqueId(num: number = 30): string {
         const id = new StringBuilder(Date.now().toString());
-        for (let i = 0; i < 30; i++)
+        for (let i = 0; i < num; i++)
             id.append(ArrayUtilities.getRandomElement(GeneralConstants.ALL_CHARACTERS));
         return id.toString();
+    }
+
+    /**
+     * Determines whether a `string` is a `Snowflake`.
+     * @param {string} item The string to test.
+     * @return {item is Snowflake} Whether the string is a `Snowflake`.
+     */
+    export function isSnowflake(item: string): item is Snowflake {
+        return CommonRegex.OnlyNumbers.test(item);
+    }
+
+    /**
+     * Gets an array of `MessageActionRow` from an array of buttons.
+     * @param {MessageButton[]} buttons The buttons.
+     * @return {MessageActionRow[]} The array of `MessageActionRow`.
+     */
+    export function getActionRowsFromButtons(buttons: MessageButton[]): MessageActionRow[] {
+        const allButtons = buttons.slice();
+        const rows: MessageActionRow[] = [];
+        while (allButtons.length > 0) {
+            const actionRow = new MessageActionRow();
+            for (let i = 0; i < 5 && allButtons.length > 0; i++)
+                actionRow.addComponents(allButtons.shift()!);
+            rows.push(actionRow);
+        }
+        return rows;
+    }
+
+    /**
+     * Removes all components from a message.
+     * @param {Message} msg The message.
+     * @param {MessageActionRow[]} components The components, if any.
+     * @return {MessageOptions} The new `MessageOptions`.
+     */
+    export function getMessageOptionsFromMessage(
+        msg: Message,
+        components?: MessageActionRow[]
+    ): MessageOptions & {split?: false | undefined} {
+        const obj: MessageOptions & {split?: false | undefined} = {
+            components: []
+        };
+        if (msg.content)
+            obj.content = msg.content;
+        if (msg.embeds.length !== 0)
+            obj.embeds = msg.embeds;
+        if (msg.attachments.size !== 0)
+            obj.files = msg.attachments.array();
+
+        if (msg.components)
+            obj.components = components;
+        else
+            obj.components = msg.components;
+
+        return obj;
     }
 }

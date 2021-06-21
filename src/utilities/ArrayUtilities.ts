@@ -82,9 +82,7 @@ export namespace ArrayUtilities {
         func: (i: number, element: T) => string,
         maxLenPerElement: number = 1016
     ): string[] {
-        if (maxLenPerElement < 300) {
-            maxLenPerElement = 300;
-        }
+        if (maxLenPerElement < 300) maxLenPerElement = 300;
 
         const returnArr: string[] = [];
         let str: string = "";

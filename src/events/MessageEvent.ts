@@ -85,7 +85,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
             .setTitle("Bot Owner Only Command.")
             .setDescription("The command you are trying to execute is for bot owners only.")
             .setTimestamp();
-        return MessageUtilities.sendThenDelete({embed: noBotOwnerEmbed}, msg.channel);
+        return MessageUtilities.sendThenDelete({embeds: [noBotOwnerEmbed]}, msg.channel);
     }
 
     // Check cooldown.
@@ -97,13 +97,13 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
             .setDescription("You are currently on cooldown.")
             .addField("Cooldown Remaining", StringUtil.codifyString(`${cooldownInSecRounded} Seconds.`))
             .setTimestamp();
-        return MessageUtilities.sendThenDelete({embed: onCooldownEmbed}, msg.channel);
+        return MessageUtilities.sendThenDelete({embeds: [onCooldownEmbed]}, msg.channel);
     }
 
     // Guild only?
     if (foundCommand.commandInfo.guildOnly && !msg.guild) {
         return MessageUtilities.sendThenDelete({
-            embed: MessageConstants.NOT_IN_GUILD_EMBED.setTimestamp()
+            embeds: [MessageConstants.NOT_IN_GUILD_EMBED.setTimestamp()]
         }, msg.channel);
     }
 
@@ -111,7 +111,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
     const cmdInfo = foundCommand.commandInfo;
     if (msg.guild && guildDoc && guildDoc.properties.blockedCommands.some(x => cmdInfo.cmdCode === x)) {
         return MessageUtilities.sendThenDelete({
-            embed: MessageConstants.COMMAND_BLOCKED_EMBED.setTimestamp()
+            embeds: [MessageConstants.COMMAND_BLOCKED_EMBED.setTimestamp()]
         }, msg.channel);
     }
 
@@ -122,7 +122,7 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
             .setDescription(`The command you are trying to execute requires at least ${cmdInfo.minArgs} arguments. `
                 + `You provided ${args.length} arguments. Please try again.`)
             .setTimestamp();
-        return MessageUtilities.sendThenDelete({embed: notEnoughArguments}, msg.channel);
+        return MessageUtilities.sendThenDelete({embeds: [notEnoughArguments]}, msg.channel);
     }
 
     // If not in guild, then we can just run it from here.
@@ -167,5 +167,5 @@ async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo
 
     noPermissionEmbed.setDescription(noPermSb.toString())
         .addField("Command Used", StringUtil.codifyString(msg.content));
-    MessageUtilities.sendThenDelete({embed: noPermissionEmbed}, msg.channel, 10 * 1000);
+    MessageUtilities.sendThenDelete({embeds: [noPermissionEmbed]}, msg.channel, 10 * 1000);
 }

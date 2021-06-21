@@ -2,6 +2,7 @@ import {Collection, Guild, GuildMember, Message, PermissionString, Role, User} f
 import {IGuildInfo} from "../definitions/major/IGuildInfo";
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
+import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
 
 // Type alias
 type RolePermissions = GeneralConstants.RolePermissions;
@@ -180,12 +181,12 @@ export abstract class BaseCommand {
         const roleArr: Role[] = [];
         let hasPermission = false;
         for (const roleId of allRoleIds) {
-            if (userToTest.roles.cache.has(roleId)) {
+            if (FetchGetRequestUtilities.hasCachedRole(userToTest, roleId)) {
                 hasPermission = true;
                 break;
             }
 
-            const role = guild.roles.cache.get(roleId);
+            const role = FetchGetRequestUtilities.getCachedRole(guild, roleId);
             if (!role) continue;
             roleArr.push(role);
         }

@@ -6,6 +6,7 @@ import {
     MessageOptions,
     PartialTextBasedChannelFields, User
 } from "discord.js";
+import {MiscUtilities} from "./MiscUtilities";
 
 export namespace MessageUtilities {
     /**
@@ -14,14 +15,13 @@ export namespace MessageUtilities {
      * @param {PartialTextBasedChannelFields} channel The channel to send this message.
      * @param {number} timeout The delay between sending and deleting this message.
      */
-    export function sendThenDelete(info: MessageOptions, channel: PartialTextBasedChannelFields,
-                                         timeout: number = 5000): void {
-        channel.send(info.content, {
-            embed: info.embed,
-            files: info.files,
-            disableMentions: info.disableMentions,
-            allowedMentions: info.allowedMentions
-        }).then(x => x.delete({timeout: timeout <= 1000 ? 1000 : timeout}));
+    export function sendThenDelete(info: MessageOptions & {split?: false | undefined},
+                                   channel: PartialTextBasedChannelFields,
+                                   timeout: number = 5000): void {
+        channel.send(info).then(async x => {
+            await MiscUtilities.stopFor(5 * 1000);
+            await x.delete().catch();
+        });
     }
 
     /**
