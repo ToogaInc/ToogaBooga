@@ -1,5 +1,5 @@
 import {OneLifeBot} from "./OneLifeBot";
-import {IConfiguration} from "./definitions/major/IConfiguration";
+import {IConfiguration} from "./definitions/IConfiguration";
 import * as fs from "fs";
 import * as path from "path";
 

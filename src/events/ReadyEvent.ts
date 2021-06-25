@@ -1,6 +1,6 @@
 import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
-import {IBotInfo} from "../definitions/major/IBotInfo";
+import {IBotInfo} from "../definitions/db/IBotInfo";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {PunishmentManager} from "../managers/PunishmentManager";

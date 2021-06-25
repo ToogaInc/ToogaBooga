@@ -1,20 +1,16 @@
 import {GuildMember, MessageReaction, PartialUser, TextChannel, User} from "discord.js";
-import {FetchRequestUtilities} from "../utilities/FetchRequestUtilities";
 import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
 import {ModmailManager} from "../managers/ModmailManager";
 import {Emojis} from "../constants/Emojis";
-import {IGuildInfo} from "../definitions/major/IGuildInfo";
+import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {IModmailThread} from "../definitions/IModmailThread";
+import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
 
 export async function onMessageReactionAdd(reaction: MessageReaction,
                                            user: User | PartialUser): Promise<void> {
     // Pre-check.
     if (!reaction.message.guild)
-        return;
-
-    // No bots.
-    if (reaction.message.author.bot || user.bot)
         return;
 
     // Must be in a guild that isn't exempt.
@@ -26,13 +22,17 @@ export async function onMessageReactionAdd(reaction: MessageReaction,
         return;
 
     // User must exist.
-    const resolvedUser = await FetchRequestUtilities.fetchUser(user.id);
-    const resolvedMember = await FetchRequestUtilities.fetchGuildMember(guild, user.id);
+    const resolvedUser = await FetchGetRequestUtilities.fetchUser(user.id);
+    const resolvedMember = await FetchGetRequestUtilities.fetchGuildMember(guild, user.id);
     if (!resolvedUser || !resolvedMember)
         return;
 
+    // No bots.
+    if (resolvedUser.bot || user.bot)
+        return;
+
     // Message must be valid.
-    const message = await FetchRequestUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
+    const message = await FetchGetRequestUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
     if (!message)
         return;
 
@@ -76,7 +76,8 @@ export async function onMessageReactionAdd(reaction: MessageReaction,
  */
 async function handleThreadedModmail(modmailThread: IModmailThread, reaction: MessageReaction,
                                      member: GuildMember, guildDoc: IGuildInfo): Promise<void> {
-    const msg = reaction.message;
+    const msg = await FetchGetRequestUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
+    if (!msg) return;
     const channel = msg.channel as TextChannel;
 
     // If the message that was reacted to was from this bot, then remove the reaction.
@@ -113,7 +114,9 @@ async function handleThreadedModmail(modmailThread: IModmailThread, reaction: Me
  */
 async function handleGeneralModmail(member: GuildMember, reaction: MessageReaction,
                                     guildDoc: IGuildInfo): Promise<void> {
-    const msg = reaction.message;
+    const msg = await FetchGetRequestUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
+    if (!msg) return;
+
     // If the person is currently responding to modmail, then don't let them respond to a new one.
     if (ModmailManager.CurrentlyRespondingToModMail.has(member.id)) return;
     // If there is no embed, then this isn't a valid modmail message.

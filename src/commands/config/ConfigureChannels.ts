@@ -1,6 +1,6 @@
 import {BaseCommand} from "../BaseCommand";
 import {Message} from "discord.js";
-import { IGuildInfo } from "../../definitions/major/IGuildInfo";
+import { IGuildInfo } from "../../definitions/db/IGuildInfo";
 
 export class ConfigureChannelsCommand extends BaseCommand {
 

@@ -1,9 +1,9 @@
-import {IVerificationChannels} from "./parts/IVerificationChannels";
-import {IRaidChannels} from "./parts/IRaidChannels";
-import {ISectionLeaderRoles} from "./parts/ISectionLeaderRoles";
+import {IVerificationChannels} from "../parts/IVerificationChannels";
+import {IRaidChannels} from "../parts/IRaidChannels";
+import {ISectionLeaderRoles} from "../parts/ISectionLeaderRoles";
 import {ISuspendedUser} from "../ISuspendedUser";
-import {IOtherMajorConfig} from "./parts/IOtherMajorConfig";
-import {IManualVerificationEntry} from "./parts/IManualVerificationEntry";
+import {IOtherMajorConfig} from "../parts/IOtherMajorConfig";
+import {IManualVerificationEntry} from "../parts/IManualVerificationEntry";
 
 export interface ISectionInfo {
     // A random 30 character ID that can be used to identify this section.

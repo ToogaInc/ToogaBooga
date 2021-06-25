@@ -1,13 +1,12 @@
-import {Collection, Guild, GuildMember, Role} from "discord.js";
-import {OneLifeBot} from "../OneLifeBot";
+import {Collection, Guild, Role, TextChannel} from "discord.js";
 import {MongoManager} from "./MongoManager";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {Queue} from "../utilities/Queue";
 import {ISuspendedUser} from "../definitions/ISuspendedUser";
-import {ISectionInfo} from "../definitions/major/ISectionInfo";
-import {FetchRequestUtilities} from "../utilities/FetchRequestUtilities";
+import {ISectionInfo} from "../definitions/db/ISectionInfo";
+import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
 
 // TODO read through this to make sure it works conceptually.
 export namespace PunishmentManager {
@@ -63,13 +62,12 @@ export namespace PunishmentManager {
 
             // Check each section suspended person.
             for await (const [id, details] of SectionSuspendedPeople) {
-                const guild = OneLifeBot.BotInstance.client.guilds.cache.get(details.guild);
+                const guild = await FetchGetRequestUtilities.fetchGuild(details.guild);
                 // If the guild couldn't be found, that's a problem.
                 if (!guild) continue;
 
                 // Get the member.
-                const suspendedMember: GuildMember | null = await FetchRequestUtilities
-                    .fetchGuildMember(guild, id.split("_")[0]);
+                const suspendedMember = await FetchGetRequestUtilities.fetchGuildMember(guild, id.split("_")[0]);
                 if (!suspendedMember) {
                     idsToRemove.enqueue([id, false]);
                     continue;
@@ -95,7 +93,7 @@ export namespace PunishmentManager {
                     idsToRemove.enqueue([id, false]);
                     continue;
                 }
-                const sectionRole = guild.roles.cache.get(section.roles.verifiedRoleId);
+                const sectionRole = FetchGetRequestUtilities.getCachedRole(guild, section.roles.verifiedRoleId);
                 if (!sectionRole)
                     continue;
 
@@ -113,9 +111,11 @@ export namespace PunishmentManager {
                         await suspendedMember.setNickname(details.nickname);
 
                     // Send a message to the logging channel and to the applicable person.
-                    const suspendLogChannel = guild.channels.cache
-                        .get(guildDb.channels.logging.suspensionLoggingChannelId);
-                    if (suspendLogChannel && suspendLogChannel.isText()) {
+                    const suspendLogChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+                        guild,
+                        guildDb.channels.logging.suspensionLoggingChannelId
+                    );
+                    if (suspendLogChannel) {
                         const logSb = new StringBuilder()
                             .append(`⇒ **Unsuspended Member:** ${suspendedMember} (${suspendedMember.id})`)
                             .appendLine()
@@ -129,7 +129,7 @@ export namespace PunishmentManager {
                             .setTitle(`Section Unsuspended: **${section.sectionName}**`)
                             .setDescription(logSb.toString())
                             .setTimestamp();
-                        await suspendLogChannel.send(logEmbed).catch();
+                        await suspendLogChannel.send({embeds: [logEmbed]}).catch();
                     }
 
                     const descSb = new StringBuilder()
@@ -143,7 +143,7 @@ export namespace PunishmentManager {
                         .addField("Original Suspension Reason", details.reason)
                         .setTimestamp();
                     // DM the member, notifying him/her that he/she has been unsuspended.
-                    await suspendedMember.send(sectionUnsuspendEmbed);
+                    await FetchGetRequestUtilities.sendMsg(suspendedMember, {embeds: [sectionUnsuspendEmbed]});
                 } catch (e) {
                     // If the role couldn't be added, then don't remove the person from the list of suspended
                     // people since we want to give the role back.
@@ -172,13 +172,13 @@ export namespace PunishmentManager {
             // Now, we will be checking the regular suspended people.
             for await (const [id, details] of SuspendedPeople) {
                 const actualId = id.split("_")[0];
-                const guild = OneLifeBot.BotInstance.client.guilds.cache.get(details.guild);
+                const guild = await FetchGetRequestUtilities.fetchGuild(details.guild);
 
                 // If the guild couldn't be found, that's a problem.
                 if (!guild) continue;
 
                 // Get the member. I think the fetch method throws an error if the member isn't found so try/catch.
-                const suspendedMember = await FetchRequestUtilities.fetchGuildMember(guild, actualId);
+                const suspendedMember = await FetchGetRequestUtilities.fetchGuildMember(guild, actualId);
                if (!suspendedMember) {
                     idsToRemove.enqueue([id, false]);
                     continue;
@@ -195,9 +195,9 @@ export namespace PunishmentManager {
                 }
                 const guildDb = guildDbArr[0];
                 // Get every role that we owe back
-                const allPossRoles = await details.roles
-                    .map(x => guild.roles.cache.get(x))
-                    .filter(x => typeof x !== "undefined") as Role[];
+                const allPossRoles = details.roles
+                    .map(x => FetchGetRequestUtilities.getCachedRole(guild, x))
+                    .filter(x => x !== null) as Role[];
                 // And add those roles back to the person.
                 try {
                     await suspendedMember.roles.set(allPossRoles);
@@ -206,8 +206,10 @@ export namespace PunishmentManager {
                         await suspendedMember.setNickname(details.nickname);
 
                     // Send a message to the logging channel and to the applicable person.
-                    const suspendLogChannel = guild.channels.cache
-                        .get(guildDb.channels.logging.suspensionLoggingChannelId);
+                    const suspendLogChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+                        guild,
+                        guildDb.channels.logging.suspensionLoggingChannelId
+                    );
                     if (suspendLogChannel && suspendLogChannel.isText()) {
                         const logSb = new StringBuilder()
                             .append(`⇒ **Unsuspended Member:** ${suspendedMember} (${suspendedMember.id})`)
@@ -222,7 +224,7 @@ export namespace PunishmentManager {
                             .setTitle("Unsuspended From Server")
                             .setDescription(logSb.toString())
                             .setTimestamp();
-                        await suspendLogChannel.send(logEmbed).catch();
+                        await suspendLogChannel.send({embeds: [logEmbed]}).catch();
                     }
 
                     const descSb = new StringBuilder()
@@ -235,7 +237,7 @@ export namespace PunishmentManager {
                         .addField("Original Suspension Reason", details.reason)
                         .setTimestamp();
                     // DM the member, notifying him/her that he/she has been unsuspended.
-                    await suspendedMember.send(serverUnsuspendEmbed);
+                    await FetchGetRequestUtilities.sendMsg(suspendedMember, {embeds: [serverUnsuspendEmbed]});
                 } catch (e) {
                     // If the role couldn't be added, then don't remove the person from the list of suspended
                     // people since we want to give the role back.

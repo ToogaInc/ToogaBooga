@@ -1,4 +1,4 @@
-import {PrivateApiDefinitions} from "../../../private-api/PrivateApiDefinitions";
+import {PrivateApiDefinitions} from "../../private-api/PrivateApiDefinitions";
 
 export interface IManualVerificationEntry {
     userId: string;

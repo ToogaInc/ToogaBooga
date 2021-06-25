@@ -1,4 +1,4 @@
-import {IMappedReactions} from "../../../constants/MappedReactions";
+import {IMappedReactions} from "../../constants/MappedReactions";
 
 export interface IReactionProps {
     // This will refer to the key found in MappedReactions

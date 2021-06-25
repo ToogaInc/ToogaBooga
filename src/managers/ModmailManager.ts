@@ -14,7 +14,7 @@ import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {InteractionManager} from "./InteractionManager";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {Emojis} from "../constants/Emojis";
-import {IGuildInfo} from "../definitions/major/IGuildInfo";
+import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {StringUtil} from "../utilities/StringUtilities";
 import {MiscUtilities} from "../utilities/MiscUtilities";

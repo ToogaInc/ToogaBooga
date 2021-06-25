@@ -1,5 +1,5 @@
 import {Collection, Guild, GuildMember, Message, PermissionString, Role, User} from "discord.js";
-import {IGuildInfo} from "../definitions/major/IGuildInfo";
+import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";

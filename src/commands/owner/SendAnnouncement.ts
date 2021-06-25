@@ -1,7 +1,7 @@
 import {BaseCommand} from "../BaseCommand";
 import {Message, MessageEmbed} from "discord.js";
 import {MongoManager} from "../../managers/MongoManager";
-import {FetchRequestUtilities} from "../../utilities/FetchRequestUtilities";
+import {FetchGetRequestUtilities} from "../../utilities/FetchGetRequestUtilities";
 import {OneLifeBot} from "../../OneLifeBot";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 
@@ -39,7 +39,7 @@ class SendAnnouncementCommand extends BaseCommand {
         // If there is an attachment, get its contents.
         if (msg.attachments.size > 0) {
             const firstAttachment = msg.attachments.first()!;
-            const stringData = await FetchRequestUtilities.tryExecuteAsync(async () => {
+            const stringData = await FetchGetRequestUtilities.tryExecuteAsync(async () => {
                 return OneLifeBot.AxiosClient.get<string>(firstAttachment.url);
             });
             if (stringData) {
@@ -54,14 +54,15 @@ class SendAnnouncementCommand extends BaseCommand {
 
         for await (const guildDoc of allGuildDocs) {
             // Guild must exist.
-            const guild = await FetchRequestUtilities.fetchGuild(guildDoc.guildId);
+            const guild = await FetchGetRequestUtilities.fetchGuild(guildDoc.guildId);
             if (!guild) continue;
             // Get channel. Must be a text channel.
-            const botUpdatesChannel = guild.channels.cache.get(guildDoc.channels.botUpdatesChannelId);
+            const botUpdatesChannel = FetchGetRequestUtilities
+                .getCachedChannel(guild, guildDoc.channels.botUpdatesChannelId);
             if (!botUpdatesChannel || !botUpdatesChannel.isText()) continue;
             // Try to send message.
-            await FetchRequestUtilities.sendMsg(botUpdatesChannel, {
-                embed: embedToSend
+            await FetchGetRequestUtilities.sendMsg(botUpdatesChannel, {
+                embeds: [embedToSend]
             });
         }
 

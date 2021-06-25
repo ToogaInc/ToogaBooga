@@ -1,4 +1,4 @@
-import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
+import {IPermAllowDeny} from "../definitions/IPermAllowDeny";
 import {MessageButton} from "discord.js";
 import {Emojis} from "./Emojis";
 

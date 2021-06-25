@@ -1,4 +1,4 @@
-import {IRaidChannels} from "./parts/IRaidChannels";
+import {IRaidChannels} from "../parts/IRaidChannels";
 
 export interface IRaidInfo {
     // The dungeon that is being done.

@@ -1,4 +1,4 @@
-import {IDungeonInfo} from "../definitions/major/parts/IDungeonInfo";
+import {IDungeonInfo} from "../definitions/parts/IDungeonInfo";
 
 export const DungeonData: IDungeonInfo[] = [
     {

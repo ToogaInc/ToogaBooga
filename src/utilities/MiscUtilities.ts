@@ -1,5 +1,5 @@
-import {IGuildInfo} from "../definitions/major/IGuildInfo";
-import {ISectionInfo} from "../definitions/major/ISectionInfo";
+import {IGuildInfo} from "../definitions/db/IGuildInfo";
+import {ISectionInfo} from "../definitions/db/ISectionInfo";
 import {StringBuilder} from "./StringBuilder";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {ArrayUtilities} from "./ArrayUtilities";

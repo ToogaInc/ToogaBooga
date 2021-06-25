@@ -1,4 +1,4 @@
-import {IPropertyKeyValuePair} from "../../IPropertyKeyValuePair";
+import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
 import {IPermAllowDeny} from "../IPermAllowDeny";
 import {IReactionProps} from "./IReactionProps";
 

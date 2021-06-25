@@ -1,9 +1,9 @@
 import {
+    Channel,
     DMChannel,
     Guild, GuildChannel,
     GuildMember,
-    Message, MessageOptions, NewsChannel, PartialTextBasedChannelFields, Role, Snowflake,
-    TextChannel,
+    Message, MessageOptions, PartialTextBasedChannelFields, Role, Snowflake,
     User
 } from "discord.js";
 import {MiscUtilities} from "./MiscUtilities";
@@ -104,14 +104,15 @@ export namespace FetchGetRequestUtilities {
 
     /**
      * A simple function that fetches a message. This will handle any exceptions that may occur.
-     * @param {TextChannel | DMChannel | NewsChannel} channel The channel.
+     * @param {Channel} channel The channel.
      * @param {string} msgId The message to fetch. This assumes a valid ID. If an invalid ID is given, `null` will
      * be returned.
      * @returns {Promise<Message | null>} The message object, if found. Null otherwise.
      */
-    export async function fetchMessage(channel: TextChannel | DMChannel | NewsChannel,
+    export async function fetchMessage(channel: Channel,
                                        msgId: string): Promise<Message | null> {
         if (!MiscUtilities.isSnowflake(msgId)) return null;
+        if (!channel.isText()) return null;
         try {
             return await channel.messages.fetch(msgId);
         } catch (e) {

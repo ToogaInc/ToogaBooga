@@ -1,12 +1,13 @@
-import {IConfiguration} from "./definitions/major/IConfiguration";
-import {Client, Collection, Message, MessageReaction, PartialUser, User} from "discord.js";
+import {IConfiguration} from "./definitions/IConfiguration";
+import {Client, Collection, Interaction, Message, MessageReaction, PartialUser, User} from "discord.js";
 import {onReadyEvent} from "./events/ReadyEvent";
 import {onMessageEvent} from "./events/MessageEvent";
 import {MongoManager} from "./managers/MongoManager";
 import * as assert from "assert";
 import {onMessageReactionAdd} from "./events/MessageReactionAdd";
 import axios, {AxiosInstance} from "axios";
-import {BaseCommand} from "./commands/BaseCommand";
+import {BaseCommand} from "./commands";
+import {onInteractionEvent} from "./events/InteractionEvent";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -30,10 +31,16 @@ export class OneLifeBot {
         this._bot = new Client({
             partials: [
                 "MESSAGE",
-                "CHANNEL",
-                "REACTION"
+                "CHANNEL"
             ],
-            restTimeOffset: 350
+            intents: [
+                "GUILDS",
+                "GUILD_MEMBERS",
+                "GUILD_EMOJIS",
+                "GUILD_MESSAGES",
+                "GUILD_MESSAGE_REACTIONS",
+                "DIRECT_MESSAGES"
+            ]
         });
 
         OneLifeBot.BotInstance = this;
@@ -48,6 +55,7 @@ export class OneLifeBot {
         this._bot.on("message", async (m: Message) => onMessageEvent(m));
         this._bot.on("messageReactionAdd",
             async (r: MessageReaction, u: User | PartialUser) => onMessageReactionAdd(r, u));
+        this._bot.on("interaction", async (i: Interaction) => onInteractionEvent(i));
         this._eventsIsStarted = true;
     }
 

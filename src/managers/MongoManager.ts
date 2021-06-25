@@ -1,12 +1,12 @@
 import {Collection, FilterQuery, MongoClient, ObjectID} from "mongodb";
-import {IUserInfo} from "../definitions/major/IUserInfo";
-import {IGuildInfo} from "../definitions/major/IGuildInfo";
-import {IBotInfo} from "../definitions/major/IBotInfo";
+import {IUserInfo} from "../definitions/db/IUserInfo";
+import {IGuildInfo} from "../definitions/db/IGuildInfo";
+import {IBotInfo} from "../definitions/db/IBotInfo";
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
-import {IPermAllowDeny} from "../definitions/major/IPermAllowDeny";
-import {IIdNameInfo} from "../definitions/major/IIdNameInfo";
+import {IPermAllowDeny} from "../definitions/IPermAllowDeny";
+import {IIdNameInfo} from "../definitions/db/IIdNameInfo";
 import {UserManager} from "./UserManager";
 import {GuildMember} from "discord.js";
 import {DungeonData} from "../constants/DungeonData";
@@ -150,7 +150,7 @@ export namespace MongoManager {
             throw new ReferenceError("IDNameCollection null. Use connect method first.");
 
         return await IdNameCollection.find({
-            discordId: discordId
+            currentDiscordId: discordId
         }).toArray();
     }
 
@@ -192,7 +192,7 @@ export namespace MongoManager {
 
         // Case 2: ID found, IGN not.
         if (idEntries.length > 0 && ignEntries.length === 0) {
-            await IdNameCollection.updateOne({discordId: idEntries[0].discordId}, {
+            await IdNameCollection.updateOne({currentDiscordId: idEntries[0].currentDiscordId}, {
                 $push: {
                     rotmgNames: {
                         lowercaseIgn: ign.toLowerCase(),
@@ -210,13 +210,13 @@ export namespace MongoManager {
                 "rotmgNames.lowercaseIgn": ign.toLowerCase()
             }, {
                 $set: {
-                    discordId: member.id
+                    currentDiscordId: member.id
                 }
             }, {returnOriginal: true});
 
             // Also update the user collection.
             if (oldDoc.value) {
-                await getUserCollection().updateOne({discordId: oldDoc.value.discordId}, {
+                await getUserCollection().updateOne({discordId: oldDoc.value.currentDiscordId}, {
                     $set: {
                         discordId: member.id
                     }
@@ -243,8 +243,8 @@ export namespace MongoManager {
         await IdNameCollection.deleteMany({
             $or: [
                 {
-                    discordId: {
-                        $in: allEntries.map(x => x.discordId)
+                    currentDiscordId: {
+                        $in: allEntries.map(x => x.currentDiscordId)
                     }
                 },
                 {
@@ -261,13 +261,13 @@ export namespace MongoManager {
         const filterQuery: FilterQuery<IUserInfo>[] = [];
         const searchedIds = new Set<string>();
         for (const entry of allEntries) {
-            if (searchedIds.has(entry.discordId))
+            if (searchedIds.has(entry.currentDiscordId))
                 continue;
 
             filterQuery.push({
-                discordId: entry.discordId
+                discordId: entry.currentDiscordId
             });
-            searchedIds.add(entry.discordId);
+            searchedIds.add(entry.currentDiscordId);
         }
 
         // Get all relevant documents.
@@ -497,7 +497,9 @@ export namespace MongoManager {
         return {
             _id: new ObjectID(),
             rotmgNames: [{lowercaseIgn: ign.toLowerCase(), ign: ign}],
-            discordId: userId
+            currentDiscordId: userId,
+            pastDiscordIds: [],
+            pastRealmNames: []
         };
     }
 

@@ -1,4 +1,4 @@
-import {IPropertyKeyValuePair} from "../../IPropertyKeyValuePair";
+import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
 
 export interface IVerificationRequirements {
     // all alive fame
