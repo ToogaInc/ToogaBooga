@@ -1,12 +1,17 @@
 import {GeneralCollectorBuilder} from "./GeneralCollectorBuilder";
-import {Emoji, MessageCollector, ReactionCollector, TextChannel, User} from "discord.js";
+import {
+    MessageCollector,
+    MessageComponentInteractionCollector,
+    TextChannel,
+    User
+} from "discord.js";
 
 export class GeneralCollector {
     private static END_EXPLICITLY_REASON: string = "END_EXPLICITLY_DUE_TO_INTERVENTION";
 
     private readonly _opt: GeneralCollectorBuilder;
     private _msgCollector: MessageCollector | null = null;
-    private _reactionCollector: ReactionCollector | null = null;
+    private _buttonCollector: MessageComponentInteractionCollector | null = null;
     private _isRunning: boolean = false;
 
     /**
@@ -26,7 +31,8 @@ export class GeneralCollector {
     private instantiateCollectors(): void {
         const channel = this._opt.message!.channel as TextChannel;
         if (this._opt.messageCollectorFilter && this._opt.messageOnCollectFunc) {
-            this._msgCollector = new MessageCollector(channel, this._opt.messageCollectorFilter, {
+            this._msgCollector = new MessageCollector(channel, {
+                filter: this._opt.messageCollectorFilter,
                 time: this._opt.time
             });
             this._msgCollector.on("collect", this._opt.messageOnCollectFunc);
@@ -35,35 +41,21 @@ export class GeneralCollector {
             });
         }
 
-        if (this._opt.reactionMapping.size > 0 && this._opt.reactionCollectorFilter) {
-            this._reactionCollector = this._opt.message!.createReactionCollector(this._opt.reactionCollectorFilter, {
+        if (this._opt.buttonMapping.size > 0 && this._opt.reactionCollectorFilter) {
+            this._buttonCollector = this._opt.message!.createMessageComponentInteractionCollector({
+                filter: this._opt.reactionCollectorFilter,
                 time: this._opt.time
             });
-            this._reactionCollector.on("collect", async (thisReact, theUser) => {
-                for (const [reaction, func] of this._opt.reactionMapping) {
+            this._buttonCollector.on("collect", async i => {
+                for (const [customId, func] of this._opt.buttonMapping) {
                     // Check if custom emoji.
-                    if (thisReact.emoji.id) {
-                        // If so, check reaction.
-                        if (reaction instanceof Emoji && reaction.id === thisReact.emoji.id) {
-                            await func(theUser, this);
-                            return;
-                        }
-                    }
-                    // Not a custom emoji.
-                    else {
-                        if (reaction instanceof Emoji && reaction.name === thisReact.emoji.name) {
-                            await func(theUser, this);
-                            return;
-                        }
-
-                        if (typeof reaction === "string" && reaction === thisReact.emoji.name) {
-                            await func(theUser, this);
-                            return;
-                        }
+                    if (i.customID === customId) {
+                        await func(i, this);
+                        return;
                     }
                 }
             });
-            this._reactionCollector.on("end", (_, r: string) => {
+            this._buttonCollector.on("end", (_, r: string) => {
                 if (r !== GeneralCollector.END_EXPLICITLY_REASON) this.stop(r);
             });
         }
@@ -99,7 +91,7 @@ export class GeneralCollector {
     public stop(reason?: string, ...args: string[]): void {
         this._isRunning = false;
         this._msgCollector?.stop(GeneralCollector.END_EXPLICITLY_REASON);
-        this._reactionCollector?.stop(GeneralCollector.END_EXPLICITLY_REASON);
+        this._buttonCollector?.stop(GeneralCollector.END_EXPLICITLY_REASON);
         if (this._opt.onEndFunc)
             this._opt.onEndFunc(reason, ...args);
     }

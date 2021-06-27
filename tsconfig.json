@@ -8,7 +8,8 @@
     "strict": true,
     "noUnusedParameters": false,
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "keyofStringsOnly": true
   },
   "exclude": [
     "node_modules",

@@ -123,9 +123,11 @@ export namespace AdvancedCollector {
             const cancelFlag = options.cancelFlag ?? "cancel";
             const botMsg = await initSendCollectorMessage(options);
 
-            const msgCollector = new MessageCollector(options.targetChannel,
-                (m: Message) => m.author.id === options.targetAuthor.id,
-                {time: options.duration, max: 1});
+            const msgCollector = new MessageCollector(options.targetChannel, {
+                filter: (m: Message) => m.author.id === options.targetAuthor.id,
+                time: options.duration,
+                max: 1
+            });
 
             msgCollector.on("collect", async (c: Message) => {
                 if (options.deleteResponseMessage)
@@ -163,10 +165,10 @@ export namespace AdvancedCollector {
 
         let returnButton: ButtonInteraction | null = null;
         try {
-            const clickedButton = await botMsg.awaitMessageComponentInteraction(
-                i => i.user.id === options.targetAuthor.id,
-                {time: options.duration}
-            );
+            const clickedButton = await botMsg.awaitMessageComponentInteraction({
+                filter: i => i.user.id === options.targetAuthor.id,
+                time: options.duration
+            });
 
             if (clickedButton.isButton()) {
                 if (options.acknowledgeImmediately)
@@ -202,14 +204,16 @@ export namespace AdvancedCollector {
         if (!botMsg) return null;
 
         return new Promise(async (resolve) => {
-            const msgCollector = new MessageCollector(options.targetChannel,
-                (m: Message) => m.author.id === options.targetAuthor.id,
-                {time: options.duration, max: 1}
-            );
-            const buttonCollector = botMsg.createMessageComponentInteractionCollector(
-                i => i.user.id === options.targetAuthor.id,
-                {max: 1, time: options.duration}
-            );
+            const msgCollector = new MessageCollector(options.targetChannel, {
+                time: options.duration,
+                max: 1,
+                filter: (m: Message) => m.author.id === options.targetAuthor.id
+            });
+            const buttonCollector = botMsg.createMessageComponentInteractionCollector({
+                filter: i => i.user.id === options.targetAuthor.id,
+                max: 1,
+                time: options.duration
+            });
 
             msgCollector.on("collect", async (c: Message) => {
                 if (options.deleteResponseMessage)
@@ -248,6 +252,7 @@ export namespace AdvancedCollector {
 
             // The end function
             let hasCalled = false;
+
             function acknowledgeDeletion(r: string): void {
                 if (hasCalled) return;
                 hasCalled = true;
@@ -296,10 +301,11 @@ export namespace AdvancedCollector {
             embeds: opt.contentToSend.embeds
         });
         return new Promise(async (resolve) => {
-            const resp = await channel.createMessageComponentInteractionCollector(
-                k => k.user.id === user.id && k.customID.startsWith(id),
-                {time: opt.time, max: 1}
-            );
+            const resp = await channel.createMessageComponentInteractionCollector({
+                filter: k => k.user.id === user.id && k.customID.startsWith(id),
+                time: opt.time,
+                max: 1
+            });
 
             resp.on("collect", interaction => {
                 resp.stop("done");

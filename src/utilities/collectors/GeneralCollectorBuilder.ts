@@ -1,18 +1,25 @@
 import {GeneralCollector} from "./GeneralCollector";
-import {Collection, EmojiResolvable, Message, MessageReaction, User} from "discord.js";
+import {
+    AwaitMessageComponentInteractionOptions,
+    Collection, CollectorFilter,
+    EmojiResolvable,
+    Interaction,
+    Message, MessageButton, MessageComponentInteraction,
+    MessageReaction,
+    User
+} from "discord.js";
 
-type ReactionCollectorFilter = (r: MessageReaction, u: User) => boolean | Promise<boolean>;
-type MessageCollectorFilter = (m: Message) => boolean | Promise<boolean>;
 type MessageOnCollectFunc = (m: Message, instance: GeneralCollector) => void | Promise<void>;
-type ReactionFunction = (u: User, instance: GeneralCollector) => void | Promise<void>;
+type InteractionFunction = (i: Interaction, instance: GeneralCollector) => void | Promise<void>;
 type OnEndFunction = (r?: string, ...args: string[]) => void | Promise<void>;
 type UserReasonHelperFunction = (u: User, c?: string) => void | Promise<void>;
 
 export class GeneralCollectorBuilder {
-    private _reactCollFilter: ReactionCollectorFilter | null;
-    private readonly _reactionMapping: Collection<EmojiResolvable, ReactionFunction>;
+    private _buttonCollFilter: CollectorFilter<[MessageComponentInteraction]> | null;
+    // K = string = the custom ID
+    private readonly _buttonMapping: Collection<string, InteractionFunction>;
 
-    private _msgCollFilter: MessageCollectorFilter | null;
+    private _msgCollFilter: CollectorFilter<[Message]> | null;
     private _msgOnCollectFunc: MessageOnCollectFunc | null;
 
     private _onEndFunction: OnEndFunction | null;
@@ -27,14 +34,14 @@ export class GeneralCollectorBuilder {
      * without having to needlessly create tons of redundant instantiations throughout your code.
      */
     public constructor() {
-        this._reactCollFilter = null;
+        this._buttonCollFilter = null;
         this._msgCollFilter = null;
         this._msgOnCollectFunc = null;
         this._onEndFunction = null;
         this._helperFunction = null;
         this._time = 5 * 60 * 1000;
         this._msg = null;
-        this._reactionMapping = new Collection<EmojiResolvable, ReactionFunction>();
+        this._buttonMapping = new Collection<string, InteractionFunction>();
     }
 
     /**
@@ -48,14 +55,22 @@ export class GeneralCollectorBuilder {
     }
 
     /**
-     * Adds a reaction handler. In other words, add an emoji and its associated function to be executed when someone
-     * reacts with the said emoji.
-     * @param {EmojiResolvable} emoji The emoji.
-     * @param {ReactionFunction} func The resulting function.
+     * Adds a button handler. In other words, add a button and its associated function to be executed when someone
+     * clicks on said button.
+     * @param {MessageButton | string} buttonOrId The button or custom ID associated with a button..
+     * @param {InteractionFunction} func The resulting function.
      * @return {this} This object.
+     * @throws {TypeError} If the button doesn't have a custom ID.
      */
-    public addReactionHandler(emoji: EmojiResolvable, func: ReactionFunction): this {
-        this._reactionMapping.set(emoji, func);
+    public addReactionHandler(buttonOrId: MessageButton | string, func: InteractionFunction): this {
+        let customId: string;
+        if (typeof buttonOrId === "string") customId = buttonOrId;
+        else {
+            if (buttonOrId.customID) customId = buttonOrId.customID;
+            else throw new TypeError("Button doesn't have a defined customId.");
+        }
+
+        this._buttonMapping.set(customId, func);
         return this;
     }
 
@@ -70,21 +85,21 @@ export class GeneralCollectorBuilder {
     }
 
     /**
-     * The reaction collector filter.
-     * @param {ReactionCollectorFilter} func The filter.
+     * The button collector filter.
+     * @param {CollectorFilter<[Message]>} func The filter.
      * @return {this} This object.
      */
-    public setReactionFilter(func: ReactionCollectorFilter): this {
-        this._reactCollFilter = func;
+    public setButtonFilter(func: CollectorFilter<[MessageComponentInteraction]>): this {
+        this._buttonCollFilter = func;
         return this;
     }
 
     /**
      * The message collector filter.
-     * @param {MessageCollectorFilter} func The filter.
+     * @param {CollectorFilter<[Message]>} func The filter.
      * @return {this} This object.
      */
-    public setMessageFilter(func: MessageCollectorFilter): this {
+    public setMessageFilter(func: CollectorFilter<[Message]>): this {
         this._msgCollFilter = func;
         return this;
     }
@@ -127,7 +142,7 @@ export class GeneralCollectorBuilder {
     public build(): GeneralCollector {
         if (!this._msg)
             throw new Error("Message not defined.");
-        const reactCollDefined = this._reactionMapping.size > 0 && this._reactCollFilter !== null;
+        const reactCollDefined = this._buttonMapping.size > 0 && this._buttonCollFilter !== null;
         const msgCollDefined = this._msgCollFilter !== null && this._msgOnCollectFunc !== null;
         if (!reactCollDefined && !msgCollDefined)
             throw new Error("Collectors not defined. Must define at least one.");
@@ -152,26 +167,26 @@ export class GeneralCollectorBuilder {
     }
 
     /**
-     * Gets the reaction collector filter function.
-     * @return {ReactionCollectorFilter | null} The function, if defined.
+     * Gets the button collector filter function.
+     * @return {CollectorFilter<[MessageComponentInteraction]> | null} The function, if defined.
      */
-    public get reactionCollectorFilter(): ReactionCollectorFilter | null {
-        return this._reactCollFilter;
+    public get reactionCollectorFilter(): CollectorFilter<[MessageComponentInteraction]> | null {
+        return this._buttonCollFilter;
     }
 
     /**
      * Gets the reaction mapping.
-     * @return {Collection<EmojiResolvable, ReactionFunction>} The mapping.
+     * @return {Collection<string, InteractionFunction>} The mapping.
      */
-    public get reactionMapping(): Collection<EmojiResolvable, ReactionFunction> {
-        return this._reactionMapping;
+    public get buttonMapping(): Collection<string, InteractionFunction> {
+        return this._buttonMapping;
     }
 
     /**
      * Gets the message collector filter function.
-     * @return {MessageCollectorFilter | null} The function, if defined.
+     * @return {CollectorFilter<[Message]> | null} The function, if defined.
      */
-    public get messageCollectorFilter(): MessageCollectorFilter | null {
+    public get messageCollectorFilter(): CollectorFilter<[Message]> | null {
         return this._msgCollFilter;
     }
 

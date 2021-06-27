@@ -918,7 +918,12 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        reactions: [],
+        reactions: [
+            {
+                mappingEmojiName: "WARRIOR",
+                maxEarlyLocation: 0
+            }
+        ],
         portalLink: "https://i.imgur.com/nKKvJsv.png",
         bossLinks: [
             "https://media.discordapp.net/attachments/561246036870430770/708192230468485150/oryx_3_w.png",
