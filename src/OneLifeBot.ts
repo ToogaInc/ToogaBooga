@@ -52,10 +52,10 @@ export class OneLifeBot {
      */
     public startAllEvents(): void {
         this._bot.on("ready", async () => onReadyEvent());
-        this._bot.on("message", async (m: Message) => onMessageEvent(m));
+        this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
         this._bot.on("messageReactionAdd",
             async (r: MessageReaction, u: User | PartialUser) => onMessageReactionAdd(r, u));
-        this._bot.on("interaction", async (i: Interaction) => onInteractionEvent(i));
+        this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
         this._eventsIsStarted = true;
     }
 

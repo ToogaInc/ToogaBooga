@@ -16,6 +16,9 @@ export namespace Emojis {
     export const X_EMOJI: EmojiIdentifierResolvable = "❌";
     export const RED_SQUARE_EMOJI: EmojiIdentifierResolvable = "🟥";
     export const GREEN_SQUARE_EMOJI: EmojiIdentifierResolvable = "🟩";
+    export const WHITE_SQUARE_EMOJI: EmojiIdentifierResolvable = "⬜";
+    export const BLACK_SQUARE_EMOJI: EmojiIdentifierResolvable = "⬛";
+    export const YELLOW_SQUARE_EMOJI: EmojiIdentifierResolvable = "🟨";
     export const GREEN_CHECK_EMOJI: EmojiIdentifierResolvable = "✅";
     export const HOURGLASS_EMOJI: EmojiIdentifierResolvable = "⌛";
     export const RIGHT_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "▶️";
