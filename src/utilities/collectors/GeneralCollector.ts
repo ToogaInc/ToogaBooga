@@ -1,7 +1,8 @@
 import {GeneralCollectorBuilder} from "./GeneralCollectorBuilder";
 import {
+    ButtonInteraction,
+    InteractionCollector,
     MessageCollector,
-    MessageComponentInteractionCollector,
     TextChannel,
     User
 } from "discord.js";
@@ -11,7 +12,7 @@ export class GeneralCollector {
 
     private readonly _opt: GeneralCollectorBuilder;
     private _msgCollector: MessageCollector | null = null;
-    private _buttonCollector: MessageComponentInteractionCollector | null = null;
+    private _buttonCollector: InteractionCollector<ButtonInteraction> | null = null;
     private _isRunning: boolean = false;
 
     /**
@@ -42,7 +43,7 @@ export class GeneralCollector {
         }
 
         if (this._opt.buttonMapping.size > 0 && this._opt.reactionCollectorFilter) {
-            this._buttonCollector = this._opt.message!.createMessageComponentInteractionCollector({
+            this._buttonCollector = this._opt.message!.createMessageComponentCollector<ButtonInteraction>({
                 filter: this._opt.reactionCollectorFilter,
                 time: this._opt.time
             });

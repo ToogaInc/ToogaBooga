@@ -165,8 +165,8 @@ export namespace AdvancedCollector {
 
         let returnButton: ButtonInteraction | null = null;
         try {
-            const clickedButton = await botMsg.awaitMessageComponentInteraction({
-                filter: i => i.user.id === options.targetAuthor.id,
+            const clickedButton = await botMsg.awaitMessageComponent({
+                filter: i => i.user.id === options.targetAuthor.id && i.isButton(),
                 time: options.duration
             });
 
@@ -209,8 +209,8 @@ export namespace AdvancedCollector {
                 max: 1,
                 filter: (m: Message) => m.author.id === options.targetAuthor.id
             });
-            const buttonCollector = botMsg.createMessageComponentInteractionCollector({
-                filter: i => i.user.id === options.targetAuthor.id,
+            const buttonCollector = botMsg.createMessageComponentCollector({
+                filter: i => i.user.id === options.targetAuthor.id && i.isButton(),
                 max: 1,
                 time: options.duration
             });
@@ -301,8 +301,8 @@ export namespace AdvancedCollector {
             embeds: opt.contentToSend.embeds
         });
         return new Promise(async (resolve) => {
-            const resp = await channel.createMessageComponentInteractionCollector({
-                filter: k => k.user.id === user.id && k.customID.startsWith(id),
+            const resp = await channel.createMessageComponentCollector({
+                filter: k => k.user.id === user.id && k.customID.startsWith(id) && k.isButton(),
                 time: opt.time,
                 max: 1
             });

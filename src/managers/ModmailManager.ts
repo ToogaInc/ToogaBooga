@@ -122,7 +122,7 @@ export namespace ModmailManager {
                             + "send this message?")
                         .setFooter("Modmail Confirmation")
                 ],
-                components: MiscUtilities.getActionRowsFromButtons(GeneralConstants.YesNoButtons)
+                components: GeneralConstants.YesNoActionRows
             });
 
             const confirmSend = await AdvancedCollector.startButtonCollector({
@@ -630,7 +630,7 @@ export namespace ModmailManager {
             .setFooter("Confirmation");
         await origMmMessage.edit({
             embeds: [confirmBlacklistEmbed],
-            components: GeneralConstants.YesNoButtons
+            components: GeneralConstants.YesNoActionRows
         }).catch();
         const result = await AdvancedCollector.startButtonCollector({
             targetChannel: origMmMessage.channel as TextChannel,
@@ -718,7 +718,10 @@ export namespace ModmailManager {
         const askDeleteEmbed = MessageUtilities.generateBlankEmbed(member)
             .setTitle("Confirm Delete Modmail Message.")
             .setDescription("Are you sure you want to delete this modmail message?");
-        await message.edit({embeds: [askDeleteEmbed], components: GeneralConstants.YesNoButtons}).catch();
+        await message.edit({
+            embeds: [askDeleteEmbed],
+            components: GeneralConstants.YesNoActionRows
+        }).catch();
         const deleteResp = await AdvancedCollector.startButtonCollector({
             targetChannel: message.channel as TextChannel,
             targetAuthor: message.author,

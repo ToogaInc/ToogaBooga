@@ -1,6 +1,7 @@
 import {IPermAllowDeny} from "../definitions/IPermAllowDeny";
-import {MessageButton} from "discord.js";
+import {MessageActionRow, MessageButton} from "discord.js";
 import {Emojis} from "./Emojis";
+import {MiscUtilities} from "../utilities/MiscUtilities";
 
 export namespace GeneralConstants {
     export const NUMBER_OF_STATS: number = 8;
@@ -145,7 +146,7 @@ export namespace GeneralConstants {
         }
     ];
 
-    export const YesNoButtons: MessageButton[] = [
+    export const YesNoActionRows: MessageActionRow[] = MiscUtilities.getActionRowsFromButtons([
         new MessageButton()
             .setCustomID("yes")
             .setStyle(MessageButtonStyles.SUCCESS)
@@ -156,5 +157,5 @@ export namespace GeneralConstants {
             .setStyle(MessageButtonStyles.DANGER)
             .setEmoji(Emojis.X_EMOJI)
             .setLabel("No")
-    ];
+    ]);
 }

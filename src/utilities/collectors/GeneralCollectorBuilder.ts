@@ -1,11 +1,9 @@
 import {GeneralCollector} from "./GeneralCollector";
 import {
-    AwaitMessageComponentInteractionOptions,
+    ButtonInteraction,
     Collection, CollectorFilter,
-    EmojiResolvable,
     Interaction,
     Message, MessageButton, MessageComponentInteraction,
-    MessageReaction,
     User
 } from "discord.js";
 
@@ -15,7 +13,7 @@ type OnEndFunction = (r?: string, ...args: string[]) => void | Promise<void>;
 type UserReasonHelperFunction = (u: User, c?: string) => void | Promise<void>;
 
 export class GeneralCollectorBuilder {
-    private _buttonCollFilter: CollectorFilter<[MessageComponentInteraction]> | null;
+    private _buttonCollFilter: CollectorFilter<[ButtonInteraction]> | null;
     // K = string = the custom ID
     private readonly _buttonMapping: Collection<string, InteractionFunction>;
 
@@ -168,9 +166,9 @@ export class GeneralCollectorBuilder {
 
     /**
      * Gets the button collector filter function.
-     * @return {CollectorFilter<[MessageComponentInteraction]> | null} The function, if defined.
+     * @return {CollectorFilter<[ButtonInteraction]> | null} The function, if defined.
      */
-    public get reactionCollectorFilter(): CollectorFilter<[MessageComponentInteraction]> | null {
+    public get reactionCollectorFilter(): CollectorFilter<[ButtonInteraction]> | null {
         return this._buttonCollFilter;
     }
 
