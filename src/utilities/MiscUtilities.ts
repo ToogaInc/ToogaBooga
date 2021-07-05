@@ -3,7 +3,7 @@ import {ISectionInfo} from "../definitions/db/ISectionInfo";
 import {StringBuilder} from "./StringBuilder";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {ArrayUtilities} from "./ArrayUtilities";
-import {Message, MessageActionRow, MessageButton, MessageOptions, Snowflake} from "discord.js";
+import {Message, MessageActionRow, MessageOptions, Snowflake} from "discord.js";
 import {CommonRegex} from "../constants/CommonRegex";
 
 export namespace MiscUtilities {
@@ -123,24 +123,7 @@ export namespace MiscUtilities {
     }
 
     /**
-     * Gets an array of `MessageActionRow` from an array of buttons.
-     * @param {MessageButton[]} buttons The buttons.
-     * @return {MessageActionRow[]} The array of `MessageActionRow`.
-     */
-    export function getActionRowsFromButtons(buttons: MessageButton[]): MessageActionRow[] {
-        const allButtons = buttons.slice();
-        const rows: MessageActionRow[] = [];
-        while (allButtons.length > 0) {
-            const actionRow = new MessageActionRow();
-            for (let i = 0; i < 5 && allButtons.length > 0; i++)
-                actionRow.addComponents(allButtons.shift()!);
-            rows.push(actionRow);
-        }
-        return rows;
-    }
-
-    /**
-     * Removes all components from a message.
+     * Gets the `MessageOptions` object from a message.
      * @param {Message} msg The message.
      * @param {MessageActionRow[]} components The components, if any.
      * @return {MessageOptions} The new `MessageOptions`.

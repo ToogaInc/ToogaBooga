@@ -34,7 +34,7 @@ export namespace ModmailManager {
             .setStyle(MessageButtonStyles.PRIMARY)
             .setCustomID("modmail_reply"));
 
-    const ModmailGeneralActionRows: MessageActionRow[] = MiscUtilities.getActionRowsFromButtons([
+    const ModmailGeneralActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
@@ -57,7 +57,7 @@ export namespace ModmailManager {
             .setCustomID("modmail_create_thread")
     ]);
 
-    const ModmailThreadActionRows: MessageActionRow[] = MiscUtilities.getActionRowsFromButtons([
+    const ModmailThreadActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
@@ -75,7 +75,7 @@ export namespace ModmailManager {
             .setCustomID("modmail_blacklist")
     ]);
 
-    const ModmailResponseEmbedActionRows: MessageActionRow[] = MiscUtilities.getActionRowsFromButtons([
+    const ModmailResponseEmbedActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Send")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
@@ -130,7 +130,7 @@ export namespace ModmailManager {
                 targetAuthor: msg.author,
                 oldMsg: baseMessage,
                 duration: 60 * 1000,
-                clearButtonsAfterComplete: false,
+                clearInteractionsAfterComplete: false,
                 acknowledgeImmediately: true,
                 deleteBaseMsgAfterComplete: true
             });
@@ -637,7 +637,7 @@ export namespace ModmailManager {
             targetAuthor: mod,
             duration: 2 * 60 * 1000,
             oldMsg: origMmMessage,
-            clearButtonsAfterComplete: true,
+            clearInteractionsAfterComplete: true,
             acknowledgeImmediately: true,
             deleteBaseMsgAfterComplete: false
         });
@@ -728,7 +728,7 @@ export namespace ModmailManager {
             duration: 60 * 1000,
             oldMsg: message,
             deleteBaseMsgAfterComplete: false,
-            clearButtonsAfterComplete: true,
+            clearInteractionsAfterComplete: true,
             acknowledgeImmediately: true
         });
 
@@ -982,7 +982,7 @@ export namespace ModmailManager {
                 oldMsg: originalMmMsg,
                 duration: 60 * 1000,
                 deleteBaseMsgAfterComplete: false,
-                clearButtonsAfterComplete: true,
+                clearInteractionsAfterComplete: true,
                 acknowledgeImmediately: true
             });
 
@@ -1186,17 +1186,19 @@ export namespace ModmailManager {
             targetChannel: dmChannel,
             targetAuthor: user,
             duration: 60 * 1000,
-            msgOptions: {embeds: [askForGuildEmbed]},
+            msgOptions: {
+                embeds: [askForGuildEmbed],
+                components: AdvancedCollector.getActionRowsFromComponents([
+                    new MessageButton()
+                        .setStyle(MessageButtonStyles.DANGER)
+                        .setLabel("Cancel")
+                        .setCustomID("cancel")
+                ])
+            },
             deleteResponseMessage: true,
             deleteBaseMsgAfterComplete: true,
             cancelFlag: "cancel",
-            buttons: [
-                new MessageButton()
-                    .setStyle(MessageButtonStyles.DANGER)
-                    .setLabel("Cancel")
-                    .setCustomID("cancel")
-            ],
-            clearButtonsAfterComplete: false,
+            clearInteractionsAfterComplete: false,
             acknowledgeImmediately: true
         }, AdvancedCollector.getNumberPrompt(dmChannel, {
             min: 1,
@@ -1277,7 +1279,7 @@ export namespace ModmailManager {
                 // TODO check this
                 deleteBaseMsgAfterComplete: false,
                 cancelFlag: "--cancel",
-                clearButtonsAfterComplete: false,
+                clearInteractionsAfterComplete: false,
                 acknowledgeImmediately: true
             }, AdvancedCollector.getPureMessage());
 

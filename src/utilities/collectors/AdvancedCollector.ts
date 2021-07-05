@@ -1,4 +1,5 @@
 import {
+    BaseMessageComponent,
     ButtonInteraction,
     DMChannel,
     EmojiResolvable,
@@ -6,10 +7,10 @@ import {
     GuildMember,
     Message, MessageActionRow, MessageButton,
     MessageCollector, MessageComponentInteraction,
-    MessageOptions,
+    MessageOptions, MessageSelectMenu,
     PartialTextBasedChannelFields,
     PermissionResolvable,
-    Role,
+    Role, SelectMenuInteraction,
     TextChannel,
     User
 } from "discord.js";
@@ -23,6 +24,8 @@ import {Emojis} from "../../constants/Emojis";
  * A series of helpful collector functions.
  */
 export namespace AdvancedCollector {
+    const MAX_ACTION_ROWS: number = 5;
+
     interface ICollectorBaseArgument {
         readonly targetChannel: TextChannel | DMChannel;
         readonly targetAuthor: User | GuildMember;
@@ -30,7 +33,7 @@ export namespace AdvancedCollector {
 
         /**
          * The message options. If defined, this will send a message. If not defined, you must have `oldMsg` set to a
-         * message.
+         * message. If you plan on using any interactions, provide them through here.
          */
         msgOptions?: MessageOptions & { split?: false | undefined };
 
@@ -45,6 +48,21 @@ export namespace AdvancedCollector {
         deleteBaseMsgAfterComplete: boolean;
     }
 
+    interface IInteractionBase {
+        /**
+         * Whether to acknowledge the interaction immediately after someone clicks it. This will call `deferUpdate`
+         * right after the interaction has been used, so the loading state will disappear almost immediately after
+         * pressing.
+         */
+        acknowledgeImmediately: boolean;
+
+        /**
+         * Whether to clear the interactions after the collector expires. If set to true, this will edit out the
+         * interactions (like buttons, select menu, etc.)
+         */
+        clearInteractionsAfterComplete: boolean;
+    }
+
     interface IMessageCollectorArgument extends ICollectorBaseArgument {
         /**
          * The cancel flag. Any message with the cancel flag as its content will force the method to return "CANCEL_CMD"
@@ -57,24 +75,10 @@ export namespace AdvancedCollector {
         deleteResponseMessage: boolean;
     }
 
-    interface IButtonCollectorArgument extends ICollectorBaseArgument {
-        /**
-         * All buttons. This is optional; if you do not specify a button, then you are expected to have provide the
-         * button some other way (either by already having it included in the Message object or via the `msgOptions`
-         * object.
-         */
-        buttons?: MessageButton[];
+    interface IButtonCollectorArgument extends ICollectorBaseArgument, IInteractionBase {
+    }
 
-        /**
-         * Whether to clear the buttons after the collector expires.
-         */
-        clearButtonsAfterComplete: boolean;
-
-        /**
-         * Whether to acknowledge the button immediately after someone clicks it. This will call `deferUpdate` right
-         * after the button is pressed, so the loading state will disappear almost immediately after pressing.
-         */
-        acknowledgeImmediately: boolean;
+    interface ISelectMenuCollectorArgument extends ICollectorBaseArgument, IInteractionBase {
     }
 
     interface IBoolFollowUp {
@@ -154,6 +158,45 @@ export namespace AdvancedCollector {
     }
 
     /**
+     * Starts a select menu collector. This will wait for the user to select one or more choices and then returns the
+     * corresponding selections (the `value` property). The number of choices is determined by the component
+     * instantiation.
+     * @param {ISelectMenuCollectorArgument} options The select menu collector options.
+     * @return {Promise<ButtonInteraction | null>} The choice interactions, if available. `null` otherwise.
+     */
+    export async function startSelectMenuCollector(
+        options: ISelectMenuCollectorArgument
+    ): Promise<SelectMenuInteraction | null> {
+        const botMsg = await initSendCollectorMessage(options);
+        if (!botMsg) return null;
+
+        let choicesSelected: SelectMenuInteraction | null = null;
+        try {
+            const selectedChoices = await botMsg.awaitMessageComponent({
+                filter: i => i.user.id === options.targetAuthor.id && i.isSelectMenu(),
+                time: options.duration
+            });
+
+            // For TS reasons
+            if (selectedChoices.isSelectMenu()) {
+                if (options.acknowledgeImmediately)
+                    await selectedChoices.deferUpdate();
+
+                choicesSelected = selectedChoices;
+            }
+        } catch (e) {
+            // Ignore the error; this is because the collector timed out.
+        } finally {
+            if (options.deleteBaseMsgAfterComplete)
+                await botMsg.delete().catch();
+            else if (options.clearInteractionsAfterComplete && botMsg.editable)
+                await botMsg.edit(MiscUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
+        }
+
+        return choicesSelected;
+    }
+
+    /**
      * Starts a button collector. This will wait for the user to click on one button and then returns the
      * corresponding button.
      * @param {IButtonCollectorArgument} options The button collector options.
@@ -170,6 +213,7 @@ export namespace AdvancedCollector {
                 time: options.duration
             });
 
+            // For TS reasons
             if (clickedButton.isButton()) {
                 if (options.acknowledgeImmediately)
                     await clickedButton.deferUpdate();
@@ -181,7 +225,7 @@ export namespace AdvancedCollector {
         } finally {
             if (options.deleteBaseMsgAfterComplete)
                 await botMsg.delete().catch();
-            else if (options.clearButtonsAfterComplete && botMsg.editable)
+            else if (options.clearInteractionsAfterComplete && botMsg.editable)
                 await botMsg.edit(MiscUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
         }
 
@@ -258,7 +302,7 @@ export namespace AdvancedCollector {
                 hasCalled = true;
                 if (options.deleteBaseMsgAfterComplete && botMsg?.deletable)
                     botMsg?.delete().catch();
-                else if (options.clearButtonsAfterComplete && botMsg?.editable)
+                else if (options.clearInteractionsAfterComplete && botMsg?.editable)
                     botMsg?.edit(MiscUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
                 if (r === "time") return resolve(null);
             }
@@ -563,33 +607,68 @@ export namespace AdvancedCollector {
         };
     }
 
+    // ============================================ //
+    //      HELPER METHODS BELOW                    //
+    // ============================================ //
+
     /**
      * Sends the initial collector message.
-     * @param {IButtonCollectorArgument} options The options. If you have a `IMessageCollectorArgument` object,
-     * you can still pass it in (you may need to cast it).
+     * @param {IButtonCollectorArgument} options The options.
      * @return {Promise<Message | null>} The message, or `null`.
      * @private
      */
     async function initSendCollectorMessage(
-        options: IButtonCollectorArgument | IMessageCollectorArgument
+        options: ICollectorBaseArgument
     ): Promise<Message | null> {
         let botMsg: Message | null = null;
-        if (options.msgOptions) {
-            if ("buttons" in options && options.buttons)
-                options.msgOptions.components = MiscUtilities.getActionRowsFromButtons(options.buttons);
-
+        if (options.msgOptions)
             botMsg = await options.targetChannel.send(options.msgOptions);
-        }
-        else if (options.oldMsg) {
+        else if (options.oldMsg)
             botMsg = options.oldMsg;
-            if ("buttons" in options && options.buttons && botMsg.editable) {
-                await botMsg.edit(MiscUtilities.getMessageOptionsFromMessage(
-                    botMsg,
-                    MiscUtilities.getActionRowsFromButtons(options.buttons))
-                );
-            }
-        }
 
         return botMsg;
     }
+
+    /**
+     * Gets an array of `MessageActionRow` from an array of components.
+     * @param {BaseMessageComponent[]} options The components.
+     * @return {MessageActionRow[]} The array of `MessageActionRow`.
+     */
+    export function getActionRowsFromComponents(options: BaseMessageComponent[]): MessageActionRow[] {
+        const rows: MessageActionRow[] = [];
+        let rowsUsed = 0;
+
+        const selectMenus = options
+            .filter(x => x.type === "SELECT_MENU") as MessageSelectMenu[];
+        for (let i = 0; i < Math.min(selectMenus.length, MAX_ACTION_ROWS); i++) {
+            rows.push(new MessageActionRow().addComponents(selectMenus[i]));
+            rowsUsed++;
+        }
+
+        const buttons = options
+            .filter(x => x.type === "BUTTON") as MessageButton[];
+        for (let i = 0; i < Math.min(buttons.length, 5 * (MAX_ACTION_ROWS - rowsUsed)); i += 5) {
+            const actionRow = new MessageActionRow();
+            for (let j = 0; j < 5 && i + j < buttons.length; j++)
+                actionRow.addComponents(buttons[i + j]);
+
+            rows.push(actionRow);
+        }
+
+        return rows;
+    }
+
+    /*
+    export function getActionRowsFromButtons(buttons: MessageButton[]): MessageActionRow[] {
+        const rows: MessageActionRow[] = [];
+        for (let i = 0; i < buttons.length; i += 5) {
+            const actionRow = new MessageActionRow();
+            for (let j = 0; j < 5 && i + j < buttons.length; j++)
+                actionRow.addComponents(buttons[i + j]);
+
+            rows.push(actionRow);
+        }
+
+        return rows;
+    }*/
 }

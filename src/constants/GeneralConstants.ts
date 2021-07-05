@@ -1,7 +1,7 @@
 import {IPermAllowDeny} from "../definitions/IPermAllowDeny";
 import {MessageActionRow, MessageButton} from "discord.js";
 import {Emojis} from "./Emojis";
-import {MiscUtilities} from "../utilities/MiscUtilities";
+import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 
 export namespace GeneralConstants {
     export const NUMBER_OF_STATS: number = 8;
@@ -146,7 +146,7 @@ export namespace GeneralConstants {
         }
     ];
 
-    export const YesNoActionRows: MessageActionRow[] = MiscUtilities.getActionRowsFromButtons([
+    export const YesNoActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setCustomID("yes")
             .setStyle(MessageButtonStyles.SUCCESS)
