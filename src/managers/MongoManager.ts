@@ -180,8 +180,10 @@ export namespace MongoManager {
         if (IdNameCollection === null)
             throw new ReferenceError("IDNameCollection null. Use connect method first.");
 
-        const idEntries = await findIdInIdNameCollection(member.id);
-        const ignEntries = await findNameInIdNameCollection(ign);
+        const [idEntries, ignEntries] = await Promise.all([
+            findIdInIdNameCollection(member.id),
+            findNameInIdNameCollection(ign)]
+        );
 
         // There are three cases to consider.
         // Case 1: No entries found.
@@ -191,6 +193,7 @@ export namespace MongoManager {
         }
 
         // Case 2: ID found, IGN not.
+        // In this case, we can simply push the name into the names array.
         if (idEntries.length > 0 && ignEntries.length === 0) {
             await IdNameCollection.updateOne({currentDiscordId: idEntries[0].currentDiscordId}, {
                 $push: {
@@ -206,11 +209,18 @@ export namespace MongoManager {
         // Case 3: ID not found, IGN found.
         // In this case, we need to also modify the ID of the document found in the UserManager doc.
         if (idEntries.length === 0 && ignEntries.length > 0) {
+            const oldDiscordId = ignEntries[0].currentDiscordId;
             const oldDoc = await IdNameCollection.findOneAndUpdate({
                 "rotmgNames.lowercaseIgn": ign.toLowerCase()
             }, {
                 $set: {
                     currentDiscordId: member.id
+                },
+                $push: {
+                    pastDiscordIds: {
+                        oldId: oldDiscordId,
+                        toDate: Date.now()
+                    }
                 }
             }, {returnOriginal: true});
 
@@ -238,6 +248,12 @@ export namespace MongoManager {
                     ign: name.ign
                 });
             }
+
+            if (entry.currentDiscordId !== member.id)
+                newObj.pastDiscordIds.push({oldId: entry.currentDiscordId, toDate: Date.now()});
+
+            newObj.pastRealmNames.push(...entry.pastRealmNames);
+            newObj.pastDiscordIds.push(...entry.pastDiscordIds);
         }
 
         await IdNameCollection.deleteMany({
@@ -248,13 +264,12 @@ export namespace MongoManager {
                     }
                 },
                 {
-                    rotmgNames: {
-                        $in: allEntries.map(x => x.rotmgNames)
+                    "rotmgNames.lowercaseIgn": {
+                        $in: allEntries.flatMap(x => x.rotmgNames.flatMap(y => y.lowercaseIgn))
                     }
                 }
             ]
         });
-
         await IdNameCollection.insertOne(newObj);
 
         // And now create a new User document.
