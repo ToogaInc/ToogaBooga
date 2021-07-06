@@ -1,7 +1,7 @@
 import {
     ColorResolvable,
     Guild,
-    GuildMember,
+    GuildMember, Message, MessageActionRow,
     MessageEmbed,
     MessageOptions,
     PartialTextBasedChannelFields, User
@@ -45,5 +45,34 @@ export namespace MessageUtilities {
         }
 
         return embed;
+    }
+
+
+    /**
+     * Gets the `MessageOptions` object from a message.
+     * @param {Message} msg The message.
+     * @param {MessageActionRow[]} components The components, if any.
+     * @return {MessageOptions} The new `MessageOptions`.
+     */
+    export function getMessageOptionsFromMessage(
+        msg: Message,
+        components?: MessageActionRow[]
+    ): MessageOptions & {split?: false | undefined} {
+        const obj: MessageOptions & {split?: false | undefined} = {
+            components: []
+        };
+        if (msg.content)
+            obj.content = msg.content;
+        if (msg.embeds.length !== 0)
+            obj.embeds = msg.embeds;
+        if (msg.attachments.size !== 0)
+            obj.files = msg.attachments.array();
+
+        if (msg.components.length === 0)
+            obj.components = components;
+        else
+            obj.components = msg.components;
+
+        return obj;
     }
 }

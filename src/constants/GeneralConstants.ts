@@ -2,6 +2,7 @@ import {IPermAllowDeny} from "../definitions/IPermAllowDeny";
 import {MessageActionRow, MessageButton} from "discord.js";
 import {Emojis} from "./Emojis";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
+import {MessageButtonStyles} from "discord.js/typings/enums";
 
 export namespace GeneralConstants {
     export const NUMBER_OF_STATS: number = 8;
@@ -148,12 +149,12 @@ export namespace GeneralConstants {
 
     export const YesNoActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
-            .setCustomID("yes")
+            .setCustomId("yes")
             .setStyle(MessageButtonStyles.SUCCESS)
             .setEmoji(Emojis.GREEN_CHECK_EMOJI)
             .setLabel("Yes"),
         new MessageButton()
-            .setCustomID("no")
+            .setCustomId("no")
             .setStyle(MessageButtonStyles.DANGER)
             .setEmoji(Emojis.X_EMOJI)
             .setLabel("No")

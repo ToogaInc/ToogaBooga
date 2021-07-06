@@ -94,6 +94,7 @@ export namespace PrivateApiDefinitions {
 
     export interface IPetYard extends IRealmEyePlayerResponse {
         pets: {
+            id: number;
             petSkinName: string;
             name: string;
             rarity: string;
@@ -123,14 +124,28 @@ export namespace PrivateApiDefinitions {
         lastSeen: string;
         description: string[];
         characters: {
-            pet: string;
+            pet: {
+                name: string;
+                id: number;
+            };
+            characterSkin: {
+                clothingDyeId: number;
+                clothingDyeName: string;
+                accessoryDyeId: number;
+                accessoryDyeName: string;
+                skinId: number;
+            };
             characterType: string;
             level: number;
             classQuestsCompleted: number;
             fame: number;
             experience: number;
             place: number;
-            equipmentData: string[];
+            equipmentData: {
+                name: string;
+                tier: string;
+                id: number;
+            }[];
             hasBackpack: boolean;
             stats: {
                 Health: number;

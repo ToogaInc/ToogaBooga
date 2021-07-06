@@ -1,44 +1,10 @@
-import {IGuildInfo} from "../definitions/db/IGuildInfo";
-import {ISectionInfo} from "../definitions/db/ISectionInfo";
 import {StringBuilder} from "./StringBuilder";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {ArrayUtilities} from "./ArrayUtilities";
-import {Message, MessageActionRow, MessageOptions, Snowflake} from "discord.js";
+import {Snowflake} from "discord.js";
 import {CommonRegex} from "../constants/CommonRegex";
 
 export namespace MiscUtilities {
-
-    /**
-     * Returns an array containing all sections. In particular, this function will give you a section representation
-     * of the main section.
-     * @param {IGuildInfo} guildDb The guild document.
-     * @return {ISectionInfo[]} The array of sections in this server.
-     */
-    export function getAllSections(guildDb: IGuildInfo): ISectionInfo[] {
-        const sections: ISectionInfo[] = [];
-        sections.push({
-            channels: {
-                raids: guildDb.channels.raidChannels,
-                verification: guildDb.channels.verificationChannels
-            },
-            isMainSection: true,
-            otherMajorConfig: guildDb.otherMajorConfig,
-            properties: {
-                sectionSuspended: [],
-                manualVerificationEntries: guildDb.manualVerificationEntries
-            },
-            roles: {
-                leaders: guildDb.roles.staffRoles.sectionLeaderRoleIds,
-                verifiedRoleId: guildDb.roles.verifiedRoleId
-            },
-            sectionName: "Main",
-            uniqueIdentifier: "MAIN"
-        });
-
-        sections.push(...guildDb.guildSections);
-        return sections;
-    }
-
     /**
      * Stops execution of a function for a specified period of time.
      * @param {number} time The time, in milliseconds, to delay execution.
@@ -120,33 +86,5 @@ export namespace MiscUtilities {
      */
     export function isSnowflake(item: string): item is Snowflake {
         return CommonRegex.OnlyNumbers.test(item);
-    }
-
-    /**
-     * Gets the `MessageOptions` object from a message.
-     * @param {Message} msg The message.
-     * @param {MessageActionRow[]} components The components, if any.
-     * @return {MessageOptions} The new `MessageOptions`.
-     */
-    export function getMessageOptionsFromMessage(
-        msg: Message,
-        components?: MessageActionRow[]
-    ): MessageOptions & {split?: false | undefined} {
-        const obj: MessageOptions & {split?: false | undefined} = {
-            components: []
-        };
-        if (msg.content)
-            obj.content = msg.content;
-        if (msg.embeds.length !== 0)
-            obj.embeds = msg.embeds;
-        if (msg.attachments.size !== 0)
-            obj.files = msg.attachments.array();
-
-        if (msg.components)
-            obj.components = components;
-        else
-            obj.components = msg.components;
-
-        return obj;
     }
 }

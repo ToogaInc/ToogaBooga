@@ -12,7 +12,7 @@ import {MessageConstants} from "../constants/MessageConstants";
 
 export async function onMessageEvent(msg: Message): Promise<void> {
     // We don't care about non-regular messages, bot messages, or webhook messages.
-    if (msg.type !== "DEFAULT" || msg.author.bot || msg.webhookID)
+    if (msg.type !== "DEFAULT" || msg.author.bot || msg.webhookId)
         return;
 
     if (msg.guild) {

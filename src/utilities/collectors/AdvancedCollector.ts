@@ -10,7 +10,7 @@ import {
     MessageOptions, MessageSelectMenu,
     PartialTextBasedChannelFields,
     PermissionResolvable,
-    Role, SelectMenuInteraction,
+    Role,
     TextChannel,
     User
 } from "discord.js";
@@ -48,7 +48,7 @@ export namespace AdvancedCollector {
         deleteBaseMsgAfterComplete: boolean;
     }
 
-    interface IInteractionBase {
+    interface IInteractionBase extends ICollectorBaseArgument {
         /**
          * Whether to acknowledge the interaction immediately after someone clicks it. This will call `deferUpdate`
          * right after the interaction has been used, so the loading state will disappear almost immediately after
@@ -73,12 +73,6 @@ export namespace AdvancedCollector {
          * Whether to delete any messages the author sends (for the collector) after it has been sent or not.
          */
         deleteResponseMessage: boolean;
-    }
-
-    interface IButtonCollectorArgument extends ICollectorBaseArgument, IInteractionBase {
-    }
-
-    interface ISelectMenuCollectorArgument extends ICollectorBaseArgument, IInteractionBase {
     }
 
     interface IBoolFollowUp {
@@ -158,58 +152,21 @@ export namespace AdvancedCollector {
     }
 
     /**
-     * Starts a select menu collector. This will wait for the user to select one or more choices and then returns the
-     * corresponding selections (the `value` property). The number of choices is determined by the component
-     * instantiation.
-     * @param {ISelectMenuCollectorArgument} options The select menu collector options.
-     * @return {Promise<ButtonInteraction | null>} The choice interactions, if available. `null` otherwise.
+     * Starts a general interaction collector. This will wait for the user to interact with one component and then
+     * return the result of that component.
+     * @param {IInteractionBase} options The collector options.
+     * @return {Promise<ButtonInteraction | null>} The interaction, if available. `null` otherwise.
      */
-    export async function startSelectMenuCollector(
-        options: ISelectMenuCollectorArgument
-    ): Promise<SelectMenuInteraction | null> {
-        const botMsg = await initSendCollectorMessage(options);
-        if (!botMsg) return null;
-
-        let choicesSelected: SelectMenuInteraction | null = null;
-        try {
-            const selectedChoices = await botMsg.awaitMessageComponent({
-                filter: i => i.user.id === options.targetAuthor.id && i.isSelectMenu(),
-                time: options.duration
-            });
-
-            // For TS reasons
-            if (selectedChoices.isSelectMenu()) {
-                if (options.acknowledgeImmediately)
-                    await selectedChoices.deferUpdate();
-
-                choicesSelected = selectedChoices;
-            }
-        } catch (e) {
-            // Ignore the error; this is because the collector timed out.
-        } finally {
-            if (options.deleteBaseMsgAfterComplete)
-                await botMsg.delete().catch();
-            else if (options.clearInteractionsAfterComplete && botMsg.editable)
-                await botMsg.edit(MiscUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
-        }
-
-        return choicesSelected;
-    }
-
-    /**
-     * Starts a button collector. This will wait for the user to click on one button and then returns the
-     * corresponding button.
-     * @param {IButtonCollectorArgument} options The button collector options.
-     * @return {Promise<ButtonInteraction | null>} The button, if available. `null` otherwise.
-     */
-    export async function startButtonCollector(options: IButtonCollectorArgument): Promise<ButtonInteraction | null> {
+    export async function startInteractionCollector(
+        options: IInteractionBase
+    ): Promise<MessageComponentInteraction | null> {
         const botMsg = await initSendCollectorMessage(options);
         if (!botMsg) return null;
 
         let returnButton: ButtonInteraction | null = null;
         try {
             const clickedButton = await botMsg.awaitMessageComponent({
-                filter: i => i.user.id === options.targetAuthor.id && i.isButton(),
+                filter: i => i.user.id === options.targetAuthor.id,
                 time: options.duration
             });
 
@@ -226,23 +183,23 @@ export namespace AdvancedCollector {
             if (options.deleteBaseMsgAfterComplete)
                 await botMsg.delete().catch();
             else if (options.clearInteractionsAfterComplete && botMsg.editable)
-                await botMsg.edit(MiscUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
+                await botMsg.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
         }
 
         return returnButton;
     }
 
     /**
-     * Starts a button and message collector. The first collector to receive something will end both collectors.
-     * @param {IButtonCollectorArgument & IMessageCollectorArgument} options The collector options.
+     * Starts an interaction and message collector. The first collector to receive something will end both collectors.
+     * @param {IInteractionBase & IMessageCollectorArgument} options The collector options.
      * @param {Function} func The function used to filter the message.
-     * @return {Promise<ButtonInteraction | T | null>} A `ButtonInteraction` if a button is pressed. `T` if the
-     * `MessageCollector` is fired. `null` otherwise.
+     * @return {Promise<ButtonInteraction | T | null>} A `MessageComponentInteraction` if a button is pressed. `T`
+     * if the `MessageCollector` is fired. `null` otherwise.
      */
     export async function startDoubleCollector<T>(
-        options: IButtonCollectorArgument & IMessageCollectorArgument,
+        options: IInteractionBase & IMessageCollectorArgument,
         func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>
-    ): Promise<T | ButtonInteraction | null> {
+    ): Promise<T | MessageComponentInteraction | null> {
         const cancelFlag = options.cancelFlag ?? "cancel";
         const botMsg = await initSendCollectorMessage(options);
         if (!botMsg) return null;
@@ -253,8 +210,8 @@ export namespace AdvancedCollector {
                 max: 1,
                 filter: (m: Message) => m.author.id === options.targetAuthor.id
             });
-            const buttonCollector = botMsg.createMessageComponentCollector({
-                filter: i => i.user.id === options.targetAuthor.id && i.isButton(),
+            const interactionCollector = botMsg.createMessageComponentCollector({
+                filter: i => i.user.id === options.targetAuthor.id,
                 max: 1,
                 time: options.duration
             });
@@ -264,7 +221,7 @@ export namespace AdvancedCollector {
                     await FetchGetRequestUtilities.tryExecuteAsync(() => c.delete());
 
                 if (cancelFlag.toLowerCase() === c.content.toLowerCase()) {
-                    buttonCollector.stop();
+                    interactionCollector.stop();
                     return resolve(null);
                 }
 
@@ -274,12 +231,11 @@ export namespace AdvancedCollector {
                 });
 
                 if (!info) return;
-                buttonCollector.stop();
+                interactionCollector.stop();
                 resolve(info);
             });
 
-            buttonCollector.on("collect", async i => {
-                if (!i.isButton()) return;
+            interactionCollector.on("collect", async i => {
                 if (options.acknowledgeImmediately)
                     await i.deferUpdate();
                 resolve(i);
@@ -290,7 +246,7 @@ export namespace AdvancedCollector {
                 acknowledgeDeletion(r);
             });
 
-            buttonCollector.on("end", (c, r) => {
+            interactionCollector.on("end", (c, r) => {
                 acknowledgeDeletion(r);
             });
 
@@ -303,7 +259,7 @@ export namespace AdvancedCollector {
                 if (options.deleteBaseMsgAfterComplete && botMsg?.deletable)
                     botMsg?.delete().catch();
                 else if (options.clearInteractionsAfterComplete && botMsg?.editable)
-                    botMsg?.edit(MiscUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
+                    botMsg?.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
                 if (r === "time") return resolve(null);
             }
         });
@@ -325,12 +281,12 @@ export namespace AdvancedCollector {
         const id = MiscUtilities.generateUniqueId(30);
 
         const yesButton = new MessageButton()
-            .setCustomID(id + "yes")
+            .setCustomId(id + "yes")
             .setLabel("Yes")
             .setStyle("SUCCESS")
             .setEmoji(Emojis.GREEN_CHECK_EMOJI);
         const noButton = new MessageButton()
-            .setCustomID(id + "no")
+            .setCustomId(id + "no")
             .setLabel("No")
             .setStyle("DANGER")
             .setEmoji(Emojis.X_EMOJI);
@@ -346,14 +302,14 @@ export namespace AdvancedCollector {
         });
         return new Promise(async (resolve) => {
             const resp = await channel.createMessageComponentCollector({
-                filter: k => k.user.id === user.id && k.customID.startsWith(id) && k.isButton(),
+                filter: k => k.user.id === user.id && k.customId.startsWith(id) && k.isButton(),
                 time: opt.time,
                 max: 1
             });
 
             resp.on("collect", interaction => {
                 resp.stop("done");
-                return resolve([interaction, interaction.customID.endsWith("yes")]);
+                return resolve([interaction, interaction.customId.endsWith("yes")]);
             });
 
             resp.on("end", async (collected, reason) => {
@@ -613,7 +569,7 @@ export namespace AdvancedCollector {
 
     /**
      * Sends the initial collector message.
-     * @param {IButtonCollectorArgument} options The options.
+     * @param {IInteractionBase} options The options.
      * @return {Promise<Message | null>} The message, or `null`.
      * @private
      */

@@ -1,9 +1,8 @@
 import {
-    ButtonInteraction,
     Collection,
     Guild,
     GuildMember,
-    Message, MessageActionRow, MessageAttachment, MessageButton,
+    Message, MessageActionRow, MessageAttachment, MessageButton, MessageComponentInteraction,
     MessageEmbed, Snowflake,
     TextChannel,
     User
@@ -21,6 +20,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {IModmailThread, IModmailThreadMessage} from "../definitions/IModmailThread";
 import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
+import {MessageButtonStyles} from "discord.js/typings/enums";
 
 export namespace ModmailManager {
     // Key: person responding to modmail.
@@ -32,29 +32,29 @@ export namespace ModmailManager {
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomID("modmail_reply"));
+            .setCustomId("modmail_reply"));
 
     const ModmailGeneralActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomID("modmail_reply"),
+            .setCustomId("modmail_reply"),
         new MessageButton()
             .setLabel("Delete")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
             .setStyle(MessageButtonStyles.DANGER)
-            .setCustomID("modmail_delete"),
+            .setCustomId("modmail_delete"),
         new MessageButton()
             .setLabel("Blacklist")
             .setEmoji(Emojis.DENIED_EMOJI)
             .setStyle(MessageButtonStyles.DANGER)
-            .setCustomID("modmail_blacklist"),
+            .setCustomId("modmail_blacklist"),
         new MessageButton()
             .setLabel("Convert to Thread")
             .setEmoji(Emojis.REDIRECT_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomID("modmail_create_thread")
+            .setCustomId("modmail_create_thread")
     ]);
 
     const ModmailThreadActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
@@ -62,17 +62,17 @@ export namespace ModmailManager {
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomID("modmail_reply"),
+            .setCustomId("modmail_reply"),
         new MessageButton()
             .setLabel("Delete")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
             .setStyle(MessageButtonStyles.DANGER)
-            .setCustomID("modmail_delete"),
+            .setCustomId("modmail_delete"),
         new MessageButton()
             .setLabel("Blacklist")
             .setEmoji(Emojis.DENIED_EMOJI)
             .setStyle(MessageButtonStyles.DANGER)
-            .setCustomID("modmail_blacklist")
+            .setCustomId("modmail_blacklist")
     ]);
 
     const ModmailResponseEmbedActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
@@ -80,17 +80,17 @@ export namespace ModmailManager {
             .setLabel("Send")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomID("send"),
+            .setCustomId("send"),
         new MessageButton()
             .setLabel("Cancel")
             .setEmoji(Emojis.X_EMOJI)
             .setStyle(MessageButtonStyles.DANGER)
-            .setCustomID("cancel"),
+            .setCustomId("cancel"),
         new MessageButton()
             .setLabel("Set Anonymity")
             .setEmoji(Emojis.EYES_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomID("anon")
+            .setCustomId("anon")
     ]);
 
     /**
@@ -125,7 +125,7 @@ export namespace ModmailManager {
                 components: GeneralConstants.YesNoActionRows
             });
 
-            const confirmSend = await AdvancedCollector.startButtonCollector({
+            const confirmSend = await AdvancedCollector.startInteractionCollector({
                 targetChannel: dmChannel,
                 targetAuthor: msg.author,
                 oldMsg: baseMessage,
@@ -135,7 +135,7 @@ export namespace ModmailManager {
                 deleteBaseMsgAfterComplete: true
             });
 
-            if (!confirmSend || confirmSend.customID === "no") return;
+            if (!confirmSend || confirmSend.customId === "no") return;
         }
 
         // We begin by asking them what guild they want to send their message to.
@@ -632,7 +632,7 @@ export namespace ModmailManager {
             embeds: [confirmBlacklistEmbed],
             components: GeneralConstants.YesNoActionRows
         }).catch();
-        const result = await AdvancedCollector.startButtonCollector({
+        const result = await AdvancedCollector.startInteractionCollector({
             targetChannel: origMmMessage.channel as TextChannel,
             targetAuthor: mod,
             duration: 2 * 60 * 1000,
@@ -642,7 +642,7 @@ export namespace ModmailManager {
             deleteBaseMsgAfterComplete: false
         });
 
-        if (!result || result.customID === "no") {
+        if (!result || result.customId === "no") {
             await origMmMessage.edit({
                 embeds: [oldEmbed],
                 components: threadInfo ? ModmailThreadActionRows : ModmailGeneralActionRows
@@ -722,7 +722,7 @@ export namespace ModmailManager {
             embeds: [askDeleteEmbed],
             components: GeneralConstants.YesNoActionRows
         }).catch();
-        const deleteResp = await AdvancedCollector.startButtonCollector({
+        const deleteResp = await AdvancedCollector.startInteractionCollector({
             targetChannel: message.channel as TextChannel,
             targetAuthor: message.author,
             duration: 60 * 1000,
@@ -732,7 +732,7 @@ export namespace ModmailManager {
             acknowledgeImmediately: true
         });
 
-        if (!deleteResp || deleteResp.customID === "no") {
+        if (!deleteResp || deleteResp.customId === "no") {
             await message.edit({embeds: [oldEmbed], components: ModmailGeneralActionRows}).catch();
             return;
         }
@@ -976,7 +976,7 @@ export namespace ModmailManager {
                 .setDescription("This modmail entry has already been answered. Do you still want to answer this?")
                 .setFooter("Confirmation.");
             await originalMmMsg.edit({embeds: [confirmWantToRespond]}).catch();
-            const result = await AdvancedCollector.startButtonCollector({
+            const result = await AdvancedCollector.startInteractionCollector({
                 targetChannel: originalMmMsg.channel as TextChannel,
                 targetAuthor: originalMmMsg.author,
                 oldMsg: originalMmMsg,
@@ -986,7 +986,7 @@ export namespace ModmailManager {
                 acknowledgeImmediately: true
             });
 
-            if (!result || result.customID === "no") {
+            if (!result || result.customId === "no") {
                 await originalMmMsg.edit({embeds: [oldEmbed], components: ModmailGeneralActionRows}).catch();
                 return;
             }
@@ -1192,7 +1192,7 @@ export namespace ModmailManager {
                     new MessageButton()
                         .setStyle(MessageButtonStyles.DANGER)
                         .setLabel("Cancel")
-                        .setCustomID("cancel")
+                        .setCustomId("cancel")
                 ])
             },
             deleteResponseMessage: true,
@@ -1205,7 +1205,7 @@ export namespace ModmailManager {
             max: guildsToChoose.length
         }));
 
-        if (selectedGuildIdx instanceof ButtonInteraction)
+        if (selectedGuildIdx instanceof MessageComponentInteraction)
             return null;
 
         return selectedGuildIdx === null ? "CANCEL" : guildsToChoose[selectedGuildIdx - 1];
@@ -1291,14 +1291,14 @@ export namespace ModmailManager {
 
             if (hasReacted) hasReacted = !hasReacted;
 
-            if (response instanceof ButtonInteraction) {
-                if (response.customID === "cancel") {
+            if (response instanceof MessageComponentInteraction) {
+                if (response.customId === "cancel") {
                     await botMsg.delete().catch();
                     CurrentlyRespondingToModMail.delete(responder.id);
                     return null;
                 }
 
-                if (response.customID === "anon") {
+                if (response.customId === "anon") {
                     isAnonymous = !isAnonymous;
                     continue;
                 }

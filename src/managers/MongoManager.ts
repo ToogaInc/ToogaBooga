@@ -10,6 +10,7 @@ import {IIdNameInfo} from "../definitions/db/IIdNameInfo";
 import {UserManager} from "./UserManager";
 import {GuildMember} from "discord.js";
 import {DungeonData} from "../constants/DungeonData";
+import {ISectionInfo} from "../definitions/db/ISectionInfo";
 
 export namespace MongoManager {
     let ThisMongoClient: MongoClient | null = null;
@@ -551,5 +552,37 @@ export namespace MongoManager {
                 [property]: defaultValue
             }
         });
+    }
+
+    /**
+     * Returns an array containing all sections. In particular, this function will give you a section representation
+     * of the main section.
+     * @param {IGuildInfo} guildDb The guild document.
+     * @return {ISectionInfo[]} The array of main + other sections in this server.
+     */
+    export function getAllSections(guildDb: IGuildInfo): ISectionInfo[] {
+        const sections: ISectionInfo[] = [];
+        // The main section
+        sections.push({
+            channels: {
+                raids: guildDb.channels.raidChannels,
+                verification: guildDb.channels.verificationChannels
+            },
+            isMainSection: true,
+            otherMajorConfig: guildDb.otherMajorConfig,
+            properties: {
+                sectionSuspended: [],
+                manualVerificationEntries: guildDb.manualVerificationEntries
+            },
+            roles: {
+                leaders: guildDb.roles.staffRoles.sectionLeaderRoleIds,
+                verifiedRoleId: guildDb.roles.verifiedRoleId
+            },
+            sectionName: "Main",
+            uniqueIdentifier: "MAIN"
+        });
+        // Custom sections
+        sections.push(...guildDb.guildSections);
+        return sections;
     }
 }
