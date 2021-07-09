@@ -1,4 +1,4 @@
-import {GuildMember, MessageReaction, PartialUser, TextChannel, User} from "discord.js";
+import {GuildMember, MessageReaction, PartialMessageReaction, PartialUser, TextChannel, User} from "discord.js";
 import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
 import {ModmailManager} from "../managers/ModmailManager";
@@ -7,7 +7,7 @@ import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {IModmailThread} from "../definitions/IModmailThread";
 import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
 
-export async function onMessageReactionAdd(reaction: MessageReaction,
+export async function onMessageReactionAdd(reaction: MessageReaction | PartialMessageReaction,
                                            user: User | PartialUser): Promise<void> {
     // Pre-check.
     if (!reaction.message.guild)
@@ -36,8 +36,11 @@ export async function onMessageReactionAdd(reaction: MessageReaction,
     if (!message)
         return;
 
-    const peopleThatReacted = await reaction.users.fetch();
-    const guildDoc = await MongoManager.getOrCreateGuildDb(guild.id);
+    const [fetchedReaction, peopleThatReacted, guildDoc] = await Promise.all([
+        await reaction.fetch(),
+        await reaction.users.fetch(),
+        await MongoManager.getOrCreateGuildDb(guild.id)
+    ]);
     // End pre-check.
 
     const remReactionsChannels: string[] = [
@@ -54,7 +57,7 @@ export async function onMessageReactionAdd(reaction: MessageReaction,
 
     // Handle general modmail case.
     if (reaction.message.channel.id === guildDoc.channels.modmailChannels.modmailChannelId) {
-        await handleGeneralModmail(resolvedMember, reaction, guildDoc);
+        await handleGeneralModmail(resolvedMember, fetchedReaction, guildDoc);
         return;
     }
 
@@ -62,7 +65,7 @@ export async function onMessageReactionAdd(reaction: MessageReaction,
     const modmailThread = guildDoc.properties.modmailThreads
         .find(x => x.channel === message.channel.id);
     if (modmailThread) {
-        await handleThreadedModmail(modmailThread, reaction, resolvedMember, guildDoc);
+        await handleThreadedModmail(modmailThread, fetchedReaction, resolvedMember, guildDoc);
         return;
     }
 }

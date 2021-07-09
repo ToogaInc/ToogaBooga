@@ -1,5 +1,14 @@
 import {IConfiguration} from "./definitions/IConfiguration";
-import {Client, Collection, Interaction, Message, MessageReaction, PartialUser, User} from "discord.js";
+import {
+    Client,
+    Collection,
+    Interaction,
+    Message,
+    MessageReaction,
+    PartialMessageReaction,
+    PartialUser,
+    User
+} from "discord.js";
 import {onReadyEvent} from "./events/ReadyEvent";
 import {onMessageEvent} from "./events/MessageEvent";
 import {MongoManager} from "./managers/MongoManager";
@@ -54,7 +63,7 @@ export class OneLifeBot {
         this._bot.on("ready", async () => onReadyEvent());
         this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
         this._bot.on("messageReactionAdd",
-            async (r: MessageReaction, u: User | PartialUser) => onMessageReactionAdd(r, u));
+            async (r: MessageReaction | PartialMessageReaction, u: User | PartialUser) => onMessageReactionAdd(r, u));
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
         this._eventsIsStarted = true;
     }

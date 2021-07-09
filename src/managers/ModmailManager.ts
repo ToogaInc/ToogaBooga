@@ -2,8 +2,13 @@ import {
     Collection,
     Guild,
     GuildMember,
-    Message, MessageActionRow, MessageAttachment, MessageButton, MessageComponentInteraction,
-    MessageEmbed, Snowflake,
+    Message,
+    MessageActionRow,
+    MessageAttachment,
+    MessageButton,
+    MessageComponentInteraction,
+    MessageEmbed,
+    Snowflake,
     TextChannel,
     User
 } from "discord.js";
@@ -20,7 +25,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {IModmailThread, IModmailThreadMessage} from "../definitions/IModmailThread";
 import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
-import {MessageButtonStyles} from "discord.js/typings/enums";
+import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
 
 export namespace ModmailManager {
     // Key: person responding to modmail.
@@ -354,12 +359,13 @@ export namespace ModmailManager {
         const createdTime = Date.now();
         const channelName = `${targetMember.user.username}-${targetMember.user.discriminator}`;
         const threadChannel = await initiatedBy.guild.channels.create(channelName, {
-            type: "text",
+            type: ChannelTypes.GUILD_TEXT,
             parent: modmailCategory,
             topic: new StringBuilder().append(`Modmail Thread For: ${targetMember}`).appendLine()
                 .append(`Created By: ${initiatedBy}`).appendLine()
                 .append(`Created Time: ${MiscUtilities.getTime(createdTime)}`).toString()
-        });
+        }) as TextChannel;
+
         await threadChannel.lockPermissions().catch();
 
         const descSb = new StringBuilder(`⇒ **Initiated By:** ${initiatedBy}`)
@@ -529,10 +535,10 @@ export namespace ModmailManager {
             .appendLine()
             .append(`⇒ **Created By:** ${MiscUtilities.getTime(createdTime)}`);
         const threadChannel = await convertedToThreadBy.guild.channels.create(channelName, {
-            type: "text",
+            type: ChannelTypes.GUILD_TEXT,
             parent: modmailCategory,
             topic: description.toString()
-        });
+        }) as TextChannel;
         await threadChannel.lockPermissions().catch();
 
         // Create the base message.
@@ -1009,8 +1015,8 @@ export namespace ModmailManager {
 
         // Create a new channel where the person can write a message.
         const channelName = `respond-${authorOfModmail.user.username}`;
-        const responseChannel: TextChannel = await responder.guild.channels.create(channelName, {
-            type: "text",
+        const responseChannel = await responder.guild.channels.create(channelName, {
+            type: ChannelTypes.GUILD_TEXT,
             permissionOverwrites: [
                 {
                     id: responder.guild.roles.everyone,
@@ -1026,7 +1032,7 @@ export namespace ModmailManager {
                     allow: ["VIEW_CHANNEL"]
                 }
             ]
-        });
+        }) as TextChannel;
 
         const introEmbed = MessageUtilities.generateBlankEmbed(responder.user)
             .setTimestamp()
