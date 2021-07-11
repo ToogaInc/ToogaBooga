@@ -9,16 +9,17 @@ type RolePermissions = GeneralConstants.RolePermissions;
 
 export abstract class BaseCommand {
     private static readonly ROLE_ORDER: RolePermissions[] = [
-        "Moderator",
-        "HeadRaidLeader",
-        "Officer",
-        "VeteranRaidLeader",
-        "RaidLeader",
-        "AlmostRaidLeader",
-        "Security",
-        "Raider",
-        "Suspended",
-        "Everyone"
+        GeneralConstants.MODERATOR_ROLE,
+        GeneralConstants.HEAD_LEADER_ROLE,
+        GeneralConstants.OFFICER_ROLE,
+        GeneralConstants.VETERAN_LEADER_ROLE,
+        GeneralConstants.LEADER_ROLE,
+        GeneralConstants.SECURITY_ROLE,
+        GeneralConstants.ALMOST_LEADER_ROLE,
+        GeneralConstants.TEAM_ROLE,
+        GeneralConstants.MEMBER_ROLE,
+        GeneralConstants.SUSPENDED_ROLE,
+        GeneralConstants.EVERYONE_ROLE
     ];
 
     /**
@@ -249,16 +250,16 @@ export abstract class BaseCommand {
         }
 
         const roleCollection = new Collection<RolePermissions, string[]>();
-        roleCollection.set("Moderator", [guildDoc.roles.staffRoles.moderation.moderatorRoleId]);
-        roleCollection.set("HeadRaidLeader", allHrl);
-        roleCollection.set("Officer", [guildDoc.roles.staffRoles.moderation.officerRoleId]);
-        roleCollection.set("VeteranRaidLeader", allVrl);
-        roleCollection.set("RaidLeader", allRl);
-        roleCollection.set("AlmostRaidLeader", allArl);
-        roleCollection.set("Security", [guildDoc.roles.staffRoles.moderation.securityRoleId]);
-        roleCollection.set("Team", [guildDoc.roles.staffRoles.teamRoleId]);
-        roleCollection.set("Raider", allVerified);
-        roleCollection.set("Suspended", [guildDoc.roles.suspendedRoleId]);
+        roleCollection.set(GeneralConstants.MODERATOR_ROLE, [guildDoc.roles.staffRoles.moderation.moderatorRoleId]);
+        roleCollection.set(GeneralConstants.HEAD_LEADER_ROLE, allHrl);
+        roleCollection.set(GeneralConstants.OFFICER_ROLE, [guildDoc.roles.staffRoles.moderation.officerRoleId]);
+        roleCollection.set(GeneralConstants.VETERAN_LEADER_ROLE, allVrl);
+        roleCollection.set(GeneralConstants.LEADER_ROLE, allRl);
+        roleCollection.set(GeneralConstants.SECURITY_ROLE, [guildDoc.roles.staffRoles.moderation.securityRoleId]);
+        roleCollection.set(GeneralConstants.ALMOST_LEADER_ROLE, allArl);
+        roleCollection.set(GeneralConstants.TEAM_ROLE, [guildDoc.roles.staffRoles.teamRoleId]);
+        roleCollection.set(GeneralConstants.MEMBER_ROLE, allVerified);
+        roleCollection.set(GeneralConstants.SUSPENDED_ROLE, [guildDoc.roles.suspendedRoleId]);
 
         // If this is true, then we cannot have custom permissions.
         // So we don't need to worry about ID roles and we can assume that
@@ -268,7 +269,8 @@ export abstract class BaseCommand {
                 throw new Error("rolePerms needs exactly one role for isRoleInclusive check.");
 
             // We want to specifically get rid of the lower roles so we are left with the lowest role possible
-            // and the ones directly above said role.
+            // and the ones directly above said role. Keep in mind that the array is ordered from highest rank
+            // (idx 0) to lowest rank (idx len - 1). That is, [mod, ..., suspended]
             // Assume that the index exists.
             let idx = BaseCommand.ROLE_ORDER.findIndex(x => x === rolePerms[0]);
             // Increment the index so we don't remove the lowest possible included role.

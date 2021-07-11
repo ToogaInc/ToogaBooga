@@ -111,9 +111,11 @@ export namespace PunishmentManager {
                         await suspendedMember.setNickname(details.nickname);
 
                     // Send a message to the logging channel and to the applicable person.
+                    const suspendLogSetChan = guildDb.channels.loggingChannels
+                        .find(x => x.key === "Suspend")?.value ?? "";
                     const suspendLogChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
                         guild,
-                        guildDb.channels.logging.suspensionLoggingChannelId
+                        suspendLogSetChan
                     );
                     if (suspendLogChannel) {
                         const logSb = new StringBuilder()
@@ -205,10 +207,12 @@ export namespace PunishmentManager {
                     if (!suspendedMember.nickname)
                         await suspendedMember.setNickname(details.nickname);
 
+                    const suspendLogSetChan = guildDb.channels.loggingChannels
+                        .find(x => x.key === "Suspend")?.value ?? "";
                     // Send a message to the logging channel and to the applicable person.
                     const suspendLogChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
                         guild,
-                        guildDb.channels.logging.suspensionLoggingChannelId
+                        suspendLogSetChan
                     );
                     if (suspendLogChannel && suspendLogChannel.isText()) {
                         const logSb = new StringBuilder()

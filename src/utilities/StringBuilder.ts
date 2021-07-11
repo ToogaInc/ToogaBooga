@@ -1,3 +1,5 @@
+import {EOL} from "os";
+
 export class StringBuilder {
     private _str: string;
 
@@ -36,7 +38,7 @@ export class StringBuilder {
      * @returns {StringBuilder} This object.
      */
     public appendLine(): this {
-        this._str += "\n";
+        this._str += EOL;
         return this;
     }
 

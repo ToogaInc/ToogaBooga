@@ -1,5 +1,7 @@
 import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
 import {IBaseDocument} from "./IBaseDocument";
+import {GeneralConstants} from "../../constants/GeneralConstants";
+import MainLogType = GeneralConstants.MainLogType;
 
 export interface IUserInfo extends IBaseDocument {
     discordId: string;
@@ -7,12 +9,7 @@ export interface IUserInfo extends IBaseDocument {
     details: {
         moderationHistory: {
             guildId: string;
-            moderationType: "SUSPEND"
-                | "UNSUSPEND"
-                | "BLACKLIST"
-                | "UNBLACKLIST"
-                | "MUTE"
-                | "UNMUTE";
+            moderationType: MainLogType;
             // IGN
             moderator: string;
             reason: string;

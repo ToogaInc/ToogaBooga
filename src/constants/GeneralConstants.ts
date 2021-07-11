@@ -84,12 +84,19 @@ export namespace GeneralConstants {
         | "HeadRaidLeader"
         | "Moderator";
 
+    // Logging types.
+    export type MainLogType = "Suspend"
+        | "SectionSuspend"
+        | "Blacklist"
+        | "Mute"
+        | "Warn";
+
     export const EVERYONE_ROLE: RolePermissions = "Everyone";
+    export const SUSPENDED_ROLE: RolePermissions = "Suspended";
     export const MEMBER_ROLE: RolePermissions = "Raider";
     export const SECURITY_ROLE: RolePermissions = "Security";
     export const OFFICER_ROLE: RolePermissions = "Officer";
     export const MODERATOR_ROLE: RolePermissions = "Moderator";
-
     export const LEADER_ROLE: RolePermissions = "RaidLeader";
     export const ALMOST_LEADER_ROLE: RolePermissions = "AlmostRaidLeader";
     export const VETERAN_LEADER_ROLE: RolePermissions = "VeteranRaidLeader";

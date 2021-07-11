@@ -14,6 +14,7 @@ import {IManualVerificationEntry} from "../parts/IManualVerificationEntry";
 import {IBaseDocument} from "./IBaseDocument";
 import {IBlacklistedModmailUser} from "../IBlacklistedModmailUser";
 import {IModmailThread} from "../IModmailThread";
+import {GeneralConstants} from "../../constants/GeneralConstants";
 
 export interface IGuildInfo extends IBaseDocument {
     // the guild id suffices as an identifier
@@ -58,11 +59,8 @@ export interface IGuildInfo extends IBaseDocument {
             modmailStorageChannelId: string;
             modmailLoggingId: string;
         };
-        logging: {
-            suspensionLoggingChannelId: string;
-            blacklistLoggingChannelId: string;
-        };
-        quotaLogsChannelId: string;
+        loggingChannels: IPropertyKeyValuePair<GeneralConstants.MainLogType, string>[];
+        quotaLogsChannels: IPropertyKeyValuePair<string, string>[];
         botUpdatesChannelId: string;
     };
     otherMajorConfig: IOtherMajorConfig;
@@ -75,6 +73,7 @@ export interface IGuildInfo extends IBaseDocument {
         // promote demote stuff
         promoteDemoteRules: IPropertyKeyValuePair<string, string[]>[];
         // quotas
+        // TODO update this
         quotasAndLogging: {
             runsLed: {
                 noRunsWeeklyMessageId: string;

@@ -363,7 +363,7 @@ export namespace MongoManager {
             channels: {
                 botUpdatesChannelId: "",
                 modmailChannels: {modmailChannelId: "", modmailLoggingId: "", modmailStorageChannelId: ""},
-                quotaLogsChannelId: "",
+                quotaLogsChannels: [],
                 raidChannels: {
                     afkCheckChannelId: "",
                     controlPanelChannelId: "",
@@ -376,10 +376,7 @@ export namespace MongoManager {
                     verificationSuccessChannelId: "",
                     manualVerificationChannelId: ""
                 },
-                logging: {
-                    suspensionLoggingChannelId: "",
-                    blacklistLoggingChannelId: ""
-                }
+                loggingChannels: []
             },
             guildId: guildId,
             guildSections: [],

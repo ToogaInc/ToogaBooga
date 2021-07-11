@@ -214,7 +214,7 @@ export namespace ModmailManager {
                 modMailEmbed.setTitle(`${author.tag} ⇒ Modmail Thread`)
                     .setFooter(`${author.id} • Modmail Thread`);
                 // Append attachments.
-                if (attachments.length() !== 0)
+                if (attachments.length !== 0)
                     modMailEmbed.addField("Attachments", attachments.toString());
                 // Send the message + add buttons.
                 await threadChannel.send({
@@ -254,7 +254,7 @@ export namespace ModmailManager {
         modMailEmbed
             .setFooter(`${author.id} • Modmail Message`)
             .setTitle(`${Emojis.X_EMOJI} Modmail Entry`);
-        if (attachments.length() !== 0)
+        if (attachments.length !== 0)
             modMailEmbed.addField("Attachments", attachments.toString());
 
         const senderInfoStr = new StringBuilder()
@@ -696,12 +696,14 @@ export namespace ModmailManager {
             .catch();
 
         // Log this to moderation logs.
+        const blLogChannel = guildDoc.channels.loggingChannels.find(x => x.key === "Blacklist");
+        if (!blLogChannel) return;
+
         const blacklistLogsChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
             mod.guild,
-            guildDoc.channels.logging.blacklistLoggingChannelId
+            blLogChannel.value
         );
         if (!blacklistLogsChannel) return;
-
         const modLogEmbed = MessageUtilities.generateBlankEmbed(mod.user, "RED")
             .setTitle("Modmail Blacklisted.")
             .setDescription(`⇒ **Blacklisted ID:** ${authorOfModmailId}\n⇒ **Moderator:** ${mod} (${mod.id})`)
