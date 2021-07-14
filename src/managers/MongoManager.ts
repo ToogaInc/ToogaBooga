@@ -362,18 +362,18 @@ export namespace MongoManager {
             manualVerificationEntries: [],
             channels: {
                 botUpdatesChannelId: "",
-                modmailChannels: {modmailChannelId: "", modmailLoggingId: "", modmailStorageChannelId: ""},
+                modmail: {
+                    modmailChannelId: "",
+                    modmailStorageChannelId: ""
+                },
                 quotaLogsChannels: [],
-                raidChannels: {
+                raids: {
                     afkCheckChannelId: "",
                     controlPanelChannelId: "",
-                    raidRequestChannel: "",
                     rateLeaderChannel: ""
                 },
-                verificationChannels: {
+                verification: {
                     verificationChannelId: "",
-                    verificationLogsChannelId: "",
-                    verificationSuccessChannelId: "",
                     manualVerificationChannelId: ""
                 },
                 loggingChannels: []
@@ -562,8 +562,8 @@ export namespace MongoManager {
         // The main section
         sections.push({
             channels: {
-                raids: guildDb.channels.raidChannels,
-                verification: guildDb.channels.verificationChannels
+                raids: guildDb.channels.raids,
+                verification: guildDb.channels.verification
             },
             isMainSection: true,
             otherMajorConfig: guildDb.otherMajorConfig,

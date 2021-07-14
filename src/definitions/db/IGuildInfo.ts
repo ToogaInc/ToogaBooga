@@ -52,12 +52,11 @@ export interface IGuildInfo extends IBaseDocument {
     };
     // all channels
     channels: {
-        verificationChannels: IVerificationChannels;
-        raidChannels: IRaidChannels;
-        modmailChannels: {
+        verification: IVerificationChannels;
+        raids: IRaidChannels;
+        modmail: {
             modmailChannelId: string;
             modmailStorageChannelId: string;
-            modmailLoggingId: string;
         };
         loggingChannels: IPropertyKeyValuePair<GeneralConstants.MainLogType, string>[];
         quotaLogsChannels: IPropertyKeyValuePair<string, string>[];

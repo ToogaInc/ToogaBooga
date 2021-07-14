@@ -58,7 +58,8 @@ export namespace AdvancedCollector {
 
         /**
          * Whether to clear the interactions after the collector expires. If set to true, this will edit out the
-         * interactions (like buttons, select menu, etc.)
+         * interactions (like buttons, select menu, etc.). Note that if `acknowledgeImmediately` is `false`, then
+         * you might still see the "Interaction failed" alert.
          */
         clearInteractionsAfterComplete: boolean;
     }

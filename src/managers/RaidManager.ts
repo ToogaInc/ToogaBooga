@@ -1,28 +1,29 @@
 import {
     Collection,
-    DMChannel, Emoji,
-    EmojiResolvable,
+    DMChannel,
+    Emoji,
+    EmojiIdentifierResolvable,
     Guild,
     GuildMember,
     Message,
-    MessageEmbed, MessageOptions, MessageReaction, OverwriteResolvable, ReactionCollector,
+    MessageEmbed, MessageOptions, MessageReaction, OverwriteResolvable, ReactionCollector, Snowflake,
     TextChannel, User,
     VoiceChannel
 } from "discord.js";
-import {ISectionInfo} from "../definitions/major/ISectionInfo";
-import {IDungeonInfo} from "../definitions/major/parts/IDungeonInfo";
+import {ISectionInfo} from "../definitions/db/ISectionInfo";
+import {IDungeonInfo} from "../definitions/parts/IDungeonInfo";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MessageUtilities} from "../utilities/MessageUtilities";
-import {IGuildInfo} from "../definitions/major/IGuildInfo";
+import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {Emojis} from "../constants/Emojis";
-import {IReactionProps} from "../definitions/major/parts/IReactionProps";
+import {IReactionProps} from "../definitions/parts/IReactionProps";
 import {MappedReactions} from "../constants/MappedReactions";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {OneLifeBot} from "../OneLifeBot";
-import {IRaidInfo} from "../definitions/major/IRaidInfo";
-import {FetchRequestUtilities} from "../utilities/FetchRequestUtilities";
+import {IRaidInfo} from "../definitions/db/IRaidInfo";
+import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
 import {DungeonData} from "../constants/DungeonData";
 import {MongoManager} from "./MongoManager";
 import {UserManager} from "./UserManager";
@@ -37,13 +38,13 @@ import {StartAfkCheck} from "../commands/raid-leaders/StartAfkCheck";
  * This class represents a raid.
  */
 export class RaidManager {
-    private static readonly ALL_CONTROL_PANEL_AFK_EMOJIS: EmojiResolvable[] = [
+    private static readonly ALL_CONTROL_PANEL_AFK_EMOJIS: EmojiIdentifierResolvable[] = [
         Emojis.LONG_RIGHT_TRIANGLE_EMOJI,
         Emojis.WASTEBIN_EMOJI,
         Emojis.MAP_EMOJI
     ];
 
-    private static readonly ALL_CONTROL_PANEL_RAID_EMOJIS: EmojiResolvable[] = [
+    private static readonly ALL_CONTROL_PANEL_RAID_EMOJIS: EmojiIdentifierResolvable[] = [
         Emojis.RED_SQUARE_EMOJI,
         Emojis.MAP_EMOJI,
         Emojis.LOCK_EMOJI,
@@ -114,10 +115,15 @@ export class RaidManager {
             ? brokenUpName[0]
             : memberInit.displayName;
 
-        this._afkCheckChannel = memberInit.guild.channels.cache
-            .get(section.channels.raids.afkCheckChannelId)! as TextChannel;
-        this._controlPanelChannel = memberInit.guild.channels.cache
-            .get(section.channels.raids.controlPanelChannelId)! as TextChannel;
+        // TODO validate these?
+        this._afkCheckChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+            memberInit.guild,
+            section.channels.raids.afkCheckChannelId
+        )!;
+        this._controlPanelChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+            memberInit.guild,
+            section.channels.raids.controlPanelChannelId
+        )!;
 
         // Reaction stuff.
         const overrideSettings = section.otherMajorConfig.afkCheckProperties.dungeonSettingsOverride
@@ -127,7 +133,7 @@ export class RaidManager {
             : section.otherMajorConfig.afkCheckProperties.vcLimit;
         this._allReactions = (overrideSettings?.reactions ?? dungeon.reactions)
             .filter(x => OneLifeBot.BotInstance.client.emojis.cache
-                .has(MappedReactions[x.mappingEmojiName].emojiId));
+                .has(MappedReactions[x.mappingEmojiName].emojiId as Snowflake));
         this._earlyLocationReactions = new Collection<string, [GuildMember[], boolean]>();
         // Initialize all keys.
         this._allReactions
@@ -148,10 +154,10 @@ export class RaidManager {
      */
     public static async createNewLivingInstance(guildDoc: IGuildInfo,
                                                 raidInfo: IRaidInfo): Promise<RaidManager | null> {
-        const guild = await FetchRequestUtilities.fetchGuild(guildDoc.guildId);
+        const guild = await FetchGetRequestUtilities.fetchGuild(guildDoc.guildId);
         if (!guild) return null;
 
-        const memberInit = await FetchRequestUtilities.fetchGuildMember(guild, raidInfo.memberInit);
+        const memberInit = await FetchGetRequestUtilities.fetchGuildMember(guild, raidInfo.memberInit);
         if (!memberInit) return null;
 
         const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === raidInfo.sectionIdentifier);
@@ -168,9 +174,9 @@ export class RaidManager {
         if (!afkCheckChannel || !controlPanelChannel || !afkCheckChannel.isText() || !controlPanelChannel.isText())
             return null;
 
-        const controlPanelMsg = await FetchRequestUtilities
+        const controlPanelMsg = await FetchGetRequestUtilities
             .fetchMessage(controlPanelChannel as TextChannel, raidInfo.controlPanelMessageId);
-        const afkCheckMsg = await FetchRequestUtilities
+        const afkCheckMsg = await FetchGetRequestUtilities
             .fetchMessage(afkCheckChannel as TextChannel, raidInfo.afkCheckMessageId);
         if (!afkCheckMsg || !controlPanelMsg) return null;
 
@@ -182,7 +188,7 @@ export class RaidManager {
 
         // Add early location entries.
         for await (const entry of raidInfo.earlyLocationReactions) {
-            const member = await FetchRequestUtilities.fetchGuildMember(guild, entry.userId);
+            const member = await FetchGetRequestUtilities.fetchGuildMember(guild, entry.userId);
             if (!member) continue;
             await rm.addEarlyLocationReaction(member, entry.reactCodeName, false);
         }
@@ -205,7 +211,7 @@ export class RaidManager {
      * @throws {ReferenceError} If the verified role for the section does not exist.
      */
     public async startAfkCheck(): Promise<void> {
-        const verifiedRole = await FetchRequestUtilities.fetchRole(this._guild, this._raidSection.roles.verifiedRoleId);
+        const verifiedRole = await FetchGetRequestUtilities.fetchRole(this._guild, this._raidSection.roles.verifiedRoleId);
         if (!verifiedRole)
             throw new ReferenceError("Verified role not defined.");
 
@@ -221,7 +227,7 @@ export class RaidManager {
 
         // Create our initial control panel message.
         this._controlPanelMsg = await this._controlPanelChannel.send({
-            embed: this.createControlPanelEmbedForAfkCheck()!
+            embeds: [this.createControlPanelEmbedForAfkCheck()!]
         });
         AdvancedCollector.reactFaster(this._controlPanelMsg, RaidManager.ALL_CONTROL_PANEL_AFK_EMOJIS);
 
@@ -370,7 +376,7 @@ export class RaidManager {
         });
 
         this._afkCheckReactionCollector.on("collect", async (reaction: MessageReaction, user: User) => {
-            const memberThatReacted = await FetchRequestUtilities.fetchGuildMember(this._guild, user);
+            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user);
             if (!memberThatReacted)
                 return;
 
@@ -466,7 +472,7 @@ export class RaidManager {
                 .setTimestamp()
                 .setFooter(`${this._guild.name} AFK Check`);
 
-            const confirmMsg = await FetchRequestUtilities.sendMsg(memberThatReacted, {
+            const confirmMsg = await FetchGetRequestUtilities.sendMsg(memberThatReacted, {
                 embed: askEmbed
             });
 
@@ -587,7 +593,7 @@ export class RaidManager {
             if (!RaidManager.ALL_CONTROL_PANEL_AFK_EMOJIS.includes(reaction.emoji.name))
                 return;
 
-            const memberThatReacted = await FetchRequestUtilities.fetchGuildMember(this._guild, user);
+            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user);
             if (!memberThatReacted)
                 return;
 
@@ -709,7 +715,7 @@ export class RaidManager {
             if (!RaidManager.ALL_CONTROL_PANEL_RAID_EMOJIS.includes(reaction.emoji.name))
                 return;
 
-            const memberThatReacted = await FetchRequestUtilities.fetchGuildMember(this._guild, user);
+            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user);
             if (!memberThatReacted)
                 return;
 
@@ -784,7 +790,7 @@ export class RaidManager {
 
         this._afkCheckReactionCollector = this._afkCheckMsg.createReactionCollector(afkCheckFilterFunction);
         this._afkCheckReactionCollector.on("collect", async (reaction: MessageReaction, user: User) => {
-            const memberThatReacted = await FetchRequestUtilities.fetchGuildMember(this._guild, user);
+            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user);
             if (!memberThatReacted)
                 return;
             if (!memberThatReacted.voice.channel) {
@@ -792,7 +798,7 @@ export class RaidManager {
                     .setTitle("Not In VC")
                     .setDescription("In order to rejoin the raid VC, you need to be in a voice channel.")
                     .setTimestamp();
-                await FetchRequestUtilities.sendMsg(memberThatReacted, {embed: notInVcEmbed});
+                await FetchGetRequestUtilities.sendMsg(memberThatReacted, {embed: notInVcEmbed});
                 return;
             }
             await memberThatReacted.voice.setChannel(this._raidVc, "Joining back raid.").catch();
@@ -1315,7 +1321,7 @@ export class RaidManager {
             .setFooter("Section Selector.");
 
         let idx = 0;
-        const emojisToReactWith: EmojiResolvable[] = [];
+        const emojisToReactWith: EmojiIdentifierResolvable[] = [];
         for (const section of possibleSections) {
             const afkCheckChannel = member.guild.channels.cache
                 .get(section.channels.raids.afkCheckChannelId) as TextChannel;
@@ -1361,7 +1367,7 @@ export class RaidManager {
     private async controlPanelCollectorFilter(_: MessageReaction, u: User): Promise<boolean> {
         if (u.bot) return false;
 
-        const member = await FetchRequestUtilities.fetchGuildMember(this._guild, u);
+        const member = await FetchGetRequestUtilities.fetchGuildMember(this._guild, u);
         if (!member || !this._raidVc)
             return false;
 

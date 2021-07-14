@@ -44,9 +44,9 @@ export async function onMessageReactionAdd(reaction: MessageReaction | PartialMe
     // End pre-check.
 
     const remReactionsChannels: string[] = [
-        guildDoc.channels.modmailChannels.modmailChannelId,
-        guildDoc.channels.raidChannels.controlPanelChannelId,
-        guildDoc.channels.verificationChannels.manualVerificationChannelId,
+        guildDoc.channels.modmail.modmailChannelId,
+        guildDoc.channels.raids.controlPanelChannelId,
+        guildDoc.channels.verification.manualVerificationChannelId,
         ...guildDoc.guildSections.map(x => x.channels.raids.controlPanelChannelId),
         ...guildDoc.guildSections.map(x => x.channels.verification.manualVerificationChannelId)
     ];
@@ -56,7 +56,7 @@ export async function onMessageReactionAdd(reaction: MessageReaction | PartialMe
         await reaction.users.remove(user.id).catch();
 
     // Handle general modmail case.
-    if (reaction.message.channel.id === guildDoc.channels.modmailChannels.modmailChannelId) {
+    if (reaction.message.channel.id === guildDoc.channels.modmail.modmailChannelId) {
         await handleGeneralModmail(resolvedMember, fetchedReaction, guildDoc);
         return;
     }

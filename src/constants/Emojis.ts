@@ -13,6 +13,8 @@ export namespace Emojis {
         "9⃣",
         "🔟",
     ];
+
+    export const HASH_EMOJI: EmojiIdentifierResolvable = "#️⃣";
     export const X_EMOJI: EmojiIdentifierResolvable = "❌";
     export const RED_SQUARE_EMOJI: EmojiIdentifierResolvable = "🟥";
     export const GREEN_SQUARE_EMOJI: EmojiIdentifierResolvable = "🟩";
@@ -22,6 +24,7 @@ export namespace Emojis {
     export const GREEN_CHECK_EMOJI: EmojiIdentifierResolvable = "✅";
     export const HOURGLASS_EMOJI: EmojiIdentifierResolvable = "⌛";
     export const RIGHT_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "▶️";
+    export const LEFT_ARROW_EMOJI: EmojiIdentifierResolvable = "⬅️";
     export const LONG_RIGHT_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "➡️";
     export const WASTEBIN_EMOJI: EmojiIdentifierResolvable = "🗑️";
     export const MAP_EMOJI: EmojiIdentifierResolvable = "🗺️";

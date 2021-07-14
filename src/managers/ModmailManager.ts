@@ -168,7 +168,7 @@ export namespace ModmailManager {
         // We have a modmail channel because that was one condition of the chooseGuild function
         const modmailChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
             guild,
-            guildDoc.channels.modmailChannels.modmailChannelId
+            guildDoc.channels.modmail.modmailChannelId
         )!;
         // Check if the person is blacklisted from using modmail.
         if (guildDoc.moderation.blacklistedModmailUsers.some(x => x.discordId === author.id)) {
@@ -214,7 +214,7 @@ export namespace ModmailManager {
                 modMailEmbed.setTitle(`${author.tag} ⇒ Modmail Thread`)
                     .setFooter(`${author.id} • Modmail Thread`);
                 // Append attachments.
-                if (attachments.length !== 0)
+                if (attachments.length() !== 0)
                     modMailEmbed.addField("Attachments", attachments.toString());
                 // Send the message + add buttons.
                 await threadChannel.send({
@@ -254,7 +254,7 @@ export namespace ModmailManager {
         modMailEmbed
             .setFooter(`${author.id} • Modmail Message`)
             .setTitle(`${Emojis.X_EMOJI} Modmail Entry`);
-        if (attachments.length !== 0)
+        if (attachments.length() !== 0)
             modMailEmbed.addField("Attachments", attachments.toString());
 
         const senderInfoStr = new StringBuilder()
@@ -288,7 +288,7 @@ export namespace ModmailManager {
         // If the modmail channel doesn't exists, then return.
         const modmailChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
             targetMember.guild,
-            guildDoc.channels.modmailChannels.modmailChannelId
+            guildDoc.channels.modmail.modmailChannelId
         );
         if (!modmailChannel) {
             const mmChannelNoExistEmbed = MessageUtilities.generateBlankEmbed(initiatedBy, "RED")
@@ -516,7 +516,7 @@ export namespace ModmailManager {
         // Now we can begin.
         const modmailChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
             guild,
-            guildDoc.channels.modmailChannels.modmailChannelId
+            guildDoc.channels.modmail.modmailChannelId
         );
         if (!modmailChannel) return;
         const modmailCategory = modmailChannel.parent;
@@ -864,7 +864,7 @@ export namespace ModmailManager {
                 if (lastRespLastIdx !== -1) {
                     const modmailStorage = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
                         closedBy.guild,
-                        guildDoc.channels.modmailChannels.modmailStorageChannelId
+                        guildDoc.channels.modmail.modmailStorageChannelId
                     );
 
                     let additionalRespInfo = "";
@@ -1102,7 +1102,7 @@ export namespace ModmailManager {
         // see if we should store this string.
         const modMailStorage = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
             responder.guild,
-            guildDoc.channels.modmailChannels.modmailStorageChannelId
+            guildDoc.channels.modmail.modmailStorageChannelId
         );
         let addLogStr = "";
         if (modMailStorage) {
@@ -1169,7 +1169,7 @@ export namespace ModmailManager {
             // Guild must have the modmail channel.
             if (guild.members.cache.has(user.id)
                 && guild.roles.cache.has(allGuilds[idx].roles.verifiedRoleId as Snowflake)
-                && guild.channels.cache.has(allGuilds[idx].channels.modmailChannels.modmailChannelId as Snowflake))
+                && guild.channels.cache.has(allGuilds[idx].channels.modmail.modmailChannelId as Snowflake))
                 guildsToChoose.push([guild, allGuilds[idx]]);
         }
 

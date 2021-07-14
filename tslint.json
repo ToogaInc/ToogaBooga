@@ -22,6 +22,9 @@
     },
     "no-empty": {
       "severity": "warning"
+    },
+    "no-bitwise": {
+      "severity": "off"
     }
   },
   "rulesDirectory": []

@@ -1,4 +1,4 @@
-import {Message} from "discord.js";
+import {Guild, Message} from "discord.js";
 import {IGuildInfo} from "../../definitions/db/IGuildInfo";
 import {ISectionInfo} from "../../definitions/db/ISectionInfo";
 
@@ -20,4 +20,14 @@ export interface IConfigurationCmd {
      * @param {Message} botMsg The bot message, which will be used for interactivity (editing message).
      */
     mainMenu(origMsg: Message, guildDoc: IGuildInfo, section: ISectionInfo, botMsg: Message): Promise<void>;
+
+    /**
+     * Returns a string containing the current configuration information.
+     * @param {Guild} guild The guild.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ISectionInfo} section The section that is being configured.
+     * @param {number} displayFilter The filter, using bitwise operators.
+     * @return {string} The configuration settings string.
+     */
+    getCurrentConfiguration(guild: Guild, guildDoc: IGuildInfo, section: ISectionInfo, displayFilter: number): string;
 }
