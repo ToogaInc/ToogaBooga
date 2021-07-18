@@ -497,6 +497,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 ).then();
                 break;
             }
+            // This should only hit if it's the guild doc (not a section)
             case "modmail": {
                 this.editDatabaseSettings(
                     origMsg,
@@ -527,12 +528,12 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section to edit.
      * @param {Message} botMsg The bot message.
-     * @param {IChannelMongo[]} dbEntries The entries to manipulate.
+     * @param {IChannelMongo[]} entries The entries to manipulate.
      * @param {string} group The group name.
      * @private
      */
     private async editDatabaseSettings(origMsg: Message, guildDoc: IGuildInfo, section: ISectionInfo,
-                                       botMsg: Message, dbEntries: IChannelMongo[], group: string): Promise<void> {
+                                       botMsg: Message, entries: IChannelMongo[], group: string): Promise<void> {
         const guild = origMsg.guild!;
 
         let selected = 0;
@@ -541,14 +542,14 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 .setAuthor(guild.name, guild.iconURL() ?? undefined)
                 .setTitle(`[${section.sectionName}] **Channel** Configuration ⇒ Base Channels ⇒ ${group}`)
                 .setDescription(DATABASE_CONFIG_DESCRIPTION)
-                .setFooter(getInstructions(dbEntries[selected].configTypeOrInstructions));
-            for (let i = 0; i < dbEntries.length; i++) {
+                .setFooter(getInstructions(entries[selected].configTypeOrInstructions));
+            for (let i = 0; i < entries.length; i++) {
                 const currSet: TextChannel | null = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
                     guild,
-                    dbEntries[i].getCurrentValue(guildDoc, section) as string
+                    entries[i].getCurrentValue(guildDoc, section) as string
                 );
                 embedToDisplay.addField(
-                    i === selected ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${dbEntries[i].name}` : dbEntries[i].name,
+                    i === selected ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${entries[i].name}` : entries[i].name,
                     `Current Value: ${currSet ?? "N/A"}`
                 );
             }
@@ -590,7 +591,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             // Case 1: Number
             if (typeof result === "number") {
                 selected += result;
-                selected %= dbEntries.length;
+                selected %= entries.length;
                 continue;
             }
 
@@ -599,8 +600,8 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 ? {guildId: guild.id}
                 : {guildId: guild.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
             const keySetter = section.isMainSection
-                ? dbEntries[selected].guildDocPath
-                : dbEntries[selected].sectionPath;
+                ? entries[selected].guildDocPath
+                : entries[selected].sectionPath;
 
             if (result instanceof TextChannel) {
                 guildDoc = (await MongoManager.getGuildCollection().findOneAndUpdate(query, {
@@ -621,12 +622,12 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 }
                 case "up": {
                     selected--;
-                    selected %= dbEntries.length;
+                    selected %= entries.length;
                     break;
                 }
                 case "down": {
                     selected++;
-                    selected %= dbEntries.length;
+                    selected %= entries.length;
                     break;
                 }
                 case "reset": {

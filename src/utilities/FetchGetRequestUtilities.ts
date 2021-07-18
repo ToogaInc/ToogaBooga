@@ -26,13 +26,24 @@ export namespace FetchGetRequestUtilities {
 
     /**
      * Checks whether a member has a role.
-     * @param {GuildMember} member The member.
+     * @param {GuildMember | Guild} memberOrGuild The member or guild.
      * @param {string} roleId The role ID. This assumes a valid ID.
      * @return {boolean} Whether this member has the role.
      */
-    export function hasCachedRole(member: GuildMember, roleId: string): boolean {
+    export function hasCachedRole(memberOrGuild: GuildMember | Guild, roleId: string): boolean {
         if (!MiscUtilities.isSnowflake(roleId)) return false;
-        return member.roles.cache.has(roleId);
+        return memberOrGuild.roles.cache.has(roleId);
+    }
+
+    /**
+     * Checks whether a guild has a channel.
+     * @param {Guild} guild The guild.
+     * @param {string} channelId The valid channel ID.
+     * @return {boolean} Whether this guild has the channel.
+     */
+    export function hasCachedChannel(guild: Guild, channelId: string): boolean {
+        if (!MiscUtilities.isSnowflake(channelId)) return false;
+        return guild.roles.cache.has(channelId);
     }
 
     /**
@@ -50,13 +61,13 @@ export namespace FetchGetRequestUtilities {
 
     /**
      * Gets a cached role.
-     * @param {Guild} guild The guild.
+     * @param {Guild | GuildMember} guildOrMember The guild.
      * @param {string} roleId The role ID. This assumes a valid ID. If an invalid ID is given, `null` will be returned.
      * @return {Role | null} The role, if at all. Otherwise, `null`.
      */
-    export function getCachedRole(guild: Guild, roleId: string): Role | null {
+    export function getCachedRole(guildOrMember: Guild | GuildMember, roleId: string): Role | null {
         if (!MiscUtilities.isSnowflake(roleId)) return null;
-        return guild.roles.cache.get(roleId) ?? null;
+        return guildOrMember.roles.cache.get(roleId) ?? null;
     }
 
     /**

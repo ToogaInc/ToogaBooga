@@ -6,8 +6,14 @@ import {
     Guild,
     GuildMember,
     Message,
-    MessageEmbed, MessageOptions, MessageReaction, OverwriteResolvable, ReactionCollector, Snowflake,
-    TextChannel, User,
+    MessageEmbed,
+    MessageOptions,
+    MessageReaction,
+    OverwriteResolvable,
+    ReactionCollector,
+    Snowflake,
+    TextChannel,
+    User,
     VoiceChannel
 } from "discord.js";
 import {ISectionInfo} from "../definitions/db/ISectionInfo";
@@ -31,6 +37,7 @@ import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {StartAfkCheck} from "../commands/raid-leaders/StartAfkCheck";
+import {ChannelTypes} from "discord.js/typings/enums";
 
 // TODO Get votes.
 
@@ -166,11 +173,17 @@ export class RaidManager {
         const dungeon = DungeonData.find(x => x.codeName === raidInfo.dungeonCodeName);
         if (!dungeon) return null;
 
-        const raidVc = guild.channels.cache.get(raidInfo.vcId) as VoiceChannel | undefined;
+        const raidVc = FetchGetRequestUtilities.getCachedChannel<VoiceChannel>(guild, raidInfo.vcId);
         if (!raidVc) return null;
 
-        const afkCheckChannel = guild.channels.cache.get(raidInfo.channels.afkCheckChannelId);
-        const controlPanelChannel = guild.channels.cache.get(raidInfo.channels.controlPanelChannelId);
+        const afkCheckChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+            guild,
+            raidInfo.channels.afkCheckChannelId
+        );
+        const controlPanelChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+            guild,
+            raidInfo.channels.controlPanelChannelId
+        );
         if (!afkCheckChannel || !controlPanelChannel || !afkCheckChannel.isText() || !controlPanelChannel.isText())
             return null;
 
@@ -218,12 +231,15 @@ export class RaidManager {
         // We are officially in AFK check mode.
         this._raidStatus = RaidStatus.AFK_CHECK;
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
-        this._raidVc = await this._guild.channels.create(`🔒 ${this._leaderName}'s Raid`, {
-            type: "voice",
+        const vc = await this._guild.channels.create(`🔒 ${this._leaderName}'s Raid`, {
+            type: ChannelTypes.GUILD_VOICE,
             userLimit: this._vcLimit,
             permissionOverwrites: this.getPermissionsForRaidVc(true),
             parent: this._afkCheckChannel!.parent!
         });
+
+        if (!vc) return;
+        this._raidVc = vc as VoiceChannel;
 
         // Create our initial control panel message.
         this._controlPanelMsg = await this._controlPanelChannel.send({
@@ -245,8 +261,9 @@ export class RaidManager {
             .setTimestamp();
         if (this._raidMsg)
             initialAfkCheckEmbed.addField("Message From Your Leader", this._raidMsg);
-        this._afkCheckMsg = await this._afkCheckChannel.send("@here An AFK Check is starting soon.", {
-            embed: initialAfkCheckEmbed
+        this._afkCheckMsg = await this._afkCheckChannel.send({
+            content: "@here An AFK Check is starting soon.",
+            embeds: [initialAfkCheckEmbed]
         });
 
         // Add this raid to the database so we can refer to it in the future.
@@ -257,8 +274,9 @@ export class RaidManager {
         await MiscUtilities.stopFor(5 * 1000);
         // Update the message and react to the AFK check message. Note that the only reason why we are doing this is
         // because we need to update the message content. Maybe I'll remove this in the future...
-        await this._afkCheckMsg.edit("@here An AFK Check is currently running", {
-            embed: this.createAfkCheckEmbed()!
+        await this._afkCheckMsg.edit({
+            content: "@here An AFK Check is currently running",
+            embeds: [this.createAfkCheckEmbed()!]
         }).catch();
         AdvancedCollector.reactFaster(this._afkCheckMsg, this._allReactions
             .map(x => MappedReactions[x.mappingEmojiName].emojiId));
@@ -284,7 +302,9 @@ export class RaidManager {
         await this._controlPanelMsg.reactions.removeAll().catch();
         await this._afkCheckMsg.reactions.removeAll().catch();
         // Edit the control panel accordingly and re-react and start collector + intervals again.
-        await this._controlPanelMsg.edit(this.createControlPanelEmbedForRaid()!).catch();
+        await this._controlPanelMsg.edit({
+            embeds: [this.createControlPanelEmbedForRaid()!]
+        }).catch();
         this.startControlPanelRaidCollector();
         this.startIntervalsForRaid();
         AdvancedCollector.reactFaster(this._controlPanelMsg, RaidManager.ALL_CONTROL_PANEL_RAID_EMOJIS);
@@ -312,7 +332,10 @@ export class RaidManager {
         afkEndedEnded.addField("Rejoin Raid", rejoinRaidSb.toString());
 
         // And edit the AFK check message + start the collector.
-        await this._afkCheckMsg.edit("The AFK check is now over.", {embed: afkEndedEnded}).catch();
+        await this._afkCheckMsg.edit({
+            embeds: [afkEndedEnded],
+            content: "The AFK check is now over."
+        }).catch();
         await this._afkCheckMsg.react(Emojis.INBOX_EMOJI).catch();
         this.startAfkCheckCollectorDuringRaid();
     }
@@ -341,7 +364,7 @@ export class RaidManager {
                 .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} AFK Check Aborted.`)
                 .setTimestamp()
                 .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
-            await this._afkCheckMsg.edit(abortAfkEmbed).catch();
+            await this._afkCheckMsg.edit({embeds: [abortAfkEmbed]}).catch();
             return;
         }
 
@@ -353,7 +376,7 @@ export class RaidManager {
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Run Ended.`)
             .setTimestamp()
             .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
-        await this._afkCheckMsg.edit(endAfkEmbed).catch();
+        await this._afkCheckMsg.edit({embeds: [endAfkEmbed]}).catch();
     }
 
     //#region AFK CHECK COLLECTORS & INTERVAL METHODS
@@ -376,7 +399,7 @@ export class RaidManager {
         });
 
         this._afkCheckReactionCollector.on("collect", async (reaction: MessageReaction, user: User) => {
-            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user);
+            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user.id);
             if (!memberThatReacted)
                 return;
 
@@ -387,8 +410,8 @@ export class RaidManager {
                 .setTimestamp();
 
             // Not in a VC = no go.
-            if (!memberThatReacted.voice.channelID) {
-                await memberThatReacted.send(notInVcEmbed).catch();
+            if (!memberThatReacted.voice.channel) {
+                await memberThatReacted.send({embeds: [notInVcEmbed]}).catch();
                 return;
             }
 
@@ -399,9 +422,9 @@ export class RaidManager {
             }
 
             // If the person is in the wrong VC AND people won't be moved in if VC is full, then no go.
-            if (memberThatReacted.voice.channelID !== this._raidVc.id
+            if (memberThatReacted.voice.channel?.id !== this._raidVc.id
                 && !this._raidSection.otherMajorConfig.afkCheckProperties.allowKeyReactsToBypassFullVc) {
-                await memberThatReacted.send(notInVcEmbed).catch();
+                await memberThatReacted.send({embeds: [notInVcEmbed]}).catch();
                 return;
             }
 
@@ -473,7 +496,7 @@ export class RaidManager {
                 .setFooter(`${this._guild.name} AFK Check`);
 
             const confirmMsg = await FetchGetRequestUtilities.sendMsg(memberThatReacted, {
-                embed: askEmbed
+                embeds: [askEmbed]
             });
 
             // Couldn't send the message.
@@ -505,7 +528,7 @@ export class RaidManager {
                     .addField("Raid Details", raidDetails)
                     .setTimestamp()
                     .setFooter(`${this._guild.name} AFK Check`);
-                await confirmMsg.edit(noConfirmEmbed).catch();
+                await confirmMsg.edit({embeds: [noConfirmEmbed]}).catch();
                 return;
             }
 
@@ -530,7 +553,7 @@ export class RaidManager {
                     .addField("Raid Details", raidDetails)
                     .setTimestamp()
                     .setFooter(`${this._guild.name} AFK Check`);
-                await confirmMsg.edit(noMoreSlotsEmbed).catch();
+                await confirmMsg.edit({embeds: [noMoreSlotsEmbed]}).catch();
                 return;
             }
             // Enough slots to accommodate another person.
@@ -561,7 +584,7 @@ export class RaidManager {
                 .addField("Location", StringUtil.codifyString(this._location))
                 .setTimestamp()
                 .setFooter(`${this._guild.name} AFK Check`);
-            await confirmMsg.edit(acceptedEmbed).catch();
+            await confirmMsg.edit({embeds: [acceptedEmbed]}).catch();
         });
         return true;
     }
@@ -593,7 +616,7 @@ export class RaidManager {
             if (!RaidManager.ALL_CONTROL_PANEL_AFK_EMOJIS.includes(reaction.emoji.name))
                 return;
 
-            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user);
+            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user.id);
             if (!memberThatReacted)
                 return;
 
@@ -625,7 +648,7 @@ export class RaidManager {
                         .setDescription(sb.toString())
                         .setFooter(`AFK Check - Section: ${this._raidSection.sectionName}`)
                         .setTimestamp();
-                    this.sendMsgToEarlyLocationPeople({embed: newLocationEmbed});
+                    this.sendMsgToEarlyLocationPeople({embeds: [newLocationEmbed]});
                 }
                 return;
             }
@@ -650,7 +673,9 @@ export class RaidManager {
                 return;
             }
 
-            await this._afkCheckMsg.edit(this.createAfkCheckEmbed()!).catch();
+            await this._afkCheckMsg.edit({
+                embeds: [this.createAfkCheckEmbed()!]
+            }).catch();
         }, delay);
 
         this._controlPanelInterval = setInterval(async () => {
@@ -659,7 +684,9 @@ export class RaidManager {
                 return;
             }
 
-            await this._controlPanelMsg.edit(this.createControlPanelEmbedForAfkCheck()!).catch();
+            await this._controlPanelMsg.edit({
+                embeds: [this.createControlPanelEmbedForAfkCheck()!]
+            }).catch();
         }, delay);
 
         return true;
@@ -684,7 +711,9 @@ export class RaidManager {
                 return;
             }
 
-            await this._controlPanelMsg.edit(this.createControlPanelEmbedForRaid()!).catch();
+            await this._controlPanelMsg.edit({
+                embeds: [this.createControlPanelEmbedForRaid()!]
+            }).catch();
         }, delay);
 
         return true;
@@ -741,14 +770,14 @@ export class RaidManager {
                         .setDescription(sb.toString())
                         .setFooter(`AFK Check - Section: ${this._raidSection.sectionName}`)
                         .setTimestamp();
-                    this.sendMsgToEarlyLocationPeople({embed: newLocationEmbed});
+                    this.sendMsgToEarlyLocationPeople({embeds: [newLocationEmbed]});
                 }
                 return;
             }
 
             // Locks VC
             if (reaction.emoji.name === Emojis.LOCK_EMOJI) {
-                await this._raidVc!.updateOverwrite(this._guild.roles.everyone, {
+                await this._raidVc!.permissionOverwrites.edit(this._guild.roles.everyone, {
                     CONNECT: false
                 });
                 return;
@@ -756,7 +785,7 @@ export class RaidManager {
 
             // Unlock VC.
             if (reaction.emoji.name === Emojis.UNLOCK_EMOJI) {
-                await this._raidVc!.updateOverwrite(this._guild.roles.everyone, {
+                await this._raidVc!.permissionOverwrites.edit(this._guild.roles.everyone, {
                     CONNECT: null
                 });
                 return;
@@ -790,7 +819,7 @@ export class RaidManager {
 
         this._afkCheckReactionCollector = this._afkCheckMsg.createReactionCollector(afkCheckFilterFunction);
         this._afkCheckReactionCollector.on("collect", async (reaction: MessageReaction, user: User) => {
-            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user);
+            const memberThatReacted = await FetchGetRequestUtilities.fetchGuildMember(this._guild, user.id);
             if (!memberThatReacted)
                 return;
             if (!memberThatReacted.voice.channel) {
@@ -798,7 +827,9 @@ export class RaidManager {
                     .setTitle("Not In VC")
                     .setDescription("In order to rejoin the raid VC, you need to be in a voice channel.")
                     .setTimestamp();
-                await FetchGetRequestUtilities.sendMsg(memberThatReacted, {embed: notInVcEmbed});
+                await FetchGetRequestUtilities.sendMsg(memberThatReacted, {
+                    embeds: [notInVcEmbed]
+                });
                 return;
             }
             await memberThatReacted.voice.setChannel(this._raidVc, "Joining back raid.").catch();
@@ -911,7 +942,7 @@ export class RaidManager {
                 $push: {
                     activeRaids: obj
                 }
-            }, {returnOriginal: false});
+            }, {returnDocument: "after"});
 
         this._guildDoc = res.value!;
     }
@@ -1079,7 +1110,7 @@ export class RaidManager {
             // See if we can find a queue/lounge VC in the same category as the raid VC.
             if (vcParent) {
                 const queueVc = vcParent.children
-                    .find(x => x.type === "voice"
+                    .find(x => x.type === "GUILD_VOICE"
                         && (x.name.toLowerCase().includes("queue") || x.name.toLowerCase().includes("lounge")));
                 vcToMovePeopleTo = queueVc
                     ? queueVc as VoiceChannel
@@ -1118,19 +1149,25 @@ export class RaidManager {
         const guild = member.guild;
 
         // Verified role doesn't exist.
-        if (!guild.roles.cache.has(section.roles.verifiedRoleId))
+        if (!FetchGetRequestUtilities.hasCachedRole(guild, section.roles.verifiedRoleId))
             return false;
 
         // Control panel does not exist.
-        if (!guild.channels.cache.has(section.channels.raids.controlPanelChannelId))
+        if (!FetchGetRequestUtilities.hasCachedChannel(guild, section.channels.raids.controlPanelChannelId))
             return false;
 
         // AFK check does not exist.
-        if (!guild.channels.cache.has(section.channels.raids.afkCheckChannelId))
+        if (!FetchGetRequestUtilities.hasCachedChannel(guild, section.channels.raids.afkCheckChannelId))
             return false;
 
-        const cpCategory = guild.channels.cache.get(section.channels.raids.controlPanelChannelId)!;
-        const acCategory = guild.channels.cache.get(section.channels.raids.afkCheckChannelId)!;
+        const cpCategory = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+            guild,
+            section.channels.raids.controlPanelChannelId
+        )!;
+        const acCategory = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+            guild,
+            section.channels.raids.afkCheckChannelId
+        )!;
 
         // AFK check and/or control panel do not have categories.
         if (!cpCategory.parent || !acCategory.parent)
@@ -1147,7 +1184,7 @@ export class RaidManager {
             guildInfo.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
-        ].some(x => member.roles.cache.has(x));
+        ].some(x => FetchGetRequestUtilities.hasCachedRole(guild, x));
     }
 
     /**
@@ -1163,75 +1200,75 @@ export class RaidManager {
         // Declare all permissions which are declared as a necessary role (all bot-defined roles)
         const permsToReturn: OverwriteResolvable[] = [
             {
-                id: this._raidSection.roles.verifiedRoleId,
+                id: this._raidSection.roles.verifiedRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.deny
             },
             {
-                id: this._guildDoc.roles.staffRoles.moderation.securityRoleId,
+                id: this._guildDoc.roles.staffRoles.moderation.securityRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.deny
             },
             {
-                id: this._guildDoc.roles.staffRoles.moderation.officerRoleId,
+                id: this._guildDoc.roles.staffRoles.moderation.officerRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.deny
             },
             {
-                id: this._guildDoc.roles.staffRoles.moderation.moderatorRoleId,
+                id: this._guildDoc.roles.staffRoles.moderation.moderatorRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.deny
             },
             // Universal leader roles start here.
             {
-                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
+                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.deny
             },
             {
-                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
             },
             {
-                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.deny
             },
             {
-                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
+                id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.deny
             },
             // Section leader roles start here
             {
-                id: this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
+                id: this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.deny
             },
             {
-                id: this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
+                id: this._raidSection.roles.leaders.sectionRaidLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
             },
             {
-                id: this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
+                id: this._raidSection.roles.leaders.sectionHeadLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.deny
             },
             {
-                id: this._raidSection.roles.leaders.sectionVetLeaderRoleId,
+                id: this._raidSection.roles.leaders.sectionVetLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.deny
             }
-        ].filter(y => this._guild.roles.cache.has(y.id)
+        ].filter(y => FetchGetRequestUtilities.hasCachedRole(this._guild, y.id)
             && ((y.allow && y.allow.length !== 0) || (y.deny && y.deny.length !== 0)));
         // And then define any additional roles.
         // We only want role IDs here.
         permsToEvaluate.filter(x => !Number.isNaN(x))
             .filter(x => x.value.allow.length !== 0 || x.value.deny.length !== 0)
             .forEach(perm => permsToReturn.push({
-                id: perm.key,
+                id: perm.key as Snowflake,
                 allow: perm.value.allow,
                 deny: perm.value.deny
             }));
@@ -1295,7 +1332,7 @@ export class RaidManager {
      */
     public static async selectSection(msg: Message, member: GuildMember,
                                       guildDoc: IGuildInfo): Promise<ISectionInfo | null> {
-        const possibleSections = MiscUtilities.getAllSections(guildDoc)
+        const possibleSections = MongoManager.getAllSections(guildDoc)
             .filter(x => RaidManager.canManageRaidsIn(x, member, guildDoc));
 
         if (possibleSections.length === 0)
@@ -1305,8 +1342,10 @@ export class RaidManager {
             return possibleSections[0];
 
         for (const section of possibleSections) {
-            const afkCheckChannel = member.guild.channels.cache
-                .get(section.channels.raids.afkCheckChannelId) as TextChannel;
+            const afkCheckChannel = FetchGetRequestUtilities.getCachedChannel(
+                member.guild,
+                section.channels.raids.afkCheckChannelId
+            )!;
             // If the person typed in a channel that is under a specific section, use that section.
             if ((msg.channel as TextChannel).parent?.id === afkCheckChannel.parent!.id)
                 return section;
@@ -1323,10 +1362,14 @@ export class RaidManager {
         let idx = 0;
         const emojisToReactWith: EmojiIdentifierResolvable[] = [];
         for (const section of possibleSections) {
-            const afkCheckChannel = member.guild.channels.cache
-                .get(section.channels.raids.afkCheckChannelId) as TextChannel;
-            const controlPanelChannel = member.guild.channels.cache
-                .get(section.channels.raids.controlPanelChannelId) as TextChannel;
+            const afkCheckChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+                member.guild,
+                section.channels.raids.afkCheckChannelId
+            );
+            const controlPanelChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+                member.guild,
+                section.channels.raids.controlPanelChannelId
+            );
 
             const sb = new StringBuilder()
                 .append(`⇨ AFK Check Channel: ${afkCheckChannel}`)
@@ -1338,7 +1381,7 @@ export class RaidManager {
 
         emojisToReactWith.push(Emojis.X_EMOJI);
 
-        const botMsg = await msg.channel.send(askSectionEmbed);
+        const botMsg = await msg.channel.send({embeds: [askSectionEmbed]});
         const reactionToUse = await new AdvancedCollector(botMsg.channel as TextChannel | DMChannel, member, 5, "M")
             .waitForSingleReaction(botMsg, {
                 reactions: emojisToReactWith,
@@ -1367,7 +1410,7 @@ export class RaidManager {
     private async controlPanelCollectorFilter(_: MessageReaction, u: User): Promise<boolean> {
         if (u.bot) return false;
 
-        const member = await FetchGetRequestUtilities.fetchGuildMember(this._guild, u);
+        const member = await FetchGetRequestUtilities.fetchGuildMember(this._guild, u.id);
         if (!member || !this._raidVc)
             return false;
 
@@ -1391,8 +1434,9 @@ export class RaidManager {
         if (customPermData && !customPermData.value.useDefaultRolePerms)
             neededRoles.push(...customPermData.value.rolePermsNeeded);
 
-        return member.voice.channelID === this._raidVc.id
-            && (neededRoles.some(x => member.roles.cache.has(x)) || member.hasPermission("ADMINISTRATOR"));
+        return member.voice.channel?.id === this._raidVc.id
+            && (neededRoles.some(x => FetchGetRequestUtilities.hasCachedRole(member, x))
+                || member.permissions.has("ADMINISTRATOR"));
     }
 
     //#endregion
@@ -1539,8 +1583,8 @@ export class RaidManager {
         if (this._earlyLocationReactions.has("NITRO")) {
             const nitroEmoji = OneLifeBot.BotInstance.client.emojis.cache.get(MappedReactions.NITRO.emojiId);
             const earlyLocRoleStr = this._guildDoc.roles.earlyLocationRoles
-                .filter(x => this._memberInit.roles.cache.has(x))
-                .map(x => this._memberInit.roles.cache.get(x))
+                .filter(x => FetchGetRequestUtilities.hasCachedRole(this._memberInit, x))
+                .map(x => FetchGetRequestUtilities.getCachedRole(this._guild, x)!)
                 .join(", ");
             optSb.append(`⇨ If you are a Nitro booster or have the following roles (${earlyLocRoleStr}), then react `)
                 .append(`to the ${nitroEmoji} emoji to get early location.`)
