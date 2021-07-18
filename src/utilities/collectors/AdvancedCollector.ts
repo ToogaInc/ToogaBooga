@@ -199,7 +199,7 @@ export namespace AdvancedCollector {
      */
     export async function startDoubleCollector<T>(
         options: IInteractionBase & IMessageCollectorArgument,
-        func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>
+        func: (collectedMsg: Message, ...otherArgs: any[]) => T | void | Promise<T | void>
     ): Promise<T | MessageComponentInteraction | null> {
         const cancelFlag = options.cancelFlag ?? "cancel";
         const botMsg = await initSendCollectorMessage(options);

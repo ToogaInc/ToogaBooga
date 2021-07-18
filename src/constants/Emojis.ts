@@ -24,7 +24,9 @@ export namespace Emojis {
     export const GREEN_CHECK_EMOJI: EmojiIdentifierResolvable = "✅";
     export const HOURGLASS_EMOJI: EmojiIdentifierResolvable = "⌛";
     export const RIGHT_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "▶️";
-    export const LEFT_ARROW_EMOJI: EmojiIdentifierResolvable = "⬅️";
+    export const UP_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "🔼 ";
+    export const DOWN_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "🔽";
+    export const LONG_LEFT_ARROW_EMOJI: EmojiIdentifierResolvable = "⬅️";
     export const LONG_RIGHT_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "➡️";
     export const WASTEBIN_EMOJI: EmojiIdentifierResolvable = "🗑️";
     export const MAP_EMOJI: EmojiIdentifierResolvable = "🗺️";

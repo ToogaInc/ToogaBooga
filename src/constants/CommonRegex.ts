@@ -10,4 +10,22 @@ export namespace CommonRegex {
      * @type {RegExp}
      */
     export const OnlyNumbers: RegExp = /^[0-9]+$/;
+
+    /**
+     * Use this Regex to test (and extract) user mentions.
+     * @type {RegExp}
+     */
+    export const UserMention: RegExp = /^<@!?(\d+)>$/;
+
+    /**
+     * Use this Regex to test (and extract) role mentions.
+     * @type {RegExp}
+     */
+    export const RoleMention: RegExp = /^<@&(\d+)>$/;
+
+    /**
+     * Use this Regex to test (and extract) channel mentions.
+     * @type {RegExp}
+     */
+    export const ChannelMention: RegExp = /^<#!?(\d+)>$/;
 }

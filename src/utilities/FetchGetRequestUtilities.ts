@@ -71,6 +71,16 @@ export namespace FetchGetRequestUtilities {
     }
 
     /**
+     * Gets a cached user.
+     * @param {string} userId The user ID. This assumes a valid ID. If an invalid ID is given, `null` will be returned.
+     * @return {User | null} The user, if at all. Otherwise, `null`.
+     */
+    export function getCachedUser(userId: string): User | null {
+        if (!MiscUtilities.isSnowflake(userId)) return null;
+        return OneLifeBot.BotInstance.client.users.cache.get(userId) ?? null;
+    }
+
+    /**
      * A simple function that fetches a guild member. This will handle any exceptions that may occur.
      * @param {Guild} guild The guild.
      * @param {string} targetId The target member. This assumes a valid user ID. If an invalid ID is given, `null`

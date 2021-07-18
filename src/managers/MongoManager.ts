@@ -223,7 +223,7 @@ export namespace MongoManager {
                         toDate: Date.now()
                     }
                 }
-            }, {returnOriginal: true});
+            }, {returnDocument: "before"});
 
             // Also update the user collection.
             if (oldDoc.value) {
