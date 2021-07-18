@@ -5,7 +5,8 @@ import {
     EmojiIdentifierResolvable,
     Guild,
     GuildMember,
-    Message,
+    Message, MessageActionRow,
+    MessageButton,
     MessageEmbed,
     MessageOptions,
     MessageReaction,
@@ -37,7 +38,7 @@ import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {StartAfkCheck} from "../commands/raid-leaders/StartAfkCheck";
-import {ChannelTypes} from "discord.js/typings/enums";
+import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
 
 // TODO Get votes.
 
@@ -45,19 +46,53 @@ import {ChannelTypes} from "discord.js/typings/enums";
  * This class represents a raid.
  */
 export class RaidManager {
-    private static readonly ALL_CONTROL_PANEL_AFK_EMOJIS: EmojiIdentifierResolvable[] = [
-        Emojis.LONG_RIGHT_TRIANGLE_EMOJI,
-        Emojis.WASTEBIN_EMOJI,
-        Emojis.MAP_EMOJI
-    ];
+    private static readonly CP_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
+        new MessageButton()
+            .setLabel("Start Raid")
+            .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+            .setCustomId("start_raid")
+            .setStyle(MessageButtonStyles.PRIMARY),
+        new MessageButton()
+            .setLabel("Abort AFK Check")
+            .setEmoji(Emojis.WASTEBIN_EMOJI)
+            .setCustomId("abort_afk")
+            .setStyle(MessageButtonStyles.DANGER),
+        new MessageButton()
+            .setLabel("Set Location")
+            .setEmoji(Emojis.MAP_EMOJI)
+            .setCustomId("set_location")
+            .setStyle(MessageButtonStyles.PRIMARY)
+    ]);
 
-    private static readonly ALL_CONTROL_PANEL_RAID_EMOJIS: EmojiIdentifierResolvable[] = [
-        Emojis.RED_SQUARE_EMOJI,
-        Emojis.MAP_EMOJI,
-        Emojis.LOCK_EMOJI,
-        Emojis.UNLOCK_EMOJI,
-        Emojis.PRINTER_EMOJI
-    ];
+    private static readonly CP_RAID_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
+        new MessageButton()
+            .setLabel("End Raid")
+            .setEmoji(Emojis.RED_SQUARE_EMOJI)
+            .setCustomId("end_raid")
+            .setStyle(MessageButtonStyles.DANGER),
+        new MessageButton()
+            .setLabel("Set Location")
+            .setEmoji(Emojis.MAP_EMOJI)
+            .setCustomId("set_location")
+            .setStyle(MessageButtonStyles.PRIMARY),
+        new MessageButton()
+            .setLabel("Lock Raid VC")
+            .setEmoji(Emojis.LOCK_EMOJI)
+            .setCustomId("lock_vc")
+            .setStyle(MessageButtonStyles.PRIMARY),
+        new MessageButton()
+            .setLabel("Unlock Raid VC")
+            .setEmoji(Emojis.UNLOCK_EMOJI)
+            .setCustomId("unlock_vc")
+            .setStyle(MessageButtonStyles.PRIMARY),
+        new MessageButton()
+            .setLabel("Parse Raid VC")
+            .setEmoji(Emojis.PRINTER_EMOJI)
+            .setCustomId("parse_vc")
+            .setStyle(MessageButtonStyles.PRIMARY)
+    ]);
+
+    private readonly _afkCheckButtons: MessageButton[];
 
     private readonly _guild: Guild;
     private readonly _dungeon: IDungeonInfo;
@@ -98,8 +133,8 @@ export class RaidManager {
      * @param {string} location The location.
      * @param {string} [raidMsg] The raid message, if any.
      */
-    public constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo, dungeon: IDungeonInfo,
-                       location: string, raidMsg?: string) {
+    private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo, dungeon: IDungeonInfo,
+                        location: string, raidMsg?: string) {
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
         this._dungeon = dungeon;
@@ -122,7 +157,6 @@ export class RaidManager {
             ? brokenUpName[0]
             : memberInit.displayName;
 
-        // TODO validate these?
         this._afkCheckChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
             memberInit.guild,
             section.channels.raids.afkCheckChannelId
@@ -133,6 +167,7 @@ export class RaidManager {
         )!;
 
         // Reaction stuff.
+        this._afkCheckButtons = [];
         const overrideSettings = section.otherMajorConfig.afkCheckProperties.dungeonSettingsOverride
             .find(x => x.dungeonCodeName === dungeon.codeName);
         this._vcLimit = overrideSettings
@@ -150,6 +185,32 @@ export class RaidManager {
             })
             .filter(x => x.maxEarlyLocation > 0)
             .forEach(r => this._earlyLocationReactions.set(r.mappingEmojiName as string, [[], true]));
+    }
+
+    /**
+     * Creates a new `RaidManager` object. Use this method to create a new instance instead of the constructor.
+     * @param {GuildMember} memberInit The member that initiated this raid.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ISectionInfo} section The section where this raid is occurring. Note that the verified role must exist.
+     * @param {IDungeonInfo} dungeon The dungeon that is being raided.
+     * @param {string} location The location.
+     * @param {string} [raidMsg] The raid message, if any.
+     * @returns {RaidManager | null} The `RaidManager` object, or `null` if the AFK check channel or control panel
+     * channel is invalid.
+     */
+    public static new(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo, dungeon: IDungeonInfo,
+                      location: string, raidMsg?: string): RaidManager | null {
+        // Could put these all in one if-statement but too long.
+        if (!memberInit.guild)
+            return null;
+        if (!FetchGetRequestUtilities.hasCachedRole(memberInit.guild, section.roles.verifiedRoleId))
+            return null;
+        if (!FetchGetRequestUtilities.hasCachedChannel(memberInit.guild, section.channels.raids.afkCheckChannelId))
+            return null;
+        if (!FetchGetRequestUtilities.hasCachedChannel(memberInit.guild, section.channels.raids.controlPanelChannelId))
+            return null;
+
+        return new RaidManager(memberInit, guildDoc, section, dungeon, location, raidMsg);
     }
 
     /**
@@ -243,9 +304,9 @@ export class RaidManager {
 
         // Create our initial control panel message.
         this._controlPanelMsg = await this._controlPanelChannel.send({
-            embeds: [this.createControlPanelEmbedForAfkCheck()!]
+            embeds: [this.createControlPanelEmbedForAfkCheck()!],
+            components: RaidManager.CP_AFK_BUTTONS
         });
-        AdvancedCollector.reactFaster(this._controlPanelMsg, RaidManager.ALL_CONTROL_PANEL_AFK_EMOJIS);
 
         // Create our initial AFK check message.
         const descSb = new StringBuilder()
@@ -303,11 +364,11 @@ export class RaidManager {
         await this._afkCheckMsg.reactions.removeAll().catch();
         // Edit the control panel accordingly and re-react and start collector + intervals again.
         await this._controlPanelMsg.edit({
-            embeds: [this.createControlPanelEmbedForRaid()!]
+            embeds: [this.createControlPanelEmbedForRaid()!],
+            components: RaidManager.CP_RAID_BUTTONS
         }).catch();
         this.startControlPanelRaidCollector();
         this.startIntervalsForRaid();
-        AdvancedCollector.reactFaster(this._controlPanelMsg, RaidManager.ALL_CONTROL_PANEL_RAID_EMOJIS);
         // Update the database so it is clear that we are in raid mode.
         await this.setRaidStatus(RaidStatus.IN_RUN);
 
