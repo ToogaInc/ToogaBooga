@@ -23,9 +23,10 @@ import {StringBuilder} from "../utilities/StringBuilder";
 import {StringUtil} from "../utilities/StringUtilities";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {IModmailThread, IModmailThreadMessage} from "../definitions/IModmailThread";
-import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
+import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
+import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export namespace ModmailManager {
     // Key: person responding to modmail.
@@ -111,7 +112,7 @@ export namespace ModmailManager {
      */
     export async function initiateModmailContact(author: User, msg: Message): Promise<void> {
         // Make sure we can open DM channel.
-        const dmChannel = await FetchGetRequestUtilities.openDirectMessage(author);
+        const dmChannel = await GlobalFgrUtilities.openDirectMessage(author);
         if (!dmChannel)
             return;
 
@@ -166,7 +167,7 @@ export namespace ModmailManager {
         // Otherwise, we have a guild.
         const [guild, guildDoc] = uncheckedGuild;
         // We have a modmail channel because that was one condition of the chooseGuild function
-        const modmailChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+        const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
             guildDoc.channels.modmail.modmailChannelId
         )!;
@@ -205,7 +206,7 @@ export namespace ModmailManager {
         // We begin first by checking if there is a modmail thread.
         if (threadEntry) {
             // Is there a valid channel?
-            const threadChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+            const threadChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
                 guild,
                 threadEntry.channel
             );
@@ -286,7 +287,7 @@ export namespace ModmailManager {
     export async function startThreadedModmailWithMember(targetMember: GuildMember, initiatedBy: GuildMember,
                                                          guildDoc: IGuildInfo, content?: string): Promise<void> {
         // If the modmail channel doesn't exists, then return.
-        const modmailChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+        const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             targetMember.guild,
             guildDoc.channels.modmail.modmailChannelId
         );
@@ -327,7 +328,7 @@ export namespace ModmailManager {
         // Step 2: Does the person already have a modmail thread channel?
         const modmailInfo = guildDoc.properties.modmailThreads.find(x => x.initiatorId === targetMember.id);
         if (modmailInfo) {
-            const channel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+            const channel = GuildFgrUtilities.getCachedChannel<TextChannel>(
                 targetMember.guild,
                 modmailInfo.channel
             );
@@ -431,7 +432,7 @@ export namespace ModmailManager {
             .setFooter("Modmail");
 
         // Validate that the message has been sent.
-        const msgResult = await FetchGetRequestUtilities.sendMsg(targetMember, {embeds: [replyEmbed]});
+        const msgResult = await GlobalFgrUtilities.sendMsg(targetMember, {embeds: [replyEmbed]});
         const replyRecordsEmbed = MessageUtilities.generateBlankEmbed(initiatedBy.user, msgResult ? "GREEN" : "YELLOW")
             .setTitle(`${initiatedBy.displayName} ⇒ ${targetMember.user.tag}`)
             .setDescription(content)
@@ -460,7 +461,7 @@ export namespace ModmailManager {
         const guildDoc = await MongoManager.getOrCreateGuildDb(guild.id);
 
         // Is the person still in the guild?
-        const authorOfModmail = await FetchGetRequestUtilities.fetchGuildMember(guild, authorOfModmailId);
+        const authorOfModmail = await GuildFgrUtilities.fetchGuildMember(guild, authorOfModmailId);
         if (!authorOfModmail) {
             const notInGuildEmbed = MessageUtilities.generateBlankEmbed(convertedToThreadBy, "RED")
                 .setTitle("Target Member Unavailable.")
@@ -492,7 +493,7 @@ export namespace ModmailManager {
         // Does this person have a thread already?
         const modmailInfo = guildDoc.properties.modmailThreads.find(x => x.initiatorId === authorOfModmail.id);
         if (modmailInfo) {
-            const channel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+            const channel = GuildFgrUtilities.getCachedChannel<TextChannel>(
                 guild,
                 modmailInfo.channel
             );
@@ -514,7 +515,7 @@ export namespace ModmailManager {
         }
 
         // Now we can begin.
-        const modmailChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+        const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
             guildDoc.channels.modmail.modmailChannelId
         );
@@ -699,7 +700,7 @@ export namespace ModmailManager {
         const blLogChannel = guildDoc.channels.loggingChannels.find(x => x.key === "Blacklist");
         if (!blLogChannel) return;
 
-        const blacklistLogsChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+        const blacklistLogsChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             mod.guild,
             blLogChannel.value
         );
@@ -720,7 +721,7 @@ export namespace ModmailManager {
      */
     export async function askDeleteModmailMessage(message: Message, member: GuildMember): Promise<void> {
         if (message.embeds.length === 0) return;
-        // Remove all reactions because, well, you know, you don't need them.
+        // Remove all otherButtons because, well, you know, you don't need them.
         message.reactions.removeAll().catch();
         const oldEmbed = message.embeds[0];
         const askDeleteEmbed = MessageUtilities.generateBlankEmbed(member)
@@ -758,7 +759,7 @@ export namespace ModmailManager {
     export async function respondToThreadModmail(modmailThread: IModmailThread, memberThatWillRespond: GuildMember,
                                                  guildDoc: IGuildInfo, threadChannel: TextChannel): Promise<void> {
         // make sure member exists
-        const memberToRespondTo = await FetchGetRequestUtilities.fetchGuildMember(
+        const memberToRespondTo = await GuildFgrUtilities.fetchGuildMember(
             memberThatWillRespond.guild,
             modmailThread.originalModmailMessageId
         );
@@ -787,7 +788,7 @@ export namespace ModmailManager {
             .setDescription(responseToMail)
             .setFooter("Modmail Response");
 
-        const sentMsg = await FetchGetRequestUtilities.sendMsg(memberToRespondTo, {embeds: [replyEmbed]});
+        const sentMsg = await GlobalFgrUtilities.sendMsg(memberToRespondTo, {embeds: [replyEmbed]});
         const replyRecordsEmbed = MessageUtilities.generateBlankEmbed(memberThatWillRespond.user, sentMsg
             ? "GREEN"
             : "YELLOW")
@@ -835,13 +836,13 @@ export namespace ModmailManager {
      */
     export async function closeModmailThread(threadChannel: TextChannel, threadInfo: IModmailThread,
                                              guildDoc: IGuildInfo, closedBy: GuildMember): Promise<void> {
-        const modMailChannel = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+        const modMailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             threadChannel.guild,
             threadInfo.channel
         );
         if (threadInfo.originalModmailMessageId !== "" && modMailChannel) {
             // Get the corresponding message from the modmail channel
-            const oldModmailMessage = await FetchGetRequestUtilities
+            const oldModmailMessage = await GuildFgrUtilities
                 .fetchMessage(modMailChannel, threadInfo.originalModmailMessageId);
             // If the originaly modmail message exists, then let's edit it.
             if (oldModmailMessage) {
@@ -862,7 +863,7 @@ export namespace ModmailManager {
 
                 // If one exists (and this should always be the case), then update it to include thread info
                 if (lastRespLastIdx !== -1) {
-                    const modmailStorage = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+                    const modmailStorage = GuildFgrUtilities.getCachedChannel<TextChannel>(
                         closedBy.guild,
                         guildDoc.channels.modmail.modmailStorageChannelId
                     );
@@ -897,7 +898,7 @@ export namespace ModmailManager {
                                 .appendLine();
                         }
 
-                        const storageMsg = await FetchGetRequestUtilities.sendMsg(
+                        const storageMsg = await GlobalFgrUtilities.sendMsg(
                             modmailStorage,
                             {
                                 files: [
@@ -958,7 +959,7 @@ export namespace ModmailManager {
         const guild = originalMmMsg.guild as Guild;
 
         const origDescription = oldEmbed.description ? oldEmbed.description : "";
-        const authorOfModmail = await FetchGetRequestUtilities.fetchGuildMember(guild, authorOfModmailId);
+        const authorOfModmail = await GuildFgrUtilities.fetchGuildMember(guild, authorOfModmailId);
         if (!authorOfModmail) {
             const notInGuildEmbed = MessageUtilities.generateBlankEmbed(responder, "RED")
                 .setTitle("Target Member Unavailable.")
@@ -1064,7 +1065,7 @@ export namespace ModmailManager {
             .setFooter("Modmail Response");
 
         // TODO is this right?
-        const sentMsg = await FetchGetRequestUtilities.sendMsg(authorOfModmail, {
+        const sentMsg = await GlobalFgrUtilities.sendMsg(authorOfModmail, {
             embeds: [replyEmbed]
         });
         await responseChannel.delete().catch();
@@ -1100,13 +1101,13 @@ export namespace ModmailManager {
 
         const guildDoc = await MongoManager.getOrCreateGuildDb(guild.id);
         // see if we should store this string.
-        const modMailStorage = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+        const modMailStorage = GuildFgrUtilities.getCachedChannel<TextChannel>(
             responder.guild,
             guildDoc.channels.modmail.modmailStorageChannelId
         );
         let addLogStr = "";
         if (modMailStorage) {
-            const logMsg = await FetchGetRequestUtilities.sendMsg(
+            const logMsg = await GlobalFgrUtilities.sendMsg(
                 modMailStorage,
                 {
                     files: [
@@ -1155,7 +1156,7 @@ export namespace ModmailManager {
      * @private
      */
     async function chooseGuild(user: User): Promise<[Guild, IGuildInfo] | "CANCEL" | null> {
-        const dmChannel = await FetchGetRequestUtilities.openDirectMessage(user);
+        const dmChannel = await GlobalFgrUtilities.openDirectMessage(user);
         if (!dmChannel) return null;
 
         const guildsToChoose: [Guild, IGuildInfo][] = [];

@@ -1,7 +1,8 @@
 import {Interaction, NewsChannel} from "discord.js";
 import {OneLifeBot} from "../OneLifeBot";
-import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
+import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
+import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export async function onInteractionEvent(interaction: Interaction): Promise<void> {
     // Must be a button.
@@ -20,9 +21,9 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
 
     // Get guild document, users, and message.
     const [resolvedUser, resolvedMember, message, guildDoc] = await Promise.all([
-        FetchGetRequestUtilities.fetchUser(interaction.user.id),
-        FetchGetRequestUtilities.fetchGuildMember(guild, interaction.user.id),
-        FetchGetRequestUtilities.fetchMessage(channel, interaction.message.id),
+        GlobalFgrUtilities.fetchUser(interaction.user.id),
+        GuildFgrUtilities.fetchGuildMember(guild, interaction.user.id),
+        GuildFgrUtilities.fetchMessage(channel, interaction.message.id),
         MongoManager.getOrCreateGuildDb(guild.id)
     ]);
 

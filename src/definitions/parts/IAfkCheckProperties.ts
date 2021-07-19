@@ -1,6 +1,6 @@
 import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
 import {IPermAllowDeny} from "../IPermAllowDeny";
-import {IReactionProps} from "./IReactionProps";
+import {IAfkCheckButtonInfo} from "./IAfkCheckButtonInfo";
 
 export interface IAfkCheckProperties {
     vcLimit: number;
@@ -28,7 +28,7 @@ export interface IAfkCheckProperties {
     // Any dungeon overrides. This is on a per-section basis
     dungeonSettingsOverride: {
         dungeonCodeName: string;
-        reactions: IReactionProps[];
+        buttonInfo: IAfkCheckButtonInfo[];
         vcLimit: number;
     }[];
 }

@@ -14,7 +14,7 @@ import {MongoManager} from "../managers/MongoManager";
 import {AdvancedCollector} from "./collectors/AdvancedCollector";
 import {Emojis} from "../constants/Emojis";
 import {MessageButtonStyles} from "discord.js/typings/enums";
-import {FetchGetRequestUtilities} from "./FetchGetRequestUtilities";
+import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
 
 export namespace InteractivityHelper {
 
@@ -34,7 +34,7 @@ export namespace InteractivityHelper {
         const allSections = MongoManager.getAllSections(guildDb);
         const selectOptions: MessageSelectOptionData[] = allSections
             .map(x => {
-                const role = FetchGetRequestUtilities.getCachedRole(member.guild, x.roles.verifiedRoleId);
+                const role = GuildFgrUtilities.getCachedRole(member.guild, x.roles.verifiedRoleId);
                 return {
                     default: x.uniqueIdentifier === "MAIN",
                     label: x.sectionName,
@@ -97,7 +97,7 @@ export namespace InteractivityHelper {
         const allSections = MongoManager.getAllSections(guildDb);
         const selectOptions: MessageSelectOptionData[] = allSections
             .map(x => {
-                const role = FetchGetRequestUtilities.getCachedRole(member.guild, x.roles.verifiedRoleId);
+                const role = GuildFgrUtilities.getCachedRole(member.guild, x.roles.verifiedRoleId);
                 return {
                     default: x.uniqueIdentifier === "MAIN",
                     label: x.sectionName,

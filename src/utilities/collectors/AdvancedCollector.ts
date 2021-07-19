@@ -16,9 +16,10 @@ import {
 } from "discord.js";
 import {MessageUtilities} from "../MessageUtilities";
 import {StringBuilder} from "../StringBuilder";
-import {FetchGetRequestUtilities} from "../FetchGetRequestUtilities";
+import {GuildFgrUtilities} from "../fetch-get-request/GuildFgrUtilities";
 import {MiscUtilities} from "../MiscUtilities";
 import {Emojis} from "../../constants/Emojis";
+import {GlobalFgrUtilities} from "../fetch-get-request/GlobalFgrUtilities";
 
 /**
  * A series of helpful collector functions.
@@ -219,7 +220,7 @@ export namespace AdvancedCollector {
 
             msgCollector.on("collect", async (c: Message) => {
                 if (options.deleteResponseMessage)
-                    await FetchGetRequestUtilities.tryExecuteAsync(() => c.delete());
+                    await GlobalFgrUtilities.tryExecuteAsync(() => c.delete());
 
                 if (cancelFlag.toLowerCase() === c.content.toLowerCase()) {
                     interactionCollector.stop();
@@ -329,8 +330,8 @@ export namespace AdvancedCollector {
     /**
      * Reacts to a message at a faster than normal speed.
      * @param {Message} msg The message to react to.
-     * @param {EmojiResolvable[]} reactions The reactions that you want to react with.
-     * @param {number} intervalTime The delay between reactions.
+     * @param {EmojiResolvable[]} reactions The otherButtons that you want to react with.
+     * @param {number} intervalTime The delay between otherButtons.
      */
     export function reactFaster(msg: Message, reactions: EmojiResolvable[], intervalTime: number = 550): void {
         intervalTime = Math.max(550, intervalTime);
@@ -449,7 +450,7 @@ export namespace AdvancedCollector {
             let resolvedRole: Role;
             if (origRole) resolvedRole = origRole;
             else {
-                const resolveById = await FetchGetRequestUtilities.fetchRole(guild, m.content) ?? null;
+                const resolveById = await GuildFgrUtilities.fetchRole(guild, m.content) ?? null;
                 if (!resolveById) {
                     const noRoleFound = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("No Role Found")
@@ -526,7 +527,7 @@ export namespace AdvancedCollector {
             if (origChannel && origChannel instanceof TextChannel)
                 resolvedChannel = origChannel;
             else {
-                const resolvedChanById = FetchGetRequestUtilities.getCachedChannel(guild, m.content);
+                const resolvedChanById = GuildFgrUtilities.getCachedChannel(guild, m.content);
                 if (!(resolvedChanById instanceof TextChannel)) {
                     const notTextChannelDesc = new StringBuilder()
                         .append("You did not specify a valid text channel. Note that a text channel is __not__ a news")

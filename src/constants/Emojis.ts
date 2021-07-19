@@ -79,6 +79,6 @@ export namespace Emojis {
     export const SCHOLAR_SEAL: EmojiIdentifierResolvable = "";
     export const BRAIN_PRISM: EmojiIdentifierResolvable = "";
 
-    // reactions
+    // otherButtons
     export const NITRO_EMOJI: EmojiIdentifierResolvable = "";
 }

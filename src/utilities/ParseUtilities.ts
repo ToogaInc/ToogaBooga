@@ -1,6 +1,7 @@
 import {GuildChannel, Message, Role, User} from "discord.js";
 import {MiscUtilities} from "./MiscUtilities";
-import {FetchGetRequestUtilities} from "./FetchGetRequestUtilities";
+import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
+import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
 
 export namespace ParseUtilities {
     /**
@@ -11,7 +12,7 @@ export namespace ParseUtilities {
     export function parseRole(msg: Message): Role | null {
         if (!msg.guild) return null;
         if (MiscUtilities.isSnowflake(msg.content))
-            return FetchGetRequestUtilities.getCachedRole(msg.guild, msg.content);
+            return GuildFgrUtilities.getCachedRole(msg.guild, msg.content);
 
         return msg.mentions.roles.first() ?? null;
     }
@@ -24,14 +25,14 @@ export namespace ParseUtilities {
     export function parseChannel<T extends GuildChannel>(msg: Message): T | null {
         if (!msg.guild) return null;
         if (MiscUtilities.isSnowflake(msg.content))
-            return FetchGetRequestUtilities.getCachedChannel<T>(msg.guild, msg.content);
+            return GuildFgrUtilities.getCachedChannel<T>(msg.guild, msg.content);
 
         return msg.mentions.channels.first() as T ?? null;
     }
 
     export function parseUser(msg: Message): User | null {
         if (MiscUtilities.isSnowflake(msg.content))
-            return FetchGetRequestUtilities.getCachedUser(msg.content);
+            return GlobalFgrUtilities.getCachedUser(msg.content);
 
         return msg.mentions.users.first() ?? null;
     }

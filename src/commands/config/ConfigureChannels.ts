@@ -1,7 +1,7 @@
 import {BaseCommand} from "../BaseCommand";
 import {Guild, Message, MessageButton, MessageEmbed, TextChannel} from "discord.js";
 import {IGuildInfo} from "../../definitions/db/IGuildInfo";
-import {FetchGetRequestUtilities} from "../../utilities/FetchGetRequestUtilities";
+import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {InteractivityHelper} from "../../utilities/InteractivityHelper";
 import {ISectionInfo} from "../../definitions/db/ISectionInfo";
 import {
@@ -14,7 +14,7 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {MessageButtonStyles} from "discord.js/typings/enums";
 import {Emojis} from "../../constants/Emojis";
-import getCachedChannel = FetchGetRequestUtilities.getCachedChannel;
+import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {MongoManager} from "../../managers/MongoManager";
 import {FilterQuery} from "mongodb";
@@ -215,7 +215,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
 
     /** @inheritDoc */
     public async entry(msg: Message, guildDoc: IGuildInfo, botMsg: Message | null): Promise<void> {
-        const member = FetchGetRequestUtilities.getCachedMember(msg.guild!, msg.author.id);
+        const member = GuildFgrUtilities.getCachedMember(msg.guild!, msg.author.id);
         if (!member) return;
 
         let selectedSection: ISectionInfo;
@@ -544,7 +544,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 .setDescription(DATABASE_CONFIG_DESCRIPTION)
                 .setFooter(getInstructions(entries[selected].configTypeOrInstructions));
             for (let i = 0; i < entries.length; i++) {
-                const currSet: TextChannel | null = FetchGetRequestUtilities.getCachedChannel<TextChannel>(
+                const currSet: TextChannel | null = GuildFgrUtilities.getCachedChannel<TextChannel>(
                     guild,
                     entries[i].getCurrentValue(guildDoc, section) as string
                 );

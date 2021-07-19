@@ -5,7 +5,8 @@ import {ModmailManager} from "../managers/ModmailManager";
 import {Emojis} from "../constants/Emojis";
 import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {IModmailThread} from "../definitions/IModmailThread";
-import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
+import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
+import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export async function onMessageReactionAdd(reaction: MessageReaction | PartialMessageReaction,
                                            user: User | PartialUser): Promise<void> {
@@ -22,8 +23,8 @@ export async function onMessageReactionAdd(reaction: MessageReaction | PartialMe
         return;
 
     // User must exist.
-    const resolvedUser = await FetchGetRequestUtilities.fetchUser(user.id);
-    const resolvedMember = await FetchGetRequestUtilities.fetchGuildMember(guild, user.id);
+    const resolvedUser = await GlobalFgrUtilities.fetchUser(user.id);
+    const resolvedMember = await GuildFgrUtilities.fetchGuildMember(guild, user.id);
     if (!resolvedUser || !resolvedMember)
         return;
 
@@ -32,7 +33,7 @@ export async function onMessageReactionAdd(reaction: MessageReaction | PartialMe
         return;
 
     // Message must be valid.
-    const message = await FetchGetRequestUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
+    const message = await GuildFgrUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
     if (!message)
         return;
 
@@ -79,7 +80,7 @@ export async function onMessageReactionAdd(reaction: MessageReaction | PartialMe
  */
 async function handleThreadedModmail(modmailThread: IModmailThread, reaction: MessageReaction,
                                      member: GuildMember, guildDoc: IGuildInfo): Promise<void> {
-    const msg = await FetchGetRequestUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
+    const msg = await GuildFgrUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
     if (!msg) return;
     const channel = msg.channel as TextChannel;
 
@@ -117,7 +118,7 @@ async function handleThreadedModmail(modmailThread: IModmailThread, reaction: Me
  */
 async function handleGeneralModmail(member: GuildMember, reaction: MessageReaction,
                                     guildDoc: IGuildInfo): Promise<void> {
-    const msg = await FetchGetRequestUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
+    const msg = await GuildFgrUtilities.fetchMessage(reaction.message.channel, reaction.message.id);
     if (!msg) return;
 
     // If the person is currently responding to modmail, then don't let them respond to a new one.

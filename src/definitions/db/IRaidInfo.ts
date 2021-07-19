@@ -23,7 +23,7 @@ export interface IRaidInfo {
     location: string;
     // section id
     sectionIdentifier: string;
-    // early location reactions
+    // early location otherButtons
     earlyLocationReactions: { userId: string; reactCodeName: string; }[];
     // For set interval purposes
     controlPanelIntervalId: number | NodeJS.Timeout;

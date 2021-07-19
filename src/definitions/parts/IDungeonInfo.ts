@@ -1,12 +1,12 @@
 import {ColorResolvable} from "discord.js";
-import {IReactionProps} from "./IReactionProps";
+import {IAfkCheckButtonInfo} from "./IAfkCheckButtonInfo";
 
 export interface IDungeonInfo {
     codeName: string;
     dungeonName: string;
     portalEmojiId: string;
-    keyData: IReactionProps[];
-    reactions: IReactionProps[];
+    keyData: IAfkCheckButtonInfo[];
+    otherButtons: IAfkCheckButtonInfo[];
     portalLink: string;
     bossLinks: string[];
     dungeonColors: ColorResolvable[];
