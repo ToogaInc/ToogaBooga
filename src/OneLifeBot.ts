@@ -45,7 +45,6 @@ export class OneLifeBot {
             intents: [
                 "GUILDS",
                 "GUILD_MEMBERS",
-                "GUILD_EMOJIS",
                 "GUILD_MESSAGES",
                 "GUILD_MESSAGE_REACTIONS",
                 "DIRECT_MESSAGES"

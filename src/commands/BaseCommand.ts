@@ -182,7 +182,7 @@ export abstract class BaseCommand {
         const roleArr: Role[] = [];
         let hasPermission = false;
         for (const roleId of allRoleIds) {
-            if (GuildFgrUtilities.hasCachedRole(userToTest, roleId)) {
+            if (GuildFgrUtilities.hasCachedRole(userToTest.guild, roleId)) {
                 hasPermission = true;
                 break;
             }

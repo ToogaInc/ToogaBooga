@@ -18,7 +18,7 @@ export namespace GuildFgrUtilities {
      * @param {string} roleId The role ID. This assumes a valid ID.
      * @return {boolean} Whether this member has the role.
      */
-    export function hasCachedRole(memberOrGuild: GuildMember | Guild, roleId: string): boolean {
+    export function hasCachedRole(memberOrGuild: Guild, roleId: string): boolean {
         if (!MiscUtilities.isSnowflake(roleId)) return false;
         return memberOrGuild.roles.cache.has(roleId);
     }

@@ -11,6 +11,7 @@ import {UserManager} from "./UserManager";
 import {GuildMember} from "discord.js";
 import {DungeonData} from "../constants/DungeonData";
 import {ISectionInfo} from "../definitions/db/ISectionInfo";
+import {BypassFullVcOption} from "../definitions/parts/IAfkCheckProperties";
 
 export namespace MongoManager {
     let ThisMongoClient: MongoClient | null = null;
@@ -439,7 +440,7 @@ export namespace MongoManager {
                     removeKeyReactsDuringAfk: false,
                     afkCheckTimeout: 30 * 60 * 1000,
                     defaultDungeon: "",
-                    allowKeyReactsToBypassFullVc: true,
+                    bypassFullVcOption: BypassFullVcOption.KeysAndPriority,
                     afkCheckPermissions: generalAfkCheckPerms,
                     prePostAfkCheckPermissions: prePostAfkCheckPerms,
                     allowedDungeons: DungeonData.map(x => x.codeName),

@@ -35,10 +35,12 @@ export class StringBuilder {
     /**
      * Appends a new line to the `StringBuilder`.
      *
+     * @param {number} [times] The number of new lines to append.
      * @returns {StringBuilder} This object.
      */
-    public appendLine(): this {
-        this._str += EOL;
+    public appendLine(times: number = 1): this {
+        for (let i = 0; i < times; i++)
+            this._str += EOL;
         return this;
     }
 
@@ -74,6 +76,15 @@ export class StringBuilder {
      */
     public delete(start: number, end: number): this {
         this._str = this._str.replace(this._str.substring(start, end), "");
+        return this;
+    }
+
+    /**
+     * Clears the `StringBuilder` instance.
+     * @return {this} This object.
+     */
+    public clear(): this {
+        this._str = "";
         return this;
     }
 }

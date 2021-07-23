@@ -2,7 +2,7 @@ import {DMChannel, GuildMember, TextChannel} from "discord.js";
 import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {ISectionInfo} from "../definitions/db/ISectionInfo";
 import {InteractionManager} from "./InteractionManager";
-import {FetchGetRequestUtilities} from "../utilities/FetchGetRequestUtilities";
+import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {StringUtil} from "../utilities/StringUtilities";
@@ -11,6 +11,7 @@ import {IVerificationRequirements} from "../definitions/parts/IVerificationRequi
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {PrivateApiDefinitions} from "../private-api/PrivateApiDefinitions";
 import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
+import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export namespace VerifyManager {
     const GUILD_ROLES: string[] = [
@@ -29,7 +30,7 @@ export namespace VerifyManager {
      */
     export async function verify(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
         if (!(await RealmSharperWrapper.isOnline())) {
-            await FetchGetRequestUtilities.sendMsg(member, {
+            await GlobalFgrUtilities.sendMsg(member, {
                 embeds: [
                     MessageUtilities.generateBlankEmbed(member, "RED")
                     .setTitle("Verification Unavailable.")
@@ -43,16 +44,16 @@ export namespace VerifyManager {
         if (InteractionManager.InteractiveMenu.has(member.id))
             return;
         // Check if the verified role exists.
-        const verifiedRole = await FetchGetRequestUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
+        const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
         // We need this so we can send the person a message if needed.
-        const verificationChannel = FetchGetRequestUtilities
+        const verificationChannel = GuildFgrUtilities
             .getCachedChannel<TextChannel>(member.guild, section.channels.verification.verificationChannelId);
 
         // No verification channel = leave.
         if (!verificationChannel)
             return;
 
-        const dmChannel = await FetchGetRequestUtilities.tryExecuteAsync<DMChannel>(async () => {
+        const dmChannel = await GlobalFgrUtilities.tryExecuteAsync<DMChannel>(async () => {
             const dm = await member.createDM();
             if (!dm) return null;
             await dm.send("This is a test message to ensure that I can send messages to your direct messages.");

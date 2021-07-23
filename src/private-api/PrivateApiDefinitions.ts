@@ -2,6 +2,7 @@ export namespace PrivateApiDefinitions {
     export interface IRealmEyePlayerResponse {
         profileIsPrivate: boolean;
         sectionIsPrivate: boolean;
+        resultCode: number;
         name: string;
     }
 

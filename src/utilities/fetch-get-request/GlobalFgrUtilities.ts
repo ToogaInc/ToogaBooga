@@ -33,6 +33,17 @@ export namespace GlobalFgrUtilities {
     }
 
     /**
+     * Checks if a cached emoji exists in any server.
+     * @param {string} emojiId The emoji ID.
+     * @return {boolean} If the emoji exists.
+     */
+    export function hasCachedEmoji(emojiId: string): boolean {
+        if (!MiscUtilities.isSnowflake(emojiId)) return false;
+        return OneLifeBot.BotInstance.client.emojis.cache.has(emojiId);
+    }
+
+
+    /**
      * Gets a cached user.
      * @param {string} userId The user ID. This assumes a valid ID. If an invalid ID is given, `null` will be returned.
      * @return {User | null} The user, if at all. Otherwise, `null`.

@@ -1,12 +1,13 @@
 import {ColorResolvable} from "discord.js";
-import {IAfkCheckButtonInfo} from "./IAfkCheckButtonInfo";
+import {IAfkCheckOptionData} from "./IAfkCheckOptionData";
 
 export interface IDungeonInfo {
     codeName: string;
     dungeonName: string;
     portalEmojiId: string;
-    keyData: IAfkCheckButtonInfo[];
-    otherButtons: IAfkCheckButtonInfo[];
+    keyData: IAfkCheckOptionData[];
+    otherData: IAfkCheckOptionData[];
+    includeEarlyLoc?: boolean;
     portalLink: string;
     bossLinks: string[];
     dungeonColors: ColorResolvable[];

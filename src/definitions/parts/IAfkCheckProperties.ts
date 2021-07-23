@@ -1,6 +1,6 @@
 import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
 import {IPermAllowDeny} from "../IPermAllowDeny";
-import {IAfkCheckButtonInfo} from "./IAfkCheckButtonInfo";
+import {IAfkCheckOptionData} from "./IAfkCheckOptionData";
 
 export interface IAfkCheckProperties {
     vcLimit: number;
@@ -17,7 +17,7 @@ export interface IAfkCheckProperties {
     // default dungeons -- use codeName
     defaultDungeon: string;
     // whether people that react w/ key emoji can bypass a full vc
-    allowKeyReactsToBypassFullVc: boolean;
+    bypassFullVcOption: BypassFullVcOption;
     // afk check configuration
     afkCheckPermissions: IPropertyKeyValuePair<string, IPermAllowDeny>[];
     // pre/post afk check configuration
@@ -28,7 +28,15 @@ export interface IAfkCheckProperties {
     // Any dungeon overrides. This is on a per-section basis
     dungeonSettingsOverride: {
         dungeonCodeName: string;
-        buttonInfo: IAfkCheckButtonInfo[];
+        keyData: IAfkCheckOptionData[];
+        buttonInfo: IAfkCheckOptionData[];
+        includeEarlyLoc?: boolean;
         vcLimit: number;
     }[];
+}
+
+export enum BypassFullVcOption {
+    NotAllowed = (1 << 0),
+    KeysOnly = (1 << 1),
+    KeysAndPriority = (1 << 2)
 }

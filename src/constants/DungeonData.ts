@@ -11,7 +11,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248354173190176/Snake_Pit_Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Stheno%20the%20Snake%20Queen.png"],
         dungeonColors: [
@@ -29,7 +29,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/mvUTUNo.png",
         bossLinks: ["https://i.imgur.com/jVimXOv.png"],
         dungeonColors: [
@@ -47,7 +47,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Glowing%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Limon%20the%20Sprite%20God.png"],
         dungeonColors: [
@@ -68,7 +68,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/d7MSK2x.png",
         bossLinks: [
             "https://i.imgur.com/z01EB30.png",
@@ -92,7 +92,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 10
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Candyland%20Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Gigacorn.png",
@@ -117,7 +117,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Treasure%20Cave%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Golden%20Oryx%20Effigy.png"],
         dungeonColors: [
@@ -137,7 +137,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248252310061066/Undead_Lair_Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Septavius%20the%20Ghost%20God.png"],
         dungeonColors: [
@@ -157,7 +157,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/YgiGjh7.gif",
         bossLinks: ["https://i.imgur.com/WmL1qda.png"],
         dungeonColors: [
@@ -178,7 +178,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Abyss%20of%20Demons%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Archdemon%20Malphas.png"],
         dungeonColors: [
@@ -197,7 +197,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/zz6D2lz.png",
         bossLinks: ["https://i.imgur.com/LCALe5V.png"],
         dungeonColors: [
@@ -217,7 +217,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Manor%20of%20the%20Immortals%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Lord%20Ruthven.png"],
         dungeonColors: [
@@ -238,7 +238,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Puppet%20Theatre%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/The%20Puppet%20Master.png"],
         dungeonColors: [
@@ -257,7 +257,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Toxic%20Sewers%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/DS%20Gulpord%20the%20Slime%20God.png"],
         dungeonColors: [
@@ -276,7 +276,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248253836787717/Haunted_Cemetery_Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Troll%203.png",
@@ -299,7 +299,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248331695915018/Mad_Lab_Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Dr%20Terrible.png",
@@ -321,7 +321,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 8
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248332635439136/Parasite.png",
         bossLinks: ["https://i.imgur.com/zodPEFO.png"],
         dungeonColors: [
@@ -341,7 +341,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 8
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Davy%20Jones's%20Locker%20Portal.png",
         bossLinks: ["https://i.imgur.com/Jc4FERS.png"],
         dungeonColors: [
@@ -359,7 +359,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/SY0Jtnp.png",
         bossLinks: ["https://i.imgur.com/TIektVi.png"],
         dungeonColors: [
@@ -377,7 +377,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 8
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Consolation%20of%20Draconis%20Portal.png",
         bossLinks: [
             "https://i.imgur.com/vT7wdjb.png",
@@ -405,7 +405,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Deadwater%20Docks.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Jon%20Bilgewater%20the%20Pirate%20King.png"],
         dungeonColors: [
@@ -419,7 +419,7 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonName: "Woodland Labyrinth",
         portalEmojiId: "561248701440589824",
         keyData: [],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Woodland%20Labyrinth.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Epic%20Larva.png",
@@ -442,7 +442,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/The%20Crawling%20Depths.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Son%20of%20Arachna.png"],
         dungeonColors: [
@@ -461,7 +461,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ocean%20Trench%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Thessal%20the%20Mermaid%20Goddess.png"],
         dungeonColors: [
@@ -481,7 +481,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ice%20Cave%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/ic%20Esben%20the%20Unwilling.png"],
         dungeonColors: [
@@ -501,7 +501,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 8
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Tomb%20of%20the%20Ancients%20Portal.png",
         bossLinks: [
             "https://i.imgur.com/phgo7.png",
@@ -526,7 +526,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Lair%20of%20Shaitan%20Portal.png",
         bossLinks: ["https://i.imgur.com/azzD6jD.png"],
         dungeonColors: [
@@ -545,7 +545,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Puppet%20Encore%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Puppet%20Master%20v2.png"],
         dungeonColors: [
@@ -563,7 +563,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/qjd04By.png",
         bossLinks: ["https://i.imgur.com/BF2DclQ.png"],
         dungeonColors: [
@@ -582,7 +582,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/8vEAT8t.png",
         bossLinks: [
             "https://i.imgur.com/2zBZOj0.png",
@@ -605,7 +605,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Enemies/F.E.R.A.L..png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/F.E.R.A.L..png"
@@ -626,7 +626,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Battle%20Nexus%20Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Lord%20Ruthven.png",
@@ -650,7 +650,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/VTXGPSy.png",
         bossLinks: ["https://i.imgur.com/d7xzYLG.png"],
         dungeonColors: [
@@ -669,7 +669,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ice%20Tomb%20Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Ice%20Tomb%20Defender.png",
@@ -692,7 +692,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/jnHUonE.gif",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/DS%20Gulpord%20the%20Slime%20God.png",
@@ -719,7 +719,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/The%20Shatters.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/shtrs%20Bridge%20Sentinel.png",
@@ -742,7 +742,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/0PyfYHr.png",
         bossLinks: ["https://i.imgur.com/DXIpAWm.png"],
         dungeonColors: [
@@ -761,7 +761,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 3
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/WQ95Y0j.png",
         bossLinks: [
             "https://i.imgur.com/hUWc3IV.png",
@@ -785,7 +785,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/576610932126515211/LibCursed.gif",
         bossLinks: [
             "https://i.imgur.com/DfhWagx.png",
@@ -806,7 +806,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/on1ykYB.png",
         bossLinks: [
             "https://i.imgur.com/MgFBfJp.png",
@@ -841,7 +841,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/uhDj0M5.png",
         bossLinks: ["https://i.imgur.com/kbzthE4.png"],
         dungeonColors: [
@@ -859,7 +859,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://i.imgur.com/fHNesPK.png",
         bossLinks: [
             "https://i.imgur.com/5fsTTjQ.png",
@@ -888,7 +888,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 15
             }
         ],
-        otherButtons: [],
+        otherData: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Pirate%20Cave%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Dreadstump%20the%20Pirate%20King.png"],
         dungeonColors: [
@@ -918,7 +918,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherButtons: [
+        otherData: [
             {
                 mapKey: "WARRIOR",
                 maxEarlyLocation: 0
