@@ -1264,7 +1264,7 @@ export class RaidManager {
                 if (!earlyLocData) return;
                 // We no longer need this anymore
                 if (!earlyLocData[1]) {
-                    const noLongerNeed = MessageUtilities.generateBlankEmbed(memberThatResponded.user, "RED")
+                    const noLongerNeedEmbed = MessageUtilities.generateBlankEmbed(memberThatResponded.user, "RED")
                         .setTitle("No Longer Needed")
                         .setDescription(`We no longer need **\`${MappedAfkCheckOptions}\`**`);
                 }
