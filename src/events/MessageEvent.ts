@@ -19,7 +19,7 @@ export async function onMessageEvent(msg: Message): Promise<void> {
         if (OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(msg.guild.id))
             return;
 
-        const guildDoc = await MongoManager.getDefaultGuildConfig(msg.guild.id);
+        const guildDoc = await MongoManager.getOrCreateGuildDoc(msg.guild.id, true);
         return await commandHandler(msg, msg.guild, guildDoc);
     }
 

@@ -1,7 +1,7 @@
 import {IConfiguration} from "./definitions/IConfiguration";
 import {
     Client,
-    Collection,
+    Collection, Guild,
     Interaction,
     Message,
     MessageReaction,
@@ -17,6 +17,7 @@ import {onMessageReactionAdd} from "./events/MessageReactionAdd";
 import axios, {AxiosInstance} from "axios";
 import {BaseCommand} from "./commands";
 import {onInteractionEvent} from "./events/InteractionEvent";
+import {onGuildCreateEvent} from "./events/GuildCreateEvent";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -64,6 +65,7 @@ export class OneLifeBot {
         this._bot.on("messageReactionAdd",
             async (r: MessageReaction | PartialMessageReaction, u: User | PartialUser) => onMessageReactionAdd(r, u));
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
+        this._bot.on("guildCreate", async (g: Guild) => onGuildCreateEvent(g));
         this._eventsIsStarted = true;
     }
 

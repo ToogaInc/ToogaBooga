@@ -40,7 +40,7 @@ export async function onMessageReactionAdd(reaction: MessageReaction | PartialMe
     const [fetchedReaction, peopleThatReacted, guildDoc] = await Promise.all([
         await reaction.fetch(),
         await reaction.users.fetch(),
-        await MongoManager.getOrCreateGuildDb(guild.id)
+        await MongoManager.getOrCreateGuildDoc(guild.id)
     ]);
     // End pre-check.
 

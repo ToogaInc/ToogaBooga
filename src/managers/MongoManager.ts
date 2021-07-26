@@ -1,4 +1,4 @@
-import {Collection, FilterQuery, MongoClient, ObjectID} from "mongodb";
+import {Collection as MCollection, FilterQuery, MongoClient, ObjectID, UpdateQuery} from "mongodb";
 import {IUserInfo} from "../definitions/db/IUserInfo";
 import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {IBotInfo} from "../definitions/db/IBotInfo";
@@ -8,17 +8,19 @@ import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
 import {IPermAllowDeny} from "../definitions/IPermAllowDeny";
 import {IIdNameInfo} from "../definitions/db/IIdNameInfo";
 import {UserManager} from "./UserManager";
-import {GuildMember} from "discord.js";
+import {GuildMember, Collection as DCollection} from "discord.js";
 import {DungeonData} from "../constants/DungeonData";
 import {ISectionInfo} from "../definitions/db/ISectionInfo";
 import {BypassFullVcOption} from "../definitions/parts/IAfkCheckProperties";
 
 export namespace MongoManager {
+    export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();
+
     let ThisMongoClient: MongoClient | null = null;
-    let UserCollection: Collection<IUserInfo> | null = null;
-    let GuildCollection: Collection<IGuildInfo> | null = null;
-    let BotCollection: Collection<IBotInfo> | null = null;
-    let IdNameCollection: Collection<IIdNameInfo> | null = null;
+    let UserCollection: MCollection<IUserInfo> | null = null;
+    let GuildCollection: MCollection<IGuildInfo> | null = null;
+    let BotCollection: MCollection<IBotInfo> | null = null;
+    let IdNameCollection: MCollection<IIdNameInfo> | null = null;
 
     interface IDbConfiguration {
         dbUrl: string;
@@ -54,10 +56,10 @@ export namespace MongoManager {
     /**
      * Gets the guild collection, if the program is connected to Mongo.
      *
-     * @return {Collection<IGuildInfo>} The guild collection.
+     * @return {MCollection<IGuildInfo>} The guild collection.
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
-    export function getGuildCollection(): Collection<IGuildInfo> {
+    export function getGuildCollection(): MCollection<IGuildInfo> {
         if (GuildCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
             throw new ReferenceError("GuildCollection null. Use connect method first.");
 
@@ -67,10 +69,10 @@ export namespace MongoManager {
     /**
      * Gets the user collection, if the program is connected to Mongo.
      *
-     * @return {Collection<IGuildInfo>} The user collection.
+     * @return {MCollection<IGuildInfo>} The user collection.
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
-    export function getUserCollection(): Collection<IUserInfo> {
+    export function getUserCollection(): MCollection<IUserInfo> {
         if (UserCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
             throw new ReferenceError("UserCollection null. Use connect method first.");
 
@@ -79,10 +81,10 @@ export namespace MongoManager {
 
     /**
      * Gets the bot collection, if the program is connected to Mongo.
-     * @return {Collection<IBotInfo>} The bot collection.
+     * @return {MCollection<IBotInfo>} The bot collection.
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
-    export function getBotCollection(): Collection<IBotInfo> {
+    export function getBotCollection(): MCollection<IBotInfo> {
         if (BotCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
             throw new ReferenceError("BotCollection null.");
 
@@ -520,18 +522,49 @@ export namespace MongoManager {
     /**
      * Gets a guild document or creates a new one if it doesn't exist.
      * @param {string} guildId The guild ID.
+     * @param {boolean} [checkCached] Whether to check cache for the guild document..
      * @return {Promise<IGuildInfo>} The guild document.
      * @throws {Error} If adding a new guild document is not possible.
      */
-    export async function getOrCreateGuildDb(guildId: string): Promise<IGuildInfo> {
+    export async function getOrCreateGuildDoc(guildId: string, checkCached: boolean = false): Promise<IGuildInfo> {
+        if (checkCached && CachedGuildCollection.has(guildId)) {
+            return CachedGuildCollection.get(guildId)!;
+        }
+
         const docs = await getGuildCollection().find({guildId: guildId}).toArray();
         if (docs.length === 0) {
             const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(guildId));
-            if (insertRes.ops.length > 0)
+            if (insertRes.ops.length > 0) {
+                CachedGuildCollection.set(guildId, insertRes.ops[0]);
                 return insertRes.ops[0];
+            }
+
             throw new Error(`Insert failed: ${guildId}`);
         }
+
+        CachedGuildCollection.set(guildId, docs[0]);
         return docs[0];
+    }
+
+    /**
+     * Equivalent to `findOneAndUpdate`, but this provides a cleaner way to get the guild document. This
+     * will automatically set `returnDocument` to `true`. Additionally, this updates the cached guild document.
+     * @param {FilterQuery<IGuildInfo>} filter The filter query.
+     * @param {UpdateQuery<IGuildInfo>} update The update query.
+     * @return {Promise<IGuildInfo>} The new guild document.
+     */
+    export async function findUpdateGuildDoc(filter: FilterQuery<IGuildInfo>,
+                                             update: UpdateQuery<IGuildInfo>): Promise<IGuildInfo> {
+        const res = await getGuildCollection().findOneAndUpdate(filter, update, {
+           returnDocument: "after"
+        });
+
+        if (!res.value) {
+            throw new Error("Something went wrong when trying to update the guild document.");
+        }
+
+        CachedGuildCollection.set(res.value.guildId, res.value);
+        return res.value;
     }
 
     /**
@@ -539,9 +572,9 @@ export namespace MongoManager {
      * field is set with the specified default value.
      * @param {string} guildId The guild ID.
      * @param {string} property The field, or property, to check.
-     * @param {any} defaultValue The default value if the field doesn't exist.
+     * @param {T} defaultValue The default value if the field doesn't exist.
      */
-    export async function validateGuildField(guildId: string, property: string, defaultValue: any): Promise<void> {
+    export async function validateGuildField<T>(guildId: string, property: string, defaultValue: T): Promise<void> {
         await getGuildCollection().updateOne({
             guildId: guildId,
             [property]: {$exists: false}

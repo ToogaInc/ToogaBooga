@@ -37,10 +37,10 @@ export async function onReadyEvent(): Promise<void> {
     const botGuilds = OneLifeBot.BotInstance.client.guilds.cache;
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
     for await (const [id] of botGuilds) {
-        if (guildDocs.find(x => x.guildId === id) || OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(id))
+        if (OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(id))
             continue;
 
-        await MongoManager.getGuildCollection().insertOne(MongoManager.getDefaultGuildConfig(id));
+        await MongoManager.getOrCreateGuildDoc(id);
     }
 
     // Delete guild documents corresponding to guilds that the bot is no longer in.
@@ -61,6 +61,7 @@ export async function onReadyEvent(): Promise<void> {
                     PunishmentManager.addToSectionSuspensionTimer(x, associatedGuild, section);
                 });
             });
+
             continue;
         }
 
