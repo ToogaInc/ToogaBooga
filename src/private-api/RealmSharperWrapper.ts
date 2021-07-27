@@ -8,7 +8,7 @@ export namespace RealmSharperWrapper {
      */
     export async function isOnline(): Promise<boolean> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi + "/" + config.privateApiLinks.pingOnline;
+        const url = config.realmEyeApiLinks.baseApi + "/" + config.realmEyeApiLinks.pingOnline;
         try {
             const resp = await OneLifeBot.AxiosClient.get<PAD.IApiStatus>(url);
             return resp.data.online;
@@ -35,8 +35,8 @@ export namespace RealmSharperWrapper {
      */
     export async function getNameHistory(name: string): Promise<PAD.INameHistory | null> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi
-            + "/" + config.privateApiLinks.realmEye.nameHistory
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.playerEndpoints.nameHistory
             + "?name=" + name;
         const resp = await OneLifeBot.AxiosClient.get<PAD.INameHistory>(url);
         return getProperReturnType<PAD.INameHistory>(resp.data);
@@ -50,8 +50,8 @@ export namespace RealmSharperWrapper {
      */
     export async function getRankHistory(name: string): Promise<PAD.IRankHistory | null> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi
-            + "/" + config.privateApiLinks.realmEye.rankHistory
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.playerEndpoints.rankHistory
             + "?name=" + name;
         const resp = await OneLifeBot.AxiosClient.get<PAD.IRankHistory>(url);
         return getProperReturnType<PAD.IRankHistory>(resp.data);
@@ -65,8 +65,8 @@ export namespace RealmSharperWrapper {
      */
     export async function getGuildHistory(name: string): Promise<PAD.IGuildHistory | null> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi
-            + "/" + config.privateApiLinks.realmEye.guildHistory
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.playerEndpoints.guildHistory
             + "?name=" + name;
         const resp = await OneLifeBot.AxiosClient.get<PAD.IGuildHistory>(url);
         return getProperReturnType<PAD.IGuildHistory>(resp.data);
@@ -80,8 +80,8 @@ export namespace RealmSharperWrapper {
      */
     export async function getExaltation(name: string): Promise<PAD.IExaltation | null> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi
-            + "/" + config.privateApiLinks.realmEye.exaltations
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.playerEndpoints.exaltations
             + "?name=" + name;
         const resp = await OneLifeBot.AxiosClient.get<PAD.IExaltation>(url);
         return getProperReturnType<PAD.IExaltation>(resp.data);
@@ -97,8 +97,8 @@ export namespace RealmSharperWrapper {
     export async function getGraveyard(name: string, amount: number = 1): Promise<PAD.IGraveyard | null> {
         if (amount > 100) amount = 100;
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi
-            + "/" + config.privateApiLinks.realmEye.graveyard
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.playerEndpoints.graveyard
             + "?name=" + name + "&amt=" + amount;
         const resp = await OneLifeBot.AxiosClient.get<PAD.IGraveyard>(url);
         return getProperReturnType<PAD.IGraveyard>(resp.data);
@@ -112,8 +112,8 @@ export namespace RealmSharperWrapper {
      */
     export async function getGraveyardSummary(name: string): Promise<PAD.IGraveyardSummary | null> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi
-            + "/" + config.privateApiLinks.realmEye.graveyardSummary
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.playerEndpoints.graveyardSummary
             + "?name=" + name;
         const resp = await OneLifeBot.AxiosClient.get<PAD.IGraveyardSummary>(url);
         return getProperReturnType<PAD.IGraveyardSummary>(resp.data);
@@ -126,8 +126,8 @@ export namespace RealmSharperWrapper {
      */
     export async function getPetYard(name: string): Promise<PAD.IPetYard | null> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi
-            + "/" + config.privateApiLinks.realmEye.petyard
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.playerEndpoints.petyard
             + "?name=" + name;
         const resp = await OneLifeBot.AxiosClient.get<PAD.IPetYard>(url);
         return getProperReturnType<PAD.IPetYard>(resp.data);
@@ -141,8 +141,8 @@ export namespace RealmSharperWrapper {
      */
     export async function getPlayerInfo(name: string): Promise<PAD.IPlayerData | null> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi
-            + "/" + config.privateApiLinks.realmEye.playerBasics
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.playerEndpoints.playerBasics
             + "?name=" + name;
         const resp = await OneLifeBot.AxiosClient.get<PAD.IPlayerData>(url);
         return getProperReturnType<PAD.IPlayerData>(resp.data);
@@ -155,7 +155,7 @@ export namespace RealmSharperWrapper {
      */
     export async function parseWhoScreenshot(link: string): Promise<PAD.IParseWhoResult> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.privateApiLinks.baseApi + config.privateApiLinks.parseEndpoint;
+        const url = config.realmEyeApiLinks.baseApi + config.realmEyeApiLinks.parseEndpoint;
         const resp = await OneLifeBot.AxiosClient.get<PAD.IParseWhoResult>(url, {
             data: { Url: link }
         });

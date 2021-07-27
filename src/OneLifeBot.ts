@@ -78,7 +78,7 @@ export class OneLifeBot {
 
         // connects to the database
         await MongoManager.connect({
-            dbUrl: this._config.database.dbUrl,
+            dbUrl: this._config.database.connectionString,
             dbName: this._config.database.dbName,
             guildColName: this._config.database.collectionNames.guildCollection,
             userColName: this._config.database.collectionNames.userCollection,
@@ -88,7 +88,7 @@ export class OneLifeBot {
         // make sure the database is connected
         assert(MongoManager.isConnected());
         // logs into the bot
-        await this._bot.login(this._config.token);
+        await this._bot.login(this._config.botToken);
     }
 
     /***

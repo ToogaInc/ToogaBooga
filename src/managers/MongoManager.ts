@@ -462,8 +462,8 @@ export namespace MongoManager {
                     moderation: {moderatorRoleId: "", officerRoleId: "", securityRoleId: ""},
                     otherStaffRoleIds: [],
                     sectionLeaderRoleIds: {
-                        sectionAlmostRaidLeaderRoleId: "",
-                        sectionRaidLeaderRoleId: "",
+                        sectionAlmostLeaderRoleId: "",
+                        sectionLeaderRoleId: "",
                         sectionHeadLeaderRoleId: "",
                         sectionVetLeaderRoleId: ""
                     },

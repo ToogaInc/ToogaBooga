@@ -234,18 +234,18 @@ export abstract class BaseCommand {
         ];
         const allRl: string[] = [
             guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionRaidLeaderRoleId
+            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionLeaderRoleId
         ];
         const allArl: string[] = [
             guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionAlmostRaidLeaderRoleId
+            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionAlmostLeaderRoleId
         ];
         const allVerified: string[] = [guildDoc.roles.verifiedRoleId];
         for (const section of guildDoc.guildSections) {
             allHrl.push(section.roles.leaders.sectionHeadLeaderRoleId);
-            allRl.push(section.roles.leaders.sectionRaidLeaderRoleId);
+            allRl.push(section.roles.leaders.sectionLeaderRoleId);
             allVrl.push(section.roles.leaders.sectionVetLeaderRoleId);
-            allArl.push(section.roles.leaders.sectionAlmostRaidLeaderRoleId);
+            allArl.push(section.roles.leaders.sectionAlmostLeaderRoleId);
             allVerified.push(section.roles.verifiedRoleId);
         }
 
