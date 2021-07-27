@@ -5,49 +5,51 @@ export const DungeonData: IDungeonInfo[] = [
         codeName: "SNAKE_PIT",
         dungeonName: "Snake Pit",
         portalEmojiId: "561248700291088386",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "SNAKE_PIT_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248354173190176/Snake_Pit_Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Stheno%20the%20Snake%20Queen.png"],
         dungeonColors: [
             0x29c71e
         ],
-        dungeonCategory: "Godland Dungeons"
+        dungeonCategory: "Godland Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "MAGIC_WOODS",
         dungeonName: "Magic Woods",
         portalEmojiId: "561248700870033408",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "MAGIC_WOODS_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/mvUTUNo.png",
         bossLinks: ["https://i.imgur.com/jVimXOv.png"],
         dungeonColors: [
             0x1fcfcc
         ],
-        dungeonCategory: "Godland Dungeons"
+        dungeonCategory: "Godland Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "SPRITE_WORLD",
         dungeonName: "Sprite World",
         portalEmojiId: "561249801501540363",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "SPRITE_WORLD_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Glowing%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Limon%20the%20Sprite%20God.png"],
         dungeonColors: [
@@ -56,19 +58,20 @@ export const DungeonData: IDungeonInfo[] = [
             0,
             0xe6df15
         ],
-        dungeonCategory: "Godland Dungeons"
+        dungeonCategory: "Godland Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "ANCIENT_RUINS",
         dungeonName: "Ancient Ruins",
         portalEmojiId: "745810341115461694",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "ANCIENT_RUINS_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/d7MSK2x.png",
         bossLinks: [
             "https://i.imgur.com/z01EB30.png",
@@ -80,19 +83,20 @@ export const DungeonData: IDungeonInfo[] = [
             0xb7934b,
             0x94643a
         ],
-        dungeonCategory: "Basic Dungeons"
+        dungeonCategory: "Basic Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "CANDYLAND_HUNTING_GROUNDS",
         dungeonName: "Candyland Hunting Grounds",
         portalEmojiId: "561248700916301825",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "CANDYLAND_HUNTING_GROUNDS_KEY",
                 maxEarlyLocation: 10
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Candyland%20Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Gigacorn.png",
@@ -105,19 +109,20 @@ export const DungeonData: IDungeonInfo[] = [
             0xde1dc1,
             0xbdf7fc
         ],
-        dungeonCategory: "Basic Dungeons"
+        dungeonCategory: "Basic Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "CAVE_THOUSAND_TREASURES",
         dungeonName: "Cave of a Thousand Treasures",
         portalEmojiId: "561248701809557511",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "CAVE_THOUSAND_TREASURES_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Treasure%20Cave%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Golden%20Oryx%20Effigy.png"],
         dungeonColors: [
@@ -125,19 +130,20 @@ export const DungeonData: IDungeonInfo[] = [
             0x8a1d1d,
             0x3d3434
         ],
-        dungeonCategory: "Godland Dungeons"
+        dungeonCategory: "Godland Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "UNDEAD_LAIR",
         dungeonName: "Undead Lair",
         portalEmojiId: "561248700601729036",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "UNDEAD_LAIR_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248252310061066/Undead_Lair_Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Septavius%20the%20Ghost%20God.png"],
         dungeonColors: [
@@ -145,19 +151,20 @@ export const DungeonData: IDungeonInfo[] = [
             0x2b1e1e,
             0
         ],
-        dungeonCategory: "Godland Dungeons"
+        dungeonCategory: "Godland Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "HEROIC_UNDEAD_LAIR",
         dungeonName: "Heroic Undead Lair",
         portalEmojiId: "711479365602508820",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "HEROIC_UNDEAD_LAIR_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/YgiGjh7.gif",
         bossLinks: ["https://i.imgur.com/WmL1qda.png"],
         dungeonColors: [
@@ -166,38 +173,40 @@ export const DungeonData: IDungeonInfo[] = [
             0x3d3434,
             0x2b1e1e
         ],
-        dungeonCategory: "Heroic Dungeons"
+        dungeonCategory: "Heroic Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "ABYSS_OF_DEMONS",
         dungeonName: "Abyss of Demons",
         portalEmojiId: "561248700643409931",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "ABYSS_OF_DEMONS_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Abyss%20of%20Demons%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Archdemon%20Malphas.png"],
         dungeonColors: [
             0xe30707,
             0xe09a19
         ],
-        dungeonCategory: "Godland Dungeons"
+        dungeonCategory: "Godland Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "HEROIC_ABYSS_OF_DEMONS",
         dungeonName: "Heroic Abyss of Demons",
         portalEmojiId: "711431861678637129",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "HEROIC_ABYSS_OF_DEMONS_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/zz6D2lz.png",
         bossLinks: ["https://i.imgur.com/LCALe5V.png"],
         dungeonColors: [
@@ -205,19 +214,20 @@ export const DungeonData: IDungeonInfo[] = [
             0xe09a19,
             0xf5d311
         ],
-        dungeonCategory: "Heroic Dungeons"
+        dungeonCategory: "Heroic Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "MANOR_OF_THE_IMMORTALS",
         dungeonName: "Manor of the Immortals",
         portalEmojiId: "561248700337225759",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "MANOR_OF_THE_IMMORTALS_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Manor%20of%20the%20Immortals%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Lord%20Ruthven.png"],
         dungeonColors: [
@@ -226,57 +236,60 @@ export const DungeonData: IDungeonInfo[] = [
             0x8b4fc9,
             0x3f2e52
         ],
-        dungeonCategory: "Godland Dungeons"
+        dungeonCategory: "Godland Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "PUPPET_MASTERS_THEATRE",
         dungeonName: "Puppet Master's Theatre",
         portalEmojiId: "561248700408791051",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "PUPPET_MASTERS_THEATRE_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Puppet%20Theatre%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/The%20Puppet%20Master.png"],
         dungeonColors: [
             0xe31b1f,
             0xad3638
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "TOXIC_SEWERS",
         dungeonName: "Toxic Sewers",
         portalEmojiId: "561248701213835265",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "TOXIC_SEWERS_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Toxic%20Sewers%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/DS%20Gulpord%20the%20Slime%20God.png"],
         dungeonColors: [
             0x074f2a,
             0x228753
         ],
-        dungeonCategory: "Event Dungeons"
+        dungeonCategory: "Event Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "HAUNTED_CEMETERY",
         dungeonName: "Haunted Cemetery",
         portalEmojiId: "561248700693741578",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "HAUNTED_CEMETERY_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248253836787717/Haunted_Cemetery_Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Troll%203.png",
@@ -287,19 +300,20 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x0e9c53
         ],
-        dungeonCategory: "Event Dungeons"
+        dungeonCategory: "Event Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "MAD_LAB",
         dungeonName: "Mad Lab",
         portalEmojiId: "561248700899262469",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "MAD_LAB_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248331695915018/Mad_Lab_Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Dr%20Terrible.png",
@@ -309,19 +323,20 @@ export const DungeonData: IDungeonInfo[] = [
             0x06bd5f,
             0x0db4ba
         ],
-        dungeonCategory: "Godland Dungeons"
+        dungeonCategory: "Godland Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "PARASITE_CHAMBERS",
         dungeonName: "Parasite Chambers",
         portalEmojiId: "561248700727558144",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "PARASITE_CHAMBERS_KEY",
                 maxEarlyLocation: 8
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248332635439136/Parasite.png",
         bossLinks: ["https://i.imgur.com/zodPEFO.png"],
         dungeonColors: [
@@ -329,55 +344,58 @@ export const DungeonData: IDungeonInfo[] = [
             0x7d1935,
             0xeb1551
         ],
-        dungeonCategory: "Event Dungeons"
+        dungeonCategory: "Event Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "DAVY_JONES_LOCKER",
         dungeonName: "Davy Jones' Locker",
         portalEmojiId: "561248700295544883",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "DAVY_JONES_LOCKER_KEY",
                 maxEarlyLocation: 8
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Davy%20Jones's%20Locker%20Portal.png",
         bossLinks: ["https://i.imgur.com/Jc4FERS.png"],
         dungeonColors: [
             0x2376a6
         ],
-        dungeonCategory: "Event Dungeons"
+        dungeonCategory: "Event Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "MOUNTAIN_TEMPLE",
         dungeonName: "Mountain Temple",
         portalEmojiId: "561248700769239076",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "MOUNTAIN_TEMPLE_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/SY0Jtnp.png",
         bossLinks: ["https://i.imgur.com/TIektVi.png"],
         dungeonColors: [
             0x12634e
         ],
-        dungeonCategory: "Event Dungeons"
+        dungeonCategory: "Event Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "LAIR_OF_DRACONIS",
         dungeonName: "Lair of Draconis",
         portalEmojiId: "561248700672901120",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "LAIR_OF_DRACONIS_KEY",
                 maxEarlyLocation: 8
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Consolation%20of%20Draconis%20Portal.png",
         bossLinks: [
             "https://i.imgur.com/vT7wdjb.png",
@@ -393,33 +411,35 @@ export const DungeonData: IDungeonInfo[] = [
             0xffffff,
             0x1e1adb
         ],
-        dungeonCategory: "Event Dungeons"
+        dungeonCategory: "Event Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "DEADWATER_DOCKS",
         dungeonName: "Deadwater Docks",
         portalEmojiId: "561248700324773909",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "DEADWATER_DOCKS_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Deadwater%20Docks.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Jon%20Bilgewater%20the%20Pirate%20King.png"],
         dungeonColors: [
             0xe4e4f5,
             0xded799
         ],
-        dungeonCategory: "Epic Dungeons"
+        dungeonCategory: "Epic Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "WOODLAND_LABYRINTH",
         dungeonName: "Woodland Labyrinth",
         portalEmojiId: "561248701440589824",
-        keyData: [],
-        otherData: [],
+        keyReactions: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Woodland%20Labyrinth.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Epic%20Larva.png",
@@ -430,38 +450,40 @@ export const DungeonData: IDungeonInfo[] = [
             0x31d43c,
             0x3eb847
         ],
-        dungeonCategory: "Epic Dungeons"
+        dungeonCategory: "Epic Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "CRAWLING_DEPTHS",
         dungeonName: "Crawling Depths",
         portalEmojiId: "561248701591322644",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "CRAWLING_DEPTHS_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/The%20Crawling%20Depths.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Son%20of%20Arachna.png"],
         dungeonColors: [
             0x3eb847,
             0x1dcf2a
         ],
-        dungeonCategory: "Epic Dungeons"
+        dungeonCategory: "Epic Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "OCEAN_TRENCH",
         dungeonName: "Ocean Trench",
         portalEmojiId: "561248700601466891",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "OCEAN_TRENCH_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ocean%20Trench%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Thessal%20the%20Mermaid%20Goddess.png"],
         dungeonColors: [
@@ -469,19 +491,20 @@ export const DungeonData: IDungeonInfo[] = [
             0x188ec4,
             0xd41c78
         ],
-        dungeonCategory: "Event Dungeons"
+        dungeonCategory: "Event Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "ICE_CAVE",
         dungeonName: "Ice Cave",
         portalEmojiId: "561248701276880918",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "ICE_CAVE_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ice%20Cave%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/ic%20Esben%20the%20Unwilling.png"],
         dungeonColors: [
@@ -489,19 +512,20 @@ export const DungeonData: IDungeonInfo[] = [
             0xe1f0f5,
             0x79c7e0
         ],
-        dungeonCategory: "Event Dungeons"
+        dungeonCategory: "Event Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "TOMB_OF_THE_ANCIENTS",
         dungeonName: "Tomb of the Ancients",
         portalEmojiId: "561248700723363860",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "TOMB_OF_THE_ANCIENTS_KEY",
                 maxEarlyLocation: 8
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Tomb%20of%20the%20Ancients%20Portal.png",
         bossLinks: [
             "https://i.imgur.com/phgo7.png",
@@ -514,75 +538,79 @@ export const DungeonData: IDungeonInfo[] = [
             0x28b84c,
             0x17adab
         ],
-        dungeonCategory: "Event Dungeons"
+        dungeonCategory: "Event Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "LAIR_OF_SHAITAN",
         dungeonName: "Lair of Shaitan",
         portalEmojiId: "561248700828090388",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "LAIR_OF_SHAITAN_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Lair%20of%20Shaitan%20Portal.png",
         bossLinks: ["https://i.imgur.com/azzD6jD.png"],
         dungeonColors: [
             0xd92130,
             0xe0912f
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "PUPPET_MASTERS_ENCORE",
         dungeonName: "Puppet Master's Encore",
         portalEmojiId: "561248700723101696",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "PUPPET_MASTERS_ENCORE_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Puppet%20Encore%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Puppet%20Master%20v2.png"],
         dungeonColors: [
             0x912121
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "CNIDARIAN_REEF",
         dungeonName: "Cnidarian Reef",
         portalEmojiId: "561250455284350998",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "CNIDARIAN_REEF_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/qjd04By.png",
         bossLinks: ["https://i.imgur.com/BF2DclQ.png"],
         dungeonColors: [
             0xf5b120,
             0x1980a6
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "SECLUDED_THICKET",
         dungeonName: "Secluded Thicket",
         portalEmojiId: "561248701402578944",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "SECLUDED_THICKET_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/8vEAT8t.png",
         bossLinks: [
             "https://i.imgur.com/2zBZOj0.png",
@@ -593,19 +621,20 @@ export const DungeonData: IDungeonInfo[] = [
             0x289e67,
             0x14a341
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "HIGH_TECH_TERROR",
         dungeonName: "High Tech Terror",
         portalEmojiId: "767844930017034261",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "HIGH_TECH_TERROR_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Enemies/F.E.R.A.L..png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/F.E.R.A.L..png"
@@ -614,19 +643,20 @@ export const DungeonData: IDungeonInfo[] = [
             0x06bd5f,
             0x0db4ba
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "BATTLE_FOR_THE_NEXUS",
         dungeonName: "Battle for the Nexus",
         portalEmojiId: "561248700588883979",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "BATTLE_FOR_THE_NEXUS_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Battle%20Nexus%20Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Lord%20Ruthven.png",
@@ -638,38 +668,40 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0xdfe30e,
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "BELLADONNAS_GARDEN",
         dungeonName: "Belladonna's Garden",
         portalEmojiId: "561248700693741569",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "BELLADONNAS_GARDEN_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/VTXGPSy.png",
         bossLinks: ["https://i.imgur.com/d7xzYLG.png"],
         dungeonColors: [
             0xd42c56,
             0x08d41d
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "ICE_TOMB",
         dungeonName: "Ice Tomb",
         portalEmojiId: "561248700270116869",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "ICE_TOMB_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ice%20Tomb%20Portal.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/Ice%20Tomb%20Defender.png",
@@ -680,19 +712,20 @@ export const DungeonData: IDungeonInfo[] = [
             0x1ab8b5,
             0x23deda
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "MAD_GOD_MAYHEM",
         dungeonName: "Mad God Mayhem",
         portalEmojiId: "561248700647604227",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "MAD_GOD_MAYHEM_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/jnHUonE.gif",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/DS%20Gulpord%20the%20Slime%20God.png",
@@ -707,19 +740,20 @@ export const DungeonData: IDungeonInfo[] = [
             0x13a813,
             0x2a852a
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "SHATTERS",
         dungeonName: "Shatters",
         portalEmojiId: "561744041532719115",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "SHATTERS_KEY",
                 maxEarlyLocation: 2
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/The%20Shatters.png",
         bossLinks: [
             "https://static.drips.pw/rotmg/wiki/Enemies/shtrs%20Bridge%20Sentinel.png",
@@ -730,38 +764,40 @@ export const DungeonData: IDungeonInfo[] = [
             0x137d13,
             0x054205
         ],
-        dungeonCategory: "Endgame Dungeons"
+        dungeonCategory: "Endgame Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "MACHINE",
         dungeonName: "Machine",
         portalEmojiId: "572596351204982784",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "MACHINE_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/0PyfYHr.png",
         bossLinks: ["https://i.imgur.com/DXIpAWm.png"],
         dungeonColors: [
             0x2ade2a,
             0x0ffc0f
         ],
-        dungeonCategory: "Mini Dungeons"
+        dungeonCategory: "Mini Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "NEST",
         dungeonName: "Nest",
         portalEmojiId: "585617025909653524",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "NEST_KEY",
                 maxEarlyLocation: 3
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/WQ95Y0j.png",
         bossLinks: [
             "https://i.imgur.com/hUWc3IV.png",
@@ -773,19 +809,20 @@ export const DungeonData: IDungeonInfo[] = [
             0xe3e019,
             0xbd0d30
         ],
-        dungeonCategory: "Endgame Dungeons"
+        dungeonCategory: "Endgame Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "CURSED_LIBRARY",
         dungeonName: "Cursed Library",
         portalEmojiId: "576610298262454316",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "CURSED_LIBRARY_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/576610932126515211/LibCursed.gif",
         bossLinks: [
             "https://i.imgur.com/DfhWagx.png",
@@ -794,19 +831,20 @@ export const DungeonData: IDungeonInfo[] = [
         dungeonColors: [
             0x1b8094
         ],
-        dungeonCategory: "Godland Dungeons"
+        dungeonCategory: "Godland Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "CULTIST_HIDEOUT",
         dungeonName: "Cultist Hideout",
         portalEmojiId: "585613559254482974",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "LOST_HALLS_KEY",
                 maxEarlyLocation: 2
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/on1ykYB.png",
         bossLinks: [
             "https://i.imgur.com/MgFBfJp.png",
@@ -825,13 +863,14 @@ export const DungeonData: IDungeonInfo[] = [
             0x18adb5,
             0xebf2f2
         ],
-        dungeonCategory: "Endgame Dungeons"
+        dungeonCategory: "Endgame Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "THE_VOID",
         dungeonName: "Void",
         portalEmojiId: "612336193761443900",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "LOST_HALLS_KEY",
                 maxEarlyLocation: 2
@@ -841,25 +880,26 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/uhDj0M5.png",
         bossLinks: ["https://i.imgur.com/kbzthE4.png"],
         dungeonColors: [
             0x0810ff
         ],
-        dungeonCategory: "Endgame Dungeons"
+        dungeonCategory: "Endgame Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "FUNGAL_CAVERN",
         dungeonName: "Fungal Cavern",
         portalEmojiId: "609078085945655296",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "FUNGAL_CAVERN_KEY",
                 maxEarlyLocation: 2
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://i.imgur.com/fHNesPK.png",
         bossLinks: [
             "https://i.imgur.com/5fsTTjQ.png",
@@ -876,31 +916,33 @@ export const DungeonData: IDungeonInfo[] = [
             0x24a353,
             0xc71c91
         ],
-        dungeonCategory: "Endgame Dungeons"
+        dungeonCategory: "Endgame Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "MISCELLANEOUS_DUNGEON",
         dungeonName: "Miscellaneous Dungeon",
         portalEmojiId: "574080648000569353",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "MISCELLANEOUS_DUNGEON_KEY",
                 maxEarlyLocation: 15
             }
         ],
-        otherData: [],
+        otherReactions: [],
         portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Pirate%20Cave%20Portal.png",
         bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Dreadstump%20the%20Pirate%20King.png"],
         dungeonColors: [
             0x1dbfaa
         ],
-        dungeonCategory: "Basic Dungeons"
+        dungeonCategory: "Basic Dungeons",
+        isBaseOrDerived: true
     },
     {
         codeName: "ORYX_3",
         dungeonName: "Oryx 3",
         portalEmojiId: "711426860051071067",
-        keyData: [
+        keyReactions: [
             {
                 mapKey: "WC_INC",
                 maxEarlyLocation: 2
@@ -918,7 +960,7 @@ export const DungeonData: IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherData: [
+        otherReactions: [
             {
                 mapKey: "WARRIOR",
                 maxEarlyLocation: 0
@@ -935,6 +977,7 @@ export const DungeonData: IDungeonInfo[] = [
             0xb5471b,
             0x000000
         ],
-        dungeonCategory: "Endgame Dungeons"
+        dungeonCategory: "Endgame Dungeons",
+        isBaseOrDerived: true
     }
 ];

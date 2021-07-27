@@ -1,23 +1,6 @@
-export interface IMappedAfkCheckOptionInfo {
-    [key: string]: {
-        /**
-         * The emoji type.
-         */
-        type: "KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "SPECIAL" | "UTILITY";
+import {IMappedAfkCheckReactions} from "../definitions/DungeonRaidInterfaces";
 
-        /**
-         * The emoji ID. This is needed for getting the emoji object.
-         */
-        emojiId: string;
-
-        /**
-         * The name of the emoji.
-         */
-        name: string;
-    };
-}
-
-export const MappedAfkCheckOptions: IMappedAfkCheckOptionInfo = {
+export const MappedAfkCheckReactions: IMappedAfkCheckReactions = {
     NITRO: {
         type: "SPECIAL",
         emojiId: "",

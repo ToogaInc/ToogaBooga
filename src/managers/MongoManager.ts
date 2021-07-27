@@ -364,7 +364,6 @@ export namespace MongoManager {
                     modmailChannelId: "",
                     modmailStorageChannelId: ""
                 },
-                quotaLogsChannels: [],
                 raids: {
                     afkCheckChannelId: "",
                     controlPanelChannelId: "",
@@ -431,31 +430,30 @@ export namespace MongoManager {
                     }
                 },
                 afkCheckProperties: {
-                    vcLimit: 60,
-                    nitroEarlyLocationLimit: 3,
+                    vcLimit: {
+                        allowEdit: true,
+                        value: 60
+                    },
+                    nitroEarlyLocationLimit: {
+                        allowEdit: true,
+                        value: 5
+                    },
                     additionalAfkCheckInfo: "",
-                    removeKeyReactsDuringAfk: false,
                     afkCheckTimeout: 30 * 60 * 1000,
-                    defaultDungeon: "",
                     bypassFullVcOption: BypassFullVcOption.KeysAndPriority,
                     afkCheckPermissions: generalAfkCheckPerms,
                     prePostAfkCheckPermissions: prePostAfkCheckPerms,
-                    allowedDungeons: DungeonData.map(x => x.codeName),
-                    dungeonSettingsOverride: []
+                    allowedDungeons: DungeonData.map(x => x.codeName)
                 }
             },
             properties: {
-                promoteDemoteRules: [],
-                quotasAndLogging: {
-                    logging: {topKeysWeek: [], topKeysWeeklyMessageId: ""},
-                    runsDone: {topRunsCompletedMessageId: "", topRunsCompletedWeek: []},
-                    runsLed: {noRunsWeeklyMessageId: "", topRunsLedWeek: [], topRunsLedWeeklyMessageId: ""}
-                },
                 prefix: OneLifeBot.BotInstance.config.misc.defaultPrefix,
                 blockedCommands: [],
                 modmailThreads: [],
                 customCmdPermissions: [],
-                customDungeons: []
+                customDungeons: [],
+                dungeonOverride: [],
+                customReactions: []
             },
             roles: {
                 earlyLocationRoles: [],
