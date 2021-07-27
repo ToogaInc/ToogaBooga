@@ -1,8 +1,7 @@
 import {
     BaseMessageComponent,
     ButtonInteraction,
-    DMChannel,
-    EmojiResolvable,
+    DMChannel, EmojiIdentifierResolvable,
     Guild,
     GuildMember,
     Message, MessageActionRow, MessageButton,
@@ -330,10 +329,10 @@ export namespace AdvancedCollector {
     /**
      * Reacts to a message at a faster than normal speed.
      * @param {Message} msg The message to react to.
-     * @param {EmojiResolvable[]} reactions The otherButtons that you want to react with.
+     * @param {EmojiIdentifierResolvable[]} reactions The otherButtons that you want to react with.
      * @param {number} intervalTime The delay between otherButtons.
      */
-    export function reactFaster(msg: Message, reactions: EmojiResolvable[], intervalTime: number = 550): void {
+    export function reactFaster(msg: Message, reactions: EmojiIdentifierResolvable[], intervalTime: number = 550): void {
         intervalTime = Math.max(550, intervalTime);
         let i: number = 0;
         const interval = setInterval(() => {

@@ -158,7 +158,7 @@ export namespace PunishmentManager {
                 const [id, shouldRemove] = idsToRemove.dequeue();
                 if (shouldRemove) {
                     const data = SectionSuspendedPeople.get(id) as ISectionSuspendedDetails;
-                    await MongoManager.getGuildCollection().findOneAndUpdate({
+                    await MongoManager.updateAndFetchGuildDoc({
                         guildId: data.guild, "guildSections.uniqueIdentifier": data.sectionId
                     }, {
                         $pull: {

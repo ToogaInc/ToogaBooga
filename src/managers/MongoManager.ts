@@ -546,8 +546,8 @@ export namespace MongoManager {
      * @param {UpdateQuery<IGuildInfo>} update The update query.
      * @return {Promise<IGuildInfo>} The new guild document.
      */
-    export async function findUpdateGuildDoc(filter: FilterQuery<IGuildInfo>,
-                                             update: UpdateQuery<IGuildInfo>): Promise<IGuildInfo> {
+    export async function updateAndFetchGuildDoc(filter: FilterQuery<IGuildInfo>,
+                                                 update: UpdateQuery<IGuildInfo>): Promise<IGuildInfo> {
         const res = await getGuildCollection().findOneAndUpdate(filter, update, {
            returnDocument: "after"
         });

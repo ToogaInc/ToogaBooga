@@ -223,7 +223,7 @@ export namespace ModmailManager {
                     components: [ReplyActionRow]
                 });
                 // And now update the database.
-                await MongoManager.findUpdateGuildDoc({
+                await MongoManager.updateAndFetchGuildDoc({
                     guildId: guild.id,
                     "properties.modmailThreads.channel": threadChannel.id
                 }, {
@@ -241,7 +241,7 @@ export namespace ModmailManager {
             } // End of if
 
             // If no channel exists, we pull the entry out of the database and treat it like a normal modmail message.
-            await MongoManager.findUpdateGuildDoc({
+            await MongoManager.updateAndFetchGuildDoc({
                 guildId: guild.id
             }, {
                 $pull: {
@@ -345,7 +345,7 @@ export namespace ModmailManager {
 
             // Otherwise, the channel doesn't exist.
             // So remove it.
-            await MongoManager.findUpdateGuildDoc({
+            await MongoManager.updateAndFetchGuildDoc({
                 guildId: targetMember.guild.id
             }, {
                 $pull: {
@@ -412,7 +412,7 @@ export namespace ModmailManager {
                 }
             ] : []
         };
-        await MongoManager.findUpdateGuildDoc({
+        await MongoManager.updateAndFetchGuildDoc({
             guildId: targetMember.guild.id
         }, {
             $push: {
@@ -505,7 +505,7 @@ export namespace ModmailManager {
 
             // Otherwise, the channel doesn't exist.
             // So remove it.
-            await MongoManager.findUpdateGuildDoc({guildId: guild.id}, {
+            await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
                 $pull: {
                     "properties.modmailThreads": {
                         channel: modmailInfo.channel
@@ -596,7 +596,7 @@ export namespace ModmailManager {
         };
 
         // Update database + update old modmail message.
-        await MongoManager.findUpdateGuildDoc({guildID: convertedToThreadBy.guild.id}, {
+        await MongoManager.updateAndFetchGuildDoc({guildID: convertedToThreadBy.guild.id}, {
             $push: {
                 "properties.modmailThreads": threadInfo
             }
@@ -666,7 +666,7 @@ export namespace ModmailManager {
         }
 
         // Update databases accordingly
-        await MongoManager.findUpdateGuildDoc({guildID: mod.guild.id}, {
+        await MongoManager.updateAndFetchGuildDoc({guildID: mod.guild.id}, {
             $push: {
                 "moderation.blacklistedModmailUsers": {
                     discordId: authorOfModmailId,
@@ -678,7 +678,7 @@ export namespace ModmailManager {
         });
 
         if (threadInfo) {
-            await MongoManager.findUpdateGuildDoc({guildDoc: mod.guild.id}, {
+            await MongoManager.updateAndFetchGuildDoc({guildDoc: mod.guild.id}, {
                 $pull: {
                     "properties.modmailThreads": {
                         channel: threadInfo.channel
@@ -812,7 +812,7 @@ export namespace ModmailManager {
                 attachments: []
             };
 
-            await MongoManager.findUpdateGuildDoc({
+            await MongoManager.updateAndFetchGuildDoc({
                 guildID: memberThatWillRespond.guild.id,
                 "properties.modmailThreads.initiatorId": modmailThread.initiatorId
             }, {
@@ -935,7 +935,7 @@ export namespace ModmailManager {
         }
 
         // Remove from database + delete channel.
-        await MongoManager.findUpdateGuildDoc({guildID: threadChannel.guild.id}, {
+        await MongoManager.updateAndFetchGuildDoc({guildID: threadChannel.guild.id}, {
             $pull: {
                 "properties.modmailThreads": {
                     channel: threadChannel.id

@@ -1,4 +1,12 @@
-import {DMChannel, Emoji, Guild, Message, MessageOptions, PartialTextBasedChannelFields, User} from "discord.js";
+import {
+    DMChannel,
+    Guild,
+    GuildEmoji,
+    Message,
+    MessageOptions,
+    PartialTextBasedChannelFields,
+    User
+} from "discord.js";
 import {MiscUtilities} from "../MiscUtilities";
 import {OneLifeBot} from "../../OneLifeBot";
 
@@ -25,9 +33,9 @@ export namespace GlobalFgrUtilities {
     /**
      * Attempts to get a cached emoji from any server.
      * @param {string} emojiId The emoji ID.
-     * @return {Emoji | null} The emoji, if any.
+     * @return {GuildEmoji | null} The emoji, if any.
      */
-    export function getCachedEmoji(emojiId: string): Emoji | null {
+    export function getCachedEmoji(emojiId: string): GuildEmoji | null {
         if (!MiscUtilities.isSnowflake(emojiId)) return null;
         return OneLifeBot.BotInstance.client.emojis.cache.get(emojiId) ?? null;
     }

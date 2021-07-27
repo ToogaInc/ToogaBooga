@@ -259,38 +259,157 @@ export enum BypassFullVcOption {
     KeysAndPriority = (1 << 2)
 }
 
+/**
+ * An interface that represents the various AFK Check & Raid channels.
+ */
 export interface IRaidChannels {
+    /**
+     * The AFK check channel.
+     *
+     * @type {string}
+     */
     afkCheckChannelId: string;
+
+    /**
+     * The control panel channel.
+     *
+     * @type {string}
+     */
     controlPanelChannelId: string;
+
+    /**
+     * The leader rating channel.
+     *
+     * @type {string}
+     */
     rateLeaderChannel: string;
 }
 
+/**
+ * An interface that represents an AFK check or raid.
+ */
 export interface IRaidInfo {
-    // The dungeon that is being done.
+    /**
+     * The dungeon code/identifier.
+     *
+     * @type {string}
+     */
     dungeonCodeName: string;
-    // Member that init raid.
+
+    /**
+     * The member that started this AFK check.
+     *
+     * @type {string}
+     */
     memberInit: string;
-    // relevant channels
+
+    /**
+     * The raid channels. We use this in case the channels were changed.
+     *
+     * @type {string}
+     */
     channels: IRaidChannels;
-    // should be in afk check channel
+
+    /**
+     * The AFK check message.
+     *
+     * @type {string}
+     */
     afkCheckMessageId: string;
-    // should be in control panel channel
+
+    /**
+     * The control panel message.
+     *
+     * @type {string}
+     */
     controlPanelMessageId: string;
-    // custom message by raid leader
+
+    /**
+     * The raid message.
+     *
+     * @type {string}
+     */
     raidMessage: string;
-    // raid status
-    // 1 = afk check
-    // 2 = in run
+
+    /**
+     * The raid status. This is either `1` (AFK Check) or `2` (In Run).
+     *
+     * @type {number}
+     */
     status: number;
-    // vc info
+
+    /**
+     * The raiding voice channel ID.
+     *
+     * @type {string}
+     */
     vcId: string;
-    // location info
+
+    /**
+     * The raid location.
+     *
+     * @type {string}
+     */
     location: string;
-    // section id
+
+    /**
+     * The section where this AFK check or raid is being done.
+     *
+     * @type {string}
+     */
     sectionIdentifier: string;
-    // early location otherButtons
-    earlyLocationReactions: { userId: string; reactCodeName: string; }[];
-    // For set interval purposes
-    controlPanelIntervalId: number | NodeJS.Timeout;
-    afkCheckIntervalId: number | NodeJS.Timeout;
+
+    /**
+     * The early location reactions.
+     *
+     * @type {object}
+     */
+    earlyLocationReactions: {
+        /**
+         * The user ID.
+         *
+         * @type {string}
+         */
+        userId: string;
+
+        /**
+         * The reaction code.
+         *
+         * @type {string}
+         */
+        reactCodeName: string;
+    }[];
+
+    /**
+     * The number of people that can get early location through means like Nitro, Patreon, etc.
+     *
+     * @type {string}
+     */
+    generalEarlyLocationAmt: number;
+}
+
+/**
+ * An interface that represents the additional options to be used for this raid.
+ */
+export interface IRaidOptions {
+    /**
+     * The VC limit for this raid.
+     *
+     * @type {number}
+     */
+    vcLimit: number;
+
+    /**
+     * The number of people that can obtain early location.
+     *
+     * @type {number}
+     */
+    generalEarlyLocLimit: number;
+
+    /**
+     * The leader-set raid message.
+     *
+     * @type {string}
+     */
+    raidMessage: string;
 }
