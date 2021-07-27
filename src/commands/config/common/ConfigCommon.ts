@@ -1,10 +1,9 @@
 import {Guild, Message, MessageActionRow, MessageButton} from "discord.js";
-import {IGuildInfo} from "../../../definitions/db/IGuildInfo";
-import {ISectionInfo} from "../../../definitions/db/ISectionInfo";
 import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
 import {Emojis} from "../../../constants/Emojis";
 import {MessageButtonStyles} from "discord.js/typings/enums";
 import {StringBuilder} from "../../../utilities/StringBuilder";
+import {IGuildInfo, ISectionInfo} from "../../../definitions/MongoDocumentInterfaces";
 
 export const DATABASE_CONFIG_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
     new MessageButton()

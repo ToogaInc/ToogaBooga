@@ -1,8 +1,8 @@
 import {Collection, Guild, GuildMember, Message, PermissionString, Role, User} from "discord.js";
-import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
+import {IGuildInfo} from "../definitions/MongoDocumentInterfaces";
 
 // Type alias
 type RolePermissions = GeneralConstants.RolePermissions;

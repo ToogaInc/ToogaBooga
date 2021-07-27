@@ -3,10 +3,10 @@ import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
 import {ModmailManager} from "../managers/ModmailManager";
 import {Emojis} from "../constants/Emojis";
-import {IGuildInfo} from "../definitions/db/IGuildInfo";
-import {IModmailThread} from "../definitions/IModmailThread";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import {IModmailThread} from "../definitions/ModmailInterfaces";
+import {IGuildInfo} from "../definitions/MongoDocumentInterfaces";
 
 export async function onMessageReactionAdd(reaction: MessageReaction | PartialMessageReaction,
                                            user: User | PartialUser): Promise<void> {

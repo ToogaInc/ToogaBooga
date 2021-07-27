@@ -1,4 +1,4 @@
-import {IConfiguration} from "./definitions/IConfiguration";
+import {IConfiguration} from "./definitions/ConfigurationInterfaces";
 import {
     Client,
     Collection, Guild,

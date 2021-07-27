@@ -1,6 +1,33 @@
-import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
-import {IPermAllowDeny} from "../IPermAllowDeny";
-import {IAfkCheckOptionData} from "./IAfkCheckOptionData";
+import {ColorResolvable} from "discord.js";
+import {IMappedAfkCheckOptionInfo} from "../constants/MappedAfkCheckOptions";
+import {IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
+
+export interface IDungeonInfo {
+    codeName: string;
+    dungeonName: string;
+    portalEmojiId: string;
+    keyData: IAfkCheckOptionData[];
+    otherData: IAfkCheckOptionData[];
+    includeEarlyLoc?: boolean;
+    portalLink: string;
+    bossLinks: string[];
+    dungeonColors: ColorResolvable[];
+    dungeonCategory: ""
+        | "Basic Dungeons"
+        | "Godland Dungeons"
+        | "Endgame Dungeons"
+        | "Event Dungeons"
+        | "Mini Dungeons"
+        | "Heroic Dungeons"
+        | "Epic Dungeons";
+}
+
+export interface IAfkCheckOptionData {
+    // This will refer to the key found in MappedAfkCheckOptions
+    mapKey: keyof IMappedAfkCheckOptionInfo;
+    // 0 means no one can get early location
+    maxEarlyLocation: number;
+}
 
 export interface IAfkCheckProperties {
     vcLimit: number;
@@ -39,4 +66,10 @@ export enum BypassFullVcOption {
     NotAllowed = (1 << 0),
     KeysOnly = (1 << 1),
     KeysAndPriority = (1 << 2)
+}
+
+export interface IRaidChannels {
+    afkCheckChannelId: string;
+    controlPanelChannelId: string;
+    rateLeaderChannel: string;
 }

@@ -1,4 +1,21 @@
-import {IPropertyKeyValuePair} from "../IPropertyKeyValuePair";
+import {PrivateApiDefinitions} from "../private-api/PrivateApiDefinitions";
+import {IPropertyKeyValuePair} from "./MiscInterfaces";
+
+export interface IVerificationChannels {
+    verificationChannelId: string;
+    manualVerificationChannelId: string;
+}
+
+export interface IVerificationProperties {
+    // will be shown on the verification embed
+    additionalVerificationInfo: string;
+    // success message to be sent when someone
+    // verifies
+    verificationSuccessMessage: string;
+    // verification requirements
+    verificationRequirements: IVerificationRequirements;
+}
+
 
 export interface IVerificationRequirements {
     // all alive fame
@@ -63,4 +80,13 @@ export interface IVerificationRequirements {
         checkThis: boolean;
         minimum: IPropertyKeyValuePair<string, number>[];
     };
+}
+
+export interface IManualVerificationEntry {
+    userId: string;
+    ign: string;
+    nameHistory: PrivateApiDefinitions.INameHistory;
+    manualVerifyMsgId: string;
+    manualVerifyChannelId: string;
+    currentHandler: string;
 }

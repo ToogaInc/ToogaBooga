@@ -1,17 +1,12 @@
 import {Collection as MCollection, FilterQuery, MongoClient, ObjectID, UpdateQuery} from "mongodb";
-import {IUserInfo} from "../definitions/db/IUserInfo";
-import {IGuildInfo} from "../definitions/db/IGuildInfo";
-import {IBotInfo} from "../definitions/db/IBotInfo";
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
-import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
-import {IPermAllowDeny} from "../definitions/IPermAllowDeny";
-import {IIdNameInfo} from "../definitions/db/IIdNameInfo";
 import {UserManager} from "./UserManager";
 import {GuildMember, Collection as DCollection} from "discord.js";
 import {DungeonData} from "../constants/DungeonData";
-import {ISectionInfo} from "../definitions/db/ISectionInfo";
-import {BypassFullVcOption} from "../definitions/parts/IAfkCheckProperties";
+import {IPermAllowDeny, IPropertyKeyValuePair} from "../definitions/MiscInterfaces";
+import {BypassFullVcOption} from "../definitions/DungeonRaidInterfaces";
+import {IBotInfo, IGuildInfo, IIdNameInfo, ISectionInfo, IUserInfo} from "../definitions/MongoDocumentInterfaces";
 
 export namespace MongoManager {
     export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();

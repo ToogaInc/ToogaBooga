@@ -1,9 +1,9 @@
 import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
-import {IBotInfo} from "../definitions/db/IBotInfo";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {PunishmentManager} from "../managers/PunishmentManager";
+import {IBotInfo} from "../definitions/MongoDocumentInterfaces";
 
 export async function onReadyEvent(): Promise<void> {
     const botUser = OneLifeBot.BotInstance.client.user;

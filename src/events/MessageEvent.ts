@@ -1,5 +1,4 @@
 import {Guild, Message} from "discord.js";
-import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
 import {BaseCommand} from "../commands";
@@ -9,6 +8,7 @@ import {StringBuilder} from "../utilities/StringBuilder";
 import {InteractionManager} from "../managers/InteractionManager";
 import {ModmailManager} from "../managers/ModmailManager";
 import {MessageConstants} from "../constants/MessageConstants";
+import {IGuildInfo} from "../definitions/MongoDocumentInterfaces";
 
 export async function onMessageEvent(msg: Message): Promise<void> {
     // We don't care about non-regular messages, bot messages, or webhook messages.

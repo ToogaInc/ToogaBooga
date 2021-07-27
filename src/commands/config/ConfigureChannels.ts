@@ -1,23 +1,24 @@
-import {BaseCommand} from "../BaseCommand";
-import {Guild, Message, MessageButton, MessageEmbed, TextChannel} from "discord.js";
-import {IGuildInfo} from "../../definitions/db/IGuildInfo";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {InteractivityHelper} from "../../utilities/InteractivityHelper";
-import {ISectionInfo} from "../../definitions/db/ISectionInfo";
 import {
-    IConfigCommand,
-    ConfigType, DATABASE_CONFIG_BUTTONS, DATABASE_CONFIG_DESCRIPTION,
+    ConfigType,
+    DATABASE_CONFIG_BUTTONS,
+    DATABASE_CONFIG_DESCRIPTION,
     getInstructions,
-    IBaseDatabaseEntryInfo
+    IBaseDatabaseEntryInfo,
+    IConfigCommand
 } from "./common/ConfigCommon";
-import {StringBuilder} from "../../utilities/StringBuilder";
+import {Guild, Message, MessageButton, MessageEmbed, TextChannel} from "discord.js";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
+import {StringBuilder} from "../../utilities/StringBuilder";
+import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import {BaseCommand} from "../BaseCommand";
 import {MessageButtonStyles} from "discord.js/typings/enums";
-import {Emojis} from "../../constants/Emojis";
-import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 import {ParseUtilities} from "../../utilities/ParseUtilities";
-import {MongoManager} from "../../managers/MongoManager";
 import {FilterQuery} from "mongodb";
+import {MongoManager} from "../../managers/MongoManager";
+import {IGuildInfo, ISectionInfo} from "../../definitions/MongoDocumentInterfaces";
+import getCachedChannel = GuildFgrUtilities.getCachedChannel;
+import {InteractivityHelper} from "../../utilities/InteractivityHelper";
+import {Emojis} from "../../constants/Emojis";
 
 enum ChannelCategoryType {
     Raiding,

@@ -1,17 +1,16 @@
 import {DMChannel, GuildMember, TextChannel} from "discord.js";
-import {IGuildInfo} from "../definitions/db/IGuildInfo";
-import {ISectionInfo} from "../definitions/db/ISectionInfo";
 import {InteractionManager} from "./InteractionManager";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
-import {IVerificationRequirements} from "../definitions/parts/IVerificationRequirements";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {PrivateApiDefinitions} from "../private-api/PrivateApiDefinitions";
-import {IPropertyKeyValuePair} from "../definitions/IPropertyKeyValuePair";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import {IPropertyKeyValuePair} from "../definitions/MiscInterfaces";
+import {IGuildInfo, ISectionInfo} from "../definitions/MongoDocumentInterfaces";
+import {IVerificationRequirements} from "../definitions/VerificationInterfaces";
 
 export namespace VerifyManager {
     const GUILD_ROLES: string[] = [

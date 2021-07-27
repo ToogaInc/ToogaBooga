@@ -4,10 +4,10 @@ import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {Queue} from "../utilities/Queue";
-import {ISuspendedUser} from "../definitions/ISuspendedUser";
-import {ISectionInfo} from "../definitions/db/ISectionInfo";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import {ISuspendedUser} from "../definitions/PunishmentInterfaces";
+import {ISectionInfo} from "../definitions/MongoDocumentInterfaces";
 
 // TODO read through this to make sure it works conceptually.
 export namespace PunishmentManager {

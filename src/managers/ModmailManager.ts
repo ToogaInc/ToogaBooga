@@ -18,15 +18,15 @@ import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {InteractionManager} from "./InteractionManager";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {Emojis} from "../constants/Emojis";
-import {IGuildInfo} from "../definitions/db/IGuildInfo";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {StringUtil} from "../utilities/StringUtilities";
 import {MiscUtilities} from "../utilities/MiscUtilities";
-import {IModmailThread, IModmailThreadMessage} from "../definitions/IModmailThread";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import {IModmailThread, IModmailThreadMessage} from "../definitions/ModmailInterfaces";
+import {IGuildInfo} from "../definitions/MongoDocumentInterfaces";
 
 export namespace ModmailManager {
     // Key: person responding to modmail.

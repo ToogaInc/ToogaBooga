@@ -1,5 +1,4 @@
-import {ISectionInfo} from "../definitions/db/ISectionInfo";
-import {IGuildInfo} from "../definitions/db/IGuildInfo";
+
 import {
     GuildMember, Message,
     MessageButton,
@@ -15,6 +14,7 @@ import {AdvancedCollector} from "./collectors/AdvancedCollector";
 import {Emojis} from "../constants/Emojis";
 import {MessageButtonStyles} from "discord.js/typings/enums";
 import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
+import {IGuildInfo, ISectionInfo} from "../definitions/MongoDocumentInterfaces";
 
 export namespace InteractivityHelper {
 
