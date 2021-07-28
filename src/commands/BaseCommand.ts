@@ -2,7 +2,7 @@ import {Collection, Guild, GuildMember, Message, PermissionString, Role, User} f
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {IGuildInfo} from "../definitions/MongoDocumentInterfaces";
+import {IGuildInfo} from "../definitions";
 
 // Type alias
 type RolePermissions = GeneralConstants.RolePermissions;

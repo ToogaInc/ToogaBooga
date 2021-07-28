@@ -1,8 +1,8 @@
-import {IMappedAfkCheckReactions} from "../definitions/DungeonRaidInterfaces";
+import {IMappedAfkCheckReactions} from "../definitions";
 
 export const MappedAfkCheckReactions: IMappedAfkCheckReactions = {
     NITRO: {
-        type: "SPECIAL",
+        type: "EARLY_LOCATION",
         emojiId: "",
         name: "Nitro"
     },

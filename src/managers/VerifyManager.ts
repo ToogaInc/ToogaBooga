@@ -8,9 +8,7 @@ import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {PrivateApiDefinitions} from "../private-api/PrivateApiDefinitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {IPropertyKeyValuePair} from "../definitions/MiscInterfaces";
-import {IGuildInfo, ISectionInfo} from "../definitions/MongoDocumentInterfaces";
-import {IVerificationRequirements} from "../definitions/VerificationInterfaces";
+import {IGuildInfo, IPropertyKeyValuePair, ISectionInfo, IVerificationRequirements} from "../definitions";
 
 export namespace VerifyManager {
     const GUILD_ROLES: string[] = [
@@ -71,7 +69,7 @@ export namespace VerifyManager {
             return;
 
         // Check if this person is currently being manually verified.
-        const manualVerifyEntry = section.properties.manualVerificationEntries
+        const manualVerifyEntry = section.manualVerificationEntries
             .find(x => x.userId === member.id);
         // If this is true, then this person is being manually verified.
         if (manualVerifyEntry)

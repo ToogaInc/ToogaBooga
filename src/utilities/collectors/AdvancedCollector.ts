@@ -97,12 +97,6 @@ export namespace AdvancedCollector {
          * The interaction that led to this.
          */
         interaction: MessageComponentInteraction;
-
-        /**
-         * The message to edit the confirmation message with if time runs out. Only `content` and `embeds` will be
-         * used.
-         */
-        onTimeoutResponse: MessageOptions;
     }
 
     /**
@@ -315,12 +309,6 @@ export namespace AdvancedCollector {
 
             resp.on("end", async (collected, reason) => {
                 if (reason === "done" || collected.size > 0) return;
-
-                await i.editReply({
-                    components: [],
-                    content: opt.onTimeoutResponse.content,
-                    embeds: opt.onTimeoutResponse.embeds
-                }).catch();
                 return resolve([null, false]);
             });
         });

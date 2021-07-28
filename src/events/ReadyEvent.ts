@@ -3,7 +3,7 @@ import {MongoManager} from "../managers/MongoManager";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {PunishmentManager} from "../managers/PunishmentManager";
-import {IBotInfo} from "../definitions/MongoDocumentInterfaces";
+import {IBotInfo} from "../definitions";
 
 export async function onReadyEvent(): Promise<void> {
     const botUser = OneLifeBot.BotInstance.client.user;
@@ -55,7 +55,7 @@ export async function onReadyEvent(): Promise<void> {
             });
 
             doc.guildSections.forEach(section => {
-                section.properties.sectionSuspended.forEach(x => {
+                section.moderation.sectionSuspended.forEach(x => {
                     if (PunishmentManager.isInSectionSuspensionTimer(x.discordId, section))
                         return;
                     PunishmentManager.addToSectionSuspensionTimer(x, associatedGuild, section);

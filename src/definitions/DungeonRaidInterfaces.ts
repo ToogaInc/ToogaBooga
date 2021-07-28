@@ -56,17 +56,6 @@ export interface IDungeonInfo {
     otherReactions: IAfkCheckReaction[];
 
     /**
-     * Whether this dungeon permits the use of early location reactions. These include, but are not limited to,
-     * Nitro Boosters, Patreons, and others (depending on your use case). This is optional; if this is not
-     * explicitly stated, this defaults to `true`.
-     *
-     * This can be overridden by the guild.
-     *
-     * @type {boolean}
-     */
-    includeEarlyLoc?: boolean;
-
-    /**
      * The link to the image of the dungeon's portal. This image will be displayed on the AFK check.
      *
      * @type {string}
@@ -161,7 +150,7 @@ export interface IReactionInfo {
      * The emoji type.
      * @type {string}
      */
-    type: "KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "SPECIAL" | "UTILITY";
+    type: "KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "EARLY_LOCATION" | "UTILITY";
 
     /**
      * The emoji ID. This is needed for getting the emoji object.
@@ -191,15 +180,18 @@ export interface IAfkCheckProperties {
     vcLimit: IAfkCheckProperty<number>;
 
     /**
-     * The default number of people that can get early location.
+     * The default number of people that can get early location by reacting to the Nitro button.
+     *
+     * Use `-1` to default to 8% of the VC limit.
      *
      * This does not apply to priority reactions (key, class, etc.).
      *
-     * This can be overridden by the guild on a per-section basis.
+     * This can be overridden by the guild on a per-section basis. A value of `0` will result in the Nitro button
+     * not showing up.
      *
-     * @type {IAfkCheckProperty<number>}
+     * @type {number}
      */
-    nitroEarlyLocationLimit: IAfkCheckProperty<number>;
+    nitroEarlyLocationLimit: number;
 
     /**
      * Any information to display on all AFK checks. This is different from the custom message raid leaders can
@@ -239,6 +231,15 @@ export interface IAfkCheckProperties {
      * @type {IPropertyKeyValuePair<string, IPermAllowDeny>[]}
      */
     prePostAfkCheckPermissions: IPropertyKeyValuePair<string, IPermAllowDeny>[];
+
+    /**
+     * The message that will be displayed to the raider when he or she confirms that he or she is bringing an
+     * essential reaction that gives early location. Generally speaking, this should contain information on things
+     * like confirming reactions or some other information.
+     *
+     * @type {string}
+     */
+    earlyLocConfirmMsg: string;
 
     /**
      * The dungeons that can be raided in this section. Use the dungeon's code name (not name).
@@ -379,13 +380,6 @@ export interface IRaidInfo {
          */
         reactCodeName: string;
     }[];
-
-    /**
-     * The number of people that can get early location through means like Nitro, Patreon, etc.
-     *
-     * @type {string}
-     */
-    generalEarlyLocationAmt: number;
 }
 
 /**
@@ -398,13 +392,6 @@ export interface IRaidOptions {
      * @type {number}
      */
     vcLimit: number;
-
-    /**
-     * The number of people that can obtain early location.
-     *
-     * @type {number}
-     */
-    generalEarlyLocLimit: number;
 
     /**
      * The leader-set raid message.

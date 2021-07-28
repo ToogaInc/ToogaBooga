@@ -1,7 +1,11 @@
+// Suppress unused methods for this file.
+// noinspection JSUnusedGlobalSymbols
+
+import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {
     Collection,
-    Emoji,
     Guild,
+    GuildEmoji,
     GuildMember,
     InteractionCollector,
     Message,
@@ -12,43 +16,54 @@ import {
     MessageOptions,
     MessageReaction,
     OverwriteResolvable,
-    ReactionCollector,
+    ReactionCollector, Role,
     Snowflake,
     TextChannel,
     User,
     VoiceChannel
 } from "discord.js";
-import {ISectionInfo} from "../definitions/db/ISectionInfo";
-import {IDungeonInfo} from "../definitions/parts/IDungeonInfo";
-import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {MessageUtilities} from "../utilities/MessageUtilities";
-import {IGuildInfo} from "../definitions/db/IGuildInfo";
-import {MiscUtilities} from "../utilities/MiscUtilities";
-import {Emojis} from "../constants/Emojis";
-import {IAfkCheckOptionData} from "../definitions/parts/IAfkCheckOptionData";
-import {MappedAfkCheckOptions} from "../constants/MappedAfkCheckOptions";
+import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {OneLifeBot} from "../OneLifeBot";
-import {IRaidInfo} from "../definitions/db/IRaidInfo";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
+import {StartAfkCheck} from "../commands/raid-leaders/StartAfkCheck";
+import {MappedAfkCheckReactions} from "../constants/MappedAfkCheckReactions";
+import {MessageUtilities} from "../utilities/MessageUtilities";
 import {DungeonData} from "../constants/DungeonData";
+import {StringUtil} from "../utilities/StringUtilities";
+import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "./MongoManager";
-import {UserManager} from "./UserManager";
+import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
-import {StartAfkCheck} from "../commands/raid-leaders/StartAfkCheck";
-import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {StringUtil} from "../utilities/StringUtilities";
-import {BypassFullVcOption} from "../definitions/parts/IAfkCheckProperties";
+import {OneLifeBot} from "../OneLifeBot";
+import {Emojis} from "../constants/Emojis";
+import {MiscUtilities} from "../utilities/MiscUtilities";
+import {UserManager} from "./UserManager";
+import {
+    BypassFullVcOption,
+    IAfkCheckReaction,
+    IDungeonInfo,
+    IGuildInfo,
+    IRaidInfo,
+    IRaidOptions,
+    IReactionInfo,
+    ISectionInfo
+} from "../definitions";
 
-// TODO Get votes.
+type ReactionInfoMore = IReactionInfo & { earlyLocAmt: number; isCustomReaction: boolean; };
 
 /**
  * This class represents a raid.
  */
 export class RaidManager {
+    /**
+     * A collection of active AFK checks and raids. The key is the AFK check message ID and the value is the raid
+     * manager object.
+     *
+     * @type {Collection<string, RaidManager>}
+     */
+    public static ActiveRaids: Collection<string, RaidManager> = new Collection<string, RaidManager>();
+
     private static readonly CP_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Start Raid")
@@ -66,7 +81,6 @@ export class RaidManager {
             .setCustomId("set_location")
             .setStyle(MessageButtonStyles.PRIMARY)
     ]);
-
     private static readonly CP_RAID_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("End Raid")
@@ -105,18 +119,23 @@ export class RaidManager {
     private readonly _controlPanelChannel: TextChannel;
     // The section.
     private readonly _raidSection: ISectionInfo;
+    // Number of people that can get early location through Nitro.
+    private readonly _numNitroEarlyLoc: number;
 
     // Nonessential reactions. These are reactions that don't give any perks. More can be added at any point.
-    private readonly _nonEssentialReactions: Emoji[];
+    private readonly _nonEssentialReactions: GuildEmoji[];
 
     // Buttons to display on the AFK check. These should only contain essential buttons.
     private readonly _afkCheckButtons: MessageButton[];
     // All essential options (options that give early location). Equivalent to _afkCheckButtons but as raw data
-    // instead of buttons.
-    private readonly _allEssentialOptions: Collection<string, IAfkCheckOptionData & {name: string;}>;
-    // A collection that contains the IAfkCheckOptionData.mapKey as the key and the members with the corresponding
+    // instead of buttons. The key is the mapping key.
+    private readonly _allEssentialOptions: Collection<string, ReactionInfoMore>;
+    // A collection that contains the IAfkCheckReaction.mapKey as the key and the members with the corresponding
     // item as the value.
-    private readonly _pplWithEarlyLoc: Collection<string, [GuildMember[], boolean]>;
+    private readonly _pplWithEarlyLoc: Collection<string, GuildMember[]>;
+    // A collection that deals with *general* (Nitro, Patreon, etc.) early location. The key is the mapKey and the
+    // value is an object containing the roles needed.
+    private _earlyLocToRole: Collection<string, Role[]>;
 
     // The guild document.
     private _guildDoc: IGuildInfo;
@@ -163,15 +182,15 @@ export class RaidManager {
      * @param {ISectionInfo} section The section where this raid is occurring. Note that the verified role must exist.
      * @param {IDungeonInfo} dungeon The dungeon that is being raided.
      * @param {string} location The location.
-     * @param {string} [raidMsg] The raid message, if any.
+     * @param {IRaidOptions} raidOptions The raid message, if any.
      */
     private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo, dungeon: IDungeonInfo,
-                        location: string, raidMsg?: string) {
+                        location: string, raidOptions: IRaidOptions) {
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
         this._dungeon = dungeon;
         this._location = location;
-        this._raidMsg = raidMsg ?? "";
+        this._raidMsg = raidOptions.raidMessage;
         this._raidStatus = RaidStatus.NOTHING;
         this._raidVc = null;
         this._afkCheckMsg = null;
@@ -180,6 +199,8 @@ export class RaidManager {
         this._controlPanelInterval = null;
         this._guildDoc = guildDoc;
         this._raidSection = section;
+        this._vcLimit = raidOptions.vcLimit;
+        this._membersThatJoined = [];
 
         this._afkCheckButtonCollector = null;
         this._controlPanelReactionCollector = null;
@@ -198,53 +219,168 @@ export class RaidManager {
             section.channels.raids.controlPanelChannelId
         )!;
 
-        // VC Limit.
-        const overrideSettings = section.otherMajorConfig.afkCheckProperties.dungeonSettingsOverride
-            .find(x => x.dungeonCodeName === dungeon.codeName);
-        this._vcLimit = overrideSettings
-            ? overrideSettings.vcLimit
-            : section.otherMajorConfig.afkCheckProperties.vcLimit;
-
         // Which essential reacts are we going to use.
-        const keysToUse = overrideSettings?.keyData ?? dungeon.keyData;
-        const optionsToUse = overrideSettings?.buttonInfo ?? dungeon.otherData;
-        const includeEarlyLoc = overrideSettings?.includeEarlyLoc ?? dungeon.includeEarlyLoc ?? true;
-        const allOptionsToUse = keysToUse;
-        if (includeEarlyLoc) {
-            allOptionsToUse.push({
-                maxEarlyLocation: guildDoc.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit,
-                mapKey: "NITRO"
+        const reactions = RaidManager.getReactions(dungeon, guildDoc);
+        const overrideSettings = guildDoc.properties.dungeonOverride.find(x => x.codeName === dungeon.codeName);
+
+        // Check if we should add nitro
+        let numEarlyLoc: number;
+        if (overrideSettings && overrideSettings.nitroEarlyLocationLimit !== -1)
+            numEarlyLoc = overrideSettings.nitroEarlyLocationLimit;
+        else if (section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit !== -1)
+            numEarlyLoc = section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit;
+        else
+            numEarlyLoc = Math.floor(this._vcLimit * 0.08);
+
+        if (numEarlyLoc !== 0 && this._guild.roles.premiumSubscriberRole) {
+            reactions.set("NITRO", {
+                ...MappedAfkCheckReactions.NITRO,
+                earlyLocAmt: numEarlyLoc,
+                isCustomReaction: false
             });
         }
-        allOptionsToUse.push(...optionsToUse);
 
-        this._allEssentialOptions = new Collection<string, IAfkCheckOptionData & {name: string;}>();
-        this._pplWithEarlyLoc = new Collection<string, [GuildMember[], boolean]>();
+        this._numNitroEarlyLoc = numEarlyLoc;
 
-        // The buttons to display.
-        this._afkCheckButtons = allOptionsToUse
-            .filter(x => x.maxEarlyLocation > 0)
-            .map(x => {
-                this._pplWithEarlyLoc.set(x.mapKey as string, [[], true]);
-                this._allEssentialOptions.set(x.mapKey as string, x);
+        // Go through all early location reactions and associate each reaction to a set of roles
+        // If no roles can be associated, remove the reaction from the collection.
+        this._earlyLocToRole = new Collection();
+        Array.from(reactions.filter(x => x.type === "EARLY_LOCATION").entries()).forEach(x => {
+            const [mapKey,] = x;
+            if (mapKey === "NITRO" && this._guild.roles.premiumSubscriberRole) {
+                this._earlyLocToRole.set(mapKey, [this._guild.roles.premiumSubscriberRole]);
+                return;
+            }
 
-                const button = new MessageButton()
-                    .setLabel(MappedAfkCheckOptions[x.mapKey].name)
-                    .setStyle(MessageButtonStyles.PRIMARY)
-                    .setCustomId(x.mapKey as string);
+            const rolesForEarlyLoc = (this._guildDoc.properties.genEarlyLocReactions
+                .find(kv => kv.key === mapKey)?.value
+                .filter(role => GuildFgrUtilities.hasCachedRole(this._guild, role))
+                .map(role => GuildFgrUtilities.getCachedRole(this._guild, role)) ?? []) as Role[];
 
-                const emoji = GlobalFgrUtilities.getCachedEmoji(MappedAfkCheckOptions[x.mapKey].emojiId);
-                if (emoji)
-                    button.setEmoji(emoji.id ?? emoji.name!);
+            if (rolesForEarlyLoc.length === 0) {
+                reactions.delete(mapKey);
+                return;
+            }
+            this._earlyLocToRole.set(mapKey, rolesForEarlyLoc);
+        });
 
-                return button;
-            });
+        // Populate the collections
+        this._allEssentialOptions = new Collection<string, ReactionInfoMore>();
+        this._pplWithEarlyLoc = new Collection<string, GuildMember[]>();
+        this._nonEssentialReactions = [];
+        this._afkCheckButtons = [];
 
-        // And any other irrelevant reactions.
-        this._nonEssentialReactions = allOptionsToUse
-            .filter(x => x.maxEarlyLocation === 0
-                && GlobalFgrUtilities.hasCachedEmoji(MappedAfkCheckOptions[x.mapKey].emojiId))
-            .map(x => GlobalFgrUtilities.getCachedEmoji(MappedAfkCheckOptions[x.mapKey].emojiId)!);
+        for (const [key, reactionInfo] of reactions) {
+            // Non-essential reaction.
+            if (reactionInfo.earlyLocAmt <= 0) {
+                // No emoji = we can't do anything, so skip this one.
+                if (!GlobalFgrUtilities.hasCachedEmoji(reactionInfo.emojiId))
+                    continue;
+
+                // If this is early loc, then there's no point in putting it as an unessential react.
+                if (reactionInfo.type === "EARLY_LOCATION")
+                    continue;
+
+                this._nonEssentialReactions.push(
+                    GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiId)!
+                );
+
+                continue;
+            }
+
+            // Otherwise, we're dealing with essential reactions.
+            this._pplWithEarlyLoc.set(key, []);
+            this._allEssentialOptions.set(key, reactionInfo);
+
+            // Create the button which will be put on AFK check.
+            const button = new MessageButton()
+                .setLabel(reactionInfo.name)
+                .setStyle(MessageButtonStyles.PRIMARY)
+                .setCustomId(key);
+
+            const emoji = GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiId);
+            if (emoji)
+                button.setEmoji(emoji.id ?? emoji.name!);
+
+            this._afkCheckButtons.push(button);
+        }
+    }
+
+    /**
+     * Gets all relevant reactions. This accounts for overrides as well.
+     * @param {IDungeonInfo} dungeon The dungeon.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @return {Collection<string, IReactionInfo & {earlyLocAmt: number; isCustom: boolean;}>} The collection of
+     * reactions. The key is the mapping key and the value is the reaction information (along with the number of
+     * early locations.
+     */
+    public static getReactions(
+        dungeon: IDungeonInfo,
+        guildDoc: IGuildInfo
+    ): Collection<string, ReactionInfoMore> {
+        const reactions = new Collection<string, ReactionInfoMore>();
+
+        // Define a local function that will check both MappedAfkCheckReactions & customReactions for reactions.
+        function findAndAddReaction(reaction: IAfkCheckReaction): void {
+            // Is the reaction key in MappedAfkCheckReactions? If so, it's as simple as grabbing that data.
+            if (reaction.mapKey in MappedAfkCheckReactions) {
+                reactions.set(reaction.mapKey, {
+                    ...MappedAfkCheckReactions[reaction.mapKey],
+                    earlyLocAmt: reaction.maxEarlyLocation,
+                    isCustomReaction: false
+                });
+                return;
+            }
+
+            // Is the reaction key associated with a custom emoji? If so, grab that as well. 
+            const customEmoji = guildDoc.properties.customReactions.findIndex(x => x.key === reaction.mapKey);
+            if (customEmoji !== -1) {
+                reactions.set(reaction.mapKey, {
+                    ...guildDoc.properties.customReactions[customEmoji].value,
+                    earlyLocAmt: reaction.maxEarlyLocation,
+                    isCustomReaction: true
+                });
+            }
+        }
+
+        // If the dungeon is base or derived base, we need to check for dungeon overrides. 
+        if (dungeon.isBaseOrDerived) {
+            // Check if we need to deal with any dungeon overrides. 
+            const idxOfCustom = guildDoc.properties.dungeonOverride.findIndex(x => x.codeName === dungeon.codeName);
+
+            if (idxOfCustom !== -1) {
+                // We need to deal with overrides. In this case, go through every reaction defined in the override
+                // info and add them to the collection of reactions.
+                const overrideInfo = guildDoc.properties.dungeonOverride[idxOfCustom];
+
+                for (const reaction of overrideInfo.keyData.concat(overrideInfo.otherData)) {
+                    findAndAddReaction(reaction);
+                }
+
+                // We don't need to check anything else.
+                return reactions;
+            }
+
+            // Otherwise, we 100% know that this is the base dungeon with no random custom emojis.
+            // Get all keys + reactions
+            for (const key of dungeon.keyReactions.concat(dungeon.otherReactions)) {
+                reactions.set(key.mapKey, {
+                    ...MappedAfkCheckReactions[key.mapKey],
+                    earlyLocAmt: key.maxEarlyLocation,
+                    isCustomReaction: false
+                });
+            }
+
+            return reactions;
+        }
+
+        // Otherwise, this is a fully custom dungeon.
+        for (const r of dungeon.keyReactions.concat(dungeon.otherReactions)) {
+            findAndAddReaction(r);
+        }
+
+
+        return reactions;
     }
 
     /**
@@ -254,12 +390,12 @@ export class RaidManager {
      * @param {ISectionInfo} section The section where this raid is occurring. Note that the verified role must exist.
      * @param {IDungeonInfo} dungeon The dungeon that is being raided.
      * @param {string} location The location.
-     * @param {string} [raidMsg] The raid message, if any.
+     * @param {IRaidOptions} raidOptions The raid message, if any.
      * @returns {RaidManager | null} The `RaidManager` object, or `null` if the AFK check channel or control panel
      * channel is invalid.
      */
     public static new(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo, dungeon: IDungeonInfo,
-                      location: string, raidMsg?: string): RaidManager | null {
+                      location: string, raidOptions: IRaidOptions): RaidManager | null {
         // Could put these all in one if-statement but too long.
         if (!memberInit.guild)
             return null;
@@ -270,7 +406,7 @@ export class RaidManager {
         if (!GuildFgrUtilities.hasCachedChannel(memberInit.guild, section.channels.raids.controlPanelChannelId))
             return null;
 
-        return new RaidManager(memberInit, guildDoc, section, dungeon, location, raidMsg);
+        return new RaidManager(memberInit, guildDoc, section, dungeon, location, raidOptions);
     }
 
     /**
@@ -291,12 +427,14 @@ export class RaidManager {
         const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === raidInfo.sectionIdentifier);
         if (!section) return null;
 
-        const dungeon = DungeonData.find(x => x.codeName === raidInfo.dungeonCodeName);
+        // Get base dungeons + custom dungeons
+        const dungeon = DungeonData
+            .concat(guildDoc.properties.customDungeons)
+            .find(x => x.codeName === raidInfo.dungeonCodeName);
         if (!dungeon) return null;
 
+        // Get various channels needed for this to work
         const raidVc = GuildFgrUtilities.getCachedChannel<VoiceChannel>(guild, raidInfo.vcId);
-        if (!raidVc) return null;
-
         const afkCheckChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
             raidInfo.channels.afkCheckChannelId
@@ -305,7 +443,12 @@ export class RaidManager {
             guild,
             raidInfo.channels.controlPanelChannelId
         );
-        if (!afkCheckChannel || !controlPanelChannel || !afkCheckChannel.isText() || !controlPanelChannel.isText())
+
+        if (!afkCheckChannel
+            || !controlPanelChannel
+            || !afkCheckChannel.isText()
+            || !controlPanelChannel.isText()
+            || !raidVc)
             return null;
 
         const controlPanelMsg = await GuildFgrUtilities
@@ -314,7 +457,12 @@ export class RaidManager {
             .fetchMessage(afkCheckChannel as TextChannel, raidInfo.afkCheckMessageId);
         if (!afkCheckMsg || !controlPanelMsg) return null;
 
-        const rm = new RaidManager(memberInit, guildDoc, section, dungeon, raidInfo.location, raidInfo.raidMessage);
+        // Create the raid manager instance.
+        const rm = new RaidManager(memberInit, guildDoc, section, dungeon, raidInfo.location, {
+            raidMessage: raidInfo.raidMessage,
+            vcLimit: raidVc.userLimit
+        });
+
         rm._raidVc = raidVc;
         rm._afkCheckMsg = afkCheckMsg;
         rm._controlPanelMsg = controlPanelMsg;
@@ -328,14 +476,10 @@ export class RaidManager {
         }
 
         if (rm._raidStatus === RaidStatus.AFK_CHECK) {
-            rm.startIntervalsForAfkCheck(5 * 1000);
-            rm.startControlPanelAfkCheckModeCollector();
-            rm.startAfkCheckCollectorDuringAfk();
+            // TODO
         }
         else if (rm._raidStatus === RaidStatus.IN_RUN) {
-            rm.startIntervalsForRaid(5 * 1000);
-            rm.startControlPanelRaidCollector();
-            rm.startAfkCheckCollectorDuringRaid();
+            // TODO
         }
         return rm;
     }
@@ -367,6 +511,7 @@ export class RaidManager {
             embeds: [this.getControlPanelEmbed()!],
             components: RaidManager.CP_AFK_BUTTONS
         });
+        // TODO control panel collector
 
         // Create our initial AFK check message.
         const descSb = new StringBuilder()
@@ -387,10 +532,12 @@ export class RaidManager {
             embeds: [initialAfkCheckEmbed]
         });
 
+        AdvancedCollector.reactFaster(this._afkCheckMsg, this._nonEssentialReactions);
+
         // Add this raid to the database so we can refer to it in the future.
         await this.addRaidToDatabase();
         // Start our intervals so we can continuously update the embeds.
-        this.startIntervalsForAfkCheck(5 * 1000);
+        this.startIntervals();
         // Wait 5 seconds so people can prepare.
         await MiscUtilities.stopFor(5 * 1000);
         // Update the message and react to the AFK check message. Note that the only reason why we are doing this is
@@ -401,8 +548,8 @@ export class RaidManager {
             components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
         }).catch();
         // Begin the AFK check collector.
-        this.startAfkCheckCollectorDuringAfk();
-        this.startControlPanelAfkCheckModeCollector();
+        this.startAfkCheckCollector();
+        RaidManager.ActiveRaids.set(this._afkCheckMsg.id, this);
     }
 
     /**
@@ -427,7 +574,7 @@ export class RaidManager {
             components: RaidManager.CP_RAID_BUTTONS
         }).catch();
         this.startControlPanelRaidCollector();
-        this.startIntervalsForRaid();
+        this.startIntervals();
         // Update the database so it is clear that we are in raid mode.
         await this.setRaidStatus(RaidStatus.IN_RUN);
 
@@ -443,8 +590,8 @@ export class RaidManager {
             afkEndedEnded.addField("Message From Your Leader", this._raidMsg);
 
         const rejoinRaidSb = new StringBuilder()
-            .append("If you disconnected from this raid voice channel, you are able to reconnect by reacting to the ")
-            .append(`${Emojis.INBOX_EMOJI} emoji.`)
+            .append("If you disconnected from this raid voice channel, you are able to reconnect by pressing the ")
+            .append(`**Reconnect** button.`)
             .appendLine()
             .appendLine()
             .append("If you did not make it into the raid voice channel before the AFK check is over, then reacting ")
@@ -454,7 +601,14 @@ export class RaidManager {
         // And edit the AFK check message + start the collector.
         await this._afkCheckMsg.edit({
             embeds: [afkEndedEnded],
-            content: "The AFK check is now over."
+            content: "The AFK check is now over.",
+            components: AdvancedCollector.getActionRowsFromComponents([
+                new MessageButton()
+                    .setCustomId(`reconnect_${this._afkCheckMsg.id}`)
+                    .setEmoji(Emojis.INBOX_EMOJI)
+                    .setLabel("Reconnect")
+                    .setStyle(MessageButtonStyles.SUCCESS)
+            ])
         }).catch();
         await this._afkCheckMsg.react(Emojis.INBOX_EMOJI).catch();
         this.startAfkCheckCollectorDuringRaid();
@@ -502,6 +656,20 @@ export class RaidManager {
     //#region DATABASE METHODS
 
     /**
+     * Checks whether a particular essential reaction is needed.
+     * @param {string} reactCodeName The map key.
+     * @return {boolean} Whether it is still needed.
+     * @private
+     */
+    private stillNeedEssentialReact(reactCodeName: string): boolean {
+        const reactInfo = this._allEssentialOptions.get(reactCodeName);
+        if (!reactInfo) return false;
+        // If allEssentialOptions has the key, so should this.
+        const pplWithEarlyLoc = this._pplWithEarlyLoc.get(reactCodeName)!;
+        return pplWithEarlyLoc.length < reactInfo.earlyLocAmt;
+    }
+
+    /**
      * Adds an early location entry to the early location map, optionally also saving it to the database.
      * @param {GuildMember} member The guild member that is getting early location.
      * @param {string} reactionCodeName The reaction code name corresponding to the reaction that the person chose.
@@ -518,15 +686,14 @@ export class RaidManager {
             return false;
 
         const prop = this._pplWithEarlyLoc.get(reactionCodeName);
-        if (!prop || !prop[1] || prop[0].includes(member))
+        if (!prop || !this.stillNeedEssentialReact(reactionCodeName))
             return false;
-        prop[0].push(member);
-        prop[1] = prop[0].length < reactInfo.maxEarlyLocation;
+        prop.push(member);
 
         if (!addToDb || !this._raidVc)
             return true;
 
-        await MongoManager.getGuildCollection().updateOne({
+        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
@@ -550,7 +717,7 @@ export class RaidManager {
         if (!this._raidVc)
             return;
         // Update the location in the database.
-        await MongoManager.getGuildCollection().findOneAndUpdate({
+        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
@@ -567,15 +734,11 @@ export class RaidManager {
     private async addRaidToDatabase(): Promise<void> {
         const obj = this.getRaidInfoObject();
         if (!obj) return;
-        const res = await MongoManager
-            .getGuildCollection()
-            .findOneAndUpdate({guildId: this._guild.id}, {
-                $push: {
-                    activeRaids: obj
-                }
-            }, {returnDocument: "after"});
-
-        this._guildDoc = res.value!;
+        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
+            $push: {
+                activeRaids: obj
+            }
+        });
     }
 
     /**
@@ -584,15 +747,13 @@ export class RaidManager {
      */
     private async removeRaidFromDatabase(): Promise<void> {
         if (!this._raidVc) return;
-        await MongoManager
-            .getGuildCollection()
-            .updateOne({guildId: this._guild.id}, {
-                $pull: {
-                    activeRaids: {
-                        vcId: this._raidVc.id
-                    }
+        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
+            $pull: {
+                activeRaids: {
+                    vcId: this._raidVc.id
                 }
-            });
+            }
+        });
     }
 
     /**
@@ -604,7 +765,7 @@ export class RaidManager {
         if (!this._raidVc) return;
         this._raidStatus = status;
         // Update the location in the database.
-        await MongoManager.getGuildCollection().findOneAndUpdate({
+        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
@@ -658,13 +819,11 @@ export class RaidManager {
             vcId: this._raidVc.id,
             location: this._location,
             sectionIdentifier: this._raidSection.uniqueIdentifier,
-            earlyLocationReactions: [],
-            controlPanelIntervalId: this._controlPanelInterval,
-            afkCheckIntervalId: this._afkCheckInterval
+            earlyLocationReactions: []
         };
 
         for (const [key, val] of this._pplWithEarlyLoc) {
-            val[0].forEach(member => {
+            val.forEach(member => {
                 raidObj.earlyLocationReactions.push({userId: member.id, reactCodeName: key});
             });
         }
@@ -764,6 +923,9 @@ export class RaidManager {
                 break;
             }
         }
+
+        // Step 4: Remove from ActiveRaids collection
+        RaidManager.ActiveRaids.delete(this._afkCheckMsg!.id);
     }
 
     /**
@@ -809,8 +971,8 @@ export class RaidManager {
             return false;
 
         return [
-            section.roles.leaders.sectionRaidLeaderRoleId,
-            section.roles.leaders.sectionAlmostRaidLeaderRoleId,
+            section.roles.leaders.sectionLeaderRoleId,
+            section.roles.leaders.sectionAlmostLeaderRoleId,
             section.roles.leaders.sectionHeadLeaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
@@ -873,12 +1035,12 @@ export class RaidManager {
             },
             // Section leader roles start here
             {
-                id: this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId as Snowflake,
+                id: this._raidSection.roles.leaders.sectionAlmostLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.deny
             },
             {
-                id: this._raidSection.roles.leaders.sectionRaidLeaderRoleId as Snowflake,
+                id: this._raidSection.roles.leaders.sectionLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
             },
@@ -983,8 +1145,8 @@ export class RaidManager {
         const neededRoles: string[] = [
             // This section's leader roles
             this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
-            this._raidSection.roles.leaders.sectionRaidLeaderRoleId,
-            this._raidSection.roles.leaders.sectionAlmostRaidLeaderRoleId,
+            this._raidSection.roles.leaders.sectionLeaderRoleId,
+            this._raidSection.roles.leaders.sectionAlmostLeaderRoleId,
             this._raidSection.roles.leaders.sectionVetLeaderRoleId,
 
             // Universal leader roles
@@ -1010,13 +1172,13 @@ export class RaidManager {
     //#region EMBEDS
 
     /**
-     * Creates an AFK check embed.
+     * Creates an AFK check embed. This is only for AFK check; this will not work for during a raid.
      * @return {MessageEmbed | null} The new AFK check embed if the raid VC is initialized. Null otherwise.
      * @private
      */
     public getAfkCheckEmbed(): MessageEmbed | null {
         if (!this._raidVc) return null;
-        if (this._raidStatus === RaidStatus.NOTHING) return null;
+        if (this._raidStatus === RaidStatus.NOTHING || this._raidStatus === RaidStatus.IN_RUN) return null;
 
         const descSb = new StringBuilder()
             .append(`⇨ To participate in this raid, join the **\`${this._leaderName}'s Raid\`** voice channel.`)
@@ -1025,19 +1187,21 @@ export class RaidManager {
 
         const optSb = new StringBuilder();
         // Account for the general early location roles.
-        if (this._pplWithEarlyLoc.size > 0) {
-            const earlyLocRoles = this._guildDoc.roles.earlyLocationRoles
-                .filter(x => GuildFgrUtilities.hasCachedRole(this._guild, x))
-                .map(x => GuildFgrUtilities.getCachedRole(this._guild, x)!);
-            const nitroRole = this._guild.roles.premiumSubscriberRole;
-            if (nitroRole)
-                earlyLocRoles.unshift(nitroRole);
+        if (this._earlyLocToRole.size > 0) {
+            optSb.append("If you have one of the listed role(s), press the corresponding button.")
+                .appendLine(2);
+            for (const [mapKey, roles] of this._earlyLocToRole) {
+                const reactionInfo = this._allEssentialOptions.get(mapKey)!;
 
-            optSb.append(`⇨ If you have __one__ of the following roles, click the **\`Early Location\`** button.`)
-                .appendLine()
-                .append(`Valid Early Location Roles: ${earlyLocRoles.join(", ")}`)
-                .appendLine()
-                .appendLine();
+                if (roles.length === 1) {
+                    optSb.append(`- ${roles[0]} ⇨ **${reactionInfo.name}** `)
+                        .appendLine();
+                    continue;
+                }
+
+                optSb.append(`- ${roles.join(", ")} ⇨ **${reactionInfo.name}**`)
+                    .appendLine();
+            }
         }
 
         optSb.append("⇨ To indicate your gear and/or class preference, please click on the corresponding buttons.");
@@ -1058,16 +1222,20 @@ export class RaidManager {
 
         // Display percent of items needed.
         const afkCheckFields: string[] = [];
-        for (const [codeName, [peopleThatReacted, isAcceptingMore]] of this._pplWithEarlyLoc) {
-            if (!isAcceptingMore)
+        for (const [codeName, peopleThatReacted] of this._pplWithEarlyLoc) {
+            if (!this.stillNeedEssentialReact(codeName))
                 continue;
 
-            const mappedAfkCheckOption = MappedAfkCheckOptions[codeName];
+            const mappedAfkCheckOption = this._allEssentialOptions.get(codeName);
             if (!mappedAfkCheckOption)
                 continue;
 
+            // Don't display early location stats.
+            if (mappedAfkCheckOption.type === "EARLY_LOCATION")
+                continue;
+
             const currentAmt = peopleThatReacted.length;
-            const maximum = this._allEssentialOptions.get(codeName)!.maxEarlyLocation;
+            const maximum = this._allEssentialOptions.get(codeName)!.earlyLocAmt;
 
             const emoji = GlobalFgrUtilities.getCachedEmoji(mappedAfkCheckOption.emojiId);
             const percentBar = StringUtil.getEmojiProgressBar(8, currentAmt / maximum);
@@ -1094,15 +1262,14 @@ export class RaidManager {
 
         // First thing's first, both AFK Check + In Raid control panels will display reactions.
         const cpFields: string[] = [];
-        for (const [codeName, [peopleThatReacted,]] of this._pplWithEarlyLoc) {
-            const mappedAfkCheckOption = MappedAfkCheckOptions[codeName];
+        for (const [codeName, peopleThatReacted] of this._pplWithEarlyLoc) {
+            const mappedAfkCheckOption = this._allEssentialOptions.get(codeName);
             if (!mappedAfkCheckOption)
                 continue;
 
-            const currentAmt = peopleThatReacted.length;
-            const maximum = this._allEssentialOptions.get(codeName)!.maxEarlyLocation;
-
             const emoji = GlobalFgrUtilities.getCachedEmoji(mappedAfkCheckOption.emojiId);
+            const currentAmt = peopleThatReacted.length;
+            const maximum = this._allEssentialOptions.get(codeName)!.earlyLocAmt;
             const percentBar = StringUtil.getEmojiProgressBar(8, currentAmt / maximum);
             const peopleNeededStr = `${currentAmt} / ${maximum}`;
 
@@ -1187,89 +1354,265 @@ export class RaidManager {
 
     //#region COLLECTORS
 
-    public async startAfkCheckCollector(): boolean {
-        if (!this._afkCheckMsg) return false;
-        if (this._afkCheckButtonCollector) return false;
+    /**
+     * Stops all intervals and collectors that is being used and set the intervals and collectors instance variables
+     * to null.
+     * @param {string} [reason] The reason.
+     * @private
+     */
+    private stopAllIntervalsAndCollectors(reason?: string): void {
+        if (this._intervalsAreRunning) {
+            if (this._afkCheckInterval) {
+                clearInterval(this._afkCheckInterval);
+                this._afkCheckInterval = null;
+            }
 
+            if (this._controlPanelInterval) {
+                clearInterval(this._controlPanelInterval);
+                this._controlPanelInterval = null;
+            }
+
+            this._intervalsAreRunning = false;
+        }
+
+        this._controlPanelReactionCollector?.stop(reason);
+        this._controlPanelReactionCollector = null;
+        this._afkCheckButtonCollector?.stop(reason);
+        this._afkCheckButtonCollector = null;
+    }
+
+    /**
+     * Starts the intervals, which periodically updates the AFK check message and the control panel message.
+     * @return {boolean} Whether the intervals started.
+     * @private
+     */
+    private startIntervals(): boolean {
+        if (!this._afkCheckMsg || !this._controlPanelMsg) return false;
+        if (this._intervalsAreRunning || this._raidStatus === RaidStatus.NOTHING) return false;
+
+        this._intervalsAreRunning = true;
+
+        // If we're in AFK check mode, then start intervals for AFK check message + control panel message.
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
-            this._afkCheckButtonCollector = this._afkCheckMsg.createMessageComponentCollector({
-                filter: i => !i.user.bot,
-                time: this._raidSection.otherMajorConfig.afkCheckProperties.afkCheckTimeout * 60 * 1000
+            this._afkCheckInterval = setInterval(async () => {
+                if (!this._afkCheckMsg) {
+                    this.stopAllIntervalsAndCollectors();
+                    return;
+                }
+
+                await this._afkCheckMsg.edit({
+                    embeds: [this.getAfkCheckEmbed()!]
+                }).catch();
+            }, 4 * 1000);
+
+            this._controlPanelInterval = setInterval(async () => {
+                if (!this._controlPanelMsg) {
+                    this.stopAllIntervalsAndCollectors();
+                    return;
+                }
+
+                await this._controlPanelMsg.edit({
+                    embeds: [this.getControlPanelEmbed()!]
+                }).catch();
             });
 
-            this._afkCheckButtonCollector.on("collect", async i => {
-                const memberThatResponded = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
-                if (!memberThatResponded) return;
+            return true;
+        }
 
-                // Is the person in a VC?
-                if (!memberThatResponded.voice.channel) {
-                    const notInVcEmbed = MessageUtilities.generateBlankEmbed(memberThatResponded, "RED")
-                        .setTitle("Not In Raid VC")
-                        .setDescription("In order to indicate your class/gear preference, you need to be in the raid VC.")
-                        .setTimestamp();
-                    await i.reply({
-                        embeds: [notInVcEmbed],
+        // Otherwise, we're in raid mode and we only need to update the control panel message.
+        this._controlPanelInterval = setInterval(async () => {
+            if (!this._controlPanelMsg || !this._raidVc) {
+                this.stopAllIntervalsAndCollectors();
+                return;
+            }
+
+            await this._controlPanelMsg.edit({
+                embeds: [this.getControlPanelEmbed()!]
+            }).catch();
+        }, 5 * 1000);
+
+        return true;
+    }
+
+    private startAfkCheckCollector(): boolean {
+        if (!this._afkCheckMsg) return false;
+        if (this._afkCheckButtonCollector) return false;
+        if (this._raidStatus !== RaidStatus.AFK_CHECK) return false;
+
+        this._afkCheckButtonCollector = this._afkCheckMsg.createMessageComponentCollector({
+            filter: i => !i.user.bot && this._allEssentialOptions.has(i.customId),
+            time: this._raidSection.otherMajorConfig.afkCheckProperties.afkCheckTimeout * 60 * 1000
+        });
+
+        // Remember that interactions are all going to be in _allEssentialOptions
+        this._afkCheckButtonCollector.on("collect", async i => {
+            await i.deferUpdate();
+            const memberThatResponded = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
+            if (!memberThatResponded)
+                return;
+
+            // Does the VC even exist?
+            if (!this._raidVc || this._raidVc.deleted) {
+                await this.cleanUpRaid();
+                return;
+            }
+
+            // Is the person in a VC?
+            if (!memberThatResponded.voice.channel) {
+                const notInVcEmbed = MessageUtilities.generateBlankEmbed(memberThatResponded, "RED")
+                    .setTitle("Not In Raid VC")
+                    .setDescription("In order to indicate your class/gear preference, you need to be in the raid "
+                        + "VC.")
+                    .setTimestamp();
+                await i.reply({
+                    embeds: [notInVcEmbed],
+                    ephemeral: true
+                }).catch();
+                return;
+            }
+
+            const mapKey = i.customId;
+            const reactInfo = this._allEssentialOptions.get(mapKey)!;
+
+            // Check if the person can be moved in.
+            const buttonResponseType = reactInfo.type === "KEY"
+                ? BypassFullVcOption.KeysOnly as number
+                : BypassFullVcOption.KeysAndPriority as number;
+
+            if (this._raidVc.members.size === 0 && memberThatResponded.voice.channelId !== this._raidVc.id) {
+                const noMoveInEmbed = MessageUtilities.generateBlankEmbed(memberThatResponded.user, "RED")
+                    .setTitle("Cannot Move You In")
+                    .setDescription("You cannot be moved in at this time.");
+                const bypassOptions = this._raidSection.otherMajorConfig.afkCheckProperties.bypassFullVcOption;
+                // flat out not allowed
+                if (bypassOptions === BypassFullVcOption.NotAllowed) {
+                    noMoveInEmbed.addField(
+                        "Reason",
+                        "Server staff have disallowed any keys or priority reactions from joining a full VC."
+                    );
+                    i.reply({
+                        embeds: [noMoveInEmbed],
                         ephemeral: true
                     }).catch();
                     return;
                 }
 
-                // Does the VC even exist?
-                if (!this._raidVc || this._raidVc.deleted) {
-                    await this.cleanUpRaid();
+                // keys only but the person has a priority react
+                if (bypassOptions === BypassFullVcOption.KeysOnly
+                    && (buttonResponseType & (BypassFullVcOption.KeysOnly as number)) === 0) {
+                    noMoveInEmbed.addField(
+                        "Reason",
+                        "Server staff have disallowed priority reactions from joining a full VC."
+                    );
+                    i.reply({
+                        embeds: [noMoveInEmbed],
+                        ephemeral: true
+                    }).catch();
                     return;
                 }
+            }
 
-                const mapKey = i.customId;
+            const members = this._pplWithEarlyLoc.get(mapKey)!;
+            // Deconstruct this
 
-                // Check if the person can be moved in.
-                const buttonResponseType = MappedAfkCheckOptions[mapKey].type === "KEY"
-                    ? BypassFullVcOption.KeysOnly as number
-                    : BypassFullVcOption.KeysAndPriority as number;
-                if (this._raidVc.members.size === 0 && memberThatResponded.voice.channelId !== this._raidVc.id) {
-                    const noMoveInEmbed = MessageUtilities.generateBlankEmbed(memberThatResponded.user, "RED")
-                        .setTitle("Cannot Move You In")
-                        .setDescription("You cannot be moved in at this time.");
-                    const bypassOptions = this._raidSection.otherMajorConfig.afkCheckProperties.bypassFullVcOption;
-                    // flat out not allowed
-                    if (bypassOptions === BypassFullVcOption.NotAllowed) {
-                        noMoveInEmbed.addField(
-                            "Reason",
-                            "Server staff have disallowed any keys or priority reactions from joining a full VC."
-                        );
-                        i.reply({
-                            embeds: [noMoveInEmbed],
-                            ephemeral: true
-                        }).catch();
-                        return;
-                    }
+            // If the member already got this, then don't let them get this again.
+            if (members.some(x => x.id === i.user.id))
+                return;
 
-                    // keys only but the person has a priority react
-                    if (bypassOptions === BypassFullVcOption.KeysOnly
-                        && (buttonResponseType & (BypassFullVcOption.KeysOnly as number)) === 0) {
-                        noMoveInEmbed.addField(
-                            "Reason",
-                            "Server staff have disallowed priority reactions from joining a full VC."
-                        );
-                        i.reply({
-                            embeds: [noMoveInEmbed],
-                            ephemeral: true
-                        }).catch();
-                        return;
-                    }
-                }
+            // Item display for future use
+            const itemDisplay = new StringBuilder();
+            if (GlobalFgrUtilities.hasCachedEmoji(reactInfo.emojiId))
+                itemDisplay.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiId)!).append(" ");
+            itemDisplay.append(`**\`${reactInfo.name}\`**`);
 
-                const earlyLocData = this._pplWithEarlyLoc.get(mapKey);
-                // Somehow, this doesn't exist in collection of early location reacts
-                if (!earlyLocData) return;
-                // We no longer need this anymore
-                if (!earlyLocData[1]) {
-                    const noLongerNeedEmbed = MessageUtilities.generateBlankEmbed(memberThatResponded.user, "RED")
-                        .setTitle("No Longer Needed")
-                        .setDescription(`We no longer need **\`${MappedAfkCheckOptions}\`**`);
-                }
+            // If we no longer need this anymore, then notify them
+            if (!this.stillNeedEssentialReact(mapKey)) {
+                const noLongerNeedEmbed = MessageUtilities.generateBlankEmbed(memberThatResponded.user, "RED")
+                    .setTitle("No Longer Needed")
+                    .setDescription(`We no longer need **\`${itemDisplay.toString()}\`**.`)
+                    .addField("What This Means", "You will not be given early location. However, you "
+                        + "are free to bring this along.")
+                    .setFooter("No Longer Needed.");
+
+                i.reply({
+                    embeds: [noLongerNeedEmbed],
+                    ephemeral: true
+                }).catch();
+            }
+
+            // Ask the member if they're willing to actually bring it.
+            const contentDisplay = new StringBuilder()
+                .append(`You pressed the ${itemDisplay} button.`)
+                .appendLine(2);
+
+            if (reactInfo.type !== "EARLY_LOCATION") {
+                contentDisplay.append(`Please confirm that you will bring ${itemDisplay} to the raid by pressing `)
+                    .append("the **Yes** button. If you do not plan on bring said item, then please press **No** ")
+                    .append("or don't respond.")
+                    .appendLine(2);
+            }
+
+            contentDisplay
+                .append("You have **15** seconds to choose. Failure to respond will result in an ")
+                .append("automatic **no**.")
+                .toString();
+            const [, response] = await AdvancedCollector.askBoolFollowUp({
+                interaction: i,
+                time: 15 * 1000,
+                contentToSend: {
+                    content: contentDisplay.toString()
+                },
+                channel: i.channel as TextChannel
             });
-        }
+
+            // Response of "no" or failure to respond implies no.
+            if (!response) {
+                await i.editReply({
+                    content: "You failed to respond within 15 seconds.",
+                    components: []
+                });
+                return;
+            }
+
+            // Make sure we can actually give early location. It might have changed.
+            if (!this.stillNeedEssentialReact(mapKey)) {
+                await i.editReply({
+                    content: reactInfo.type === "EARLY_LOCATION"
+                        ? "Although you reacted with this button, you are not able to receive early location"
+                        + " because someone else beat you to the last slot."
+                        : `Although you said you would bring ${itemDisplay}, we do not need this anymore.`,
+                    components: []
+                });
+                return;
+            }
+
+            // Add to database
+            await this.addEarlyLocationReaction(memberThatResponded, mapKey, true);
+            // If we no longer need this, then edit the button so no one else can click on it.
+            if (!this.stillNeedEssentialReact(mapKey)) {
+                const idxOfButton = this._afkCheckButtons.findIndex(x => x.customId === mapKey);
+                this._afkCheckButtons[idxOfButton].setDisabled(true);
+            }
+
+            const confirmationContent = new StringBuilder()
+                .append(`Thank you for confirming your choice of: ${itemDisplay}. `)
+                .appendLine(2)
+                .append(`The raid location is: **${this._location}**.`)
+                .appendLine(2);
+
+            // TODO make this customizable?
+            if (reactInfo.type !== "EARLY_LOCATION")
+                confirmationContent.append(this._raidSection.otherMajorConfig.afkCheckProperties.earlyLocConfirmMsg);
+
+            confirmationContent.appendLine(2)
+                .append("**Make sure** the bot can send you direct messages. If the raid leader changes the ")
+                .append("location, the new location will be sent to you via direct messages.");
+
+            await i.editReply({
+                content: confirmationContent.toString(),
+                components: []
+            });
+        });
 
         return true;
     }

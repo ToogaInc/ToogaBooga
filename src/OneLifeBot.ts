@@ -1,4 +1,4 @@
-import {IConfiguration} from "./definitions/ConfigurationInterfaces";
+import {IConfiguration} from "./definitions";
 import {
     Client,
     Collection, Guild,
@@ -9,15 +9,11 @@ import {
     PartialUser,
     User
 } from "discord.js";
-import {onReadyEvent} from "./events/ReadyEvent";
-import {onMessageEvent} from "./events/MessageEvent";
 import {MongoManager} from "./managers/MongoManager";
 import * as assert from "assert";
-import {onMessageReactionAdd} from "./events/MessageReactionAdd";
 import axios, {AxiosInstance} from "axios";
 import {BaseCommand} from "./commands";
-import {onInteractionEvent} from "./events/InteractionEvent";
-import {onGuildCreateEvent} from "./events/GuildCreateEvent";
+import {onGuildCreateEvent, onInteractionEvent, onMessageEvent, onMessageReactionAdd, onReadyEvent} from "./events";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;

@@ -8,7 +8,7 @@ import {StringBuilder} from "../utilities/StringBuilder";
 import {InteractionManager} from "../managers/InteractionManager";
 import {ModmailManager} from "../managers/ModmailManager";
 import {MessageConstants} from "../constants/MessageConstants";
-import {IGuildInfo} from "../definitions/MongoDocumentInterfaces";
+import {IGuildInfo} from "../definitions";
 
 export async function onMessageEvent(msg: Message): Promise<void> {
     // We don't care about non-regular messages, bot messages, or webhook messages.
@@ -39,7 +39,7 @@ export async function onMessageEvent(msg: Message): Promise<void> {
 async function commandHandler(msg: Message, guild?: Guild, guildDoc?: IGuildInfo): Promise<void> {
     const prefixes = [OneLifeBot.BotInstance.config.misc.defaultPrefix];
     if (guildDoc)
-        prefixes.push(guildDoc.properties.prefix);
+        prefixes.push(guildDoc.prefix);
 
     let usedPrefix: string | undefined;
     for (const p of prefixes) {

@@ -6,8 +6,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {Queue} from "../utilities/Queue";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {ISuspendedUser} from "../definitions/PunishmentInterfaces";
-import {ISectionInfo} from "../definitions/MongoDocumentInterfaces";
+import {ISectionInfo, ISuspendedUser} from "../definitions";
 
 // TODO read through this to make sure it works conceptually.
 export namespace PunishmentManager {
@@ -293,7 +292,7 @@ export namespace PunishmentManager {
             sectionId: section.uniqueIdentifier,
             nickname: details.nickname,
             reason: details.reason,
-            endsAt: details.dateTimeEnd
+            endsAt: details.timeEnd
         });
 
         return true;
@@ -317,7 +316,7 @@ export namespace PunishmentManager {
         SuspendedPeople.set(`${details.discordId}_${Math.round(Math.random() * 100000000000)}`, {
             guild: guild.id,
             nickname: details.reason,
-            endsAt: details.dateTimeEnd,
+            endsAt: details.timeEnd,
             roles: oldRoles,
             reason: details.reason
         });

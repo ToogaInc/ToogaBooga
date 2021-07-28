@@ -4,9 +4,14 @@ import {GeneralConstants} from "../constants/GeneralConstants";
 import {UserManager} from "./UserManager";
 import {GuildMember, Collection as DCollection} from "discord.js";
 import {DungeonData} from "../constants/DungeonData";
-import {IPermAllowDeny, IPropertyKeyValuePair} from "../definitions/MiscInterfaces";
-import {BypassFullVcOption} from "../definitions/DungeonRaidInterfaces";
-import {IBotInfo, IGuildInfo, IIdNameInfo, ISectionInfo, IUserInfo} from "../definitions/MongoDocumentInterfaces";
+import {
+    BypassFullVcOption, IBotInfo, IGuildInfo,
+    IIdNameInfo,
+    IPermAllowDeny,
+    IPropertyKeyValuePair,
+    ISectionInfo,
+    IUserInfo
+} from "../definitions";
 
 export namespace MongoManager {
     export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();
@@ -311,6 +316,7 @@ export namespace MongoManager {
                 userDoc.details.moderationHistory.push(punishmentHist);
 
             // Copy all settings
+            /*
             for (const setting of doc.details.settings) {
                 const idx = userDoc.details.settings.findIndex(x => x.key === setting.key);
                 if (idx === -1) {
@@ -322,7 +328,7 @@ export namespace MongoManager {
                 }
 
                 userDoc.details.settings[idx].value = setting.value;
-            }
+            }*/
         }
 
         // Delete all old documents.
@@ -380,6 +386,7 @@ export namespace MongoManager {
             moderation: {blacklistedUsers: [], suspendedUsers: [], blacklistedModmailUsers: []},
             otherMajorConfig: {
                 verificationProperties: {
+                    checkRequirements: true,
                     additionalVerificationInfo: "",
                     verificationSuccessMessage: "",
                     verificationRequirements: {
@@ -434,29 +441,30 @@ export namespace MongoManager {
                         allowEdit: true,
                         value: 60
                     },
-                    nitroEarlyLocationLimit: {
-                        allowEdit: true,
-                        value: 5
-                    },
+                    nitroEarlyLocationLimit: 5,
                     additionalAfkCheckInfo: "",
                     afkCheckTimeout: 30 * 60 * 1000,
                     bypassFullVcOption: BypassFullVcOption.KeysAndPriority,
                     afkCheckPermissions: generalAfkCheckPerms,
                     prePostAfkCheckPermissions: prePostAfkCheckPerms,
-                    allowedDungeons: DungeonData.map(x => x.codeName)
+                    allowedDungeons: DungeonData.map(x => x.codeName),
+                    earlyLocConfirmMsg: "You must bring the class/gear choice that you indicated you would bring."
+                        + " Failure to do so may result in consequences. Additionally, do not share this location"
+                        + " with anyone else."
                 }
             },
             properties: {
-                prefix: OneLifeBot.BotInstance.config.misc.defaultPrefix,
                 blockedCommands: [],
                 modmailThreads: [],
                 customCmdPermissions: [],
                 customDungeons: [],
                 dungeonOverride: [],
-                customReactions: []
+                customReactions: [],
+                approvedCustomImages: [],
+                approvedCustomEmojiIds: [],
+                genEarlyLocReactions: []
             },
             roles: {
-                earlyLocationRoles: [],
                 mutedRoleId: "",
                 staffRoles: {
                     moderation: {moderatorRoleId: "", officerRoleId: "", securityRoleId: ""},
@@ -477,7 +485,8 @@ export namespace MongoManager {
                 },
                 suspendedRoleId: "",
                 verifiedRoleId: ""
-            }
+            },
+            prefix: OneLifeBot.BotInstance.config.misc.defaultPrefix
         };
     }
 
@@ -490,7 +499,7 @@ export namespace MongoManager {
     export function getDefaultUserConfig(userId: string, ign?: string): IUserInfo {
         return {
             _id: new ObjectID(),
-            details: {moderationHistory: [], settings: []},
+            details: {moderationHistory: [], universalNotes: "", guildNotes: []},
             discordId: userId,
             loggedInfo: []
         };
@@ -594,16 +603,16 @@ export namespace MongoManager {
             },
             isMainSection: true,
             otherMajorConfig: guildDb.otherMajorConfig,
-            properties: {
-                sectionSuspended: [],
-                manualVerificationEntries: guildDb.manualVerificationEntries
+            moderation: {
+                sectionSuspended: []
             },
             roles: {
                 leaders: guildDb.roles.staffRoles.sectionLeaderRoleIds,
                 verifiedRoleId: guildDb.roles.verifiedRoleId
             },
             sectionName: "Main",
-            uniqueIdentifier: "MAIN"
+            uniqueIdentifier: "MAIN",
+            manualVerificationEntries: guildDb.manualVerificationEntries
         });
         // Custom sections
         sections.push(...guildDb.guildSections);

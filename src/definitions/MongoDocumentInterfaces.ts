@@ -39,7 +39,7 @@ export interface IGuildInfo extends IBaseDocument {
     guildId: string;
 
     /**
-     * All possible roles.
+     * Most of the roles.
      *
      * @type {object}
      */
@@ -162,13 +162,6 @@ export interface IGuildInfo extends IBaseDocument {
                 moderatorRoleId: string;
             };
         };
-
-        /**
-         * Any roles that will grant early location.
-         *
-         * @type {string[]}
-         */
-        earlyLocationRoles: string[];
     };
 
     /**
@@ -348,13 +341,15 @@ export interface IGuildInfo extends IBaseDocument {
             otherData: IAfkCheckReaction[];
 
             /**
-             * Whether this dungeon permits the use of early location reactions. These include, but are not limited to,
-             * Nitro Boosters, Patreons, and others (depending on your use case). This is optional; if this is not
-             * explicitly stated, this defaults to `true`.
+             * The default number of people that can get early location by reacting to the Nitro button.
              *
-             * @type {boolean}
+             * Use `-1` to default to whatever the section default is.
+             *
+             * This does not apply to priority reactions (key, class, etc.).
+             *
+             * @type {number}
              */
-            includeEarlyLoc?: boolean;
+            nitroEarlyLocationLimit: number;
 
             /**
              * The VC limit. This will override the section-defined VC limit.
@@ -365,9 +360,54 @@ export interface IGuildInfo extends IBaseDocument {
         }[];
 
         /**
-         * All custom reactions. The key is the
+         * All custom reactions. The key is the map key (the reaction code name) and the value is the reaction
+         * information.
+         *
+         * This is very similar to how `MappedAfkCheckReactions` works in the sense that you have:
+         * ```
+         * IMappedAfkCheckReactions[mapKey] -> result
+         * ```
+         * Where `mapKey` is the key in this case and the `result` is the `IReactionInfo` that you get.
+         *
+         * The key will be a string of 30 random characters (since the user should never see the key). The value is
+         * defined by the user.
+         *
+         * @type {IPropertyKeyValuePair<string, IReactionInfo>[]}
          */
         customReactions: IPropertyKeyValuePair<string, IReactionInfo>[];
+
+        /**
+         * Any approved custom emojis. This will simply be an array of emoji IDs.
+         *
+         * @type {string[]}
+         */
+        approvedCustomEmojiIds: string[];
+
+        /**
+         * Any approved images. This will be an array of image URLs. The image will be stored on a private server.
+         *
+         * @type {string[]}
+         */
+        approvedCustomImages: string[];
+
+        /**
+         * Any reactions that give early location.
+         *
+         * The key is the emoji mapping key and the value is the list of roles which qualify for early location from
+         * that emoji.
+         *
+         * In terms of how this works:
+         * - If `includeEarlyLoc` is true (for either the overridden dungeon or the base dungeon), then all reactions
+         * here will be displayed.
+         * - If the user wishes to override the early location reactions for a certain dungeon, he or she can do so
+         * by overriding what shows up (note that every emoji has an associated `type` which denotes what it is used
+         * for).
+         *
+         * Nitro is automatically included.
+         *
+         * @type {IPropertyKeyValuePair<string, string[]>[]}
+         */
+        genEarlyLocReactions: IPropertyKeyValuePair<string, string[]>[];
     };
 
     /**

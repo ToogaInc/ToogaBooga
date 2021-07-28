@@ -25,8 +25,7 @@ import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilitie
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {IModmailThread, IModmailThreadMessage} from "../definitions/ModmailInterfaces";
-import {IGuildInfo} from "../definitions/MongoDocumentInterfaces";
+import {IModmailThread, IModmailThreadMessage, IGuildInfo} from "../definitions";
 
 export namespace ModmailManager {
     // Key: person responding to modmail.
@@ -124,8 +123,8 @@ export namespace ModmailManager {
                 embeds: [
                     MessageUtilities.generateBlankEmbed(author, "RANDOM")
                         .setTitle("Confirm Send Modmail Message")
-                        .setDescription("Just now, you tried sending the above message to modmail. Are you sure you want to "
-                            + "send this message?")
+                        .setDescription("Just now, you tried sending the above message to modmail. Are you sure you "
+                            + "want to send this message?")
                         .setFooter("Modmail Confirmation")
                 ],
                 components: GeneralConstants.YesNoActionRows
