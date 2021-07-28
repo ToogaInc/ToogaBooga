@@ -1,4 +1,4 @@
-[← Go Back](https://github.com/ewang2002/OneLife/blob/master/docs/docs-guide.md)
+[← Go Back](https://github.com/ewang2002/OneLifeBot/blob/master/docs/docs-guide.md)
 
 # Some Notes
 Here are a few notes to keep in mind as you use this bot.

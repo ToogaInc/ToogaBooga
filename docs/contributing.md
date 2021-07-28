@@ -1,4 +1,4 @@
-[← Go Back](https://github.com/ewang2002/OneLife/blob/master/docs/docs-guide.md)
+[← Go Back](https://github.com/ewang2002/OneLifeBot/blob/master/docs/docs-guide.md)
 
 # Contributing
 Want to help with the development of OneLife? Please read through all of this before you do so.
