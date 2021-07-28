@@ -12,6 +12,8 @@ The main purpose of this bot is to simplify verification and raid management in 
 which represents a huge overhaul of [ZeroRaidBot](https://github.com/ewang2002/ZeroRaidBot), is designed with
 customization in mind.
 
+Unlike Zero, this bot is **not** affiliated with any major Discord servers.
+
 ## Technologies
 
 OneLife actually consists of two projects: the bot itself (this repository);
@@ -30,13 +32,15 @@ provides other services like screenshot parsing.
 - [.NET](https://dotnet.microsoft.com/learn/dotnet/what-is-dotnet)
 - [ASP.NET](https://dotnet.microsoft.com/apps/aspnet)
 
-Since the creation of this bot, I am not affiliated with any major Discord servers. If I am a developer in a server, I
-am only there to provide assistance.
+## Documentation, Setup & Support
+To invite the official bot, click [here](). 
 
-## Setup & Support
+To see the documentation, click [here](https://github.com/ewang2002/OneLifeBot/blob/master/docs/docs-guide.md). The 
+documentation includes a setup guide and information about how you can get support.
 
-I will not provide support for anyone that plans on self-hosting this bot. However, there are other similar projects out
-there that may suit your needs.
+
+## Other Projects
+These are some other peojcts that you might be interested in.
 
 - [ZeroRaidBot](https://github.com/ewang2002/ZeroRaidBot) - The original open-source bot that I created. This project is
   in maintenance mode, though I may revisit it when I have time; I will only fix bugs and update dependencies as needed.
@@ -46,5 +50,4 @@ there that may suit your needs.
   by [Jacob](https://github.com/Jacobvs). Written in Python and uses MySQL.
 
 ## License
-
-MIT.
+Unless otherwise specified, all files in this repository here are listed under the **MIT** license.
