@@ -1,5 +1,5 @@
 import {OneLifeBot} from "./OneLifeBot";
-import {IConfiguration} from "./definitions/ConfigurationInterfaces";
+import {IConfiguration} from "./definitions";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -9,7 +9,7 @@ async function main(): Promise<void> {
     const bot = new OneLifeBot(config);
     bot.startAllEvents();
     await bot.login();
-    await bot.initServices();
+    bot.initServices();
 }
 
 main().then();

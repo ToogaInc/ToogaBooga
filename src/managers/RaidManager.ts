@@ -14,9 +14,8 @@ import {
     MessageComponentInteraction,
     MessageEmbed,
     MessageOptions,
-    MessageReaction,
     OverwriteResolvable,
-    ReactionCollector, Role,
+    Role,
     Snowflake,
     TextChannel,
     User,
@@ -81,6 +80,7 @@ export class RaidManager {
             .setCustomId("set_location")
             .setStyle(MessageButtonStyles.PRIMARY)
     ]);
+
     private static readonly CP_RAID_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("End Raid")
@@ -161,7 +161,7 @@ export class RaidManager {
     // The collector waiting for interactions from users.
     private _afkCheckButtonCollector: InteractionCollector<MessageComponentInteraction> | null;
     // The collector waiting for interactions from staff.
-    private _controlPanelReactionCollector: ReactionCollector | null;
+    private _controlPanelReactionCollector: InteractionCollector<MessageComponentInteraction> | null;
 
     // The VC limit.
     private readonly _vcLimit: number;
@@ -554,29 +554,38 @@ export class RaidManager {
 
     /**
      * Ends the AFK check. There will be no post-AFK check.
-     * @param {GuildMember} memberEnded The member that ended the AFK check.
+     * @param {GuildMember | User | null} memberEnded The member that ended the AFK check, or `null` if it was ended
+     * automatically.
      */
-    public async endAfkCheck(memberEnded: GuildMember): Promise<void> {
+    public async endAfkCheck(memberEnded: GuildMember | User | null): Promise<void> {
         // No raid VC means we haven't started AFK check.
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg || this._raidStatus !== RaidStatus.AFK_CHECK)
             return;
 
+        // Update the database so it is clear that we are in raid mode.
+        await this.setRaidStatus(RaidStatus.IN_RUN);
+
+        // Lock the VC as well.
+        await this._raidVc.permissionOverwrites.edit(this._guild.roles.everyone.id, {
+            "CONNECT": false
+        }).catch();
+
         // Add all members that were in the VC at the time.
         this._membersThatJoined.push(...Array.from(this._raidVc.members.values()).map(x => x.id));
+
         // End the collector since it's useless. We'll use it again though.
         this.stopAllIntervalsAndCollectors("AFK Check ended.");
-        // Remove otherButtons.
-        await this._controlPanelMsg.reactions.removeAll().catch();
+
+        // Remove reactions from AFK check.
         await this._afkCheckMsg.reactions.removeAll().catch();
+
         // Edit the control panel accordingly and re-react and start collector + intervals again.
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
             components: RaidManager.CP_RAID_BUTTONS
         }).catch();
-        this.startControlPanelRaidCollector();
+        this.startControlPanelCollector();
         this.startIntervals();
-        // Update the database so it is clear that we are in raid mode.
-        await this.setRaidStatus(RaidStatus.IN_RUN);
 
         const afkEndedEnded = new MessageEmbed()
             .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
@@ -584,7 +593,11 @@ export class RaidManager {
                 this._memberInit.user.displayAvatarURL())
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} AFK Check.`)
             .setTimestamp()
-            .setDescription(`The AFK check has been ended by ${memberEnded} and the raid is currently in progress.`);
+            .setDescription(
+                memberEnded
+                    ? `The AFK check has been ended by ${memberEnded} and the raid is currently ongoing.`
+                    : `The AFK check has ended automatically. The raid is currently ongoing.`
+            );
 
         if (this._raidMsg)
             afkEndedEnded.addField("Message From Your Leader", this._raidMsg);
@@ -611,20 +624,24 @@ export class RaidManager {
             ])
         }).catch();
         await this._afkCheckMsg.react(Emojis.INBOX_EMOJI).catch();
-        this.startAfkCheckCollectorDuringRaid();
     }
 
     /**
      * Ends the raid.
-     * @param {GuildMember} memberEnded The member that ended the raid or aborted the AFK check.
+     * @param {GuildMember | User} memberEnded The member that ended the raid or aborted the AFK check.
      */
-    public async endRaid(memberEnded: GuildMember): Promise<void> {
+    public async endRaid(memberEnded: GuildMember | User): Promise<void> {
         // No raid VC means we haven't started AFK check.
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg)
             return;
+
+        const memberThatEnded = memberEnded instanceof User
+            ? GuildFgrUtilities.getCachedMember(this._guild, memberEnded.id) ?? this._memberInit
+            : memberEnded;
+
         // Get the name.
-        const name = UserManager.getAllNames(memberEnded.displayName);
-        const leaderName = name.length === 0 ? memberEnded.displayName : name[0];
+        const name = UserManager.getAllNames(memberThatEnded.displayName);
+        const leaderName = name.length === 0 ? memberThatEnded.displayName : name[0];
         // Stop the collector.
         // We don't care about the result of this function, just that it should run.
         this.cleanUpRaid().then();
@@ -633,7 +650,7 @@ export class RaidManager {
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
             const abortAfkEmbed = new MessageEmbed()
                 .setAuthor(`${leaderName} has aborted the ${this._dungeon.dungeonName} AFK check.`,
-                    memberEnded.user.displayAvatarURL())
+                    memberThatEnded.user.displayAvatarURL())
                 .setDescription("There was probably not enough keys or raiders. Check back at a later time.")
                 .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} AFK Check Aborted.`)
                 .setTimestamp()
@@ -645,12 +662,21 @@ export class RaidManager {
         // Otherwise, we treat it as if the raid is officially over.
         const endAfkEmbed = new MessageEmbed()
             .setAuthor(`${this._leaderName} has ended the ${this._dungeon.dungeonName} run.`,
-                memberEnded.user.displayAvatarURL())
+                memberThatEnded.user.displayAvatarURL())
             .setDescription("The raid is now over. Thank you all for attending.")
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Run Ended.`)
             .setTimestamp()
             .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
         await this._afkCheckMsg.edit({embeds: [endAfkEmbed]}).catch();
+    }
+
+
+    /**
+     * Gets an array of members that was in VC at the time the raid started.
+     * @returns {string[]} The array of members.
+     */
+    public get membersThatJoinedVc(): string[] {
+        return this._membersThatJoined;
     }
 
     //#region DATABASE METHODS
@@ -786,12 +812,14 @@ export class RaidManager {
      */
     private sendMsgToEarlyLocationPeople(msgOpt: MessageOptions): void {
         const sentMsgTo: string[] = [];
-        this._pplWithEarlyLoc.map(x => x[0]).flatMap(x => x).forEach(async person => {
-            if (sentMsgTo.includes(person.id))
-                return;
-            sentMsgTo.push(person.id);
-            await person.send(msgOpt).catch();
-        });
+        for (const [, members] of this._pplWithEarlyLoc) {
+            members.forEach(async person => {
+                if (sentMsgTo.includes(person.id))
+                    return;
+                sentMsgTo.push(person.id);
+                await person.send(msgOpt).catch();
+            });
+        }
     }
 
     /**
@@ -1075,10 +1103,10 @@ export class RaidManager {
 
     /**
      * Asks the user for a new location.
-     * @param {Message} msg The message object.
+     * @param {User} requestedAuthor The user that wants to change the location.
      * @returns {Promise<boolean>} True if the bot was able to ask for a new location (regardless of the response).
      */
-    public async getNewLocation(msg: Message): Promise<boolean> {
+    public async getNewLocation(requestedAuthor: User): Promise<boolean> {
         if (!this._raidVc)
             return false;
         const descSb = new StringBuilder()
@@ -1098,8 +1126,8 @@ export class RaidManager {
         const res = await AdvancedCollector.startDoubleCollector<string>({
             cancelFlag: "-cancel",
             clearInteractionsAfterComplete: false,
-            targetAuthor: msg.author,
-            targetChannel: msg.channel as TextChannel,
+            targetAuthor: requestedAuthor,
+            targetChannel: this._controlPanelChannel,
             duration: 60 * 1000,
             msgOptions: {
                 embeds: [askLocEmbed],
@@ -1114,7 +1142,7 @@ export class RaidManager {
             deleteBaseMsgAfterComplete: true,
             deleteResponseMessage: true,
             acknowledgeImmediately: true
-        }, AdvancedCollector.getStringPrompt(msg.channel as TextChannel, {
+        }, AdvancedCollector.getStringPrompt(this._controlPanelChannel, {
             min: 1,
             max: 500
         }));
@@ -1125,17 +1153,21 @@ export class RaidManager {
             return true;
         // Otherwise, update location.
         await this.updateLocation(res);
+        await this.sendMsgToEarlyLocationPeople({
+            content: new StringBuilder(`Your raid leader for the ${this._dungeon.dungeonName} raid has changed `)
+                .append(`the raid location. Your new location is: **${this._location}**.`)
+                .toString()
+        });
         return true;
     }
 
     /**
      * A collector that should be used for the control panel.
-     * @param {MessageReaction} _ The message reaction. Not used but required.
      * @param {User} u The user.
      * @return {Promise<boolean>} Whether the collector is satisfied with the given variables.
      * @private
      */
-    private async controlPanelCollectorFilter(_: MessageReaction, u: User): Promise<boolean> {
+    private async controlPanelCollectorFilter(u: User): Promise<boolean> {
         if (u.bot) return false;
 
         const member = await GuildFgrUtilities.fetchGuildMember(this._guild, u.id);
@@ -1434,6 +1466,11 @@ export class RaidManager {
         return true;
     }
 
+    /**
+     * Starts an AFK check collector. Only works during an AFK check.
+     * @returns {boolean} Whether the collector started successfully.
+     * @private
+     */
     private startAfkCheckCollector(): boolean {
         if (!this._afkCheckMsg) return false;
         if (this._afkCheckButtonCollector) return false;
@@ -1612,6 +1649,91 @@ export class RaidManager {
                 content: confirmationContent.toString(),
                 components: []
             });
+        });
+
+        // If time expires, then end AFK check immediately.
+        this._afkCheckButtonCollector.on("end", (reason: string) => {
+            if (reason !== "time") return;
+            this.endAfkCheck(null).then();
+        });
+
+        return true;
+    }
+
+    /**
+     * Starts a control panel collector.
+     * @returns {boolean} Whether the collector started successfully.
+     * @private
+     */
+    private startControlPanelCollector(): boolean {
+        if (!this._controlPanelMsg) return false;
+        if (this._controlPanelReactionCollector) return false;
+        if (this._raidStatus === RaidStatus.NOTHING) return false;
+
+        this._controlPanelReactionCollector = this._controlPanelMsg.createMessageComponentCollector({
+            filter: i => this.controlPanelCollectorFilter(i.user)
+            // Infinite time; the
+        });
+
+        if (this._raidStatus === RaidStatus.AFK_CHECK) {
+            this._controlPanelReactionCollector.on("collect", async i => {
+                await i.deferUpdate();
+                if (i.customId === "start_raid") {
+                    this.endAfkCheck(i.user).then();
+                    return;
+                }
+
+                if (i.customId === "abort_afk") {
+                    this.endRaid(i.user).then();
+                    return;
+                }
+
+                if (i.customId === "set_location") {
+                    this.getNewLocation(i.user).then();
+                    return;
+                }
+            });
+
+            return true;
+        }
+
+        this._controlPanelReactionCollector.on("collect", async i => {
+            await i.deferUpdate();
+            if (i.customId === "end_raid") {
+                this.endRaid(i.user).then();
+                return;
+            }
+
+            if (i.customId === "set_location") {
+                this.getNewLocation(i.user).then();
+                return;
+            }
+
+            if (i.customId === "lock_vc") {
+                await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
+                    "CONNECT": false
+                }).catch();
+                await i.reply({
+                    content: "Locked Raid VC.",
+                    ephemeral: true
+                }).catch();
+                return;
+            }
+
+            if (i.customId === "unlock_vc") {
+                await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
+                    "CONNECT": null
+                }).catch();
+                await i.reply({
+                    content: "Unlocked Raid VC.",
+                    ephemeral: true
+                }).catch();
+                return;
+            }
+
+            if (i.customId === "parse_vc") {
+                return;
+            }
         });
 
         return true;
