@@ -163,13 +163,20 @@ export namespace PrivateApiDefinitions {
     }
 
     export interface IParseWhoResult {
-        imageDownloadTime: number;
-        imageProcessingTime: number;
-        ocrRecognitionTime: number;
-        whoResult: string[];
-        rawOcrResult: string;
-        count: number;
-        code: "FAILED:INVALID_URL" | "FAILED:URL_INVALID_LOCATION" | "FAILED:NO_WHO_TEXT_FOUND" | "SUCCESS";
-        issues: string;
+        names: string[];
+        timeElapsedSec: number;
+    }
+
+    export interface IParseJob {
+        totalElapsedSec: number;
+        concurrElapsedSec: number;
+        parseWhoElapsedSec: number;
+        completedCount: number;
+        failedCount: number;
+        input: string[];
+        completed: string[];
+        failed: string[];
+        defaultNames: string[];
+        output: IPlayerData[];
     }
 }

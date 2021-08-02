@@ -9,7 +9,7 @@ import {
     GuildMember,
     InteractionCollector,
     Message,
-    MessageActionRow,
+    MessageActionRow, MessageAttachment,
     MessageButton,
     MessageComponentInteraction,
     MessageEmbed,
@@ -504,7 +504,7 @@ export class RaidManager {
         // We are officially in AFK check mode.
         this._raidStatus = RaidStatus.AFK_CHECK;
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
-        const vc = await this._guild.channels.create(`🔒 ${this._leaderName}'s Raid`, {
+        const vc = await this._guild.channels.create(`${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
             type: ChannelTypes.GUILD_VOICE,
             userLimit: this._vcLimit,
             permissionOverwrites: this.getPermissionsForRaidVc(true),
@@ -519,7 +519,7 @@ export class RaidManager {
             embeds: [this.getControlPanelEmbed()!],
             components: RaidManager.CP_AFK_BUTTONS
         });
-        // TODO control panel collector
+        this.startControlPanelCollector();
 
         // Create our initial AFK check message.
         const descSb = new StringBuilder()
@@ -881,8 +881,15 @@ export class RaidManager {
         }
 
         // Make the request.
-        const data = await RealmSharperWrapper.parseWhoScreenshot(url);
-        const parsedNames = data.whoResult;
+        const data = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            const res = await RealmSharperWrapper.parseWhoScreenshotOnly(url);
+            return res ? res : null;
+        });
+
+        if (!data)
+            return toReturn;
+
+        const parsedNames = data.names;
         if (parsedNames.length === 0) return toReturn;
         // Parse results means the picture must be valid.
         toReturn.isValid = true;
@@ -1721,6 +1728,79 @@ export class RaidManager {
             }
 
             if (i.customId === RaidManager.PARSE_VC_ID) {
+                const res = await AdvancedCollector.startNormalCollector<MessageAttachment>({
+                    msgOptions: {
+                        content: "Please send a **screenshot** (not a URL to a screenshot, but an actual attachment)"
+                            + " containing the results of your `/who` now. This screenshot does not need to be"
+                            + " cropped. To cancel this process, please type `cancel`.",
+                    },
+                    cancelFlag: "cancel",
+                    targetChannel: this._controlPanelChannel,
+                    targetAuthor: i.user,
+                    deleteBaseMsgAfterComplete: true,
+                    deleteResponseMessage: false,
+                    duration: 30 * 1000
+                }, (m: Message) => {
+                    if (m.attachments.size === 0)
+                        return;
+
+                    // Images have a height property, non-images don't.
+                    const imgAttachment = m.attachments.find(x => x.height !== null);
+                    if (!imgAttachment)
+                        return;
+
+                    return imgAttachment;
+                });
+
+                if (!res) return;
+                const parseSummary = await this.parseScreenshot(res.url);
+
+                const inVcNotInRaidFields = parseSummary.isValid
+                    ?
+                    ArrayUtilities.arrayToStringFields(
+                        parseSummary.inRaidButNotInVC,
+                        (_, elem) => `- ${elem}: \`/kick ${elem}\``
+                    )
+                    : [];
+                const inRaidNotInVcFields = parseSummary.isValid
+                    ? ArrayUtilities.arrayToStringFields(
+                        parseSummary.inVcButNotInRaid,
+                        (_, elem) => `- ${elem}`
+                    )
+                    : [];
+
+                const embed = MessageUtilities.generateBlankEmbed(i.user, "RANDOM")
+                    .setTitle(`Parse Results for: **${this._raidVc?.name ?? "N/A"}**`)
+                    .setFooter("Completed Time:")
+                    .setTimestamp();
+
+                if (parseSummary.isValid) {
+                    embed.setDescription(
+                        new StringBuilder("Parse Successful.")
+                            .appendLine()
+                            .append(`- ${parseSummary.inRaidButNotInVC.length} player(s) are in the /who screenshot `)
+                            .append("but not in the raid voice channel.")
+                            .appendLine()
+                            .append(`- ${parseSummary.inVcButNotInRaid.length} player(s) are in the raid voice  `)
+                            .append("channel but not in the /who screenshot.")
+                            .toString()
+                    );
+                }
+                else {
+                    embed.setDescription(
+                        "An error occurred when trying to parse this screenshot. Please try again later."
+                    );
+                }
+
+                for (const field of inRaidNotInVcFields) {
+                    embed.addField("In /who, Not In Raid VC.", field);
+                }
+
+                for (const field of inVcNotInRaidFields) {
+                    embed.addField("In Raid VC, Not In /who.", field);
+                }
+
+                await this._controlPanelChannel.send({embeds: [embed]}).catch();
                 return;
             }
         });

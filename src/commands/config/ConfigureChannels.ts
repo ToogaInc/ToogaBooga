@@ -15,7 +15,7 @@ import {MessageButtonStyles} from "discord.js/typings/enums";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {FilterQuery} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
-import {IGuildInfo, ISectionInfo} from "../../definitions/MongoDocumentInterfaces";
+import {IGuildInfo, ISectionInfo} from "../../definitions";
 import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 import {InteractivityHelper} from "../../utilities/InteractivityHelper";
 import {Emojis} from "../../constants/Emojis";
@@ -632,11 +632,11 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                     break;
                 }
                 case "reset": {
-                    guildDoc = (await MongoManager.getGuildCollection().findOneAndUpdate(query, {
+                    guildDoc = await MongoManager.updateAndFetchGuildDoc(query, {
                         $set: {
                             [keySetter]: ""
                         }
-                    }, {returnDocument: "after"})).value!;
+                    });
                     section = MongoManager.getAllSections(guildDoc)
                         .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                     break;

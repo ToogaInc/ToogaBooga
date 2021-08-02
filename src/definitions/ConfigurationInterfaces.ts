@@ -204,30 +204,47 @@ export interface IConfiguration {
         pingOnline: string;
 
         /**
-         * The parse endpoint. This endpoint will take a /who screenshot and parse it.
+         * All relevant raid utility endpoints.
          *
-         * @type {string}
+         * @type {object}
          */
-        parseEndpoint: string;
+        raidUtilEndpoints: {
+            /**
+             * The parse endpoint. This endpoint will take a /who screenshot and parse it.
+             *
+             * @type {string}
+             */
+            parseOnlyEndpoint: string;
+
+            /**
+             * The parse endpoint. Just like with the other endpoint, this will parse a /who screenshot, but will
+             * also get RealmEye data.
+             *
+             * @type {string}
+             */
+            parseAndRealmEyeEndpoint: string;
+
+            /**
+             * Given an array of names, this will return an array of RealmEye data.
+             *
+             * @type {string}
+             */
+            dataForAllNamesEndpoint: string;
+        }
 
         /**
          * The various player endpoints. This is denoted by:
          *
          * ```
          * https://localhost:5001/api/realmeye/player/basics?name=consolemc
-         *                                     ^(1)^^ ^^(2)^
+         *                            ^^^^^^^^^^^^^^^^^^^^^^
          * ```
-         *
-         * Where:
-         * - (1) means we're dealing with the `player` endpoint.
-         * - (2) means we're dealing with a specific endpoint within the player "namespace." This is what will be
-         * put in each property in the `playerEndpoints` object.
          *
          * @type {object}
          */
         playerEndpoints: {
             /**
-             * The basics endpoint.
+             * The basics endpoint. In the example above, this would be `realmeye/players/basics`.
              *
              * @type {string}
              */

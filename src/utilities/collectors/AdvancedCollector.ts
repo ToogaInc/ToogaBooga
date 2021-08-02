@@ -110,7 +110,7 @@ export namespace AdvancedCollector {
      */
     export async function startNormalCollector<T>(
         options: IMessageCollectorArgument,
-        func: (collectedMsg: Message, ...otherArgs: any[]) => Promise<T | void>
+        func: (collectedMsg: Message, ...otherArgs: any[]) => (T | undefined) | (Promise<T | undefined>)
     ): Promise<T | null> {
         return new Promise(async (resolve) => {
             const cancelFlag = options.cancelFlag ?? "cancel";
@@ -193,7 +193,7 @@ export namespace AdvancedCollector {
      */
     export async function startDoubleCollector<T>(
         options: IInteractionBase & IMessageCollectorArgument,
-        func: (collectedMsg: Message, ...otherArgs: any[]) => T | void | Promise<T | void>
+        func: (collectedMsg: Message, ...otherArgs: any[]) => (T | undefined) | (Promise<T | undefined>)
     ): Promise<T | MessageComponentInteraction | null> {
         const cancelFlag = options.cancelFlag ?? "cancel";
         const botMsg = await initSendCollectorMessage(options);
@@ -320,7 +320,8 @@ export namespace AdvancedCollector {
      * @param {EmojiIdentifierResolvable[]} reactions The otherButtons that you want to react with.
      * @param {number} intervalTime The delay between otherButtons.
      */
-    export function reactFaster(msg: Message, reactions: EmojiIdentifierResolvable[], intervalTime: number = 550): void {
+    export function reactFaster(msg: Message, reactions: EmojiIdentifierResolvable[],
+                                intervalTime: number = 550): void {
         intervalTime = Math.max(550, intervalTime);
         let i: number = 0;
         const interval = setInterval(() => {
@@ -348,8 +349,10 @@ export namespace AdvancedCollector {
      * @param {PartialTextBasedChannelFields} pChan The channel where any messages from this method should be sent to.
      * @returns {Function} A function that parses a message to a bool.
      */
-    export function getYesNoPrompt(pChan: PartialTextBasedChannelFields): (m: Message) => Promise<boolean | void> {
-        return async (m: Message): Promise<boolean | void> => {
+    export function getYesNoPrompt(
+        pChan: PartialTextBasedChannelFields
+    ): (m: Message) => Promise<boolean | undefined> {
+        return async (m: Message): Promise<boolean | undefined> => {
             if (m.content === null) {
                 const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
@@ -371,8 +374,8 @@ export namespace AdvancedCollector {
      * with a message and then return that message.
      * @return {Function} A function that returns a message that someone responds with.
      */
-    export function getPureMessage(): (m: Message) => Promise<Message | void> {
-        return async (m: Message): Promise<Message | void> => m;
+    export function getPureMessage(): (m: Message) => Promise<Message | undefined> {
+        return async (m: Message): Promise<Message | undefined> => m;
     }
 
     /**
@@ -385,8 +388,8 @@ export namespace AdvancedCollector {
     export function getStringPrompt(pChan: PartialTextBasedChannelFields, options?: {
         min?: number,
         max?: number
-    }): (m: Message) => Promise<string | void> {
-        return async (m: Message): Promise<string | void> => {
+    }): (m: Message) => Promise<string | undefined> {
+        return async (m: Message): Promise<string | undefined> => {
             if (m.content === null) {
                 const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
@@ -430,8 +433,8 @@ export namespace AdvancedCollector {
      * @return {Function} A function that takes in a message and returns a Role, if any.
      */
     export function getRolePrompt(msg: Message, pChan: PartialTextBasedChannelFields): (m: Message)
-        => Promise<Role | void> {
-        return async (m: Message): Promise<void | Role> => {
+        => Promise<Role | undefined> {
+        return async (m: Message): Promise<undefined | Role> => {
             const origRole = m.mentions.roles.first();
             const guild = msg.guild!;
             let resolvedRole: Role;
@@ -461,9 +464,11 @@ export namespace AdvancedCollector {
      * exclusive.
      * @return {Function} A function that takes in a message and returns a number, if any.
      */
-    export function getNumberPrompt(channel: PartialTextBasedChannelFields,
-                                    options?: { min?: number, max?: number }): (m: Message) => Promise<number | void> {
-        return async (m: Message): Promise<number | void> => {
+    export function getNumberPrompt(
+        channel: PartialTextBasedChannelFields,
+        options?: { min?: number, max?: number }
+    ): (m: Message) => Promise<number | undefined> {
+        return async (m: Message): Promise<number | undefined> => {
             const num = Number.parseInt(m.content, 10);
             if (Number.isNaN(num)) {
                 const notNumberEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
@@ -505,8 +510,8 @@ export namespace AdvancedCollector {
      */
     export function getTextChannelPrompt(channel: PartialTextBasedChannelFields,
                                          permissionsForBot: PermissionResolvable[] = []): (m: Message)
-        => Promise<TextChannel | void> {
-        return async (m: Message): Promise<TextChannel | void> => {
+        => Promise<TextChannel | undefined> {
+        return async (m: Message): Promise<TextChannel | undefined> => {
             const guild = m.guild as Guild;
             const origChannel = m.mentions.channels.first();
             let resolvedChannel: TextChannel;

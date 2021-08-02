@@ -149,16 +149,45 @@ export namespace RealmSharperWrapper {
     }
 
     /**
-     * Parses a /who screenshot for names.
+     * Parses a /who screenshot for names. This should only return an array of names.
      * @param {string} link The link to the screenshot.
      * @returns {Promise<PrivateApiDefinitions.IParseWhoResult>} An object containing parse results.
      */
-    export async function parseWhoScreenshot(link: string): Promise<PAD.IParseWhoResult> {
+    export async function parseWhoScreenshotOnly(link: string): Promise<PAD.IParseWhoResult> {
         const config = OneLifeBot.BotInstance.config;
-        const url = config.realmEyeApiLinks.baseApi + config.realmEyeApiLinks.parseEndpoint;
-        const resp = await OneLifeBot.AxiosClient.get<PAD.IParseWhoResult>(url, {
-            data: { Url: link }
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.raidUtilEndpoints.parseOnlyEndpoint;
+        const resp = await OneLifeBot.AxiosClient.post<PAD.IParseWhoResult>(url, {
+            data: { url: link }
         });
+        return resp.data;
+    }
+
+    /**
+     * Parses a /who screenshot and returns an object containing a list of RealmEye data.
+     * @param {string} link The link to the screenshot.
+     * @returns {Promise<PrivateApiDefinitions.IParseJob>} An object containing parse results.
+     */
+    export async function parseWhoGetData(link: string): Promise<PAD.IParseJob> {
+        const config = OneLifeBot.BotInstance.config;
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.raidUtilEndpoints.parseAndRealmEyeEndpoint;
+        const resp = await OneLifeBot.AxiosClient.post<PAD.IParseJob>(url, {
+            data: { url: link }
+        });
+        return resp.data;
+    }
+
+    /**
+     * Gets the RealmEye data for each name in the list concurrently.
+     * @param {string[]} names The names.
+     * @returns {Promise<PrivateApiDefinitions.IParseJob>} An object containing the parse results.
+     */
+    export async function getDataForAllNames(names: string[]): Promise<PAD.IParseJob> {
+        const config = OneLifeBot.BotInstance.config;
+        const url = config.realmEyeApiLinks.baseApi
+            + "/" + config.realmEyeApiLinks.raidUtilEndpoints.dataForAllNamesEndpoint;
+        const resp = await OneLifeBot.AxiosClient.post<PAD.IParseJob>(url, names);
         return resp.data;
     }
 }
