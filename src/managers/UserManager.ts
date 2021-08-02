@@ -22,7 +22,7 @@ export namespace UserManager {
             }
 
             const nameJoined = nameSplit.join("");
-            if (CommonRegex.OnlyLetters.test(nameJoined))
+            if (CommonRegex.ONLY_LETTERS.test(nameJoined))
                 parsedNames.push(nameJoined);
         }
 

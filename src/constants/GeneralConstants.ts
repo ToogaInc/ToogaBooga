@@ -3,7 +3,7 @@ import {MessageActionRow, MessageButton} from "discord.js";
 import {Emojis} from "./Emojis";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {MessageButtonStyles} from "discord.js/typings/enums";
-import {IPermAllowDeny} from "../definitions/MiscInterfaces";
+import {IPermAllowDeny} from "../definitions";
 
 export namespace GeneralConstants {
     export const NUMBER_OF_STATS: number = 8;
@@ -155,7 +155,7 @@ export namespace GeneralConstants {
         }
     ];
 
-    export const YesNoActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
+    export const YES_NO_ACTION_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setCustomId("yes")
             .setStyle(MessageButtonStyles.SUCCESS)

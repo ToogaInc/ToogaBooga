@@ -1,6 +1,6 @@
-import {IDungeonInfo} from "../definitions/DungeonRaidInterfaces";
+import {IDungeonInfo} from "../definitions";
 
-export const DungeonData: IDungeonInfo[] = [
+export const DUNGEON_DATA: IDungeonInfo[] = [
     {
         codeName: "SNAKE_PIT",
         dungeonName: "Snake Pit",

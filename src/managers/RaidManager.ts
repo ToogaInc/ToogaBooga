@@ -25,9 +25,9 @@ import {StringBuilder} from "../utilities/StringBuilder";
 import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {StartAfkCheck} from "../commands/raid-leaders/StartAfkCheck";
-import {MappedAfkCheckReactions} from "../constants/MappedAfkCheckReactions";
+import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
 import {MessageUtilities} from "../utilities/MessageUtilities";
-import {DungeonData} from "../constants/DungeonData";
+import {DUNGEON_DATA} from "../constants/DungeonData";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "./MongoManager";
@@ -63,21 +63,29 @@ export class RaidManager {
      */
     public static ActiveRaids: Collection<string, RaidManager> = new Collection<string, RaidManager>();
 
+    private static readonly START_RAID_ID: string = "start_raid";
+    private static readonly ABORT_AFK_ID: string = "abort_afk";
+    private static readonly SET_LOCATION_ID: string = "set_location";
+    private static readonly END_RAID_ID: string = "end_raid";
+    private static readonly LOCK_VC_ID: string = "lock_vc";
+    private static readonly UNLOCK_VC_ID: string = "unlock_vc";
+    private static readonly PARSE_VC_ID: string = "parse_vc";
+
     private static readonly CP_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Start Raid")
             .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
-            .setCustomId("start_raid")
+            .setCustomId(RaidManager.START_RAID_ID)
             .setStyle(MessageButtonStyles.PRIMARY),
         new MessageButton()
             .setLabel("Abort AFK Check")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
-            .setCustomId("abort_afk")
+            .setCustomId(RaidManager.ABORT_AFK_ID)
             .setStyle(MessageButtonStyles.DANGER),
         new MessageButton()
             .setLabel("Set Location")
             .setEmoji(Emojis.MAP_EMOJI)
-            .setCustomId("set_location")
+            .setCustomId(RaidManager.SET_LOCATION_ID)
             .setStyle(MessageButtonStyles.PRIMARY)
     ]);
 
@@ -85,27 +93,27 @@ export class RaidManager {
         new MessageButton()
             .setLabel("End Raid")
             .setEmoji(Emojis.RED_SQUARE_EMOJI)
-            .setCustomId("end_raid")
+            .setCustomId(RaidManager.END_RAID_ID)
             .setStyle(MessageButtonStyles.DANGER),
         new MessageButton()
             .setLabel("Set Location")
             .setEmoji(Emojis.MAP_EMOJI)
-            .setCustomId("set_location")
+            .setCustomId(RaidManager.SET_LOCATION_ID)
             .setStyle(MessageButtonStyles.PRIMARY),
         new MessageButton()
             .setLabel("Lock Raid VC")
             .setEmoji(Emojis.LOCK_EMOJI)
-            .setCustomId("lock_vc")
+            .setCustomId(RaidManager.LOCK_VC_ID)
             .setStyle(MessageButtonStyles.PRIMARY),
         new MessageButton()
             .setLabel("Unlock Raid VC")
             .setEmoji(Emojis.UNLOCK_EMOJI)
-            .setCustomId("unlock_vc")
+            .setCustomId(RaidManager.UNLOCK_VC_ID)
             .setStyle(MessageButtonStyles.PRIMARY),
         new MessageButton()
             .setLabel("Parse Raid VC")
             .setEmoji(Emojis.PRINTER_EMOJI)
-            .setCustomId("parse_vc")
+            .setCustomId(RaidManager.PARSE_VC_ID)
             .setStyle(MessageButtonStyles.PRIMARY)
     ]);
 
@@ -135,7 +143,7 @@ export class RaidManager {
     private readonly _pplWithEarlyLoc: Collection<string, GuildMember[]>;
     // A collection that deals with *general* (Nitro, Patreon, etc.) early location. The key is the mapKey and the
     // value is an object containing the roles needed.
-    private _earlyLocToRole: Collection<string, Role[]>;
+    private readonly _earlyLocToRole: Collection<string, Role[]>;
 
     // The guild document.
     private _guildDoc: IGuildInfo;
@@ -234,7 +242,7 @@ export class RaidManager {
 
         if (numEarlyLoc !== 0 && this._guild.roles.premiumSubscriberRole) {
             reactions.set("NITRO", {
-                ...MappedAfkCheckReactions.NITRO,
+                ...MAPPED_AFK_CHECK_REACTIONS.NITRO,
                 earlyLocAmt: numEarlyLoc,
                 isCustomReaction: false
             });
@@ -323,9 +331,9 @@ export class RaidManager {
         // Define a local function that will check both MappedAfkCheckReactions & customReactions for reactions.
         function findAndAddReaction(reaction: IAfkCheckReaction): void {
             // Is the reaction key in MappedAfkCheckReactions? If so, it's as simple as grabbing that data.
-            if (reaction.mapKey in MappedAfkCheckReactions) {
+            if (reaction.mapKey in MAPPED_AFK_CHECK_REACTIONS) {
                 reactions.set(reaction.mapKey, {
-                    ...MappedAfkCheckReactions[reaction.mapKey],
+                    ...MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey],
                     earlyLocAmt: reaction.maxEarlyLocation,
                     isCustomReaction: false
                 });
@@ -365,7 +373,7 @@ export class RaidManager {
             // Get all keys + reactions
             for (const key of dungeon.keyReactions.concat(dungeon.otherReactions)) {
                 reactions.set(key.mapKey, {
-                    ...MappedAfkCheckReactions[key.mapKey],
+                    ...MAPPED_AFK_CHECK_REACTIONS[key.mapKey],
                     earlyLocAmt: key.maxEarlyLocation,
                     isCustomReaction: false
                 });
@@ -428,7 +436,7 @@ export class RaidManager {
         if (!section) return null;
 
         // Get base dungeons + custom dungeons
-        const dungeon = DungeonData
+        const dungeon = DUNGEON_DATA
             .concat(guildDoc.properties.customDungeons)
             .find(x => x.codeName === raidInfo.dungeonCodeName);
         if (!dungeon) return null;
@@ -679,8 +687,6 @@ export class RaidManager {
         return this._membersThatJoined;
     }
 
-    //#region DATABASE METHODS
-
     /**
      * Checks whether a particular essential reaction is needed.
      * @param {string} reactCodeName The map key.
@@ -800,10 +806,6 @@ export class RaidManager {
             }
         });
     }
-
-    //#endregion
-
-    //#region UTILITY
 
     /**
      * Sends a message to all early location people.
@@ -1097,10 +1099,6 @@ export class RaidManager {
         return permsToReturn;
     }
 
-    //#endregion
-
-    //#region INTERACTIVE METHODS
-
     /**
      * Asks the user for a new location.
      * @param {User} requestedAuthor The user that wants to change the location.
@@ -1198,10 +1196,6 @@ export class RaidManager {
             && (neededRoles.some(x => GuildFgrUtilities.hasCachedRole(member.guild, x))
                 || member.permissions.has("ADMINISTRATOR"));
     }
-
-    //#endregion
-
-    //#region EMBEDS
 
     /**
      * Creates an AFK check embed. This is only for AFK check; this will not work for during a raid.
@@ -1381,10 +1375,6 @@ export class RaidManager {
 
         return controlPanelEmbed;
     }
-
-    //#endregion
-
-    //#region COLLECTORS
 
     /**
      * Stops all intervals and collectors that is being used and set the intervals and collectors instance variables
@@ -1637,7 +1627,6 @@ export class RaidManager {
                 .append(`The raid location is: **${this._location}**.`)
                 .appendLine(2);
 
-            // TODO make this customizable?
             if (reactInfo.type !== "EARLY_LOCATION")
                 confirmationContent.append(this._raidSection.otherMajorConfig.afkCheckProperties.earlyLocConfirmMsg);
 
@@ -1672,23 +1661,23 @@ export class RaidManager {
 
         this._controlPanelReactionCollector = this._controlPanelMsg.createMessageComponentCollector({
             filter: i => this.controlPanelCollectorFilter(i.user)
-            // Infinite time; the
+            // Infinite time
         });
 
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
             this._controlPanelReactionCollector.on("collect", async i => {
                 await i.deferUpdate();
-                if (i.customId === "start_raid") {
+                if (i.customId === RaidManager.START_RAID_ID) {
                     this.endAfkCheck(i.user).then();
                     return;
                 }
 
-                if (i.customId === "abort_afk") {
+                if (i.customId === RaidManager.ABORT_AFK_ID) {
                     this.endRaid(i.user).then();
                     return;
                 }
 
-                if (i.customId === "set_location") {
+                if (i.customId === RaidManager.SET_LOCATION_ID) {
                     this.getNewLocation(i.user).then();
                     return;
                 }
@@ -1699,17 +1688,17 @@ export class RaidManager {
 
         this._controlPanelReactionCollector.on("collect", async i => {
             await i.deferUpdate();
-            if (i.customId === "end_raid") {
+            if (i.customId === RaidManager.END_RAID_ID) {
                 this.endRaid(i.user).then();
                 return;
             }
 
-            if (i.customId === "set_location") {
+            if (i.customId === RaidManager.SET_LOCATION_ID) {
                 this.getNewLocation(i.user).then();
                 return;
             }
 
-            if (i.customId === "lock_vc") {
+            if (i.customId === RaidManager.LOCK_VC_ID) {
                 await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
                     "CONNECT": false
                 }).catch();
@@ -1720,7 +1709,7 @@ export class RaidManager {
                 return;
             }
 
-            if (i.customId === "unlock_vc") {
+            if (i.customId === RaidManager.UNLOCK_VC_ID) {
                 await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
                     "CONNECT": null
                 }).catch();
@@ -1731,15 +1720,13 @@ export class RaidManager {
                 return;
             }
 
-            if (i.customId === "parse_vc") {
+            if (i.customId === RaidManager.PARSE_VC_ID) {
                 return;
             }
         });
 
         return true;
     }
-
-    //#endregion
 }
 
 enum RaidStatus {

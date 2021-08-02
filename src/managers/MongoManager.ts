@@ -3,7 +3,7 @@ import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {UserManager} from "./UserManager";
 import {GuildMember, Collection as DCollection} from "discord.js";
-import {DungeonData} from "../constants/DungeonData";
+import {DUNGEON_DATA} from "../constants/DungeonData";
 import {
     BypassFullVcOption, IBotInfo, IGuildInfo,
     IIdNameInfo,
@@ -447,7 +447,7 @@ export namespace MongoManager {
                     bypassFullVcOption: BypassFullVcOption.KeysAndPriority,
                     afkCheckPermissions: generalAfkCheckPerms,
                     prePostAfkCheckPermissions: prePostAfkCheckPerms,
-                    allowedDungeons: DungeonData.map(x => x.codeName),
+                    allowedDungeons: DUNGEON_DATA.map(x => x.codeName),
                     earlyLocConfirmMsg: "You must bring the class/gear choice that you indicated you would bring."
                         + " Failure to do so may result in consequences. Additionally, do not share this location"
                         + " with anyone else."

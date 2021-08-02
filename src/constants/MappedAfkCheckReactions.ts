@@ -1,6 +1,6 @@
 import {IMappedAfkCheckReactions} from "../definitions";
 
-export const MappedAfkCheckReactions: IMappedAfkCheckReactions = {
+export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
     NITRO: {
         type: "EARLY_LOCATION",
         emojiId: "",

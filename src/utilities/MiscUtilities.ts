@@ -85,6 +85,6 @@ export namespace MiscUtilities {
      * @return {item is Snowflake} Whether the string is a `Snowflake`.
      */
     export function isSnowflake(item: string): item is Snowflake {
-        return CommonRegex.OnlyNumbers.test(item);
+        return CommonRegex.ONLY_NUMBERS.test(item);
     }
 }
