@@ -598,6 +598,7 @@ export namespace MongoManager {
         // The main section
         sections.push({
             channels: {
+                loggingChannels: [],
                 raids: guildDb.channels.raids,
                 verification: guildDb.channels.verification
             },

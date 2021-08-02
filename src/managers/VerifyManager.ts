@@ -1,4 +1,4 @@
-import {DMChannel, GuildMember, TextChannel} from "discord.js";
+import {DMChannel, GuildMember, Interaction, Message, TextChannel} from "discord.js";
 import {InteractionManager} from "./InteractionManager";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MessageUtilities} from "../utilities/MessageUtilities";
@@ -19,13 +19,41 @@ export namespace VerifyManager {
         "Initiate"
     ];
 
+    // An interface with the relevant channels for this verification session.
+    interface IChannels {
+        verificationChannel?: TextChannel;
+
+    }
+
     /**
-     * The function where verification begins.
+     * An entry point for verification. This is called when the "Get Verified" (or some version of it) button is
+     * pressed. Applies to any section.
+     * @param {Interaction} i The interaction.
+     * @param {IGuildInfo} guildDoc The guild document.
+     */
+    export async function verifyInteraction(i: Interaction, guildDoc: IGuildInfo): Promise<void> {
+
+    }
+
+    /**
+     * An entry point for verification. This is called when the "verify" command is executed. Applies to the main
+     * section only.
+     * @param {Message} msg The message that led to this function being executed.
+     * @param {IGuildInfo} guildDoc The guild document.
+     */
+    export async function verifyMainCommand(msg: Message, guildDoc: IGuildInfo): Promise<void> {
+
+    }
+
+    /**
+     * The function where verification will begin. This should be called through an entry function (for example, a
+     * function that is called when a button is pressed or the verify command is executed).
      * @param {GuildMember} member The member to verify.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section to verify in.
+     * @private
      */
-    export async function verify(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
+    async function verify(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
         if (!(await RealmSharperWrapper.isOnline())) {
             await GlobalFgrUtilities.sendMsg(member, {
                 embeds: [
@@ -37,11 +65,14 @@ export namespace VerifyManager {
             });
             return;
         }
+
         // If the person is currently interacting with something, don't let them verify.
         if (InteractionManager.InteractiveMenu.has(member.id))
             return;
+
         // Check if the verified role exists.
         const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
+
         // We need this so we can send the person a message if needed.
         const verificationChannel = GuildFgrUtilities
             .getCachedChannel<TextChannel>(member.guild, section.channels.verification.verificationChannelId);
@@ -71,9 +102,12 @@ export namespace VerifyManager {
         // Check if this person is currently being manually verified.
         const manualVerifyEntry = section.manualVerificationEntries
             .find(x => x.userId === member.id);
+
         // If this is true, then this person is being manually verified.
-        if (manualVerifyEntry)
+        if (manualVerifyEntry) {
+            await member.send("Your profile is currently under manual verification. Please try again later.");
             return;
+        }
 
         // This has to be a verification channel so we don't need to double check.
         InteractionManager.InteractiveMenu.set(member.id, "VERIFICATION");

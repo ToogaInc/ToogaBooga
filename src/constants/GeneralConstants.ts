@@ -86,11 +86,39 @@ export namespace GeneralConstants {
         | "Moderator";
 
     // Logging types.
-    export type MainLogType = "Suspend"
+    export type GeneralLogType = "VerifySuccess"
+        | "VerifyFail"
+        | "VerifyStart"
+        | "VerifyStep"
         | "SectionSuspend"
-        | "Blacklist"
+        | "ManualVerifyRequest"
+        | "ManualVerifyAccepted"
+        | "ManualVerifyDenied"
+        | BasicModLogType;
+
+    export type MainLogType = GeneralLogType
+        | "ModmailReceived"
+        | "ModmailThreadCreated"
+        | "ModmailThreadRemoved"
+        | "ModmailSent";
+
+    // Could use Omit here, but seems like TS will just treat the entire type as a string.
+    export type BasicModLogType = "Suspend"
         | "Mute"
-        | "Warn";
+        | "Blacklist"
+        | "SectionSuspend"
+        | "ModmailBlacklist";
+
+    export type ModLogType = "Suspend"
+        | "Unsuspend"
+        | "Mute"
+        | "Unmute"
+        | "Blacklist"
+        | "Unblacklist"
+        | "SectionSuspend"
+        | "SectionUnsuspend"
+        | "ModmailBlacklist"
+        | "ModmailUnblacklist";
 
     export const EVERYONE_ROLE: RolePermissions = "Everyone";
     export const SUSPENDED_ROLE: RolePermissions = "Suspended";

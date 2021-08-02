@@ -232,7 +232,9 @@ export namespace ModmailManager {
                             tag: author.tag,
                             timeSent: Date.now(),
                             content: msg.content,
-                            attachments: msg.attachments.size === 0 ? [] : msg.attachments.array().map(x => x.url)
+                            attachments: msg.attachments.size === 0
+                                ? []
+                                : Array.from(msg.attachments.values()).map(x => x.url)
                         }
                     }
                 });

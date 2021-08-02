@@ -66,8 +66,7 @@ export namespace MessageUtilities {
         if (msg.embeds.length !== 0)
             obj.embeds = msg.embeds;
         if (msg.attachments.size !== 0)
-            obj.files = msg.attachments.array();
-
+            obj.files = Array.from(msg.attachments.values());
         if (msg.components.length === 0)
             obj.components = components;
         else

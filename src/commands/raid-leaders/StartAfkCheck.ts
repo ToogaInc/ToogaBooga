@@ -1,6 +1,6 @@
 import {BaseCommand} from "../BaseCommand";
 import {Message} from "discord.js";
-import {IGuildInfo} from "../../definitions/MongoDocumentInterfaces";
+import {IGuildInfo} from "../../definitions";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";

@@ -206,7 +206,7 @@ export interface IGuildInfo extends IBaseDocument {
         };
 
         /**
-         * Any applicable logging channels. The key is the logging type (for example, suspesions, blacklists, mutes,
+         * Any applicable logging channels. The key is the logging type (for example, suspensions, blacklists, mutes,
          * and more) and the value is the channel ID.
          *
          * @type {IPropertyKeyValuePair<GeneralConstants.MainLogType, string>[]}
@@ -535,6 +535,14 @@ export interface ISectionInfo {
          * @type {IRaidChannels}
          */
         raids: IRaidChannels;
+
+        /**
+         * Any applicable logging channels. The key is the logging type (for example, suspensions, blacklists, mutes,
+         * and more) and the value is the channel ID.
+         *
+         * @type {IPropertyKeyValuePair<GeneralConstants.GeneralLogType, string>[]}
+         */
+        loggingChannels: IPropertyKeyValuePair<GeneralConstants.GeneralLogType, string>[];
     };
 
     /**
@@ -680,7 +688,7 @@ export interface IUserInfo extends IBaseDocument {
              *
              * @type {string}
              */
-            moderationType: ModLogType;
+            moderationType: GeneralConstants.ModLogType;
 
             /**
              * The reason for this moderation type.
@@ -726,17 +734,6 @@ export interface IUserInfo extends IBaseDocument {
         universalNotes: string;
     };
 }
-
-type ModLogType = "Suspend"
-    | "Unsuspend"
-    | "Mute"
-    | "Unmute"
-    | "Blacklist"
-    | "Unblacklist"
-    | "SectionSuspend"
-    | "SectionUnsuspend"
-    | "ModmailBlacklist"
-    | "ModmailUnblacklist";
 
 /**
  * An interface that represents a RotMG IGN and the lowercase format.

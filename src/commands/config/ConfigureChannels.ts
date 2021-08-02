@@ -170,20 +170,6 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 if (!section.isMainSection) throw new Error("bot updates is a main-only feature.");
                 return guildDoc.channels.loggingChannels;
             }
-        },
-        {
-            name: "Configure Quota Channel",
-            // TODO configquota command.
-            description: "Here, you can add, modify, or remove quota channels. You are also able to configure quotas"
-                + " through the `;configquota` command (and this might be more convenient).",
-            guildDocPath: "channels.quotaLogsChannels",
-            sectionPath: "",
-            channelType: ChannelCategoryType.Quota,
-            configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
-                if (!section.isMainSection) throw new Error("bot updates is a main-only feature.");
-                return guildDoc.channels.quotaLogsChannels;
-            }
         }
     ];
 
