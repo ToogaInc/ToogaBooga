@@ -590,6 +590,20 @@ export interface ISectionInfo {
     };
 
     /**
+     * Other properties.
+     *
+     * @type {object}
+     */
+    properties: {
+        /**
+         * Whether to give the section member role after unsuspension.
+         *
+         * @type {boolean}
+         */
+        giveVerifiedRoleUponUnsuspend: boolean;
+    };
+
+    /**
      * Any manual verification requests.
      *
      * @type {IManualVerificationEntry[]}

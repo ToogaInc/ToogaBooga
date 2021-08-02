@@ -588,35 +588,47 @@ export namespace MongoManager {
     }
 
     /**
-     * Returns an array containing all sections. In particular, this function will give you a section representation
-     * of the main section.
-     * @param {IGuildInfo} guildDb The guild document.
-     * @return {ISectionInfo[]} The array of main + other sections in this server.
+     * Returns a section object representing the main section.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @returns {ISectionInfo} The section.
      */
-    export function getAllSections(guildDb: IGuildInfo): ISectionInfo[] {
-        const sections: ISectionInfo[] = [];
-        // The main section
-        sections.push({
+    export function getMainSection(guildDoc: IGuildInfo): ISectionInfo {
+        return {
             channels: {
                 loggingChannels: [],
-                raids: guildDb.channels.raids,
-                verification: guildDb.channels.verification
+                raids: guildDoc.channels.raids,
+                verification: guildDoc.channels.verification
             },
             isMainSection: true,
-            otherMajorConfig: guildDb.otherMajorConfig,
+            otherMajorConfig: guildDoc.otherMajorConfig,
             moderation: {
                 sectionSuspended: []
             },
             roles: {
-                leaders: guildDb.roles.staffRoles.sectionLeaderRoleIds,
-                verifiedRoleId: guildDb.roles.verifiedRoleId
+                leaders: guildDoc.roles.staffRoles.sectionLeaderRoleIds,
+                verifiedRoleId: guildDoc.roles.verifiedRoleId
+            },
+            properties: {
+                giveVerifiedRoleUponUnsuspend: true
             },
             sectionName: "Main",
             uniqueIdentifier: "MAIN",
-            manualVerificationEntries: guildDb.manualVerificationEntries
-        });
+            manualVerificationEntries: guildDoc.manualVerificationEntries
+        };
+    }
+
+    /**
+     * Returns an array containing all sections. In particular, this function will give you a section representation
+     * of the main section.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @return {ISectionInfo[]} The array of main + other sections in this server.
+     */
+    export function getAllSections(guildDoc: IGuildInfo): ISectionInfo[] {
+        const sections: ISectionInfo[] = [];
+        // The main section
+        sections.push(getMainSection(guildDoc));
         // Custom sections
-        sections.push(...guildDb.guildSections);
+        sections.push(...guildDoc.guildSections);
         return sections;
     }
 }
