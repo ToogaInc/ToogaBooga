@@ -531,7 +531,7 @@ export class RaidManager {
             .setThumbnail(this._dungeon.portalLink)
             .setImage(ArrayUtilities.getRandomElement(this._dungeon.bossLinks))
             .setDescription(descSb.toString())
-            .setFooter("AFK Check Started.")
+            .setFooter("Pre-AFK Check Started.")
             .setTimestamp();
         if (this._raidMsg)
             initialAfkCheckEmbed.addField("Message From Your Leader", this._raidMsg);

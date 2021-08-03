@@ -2,7 +2,6 @@ import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtilities} from "../utilities/MiscUtilities";
-import {SuspensionManager} from "../managers/SuspensionManager";
 import {IBotInfo} from "../definitions";
 
 export async function onReadyEvent(): Promise<void> {
@@ -48,27 +47,12 @@ export async function onReadyEvent(): Promise<void> {
     for await (const doc of guildDocs) {
         const associatedGuild = botGuilds.find(x => x.id === doc.guildId);
         if (associatedGuild) {
-            doc.moderation.suspendedUsers.forEach(x => {
-                if (SuspensionManager.isInSuspensionTimer(x.discordId, associatedGuild))
-                    return;
-                SuspensionManager.addToSuspensionTimer(x, associatedGuild, x.oldRoles);
-            });
-
-            doc.guildSections.forEach(section => {
-                section.moderation.sectionSuspended.forEach(x => {
-                    if (SuspensionManager.isInSectionSuspensionTimer(x.discordId, section))
-                        return;
-                    SuspensionManager.addToSectionSuspensionTimer(x, associatedGuild, section);
-                });
-            });
-
+            // TODO add suspension checker
             continue;
         }
 
         await MongoManager.getGuildCollection().deleteOne({guildId: doc.guildId});
     }
-
-    SuspensionManager.startChecker();
 
     const readyLog = new StringBuilder()
         .append(`${botUser.tag} has started successfully.`)

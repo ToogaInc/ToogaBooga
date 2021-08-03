@@ -571,7 +571,7 @@ export namespace MongoManager {
 
     /**
      * Validates that a field exists in a guild document. If the field does exist, nothing happens. Otherwise, the
-     * field is set with the specified default value.
+     * field is set with the specified default value. Make sure to update the cache manually.
      * @param {string} guildId The guild ID.
      * @param {string} property The field, or property, to check.
      * @param {T} defaultValue The default value if the field doesn't exist.

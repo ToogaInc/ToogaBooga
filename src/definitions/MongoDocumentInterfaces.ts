@@ -9,7 +9,7 @@ import {
 import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {IModmailThread} from "./ModmailInterfaces";
-import {IBlacklistedModmailUser, IBlacklistedUser, ISuspendedUser} from "./PunishmentInterfaces";
+import {IBasePunishment, IBlacklistedModmailUser, IBlacklistedUser, ISuspendedUser} from "./PunishmentInterfaces";
 import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
 
 export interface IBaseDocument<T = ObjectID> {
@@ -668,70 +668,7 @@ export interface IUserInfo extends IBaseDocument {
          *
          * @type {object}
          */
-        moderationHistory: {
-            /**
-             * The guild ID.
-             *
-             * @type {string}
-             */
-            guildId: string;
-
-            /**
-             * The moderator that was responsible for this moderation action.
-             *
-             * @type {object}
-             */
-            moderator: {
-                /**
-                 * The moderator ID.
-                 *
-                 * @type {string}
-                 */
-                moderatorId: string;
-
-                /**
-                 * The moderator tag (User#0000).
-                 *
-                 * @type {string}
-                 */
-                moderatorTag: string;
-            }
-
-            /**
-             * The moderation type.
-             *
-             * @type {string}
-             */
-            moderationType: GeneralConstants.ModLogType;
-
-            /**
-             * The reason for this moderation type.
-             *
-             * @type {string}
-             */
-            reason: string;
-
-            /**
-             * The duration of this moderation type, if any, in minutes. If there is no time, then this will be `-1`.
-             *
-             * @type {number}
-             */
-            duration: number;
-
-            /**
-             * The issued date/time; i.e. when this moderation action was issued.
-             *
-             * @type {number}
-             */
-            issuedTime: number;
-
-            /**
-             * An ID consisting of 30 letters used to identify this moderation action.
-             *
-             * @type {string}
-             */
-            actionId: string;
-        }[];
+        moderationHistory: IPunishmentHistoryEntry[];
 
         /**
          * Any notes for this user. This is on a per-guild basis. The key is the guild ID and the value is the note.
@@ -747,6 +684,54 @@ export interface IUserInfo extends IBaseDocument {
          */
         universalNotes: string;
     };
+}
+
+/**
+ * An interface that represents a punishment (or removal of punishment) entry, to be stored in the user's punishment
+ * history.
+ */
+export interface IPunishmentHistoryEntry extends IBasePunishment {
+    /**
+     * The guild ID.
+     *
+     * @type {string}
+     */
+    guildId: string;
+
+    /**
+     * The moderation type.
+     *
+     * @type {string}
+     */
+    moderationType: GeneralConstants.ModLogType;
+
+    /**
+     * The duration of this moderation type, if any, in minutes. If there is no time, then this will be `-1`.
+     *
+     * @type {number}
+     */
+    duration: number;
+
+    /**
+     * The issued date/time; i.e. when this moderation action was issued.
+     *
+     * @type {number}
+     */
+    issuedAt: number;
+
+    /**
+     * The date/time when this punishment will expire.
+     *
+     * @type {number}
+     */
+    expiresAt: number;
+
+    /**
+     * An ID consisting of 30 letters used to identify this moderation action.
+     *
+     * @type {string}
+     */
+    actionId: string;
 }
 
 /**

@@ -171,7 +171,7 @@ export namespace ModmailManager {
             guildDoc.channels.modmail.modmailChannelId
         )!;
         // Check if the person is blacklisted from using modmail.
-        if (guildDoc.moderation.blacklistedModmailUsers.some(x => x.discordId === author.id)) {
+        if (guildDoc.moderation.blacklistedModmailUsers.some(x => x.affectedUser.id === author.id)) {
             await msg.react(Emojis.DENIED_EMOJI).catch();
             return;
         }
@@ -314,7 +314,7 @@ export namespace ModmailManager {
 
         // Step 1: is the person blacklisted?
         const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers
-            .find(x => x.discordId === targetMember.id);
+            .find(x => x.affectedUser.id === targetMember.id);
         if (blacklistInfo) {
             const blModmailEmbed = MessageUtilities.generateBlankEmbed(targetMember, "RED")
                 .setTitle("User Blacklisted From Modmail")
@@ -477,7 +477,7 @@ export namespace ModmailManager {
 
         // Is the person blacklisted?
         const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers
-            .find(x => x.discordId === authorOfModmail.id);
+            .find(x => x.affectedUser.id === authorOfModmail.id);
         if (blacklistInfo) {
             const noUserFoundEmbed = MessageUtilities.generateBlankEmbed(convertedToThreadBy.user, "RED")
                 .setTitle("User Blacklisted From Modmail")
@@ -658,7 +658,8 @@ export namespace ModmailManager {
             return;
         }
 
-        const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers.find(x => x.discordId === authorOfModmailId);
+        const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers
+            .find(x => x.affectedUser.id === authorOfModmailId);
 
         // If this person was already blacklisted.
         if (blacklistInfo) {
