@@ -1,6 +1,5 @@
 import {Collection, Guild, GuildMember, MessageEmbed, Role, TextChannel} from "discord.js";
-import {GeneralConstants} from "../constants/GeneralConstants";
-import {IGuildInfo, IPunishmentHistoryEntry, ISectionInfo} from "../definitions";
+import {IGuildInfo, IPunishmentHistoryEntry, ISectionInfo, ISuspendedUser, IUserInfo} from "../definitions";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {Queue} from "../utilities/Queue";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -8,145 +7,180 @@ import {MongoManager} from "./MongoManager";
 import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtilities} from "../utilities/MiscUtilities";
+import {AllModLogType, MainOnlyModLogType, SectionModLogType} from "../definitions/Types";
+import {FilterQuery} from "mongodb";
+
+// TODO have this inherit from IBasePunishment?
+interface IPunishmentDetails {
+    /**
+     * The nickname of the person that will receive this punishment (or have the punishment removed).
+     *
+     * @type {string}
+     */
+    nickname: string;
+
+    /**
+     * The reason for the punishment (or removal of said punishment).
+     *
+     * @type {string}
+     */
+    reason: string;
+
+    /**
+     * The duration of the punishment, in minutes. This is not used in any computations, only for logging.
+     *
+     * @type {number}
+     */
+    duration?: number;
+
+    /**
+     * The time this punishment (or removal of it) was issued.
+     *
+     * @type {number}
+     */
+    issuedTime: number;
+
+    /**
+     * The time this punishment will expire.
+     *
+     * @type {number}
+     */
+    expiresAt?: number;
+
+    /**
+     * The moderator responsible for this punishment (or removal of it). `null` means automatic.
+     *
+     * @type {GuildMember | null}
+     */
+    moderator: GuildMember | null;
+
+    /**
+     * The guild document.
+     *
+     * @type {IGuildInfo}
+     */
+    guildDoc: IGuildInfo;
+
+    /**
+     * The section information.
+     *
+     * @type {ISectionInfo}
+     */
+    section: ISectionInfo;
+
+    /**
+     * The guild object.
+     *
+     * @type {Guild}
+     */
+    guild: Guild;
+
+    /**
+     * Whether to send a notice to the user. If this is `false`, the user won't be notified of the punishment.
+     *
+     * @type {boolean}
+     */
+    sendNoticeToAffectedUser: boolean;
+
+    /**
+     * The action ID to resolve. This must be specified if you're going to resolve a punishment.
+     *
+     * @type {string}
+     */
+    actionIdToResolve?: string;
+
+    /**
+     * The action ID to use. If this isn't specified, then an ID will be created.
+     *
+     * @type {string}
+     */
+    actionIdToUse?: string;
+}
+
+const AUTOMATIC: string = "Automatic";
 
 export namespace PunishmentManager {
-    interface IPunishmentDetails {
-        /**
-         * The nickname of the person that will receive this punishment (or have the punishment removed).
-         *
-         * @type {string}
-         */
-        nickname: string;
-
-        /**
-         * The reason for the punishment (or removal of said punishment).
-         *
-         * @type {string}
-         */
-        reason: string;
-
-        /**
-         * The duration of the punishment, in minutes. This is not used in any computations, only for logging.
-         *
-         * @type {number}
-         */
-        duration?: number;
-
-        /**
-         * The time this punishment (or removal of it) was issued.
-         *
-         * @type {number}
-         */
-        issuedTime: number;
-
-        /**
-         * The time this punishment will expire.
-         *
-         * @type {number}
-         */
-        expiresAt?: number;
-
-        /**
-         * The moderator responsible for this punishment (or removal of it). `null` means automatic.
-         *
-         * @type {GuildMember | null}
-         */
-        moderator: GuildMember | null;
-
-        /**
-         * The guild ID.
-         *
-         * @type {string}
-         */
-        guildId: string;
-
-        /**
-         * The guild document.
-         *
-         * @type {IGuildInfo}
-         */
-        guildDoc: IGuildInfo;
-
-        /**
-         * The section information.
-         *
-         * @type {ISectionInfo}
-         */
-        section: ISectionInfo;
-
-        /**
-         * The guild object.
-         *
-         * @type {Guild}
-         */
-        guild: Guild;
-
-        /**
-         * Whether to send a notice to the user. If this is `false`, the user won't be notified of the punishment.
-         *
-         * @type {boolean}
-         */
-        sendNoticeToAffectedUser: boolean;
-    }
-
     /**
      * Acknowledges a punishment. Sends the appropriate log message to the logging channel, sends a message to the
      * user, and saves the punishment information into the user's document. You will need to handle the punishment
      * information for the guild document.
      * @param {GuildMember | object} member The member who is receiving a punishment or getting a punishment
      * removed. For blacklists, simply provide the `name` in an object.
-     * @param {GeneralConstants.ModLogType} punishmentType The punishment type.
-     * @param {PunishmentManager.IPunishmentDetails} details The details.
+     * @param {AllModLogType} punishmentType The punishment type.
+     * @param {IPunishmentDetails} details The details.
      * @returns {Promise<boolean>} Whether the action is completed.
      */
     export async function logPunishment(
         member: GuildMember | { name: string; },
-        punishmentType: GeneralConstants.ModLogType,
+        punishmentType: AllModLogType,
         details: IPunishmentDetails
     ): Promise<boolean> {
         let logChannel: TextChannel | null;
+        let resolvedModType: MainOnlyModLogType | SectionModLogType | null;
+
         const isAddingPunishment = punishmentType.includes("Un");
-        const actionId = StringUtil.generateRandomString(40);
+        // If we're resolving a punishment AND the action ID to resolve is not specified, then we can't do anything.
+        if (!isAddingPunishment && !details.actionIdToResolve)
+            return false;
+
+        const actionId = details.actionIdToUse ?? StringUtil.generateRandomString(40);
+        const mainSection = MongoManager.getMainSection(details.guildDoc);
 
         // Find the appropriate logging channel.
+        // Note that SectionSuspend/SectionUnsuspend is the only log type that can be customized on a per-section basis.
         switch (punishmentType) {
             case "Blacklist":
             case "Unblacklist":
-                logChannel = getLoggingChannel(details.guild, details.guildDoc, details.section, "Blacklist");
+                logChannel = getLoggingChannel(details.guild, details.guildDoc, mainSection, "Blacklist");
+                resolvedModType = "Blacklist";
                 break;
             case "ModmailBlacklist":
             case "ModmailUnblacklist":
-                logChannel = getLoggingChannel(details.guild, details.guildDoc, details.section, "ModmailBlacklist");
+                logChannel = getLoggingChannel(details.guild, details.guildDoc, mainSection, "ModmailBlacklist");
+                resolvedModType = "ModmailBlacklist";
                 break;
             case "SectionSuspend":
             case "SectionUnsuspend":
                 logChannel = getLoggingChannel(details.guild, details.guildDoc, details.section, "SectionSuspend");
+                resolvedModType = "SectionSuspend";
                 break;
             case "Mute":
             case "Unmute":
-                logChannel = getLoggingChannel(details.guild, details.guildDoc, details.section, "Mute");
+                logChannel = getLoggingChannel(details.guild, details.guildDoc, mainSection, "Mute");
+                resolvedModType = "Mute";
                 break;
             case "Suspend":
             case "Unsuspend":
-                logChannel = getLoggingChannel(details.guild, details.guildDoc, details.section, "Suspend");
+                logChannel = getLoggingChannel(details.guild, details.guildDoc, mainSection, "Suspend");
+                resolvedModType = "Suspend";
+                break;
+            case "Warn":
+            case "Unwarn":
+                logChannel = getLoggingChannel(details.guild, details.guildDoc, mainSection, "Warn");
+                resolvedModType = "Warn";
                 break;
             default:
                 logChannel = null;
+                resolvedModType = null;
                 break;
         }
 
+        if (!resolvedModType)
+            return false;
+
+        // Now prepare logging message and database entry
         const entry: IPunishmentHistoryEntry = {
-            guildId: details.guildId,
-            moderationType: punishmentType,
+            guildId: details.guild.id,
+            moderationType: resolvedModType,
             affectedUser: {
                 name: "name" in member ? member.name : member.displayName,
                 id: "id" in member ? member.id : "",
                 tag: "user" in member ? member.user.tag : ""
             },
             moderator: {
-                id: details.moderator?.id ?? "",
+                id: details.moderator?.id ?? AUTOMATIC,
                 tag: details.moderator?.user.tag ?? "",
-                name: details.moderator?.displayName ?? "Automatic"
+                name: details.moderator?.displayName ?? ""
             },
             issuedAt: details.issuedTime,
             expiresAt: details.expiresAt ?? -1,
@@ -156,7 +190,7 @@ export namespace PunishmentManager {
         };
 
         const modStr = new StringBuilder()
-            .append(`- Moderator Mention: ${details.moderator ?? "Automatic"} (${details.moderator?.id ?? "N/A"})`)
+            .append(`- Moderator Mention: ${details.moderator ?? AUTOMATIC} (${details.moderator?.id ?? "N/A"})`)
             .appendLine()
             .append(`- Moderator Tag: ${details.moderator?.user.tag ?? "N/A"}`)
             .appendLine()
@@ -182,6 +216,11 @@ export namespace PunishmentManager {
             .addField("Reason", entry.reason)
             .setTimestamp()
             .setFooter(`Mod. ID: ${entry.actionId}`);
+
+        if (!isAddingPunishment) {
+            logToChanEmbed.addField("Resolving Moderation ID", details.actionIdToResolve ?? "N/A");
+            toSendToUserEmbed.addField("Resolving Moderation ID", details.actionIdToResolve ?? "N/A");
+        }
 
         switch (punishmentType) {
             case "Blacklist": {
@@ -380,9 +419,55 @@ export namespace PunishmentManager {
             await logChannel.send({embeds: [logToChanEmbed]}).catch();
         }
 
-        // Update the database.
+        // Update the user database if possible.
+        if (isAddingPunishment) {
+            const filterQuery: FilterQuery<IUserInfo> = {
+                $or: []
+            };
+            if ("name" in member) {
+                const nameRes = await MongoManager.findNameInIdNameCollection(member.name);
+                if (nameRes.length > 0) {
+                    filterQuery.$or?.push({
+                        discordId: nameRes[0].currentDiscordId
+                    });
 
-        return true;
+                    // For logging purposes
+                    if (nameRes.length > 1)
+                        console.log(`${member.name} has multiple documents in IDName Collection.`);
+                }
+            }
+            else {
+                filterQuery.$or?.push({
+                    discordId: member.id
+                });
+            }
+
+            // This should only hit when the person has NEVER verified with this bot.
+            // TODO what to do when a person is blacklisted when he or she never verified with the bot?
+            if ((filterQuery.$or?.length ?? 0) === 0)
+                return false;
+
+            const queryResult = await MongoManager.getUserCollection().updateOne(filterQuery, {
+                $push: {
+                    "details.moderationHistory": entry
+                }
+            });
+
+            return queryResult.modifiedCount > 0;
+        }
+        else {
+            delete entry.expiresAt;
+            delete entry.duration;
+            const queryResult = await MongoManager.getUserCollection().updateOne({
+                "details.moderationHistory.$.actionId": details.actionIdToResolve
+            }, {
+                $set: {
+                    "details.moderationHistory.$.resolved": entry
+                }
+            });
+
+            return queryResult.modifiedCount > 0;
+        }
     }
 
     /**
@@ -390,12 +475,12 @@ export namespace PunishmentManager {
      * @param {Guild} guild The guild.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section.
-     * @param {GeneralConstants.BasicModLogType} punishmentType The punishment type.
+     * @param {MainOnlyModLogType | SectionModLogType} punishmentType The punishment type.
      * @returns {TextChannel | null} The channel, if any.
      * @private
      */
     function getLoggingChannel(guild: Guild, guildDoc: IGuildInfo, section: ISectionInfo,
-                               punishmentType: GeneralConstants.BasicModLogType): TextChannel | null {
+                               punishmentType: MainOnlyModLogType | SectionModLogType): TextChannel | null {
         const id = section.isMainSection
             ? guildDoc.channels.loggingChannels.find(x => x.key === punishmentType)
             : section.channels.loggingChannels.find(x => x.key === punishmentType);
@@ -405,28 +490,10 @@ export namespace PunishmentManager {
 }
 
 export namespace SuspensionManager {
-    interface ISuspendedBase {
-        nickname: string;
-        reason: string;
-        endsAt: number;
-        duration: number;
-        issuedTime: number;
-        moderator: GuildMember | null;
-        guildId: string;
-    }
-
-    interface ISuspendedDetails extends ISuspendedBase {
-        roles: string[];
-    }
-
-    interface ISectionSuspendedDetails extends ISuspendedBase {
-        sectionId: string;
-    }
-
     // key = guild ID
     // value = collection of member IDs, suspension info
-    const SuspendedMembers = new Collection<string, Collection<string, ISuspendedDetails>>();
-    const SectionSuspendedMembers = new Collection<string, Collection<string, ISectionSuspendedDetails>>();
+    const SuspendedMembers = new Collection<string, Collection<string, ISuspendedUser>>();
+    const SectionSuspendedMembers = new Collection<string, Collection<string, ISuspendedUser & {secId: string;}>>();
 
     let IsRunning = false;
 
@@ -441,37 +508,24 @@ export namespace SuspensionManager {
 
         if (documents.length > 0) {
             for await (const guildDoc of documents) {
-                const serverSus = new Collection<string, ISuspendedDetails>();
-                const sectionSus = new Collection<string, ISectionSuspendedDetails>();
-
+                const serverSus = new Collection<string, ISuspendedUser>();
                 const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
                 if (!guild) continue;
 
                 for await (const suspendedUser of guildDoc.moderation.suspendedUsers) {
-                    serverSus.set(suspendedUser.affectedUser.id, {
-                        nickname: suspendedUser.affectedUser.name,
-                        reason: suspendedUser.reason,
-                        endsAt: suspendedUser.timeEnd,
-                        duration: (suspendedUser.timeEnd - suspendedUser.timeIssued) / 60000,
-                        issuedTime: suspendedUser.timeIssued,
-                        guildId: guild.id,
-                        moderator: await GuildFgrUtilities.fetchGuildMember(guild, suspendedUser.moderator.id),
-                        roles: suspendedUser.oldRoles
-                    });
+                    if (suspendedUser.timeEnd === -1)
+                        continue;
+
+                    serverSus.set(suspendedUser.affectedUser.id, suspendedUser);
                 }
 
+                const sectionSus = new Collection<string, ISuspendedUser & {secId: string;}>();
                 for (const section of guildDoc.guildSections) {
                     for await (const secSusUser of section.moderation.sectionSuspended) {
-                        sectionSus.set(secSusUser.affectedUser.id, {
-                            nickname: secSusUser.affectedUser.name,
-                            reason: secSusUser.reason,
-                            endsAt: secSusUser.timeEnd,
-                            duration: (secSusUser.timeEnd - secSusUser.timeIssued) / 60000,
-                            issuedTime: secSusUser.timeIssued,
-                            guildId: guild.id,
-                            moderator: await GuildFgrUtilities.fetchGuildMember(guild, secSusUser.moderator.id),
-                            sectionId: section.uniqueIdentifier
-                        });
+                        if (secSusUser.timeEnd === -1)
+                            continue;
+
+                        sectionSus.set(secSusUser.affectedUser.id, {...secSusUser, secId: section.uniqueIdentifier});
                     }
                 }
 
@@ -524,25 +578,25 @@ export namespace SuspensionManager {
                         guildId: guild.id,
                         memberId: memberId,
                         removeFromDb: false,
-                        secId: details.sectionId
+                        secId: details.secId
                     });
                     continue;
                 }
 
                 // Check if this person still needs to serve time.
-                if (Date.now() - details.endsAt >= 0)
+                if (Date.now() - details.timeEnd >= 0)
                     continue;
 
                 // If no section is found, then remove this person from section suspension list
                 // Since the section doesn't exist, then it follows that we cannot really "unsuspend" this person
                 // since there isn't said section
-                const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === details.sectionId);
+                const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === details.secId);
                 if (!section) {
                     idsToRemove.enqueue({
                         guildId: guild.id,
                         memberId: memberId,
                         removeFromDb: false,
-                        secId: details.sectionId
+                        secId: details.secId
                     });
                     continue;
                 }
@@ -553,7 +607,7 @@ export namespace SuspensionManager {
                         guildId: guild.id,
                         memberId: memberId,
                         removeFromDb: true,
-                        secId: details.sectionId
+                        secId: details.secId
                     });
                     continue;
                 }
@@ -566,19 +620,17 @@ export namespace SuspensionManager {
                     guildId: guild.id,
                     memberId: memberId,
                     removeFromDb: true,
-                    secId: details.sectionId
+                    secId: details.secId
                 });
 
                 PunishmentManager.logPunishment(
                     suspendedMember,
                     "SectionUnsuspend",
                     {
-                        nickname: details.nickname,
+                        nickname: details.affectedUser.name,
                         reason: details.reason,
-                        duration: details.duration,
                         moderator: null,
-                        issuedTime: details.issuedTime,
-                        guildId: guild.id,
+                        issuedTime: details.issuedAt,
                         guildDoc: guildDoc,
                         section: section,
                         guild: guild,
@@ -641,18 +693,18 @@ export namespace SuspensionManager {
                     continue;
                 }
 
-                if (Date.now() - details.endsAt >= 0)
+                if (Date.now() - details.timeEnd >= 0)
                     continue;
 
                 // Give back all valid roles
-                const rolesToGiveBack = details.roles
+                const rolesToGiveBack = details.oldRoles
                     .map(x => GuildFgrUtilities.getCachedRole(guild, x))
                     .filter(x => x !== null) as Role[];
 
                 try {
                     await suspendedMember.roles.set(rolesToGiveBack);
                     if (suspendedMember.nickname)
-                        await suspendedMember.setNickname(details.nickname).catch();
+                        await suspendedMember.setNickname(details.affectedUser.name).catch();
 
                     idsToRemove.enqueue({
                         guildId: guild.id,
@@ -665,12 +717,10 @@ export namespace SuspensionManager {
                         suspendedMember,
                         "Unsuspend",
                         {
-                            nickname: details.nickname,
+                            nickname: details.affectedUser.name,
                             reason: details.reason,
-                            duration: details.duration,
                             moderator: null,
-                            issuedTime: details.issuedTime,
-                            guildId: guild.id,
+                            issuedTime: details.issuedAt,
                             guildDoc: guildDoc,
                             section: mainSection,
                             guild: guild,
@@ -714,16 +764,75 @@ export namespace SuspensionManager {
      * database.
      * @param {GuildMember} member The member to suspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
-     * @param {number} duration The duration, in milliseconds.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {number} duration The duration, in milliseconds. If this is a permanent suspension, use `-1`.
      * @param {string} reason The reason.
      * @returns {Promise<boolean>} Whether the suspension was successful.
      */
-    export async function addSuspension(member: GuildMember, mod: GuildMember | null, duration: number,
-                                        reason: string): Promise<boolean> {
+    export async function addSuspension(member: GuildMember, mod: GuildMember | null, guildDoc: IGuildInfo,
+                                        duration: number, reason: string): Promise<boolean> {
         const timeStarted = Date.now();
-        const timeEnd = Date.now() + duration;
+        const suspendedUserObj: ISuspendedUser = {
+            issuedAt: timeStarted,
+            timeEnd: duration === -1 ? -1 : timeStarted + duration,
+            oldRoles: member.roles.cache.map(x => x.id),
+            affectedUser: {
+                id: member.id,
+                tag: member.user.tag,
+                name: member.displayName
+            },
+            moderator: {
+                id: mod?.id ?? AUTOMATIC,
+                tag: mod?.user.tag ?? "",
+                name: mod?.displayName ?? ""
+            },
+            reason: reason,
+            actionId: StringUtil.generateRandomString(40)
+        };
 
-        return true;
+        const queryRes = await MongoManager.getGuildCollection().updateOne({
+            guildId: member.guild.id
+        }, {
+            $push: {
+                "moderation.suspendedUsers": suspendedUserObj
+            }
+        });
+
+        // If nothing was modified, then don't add to database and tell user that suspension failed.
+        if (queryRes.modifiedCount === 0)
+            return false;
+
+        await member.roles.set(
+            GuildFgrUtilities.hasCachedRole(member.guild, guildDoc.roles.suspendedRoleId)
+                ? [guildDoc.roles.suspendedRoleId]
+                : []
+        ).catch();
+
+        const logInfo: IPunishmentDetails = {
+            nickname: member.displayName,
+            reason: reason,
+            duration: duration / 60000,
+            issuedTime: Date.now(),
+            expiresAt: 0,
+            moderator: mod,
+            guildDoc: guildDoc,
+            section: MongoManager.getMainSection(guildDoc),
+            guild: member.guild,
+            sendNoticeToAffectedUser: true,
+            actionIdToResolve: suspendedUserObj.actionId
+        };
+
+        if (duration === -1) {
+            logInfo.expiresAt = undefined;
+            logInfo.duration = undefined;
+        }
+
+        // Now, add it to the suspension timer.
+        if (!SuspendedMembers.has(member.guild.id))
+            SuspendedMembers.set(member.guild.id, new Collection<string, ISuspendedUser>());
+        SuspendedMembers.get(member.guild.id)!.set(member.id, suspendedUserObj);
+
+        return await PunishmentManager.logPunishment(member, "Suspend", logInfo);
     }
 
     /**

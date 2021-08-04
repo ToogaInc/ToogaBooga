@@ -69,21 +69,28 @@ export interface IBasePunishment {
      * @type {string}
      */
     reason: string;
-}
 
-/**
- * An interface representing a muted user.
- */
-export interface IMutedUser extends IBasePunishment {
+    /**
+     * The action ID for this punishment.
+     *
+     * @type {string}
+     */
+    actionId: string;
+
     /**
      * The date/time when this suspension was issued.
      *
      * @type {number}
      */
-    timeIssued: number;
+    issuedAt: number;
+}
 
+/**
+ * An interface representing a muted user. This will be stored in the guild document.
+ */
+export interface IMutedUser extends IBasePunishment {
     /**
-     * When this suspension will end.
+     * When this suspension will end. If this is an indefinite mute, use `-1`.
      *
      * @type {number}
      */
@@ -91,18 +98,11 @@ export interface IMutedUser extends IBasePunishment {
 }
 
 /**
- * An interface representing a suspended user.
+ * An interface representing a suspended user. This will be stored in the guild document.
  */
 export interface ISuspendedUser extends IBasePunishment {
     /**
-     * The date/time when this suspension was issued.
-     *
-     * @type {number}
-     */
-    timeIssued: number;
-
-    /**
-     * When this suspension will end.
+     * When this suspension will end. If this is an indefinite suspension, use `-1`.
      *
      * @type {number}
      */
@@ -117,7 +117,7 @@ export interface ISuspendedUser extends IBasePunishment {
 }
 
 /**
- * An interface that represents a blacklisted user.
+ * An interface that represents a blacklisted user. This will be stored in the guild document.
  */
 export interface IBlacklistedUser extends Omit<IBasePunishment, "affectedUser"> {
     /**
@@ -136,23 +136,11 @@ export interface IBlacklistedUser extends Omit<IBasePunishment, "affectedUser"> 
      * @type {string}
      */
     discordId: string;
-
-    /**
-     * The date/time that this person was blacklisted.
-     *
-     * @type {number}
-     */
-    dateTime: number;
 }
 
 /**
- * An interface that represents a blacklisted modmail user.
+ * An interface that represents a blacklisted modmail user. This will be stored in the guild document.
  */
-export interface IBlacklistedModmailUser extends IBasePunishment{
-    /**
-     * The date/time that this person was blacklisted.
-     *
-     * @type {number}
-     */
-    dateTime: string;
+// tslint:disable-next-line:no-empty-interface
+export interface IBlacklistedModmailUser extends IBasePunishment {
 }

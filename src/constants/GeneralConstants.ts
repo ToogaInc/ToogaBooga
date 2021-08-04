@@ -1,9 +1,9 @@
-
 import {MessageActionRow, MessageButton} from "discord.js";
 import {Emojis} from "./Emojis";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {MessageButtonStyles} from "discord.js/typings/enums";
 import {IPermAllowDeny} from "../definitions";
+import {RolePermissions} from "../definitions/Types";
 
 export namespace GeneralConstants {
     export const NUMBER_OF_STATS: number = 8;
@@ -71,54 +71,6 @@ export namespace GeneralConstants {
         "Forest Mazes": "Forest Mazes completed1",
         "Pirate Caves": "Pirate Caves completed"
     };
-
-    // Defined roles for custom AFK checks and commands.
-    export type RolePermissions = "Everyone"
-        | "Suspended"
-        | "Raider"
-        | "Team"
-        | "Security"
-        | "AlmostRaidLeader"
-        | "RaidLeader"
-        | "VeteranRaidLeader"
-        | "Officer"
-        | "HeadRaidLeader"
-        | "Moderator";
-
-    // Logging types.
-    export type GeneralLogType = "VerifySuccess"
-        | "VerifyFail"
-        | "VerifyStart"
-        | "VerifyStep"
-        | "SectionSuspend"
-        | "ManualVerifyRequest"
-        | "ManualVerifyAccepted"
-        | "ManualVerifyDenied"
-        | BasicModLogType;
-
-    export type MainLogType = GeneralLogType
-        | "ModmailReceived"
-        | "ModmailThreadCreated"
-        | "ModmailThreadRemoved"
-        | "ModmailSent";
-
-    // Could use Omit here, but seems like TS will just treat the entire type as a string.
-    export type BasicModLogType = "Suspend"
-        | "Mute"
-        | "Blacklist"
-        | "SectionSuspend"
-        | "ModmailBlacklist";
-
-    export type ModLogType = "Suspend"
-        | "Unsuspend"
-        | "Mute"
-        | "Unmute"
-        | "Blacklist"
-        | "Unblacklist"
-        | "SectionSuspend"
-        | "SectionUnsuspend"
-        | "ModmailBlacklist"
-        | "ModmailUnblacklist";
 
     export const EVERYONE_ROLE: RolePermissions = "Everyone";
     export const SUSPENDED_ROLE: RolePermissions = "Suspended";

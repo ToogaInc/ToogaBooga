@@ -3,9 +3,9 @@ import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {IGuildInfo} from "../definitions";
+import {RolePermissions} from "../definitions/Types";
 
 // Type alias
-type RolePermissions = GeneralConstants.RolePermissions;
 
 export abstract class BaseCommand {
     private static readonly ROLE_ORDER: RolePermissions[] = [

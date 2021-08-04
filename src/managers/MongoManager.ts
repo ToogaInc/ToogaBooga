@@ -595,6 +595,7 @@ export namespace MongoManager {
     export function getMainSection(guildDoc: IGuildInfo): ISectionInfo {
         return {
             channels: {
+                // Note that we aren't going to show logging channels since this is irrelevant for our use case.
                 loggingChannels: [],
                 raids: guildDoc.channels.raids,
                 verification: guildDoc.channels.verification
@@ -630,5 +631,16 @@ export namespace MongoManager {
         // Custom sections
         sections.push(...guildDoc.guildSections);
         return sections;
+    }
+
+    /**
+     * Finds a user that has the corresponding punishment ID.
+     * @param {string} punishmentId The punishment ID.
+     * @returns {Promise<IUserInfo | null>} The user data with the punishment ID, if any.
+     */
+    export async function lookupUserByPunishmentId(punishmentId: string): Promise<IUserInfo | null> {
+        return await getUserCollection().findOne({
+            "details.moderationHistory.$.actionId": punishmentId
+        });
     }
 }

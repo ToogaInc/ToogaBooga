@@ -7,10 +7,10 @@ import {
     IRaidInfo, IReactionInfo
 } from "./DungeonRaidInterfaces";
 import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
-import {GeneralConstants} from "../constants/GeneralConstants";
 import {IModmailThread} from "./ModmailInterfaces";
 import {IBasePunishment, IBlacklistedModmailUser, IBlacklistedUser, ISuspendedUser} from "./PunishmentInterfaces";
 import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
+import {MainLogType, MainOnlyModLogType, SectionLogType, SectionModLogType} from "./Types";
 
 export interface IBaseDocument<T = ObjectID> {
     _id: T;
@@ -209,9 +209,9 @@ export interface IGuildInfo extends IBaseDocument {
          * Any applicable logging channels. The key is the logging type (for example, suspensions, blacklists, mutes,
          * and more) and the value is the channel ID.
          *
-         * @type {IPropertyKeyValuePair<GeneralConstants.MainLogType, string>[]}
+         * @type {IPropertyKeyValuePair<MainLogType, string>[]}
          */
-        loggingChannels: IPropertyKeyValuePair<GeneralConstants.MainLogType, string>[];
+        loggingChannels: IPropertyKeyValuePair<MainLogType, string>[];
 
         /**
          * The bot updates channel. This is where any changelogs and announcements will be sent.
@@ -540,9 +540,9 @@ export interface ISectionInfo {
          * Any applicable logging channels. The key is the logging type (for example, suspensions, blacklists, mutes,
          * and more) and the value is the channel ID.
          *
-         * @type {IPropertyKeyValuePair<GeneralConstants.GeneralLogType, string>[]}
+         * @type {IPropertyKeyValuePair<SectionLogType, string>[]}
          */
-        loggingChannels: IPropertyKeyValuePair<GeneralConstants.GeneralLogType, string>[];
+        loggingChannels: IPropertyKeyValuePair<SectionLogType, string>[];
     };
 
     /**
@@ -703,28 +703,25 @@ export interface IPunishmentHistoryEntry extends IBasePunishment {
      *
      * @type {string}
      */
-    moderationType: GeneralConstants.ModLogType;
+    moderationType: MainOnlyModLogType | SectionModLogType;
 
     /**
      * The duration of this moderation type, if any, in minutes. If there is no time, then this will be `-1`.
      *
-     * @type {number}
-     */
-    duration: number;
-
-    /**
-     * The issued date/time; i.e. when this moderation action was issued.
+     * This is REQUIRED for a punishment. This is NOT REQUIRED for a resolution.
      *
      * @type {number}
      */
-    issuedAt: number;
+    duration?: number;
 
     /**
      * The date/time when this punishment will expire.
      *
+     * This is REQUIRED for a punishment. This is NOT REQUIRED for a resolution.
+     *
      * @type {number}
      */
-    expiresAt: number;
+    expiresAt?: number;
 
     /**
      * An ID consisting of 30 letters used to identify this moderation action.
@@ -732,6 +729,14 @@ export interface IPunishmentHistoryEntry extends IBasePunishment {
      * @type {string}
      */
     actionId: string;
+
+    /**
+     * Whether the punishment was resolved. If this property doesn't exist, then this implies that the punishment is
+     * still ongoing (i.e. still active).
+     *
+     * @type {object}
+     */
+    resolved?: Omit<IPunishmentHistoryEntry, "resolved" | "expiresAt" | "duration">;
 }
 
 /**
