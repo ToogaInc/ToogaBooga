@@ -383,7 +383,7 @@ export namespace MongoManager {
             },
             guildId: guildId,
             guildSections: [],
-            moderation: {blacklistedUsers: [], suspendedUsers: [], blacklistedModmailUsers: []},
+            moderation: {blacklistedUsers: [], suspendedUsers: [], blacklistedModmailUsers: [], mutedUsers: []},
             otherMajorConfig: {
                 verificationProperties: {
                     checkRequirements: true,

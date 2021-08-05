@@ -1,5 +1,5 @@
 import {Collection, Guild, GuildMember, MessageEmbed, TextChannel} from "discord.js";
-import {IGuildInfo, IPunishmentHistoryEntry, ISectionInfo, ISuspendedUser, IUserInfo} from "../definitions";
+import {IGuildInfo, IMutedUser, IPunishmentHistoryEntry, ISectionInfo, ISuspendedUser, IUserInfo} from "../definitions";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {MongoManager} from "./MongoManager";
@@ -8,6 +8,7 @@ import {StringBuilder} from "../utilities/StringBuilder";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {AllModLogType, MainOnlyModLogType, SectionModLogType} from "../definitions/Types";
 import {FilterQuery} from "mongodb";
+import {Queue} from "../utilities/Queue";
 
 interface IPunishmentDetails {
     /**
@@ -550,15 +551,19 @@ export namespace SuspensionManager {
         sendLogMsg?: boolean;
     }
 
-    // key = guild ID
-    // value = collection of member IDs, suspension info
-    const SuspendedMembers = new Collection<string, Collection<string, ISuspendedUser>>();
-    // key = Guild ID
-    //  value = collection, key = Section ID
-    //      value = Array of all suspended people.
-    const SectionSuspendedMembers = new Collection<string, Collection<string, ISuspendedUser[]>>();
+    // key = guild ID, value = collection of member IDs, suspension info
+    export const SuspendedMembers = new Collection<string, Collection<string, ISuspendedUser>>();
+    // key = Guild ID, value = collection | key = Section ID, value = Array of all suspended people.
+    export const SectionSuspendedMembers = new Collection<string, Collection<string, ISuspendedUser[]>>();
 
-    let IsRunning = false;
+    // For deletion purposes. Instead of removing the elements in a for... of loop, we queue the following entries
+    // for removal. The next time the `startChecker` function is called, we can immediately remove the entries.
+    const _queuedDelSuspendedMembers = new Queue<ISuspendedUser & {guildId: string;}>();
+    const _queuedDelSectionSuspendedMembers = new Queue<ISuspendedUser & {guildId: string; sectionId: string;}>();
+    const _queuedDelSectionIds = new Queue<{guildId: string; sectionId: string;}>();
+
+
+    let _isRunning = false;
 
     /**
      * Starts the SuspensionManager checker.
@@ -566,8 +571,8 @@ export namespace SuspensionManager {
      * will be loaded. This is ideal when the bot just started up (say, from a restart).
      */
     export async function startChecker(documents: IGuildInfo[] = []): Promise<void> {
-        if (IsRunning) return;
-        IsRunning = true;
+        if (_isRunning) return;
+        _isRunning = true;
 
         if (documents.length > 0) {
             for await (const guildDoc of documents) {
@@ -605,8 +610,8 @@ export namespace SuspensionManager {
      * Stops the SuspensionManager checker.
      */
     export function stopChecker(): void {
-        if (!IsRunning) return;
-        IsRunning = false;
+        if (!_isRunning) return;
+        _isRunning = false;
     }
 
     /**
@@ -614,7 +619,32 @@ export namespace SuspensionManager {
      * @private
      */
     async function suspensionChecker(): Promise<void> {
-        if (!IsRunning) return;
+        if (!_isRunning) return;
+
+        // Remove all elements before checking.
+        while (_queuedDelSuspendedMembers.size() > 0) {
+            const dequeuedElem = _queuedDelSuspendedMembers.dequeue();
+            SuspendedMembers.get(dequeuedElem.guildId)?.delete(dequeuedElem.affectedUser.id);
+        }
+
+        while (_queuedDelSectionSuspendedMembers.size() > 0) {
+            const dequeuedElem = _queuedDelSectionSuspendedMembers.dequeue();
+            const arrRemovedElems = SectionSuspendedMembers.get(dequeuedElem.guildId)?.get(dequeuedElem.sectionId);
+            if (!arrRemovedElems)
+                continue;
+
+            for (const susSecInfo of arrRemovedElems) {
+                arrRemovedElems.splice(
+                    arrRemovedElems.findIndex(x => x.actionId === susSecInfo.actionId),
+                    1
+                );
+            }
+        }
+
+        while (_queuedDelSectionIds.size() > 0) {
+            const {guildId, sectionId} = _queuedDelSectionIds.dequeue();
+            SectionSuspendedMembers.get(guildId)?.delete(sectionId);
+        }
 
         // Section suspended
         // Go through every guild that we need to process
@@ -630,7 +660,6 @@ export namespace SuspensionManager {
             if (!guildDoc) continue;
 
             const sectionSuspensions = SectionSuspendedMembers.get(guild.id)!;
-            const sectionsToRemove: string[] = [];
 
             for await (const [sectionId, suspendedPplArr] of sectionSuspensions) {
                 // If no section is found, then queue the section for removal
@@ -638,7 +667,7 @@ export namespace SuspensionManager {
                 // since there isn't said section
                 const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === sectionId);
                 if (!section) {
-                    sectionsToRemove.push(sectionId);
+                    _queuedDelSectionIds.enqueue({guildId: guild.id, sectionId: sectionId});
                     break;
                 }
 
@@ -674,8 +703,6 @@ export namespace SuspensionManager {
                     ).then();
                 }
             }
-
-            sectionsToRemove.forEach(sec => SectionSuspendedMembers.get(guild.id)!.delete(sec));
         }
 
         // Regular suspensions
@@ -825,7 +852,12 @@ export namespace SuspensionManager {
                 }
             }
         });
-        SuspendedMembers.get(member.guild.id)?.delete(member.id);
+
+        // Might be inefficient in the long term.
+        const data = SuspendedMembers.get(member.guild.id)?.get(member.id);
+        if (data) {
+            _queuedDelSuspendedMembers.enqueue({...data, guildId: member.guild.id});
+        }
 
         await member.roles.set(memberLookup.oldRoles).catch();
         return await PunishmentManager.logPunishment(member, "Unsuspend", {
@@ -953,8 +985,16 @@ export namespace SuspensionManager {
             }
         });
 
-        const arrSuspendedPpl = SectionSuspendedMembers.get(member.guild.id)?.get(info.section.uniqueIdentifier)!;
-        arrSuspendedPpl.splice(arrSuspendedPpl.findIndex(x => x.actionId === memberLookup.actionId), 1);
+        // Might be inefficient in the long term.
+        const arrSuspendedPpl = SectionSuspendedMembers.get(member.guild.id)?.get(info.section.uniqueIdentifier);
+        const entry = arrSuspendedPpl?.findIndex(x => x.actionId === memberLookup.actionId) ?? -1;
+        if (arrSuspendedPpl && entry >= 0) {
+            _queuedDelSectionSuspendedMembers.enqueue({
+                ...arrSuspendedPpl[entry],
+                sectionId: info.section.uniqueIdentifier,
+                guildId: member.guild.id
+            });
+        }
 
         if (info.section.properties.giveVerifiedRoleUponUnsuspend
             && GuildFgrUtilities.hasCachedRole(member.guild, info.section.roles.verifiedRoleId)) {
@@ -1003,4 +1043,68 @@ export namespace SuspensionManager {
 }
 
 export namespace MuteManager {
+    export const MutedMembers = new Collection<string, IMutedUser[]>();
+
+    let _isRunning = false;
+
+    /**
+     * Starts the MuteManager checker.
+     * @param {IGuildInfo[]} [documents] The guild documents. If this is specified, then all previous mute records
+     * will be loaded. This is ideal when the bot just started up (say, from a restart).
+     */
+    export async function startChecker(documents: IGuildInfo[] = []): Promise<void> {
+        if (_isRunning) return;
+        _isRunning = true;
+
+        if (documents.length > 0) {
+            for await (const guildDoc of documents) {
+                const serverSus = new Collection<string, IMutedUser[]>();
+                const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+                if (!guild) continue;
+                MutedMembers.set(
+                    guild.id,
+                    guildDoc.moderation.mutedUsers.filter(x => x.timeEnd !== -1)
+                );
+            } // End of loop
+        }
+    }
+
+    /**
+     * Stops the MuteManager checker.
+     */
+    export function stopChecker(): void {
+        if (!_isRunning) return;
+        _isRunning = false;
+    }
+
+    /**
+     * The MuteManager checker service. This should only be called by the `startChecker` function.
+     * @private
+     */
+    async function muteChecker(): Promise<void> {
+        if (!_isRunning) return;
+
+        const allGuildsSecSus = await Promise.all(
+            Array.from(MutedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
+        );
+
+        for (const guild of allGuildsSecSus) {
+            if (!guild) continue;
+            const allMutedInfo = MutedMembers.get(guild.id);
+            if (!allMutedInfo) continue;
+
+            for (const mutedInfo of allMutedInfo) {
+                const mutedMember = await GuildFgrUtilities.fetchGuildMember(guild, mutedInfo.affectedUser.id);
+                if (!mutedMember)
+                    continue;
+
+                if (Date.now() - mutedInfo.timeEnd >= 0)
+                    continue;
+
+                // Handle unmuting.
+            }
+        }
+
+        setTimeout(muteChecker, 60 * 1000);
+    }
 }

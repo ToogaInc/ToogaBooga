@@ -8,7 +8,13 @@ import {
 } from "./DungeonRaidInterfaces";
 import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
 import {IModmailThread} from "./ModmailInterfaces";
-import {IBasePunishment, IBlacklistedModmailUser, IBlacklistedUser, ISuspendedUser} from "./PunishmentInterfaces";
+import {
+    IBasePunishment,
+    IBlacklistedModmailUser,
+    IBlacklistedUser,
+    IMutedUser,
+    ISuspendedUser
+} from "./PunishmentInterfaces";
 import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
 import {MainLogType, MainOnlyModLogType, SectionLogType, SectionModLogType} from "./Types";
 
@@ -254,6 +260,13 @@ export interface IGuildInfo extends IBaseDocument {
          * @type {IBlacklistedModmailUser[]}
          */
         blacklistedModmailUsers: IBlacklistedModmailUser[];
+
+        /**
+         * A list of all muted users.
+         *
+         * @type {IMutedUser[]}
+         */
+        mutedUsers: IMutedUser[];
     };
 
     /**
