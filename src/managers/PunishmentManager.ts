@@ -1,7 +1,6 @@
-import {Collection, Guild, GuildMember, MessageEmbed, Role, TextChannel} from "discord.js";
+import {Collection, Guild, GuildMember, MessageEmbed, TextChannel} from "discord.js";
 import {IGuildInfo, IPunishmentHistoryEntry, ISectionInfo, ISuspendedUser, IUserInfo} from "../definitions";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {Queue} from "../utilities/Queue";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {MongoManager} from "./MongoManager";
 import {StringUtil} from "../utilities/StringUtilities";
@@ -10,7 +9,6 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {AllModLogType, MainOnlyModLogType, SectionModLogType} from "../definitions/Types";
 import {FilterQuery} from "mongodb";
 
-// TODO have this inherit from IBasePunishment?
 interface IPunishmentDetails {
     /**
      * The nickname of the person that will receive this punishment (or have the punishment removed).
@@ -83,14 +81,24 @@ interface IPunishmentDetails {
     sendNoticeToAffectedUser: boolean;
 
     /**
-     * The action ID to resolve. This must be specified if you're going to resolve a punishment.
+     * Whether to send a log message indicating that a punishment (or removal of) was done.
+     *
+     * @type {boolean}
+     */
+    sendLogInfo: boolean;
+
+    /**
+     * The action ID to resolve. The corresponding punishment entry in the user document will be edited to show that
+     * the punishment has been resolved. This must be specified if you're going to resolve a punishment.
+     *
      *
      * @type {string}
      */
     actionIdToResolve?: string;
 
     /**
-     * The action ID to use. If this isn't specified, then an ID will be created.
+     * The action ID to use. This must be specified if you're logging a punishment but don't want a new action ID to be
+     * created. If this isn't specified, then an ID will be created.
      *
      * @type {string}
      */
@@ -415,7 +423,7 @@ export namespace PunishmentManager {
         }
 
         // Do we really need to check if there is a description here specifically?
-        if (logChannel && logToChanEmbed.description) {
+        if (details.sendLogInfo && logChannel && logToChanEmbed.description) {
             await logChannel.send({embeds: [logToChanEmbed]}).catch();
         }
 
@@ -426,15 +434,16 @@ export namespace PunishmentManager {
             };
             if ("name" in member) {
                 const nameRes = await MongoManager.findNameInIdNameCollection(member.name);
-                if (nameRes.length > 0) {
-                    filterQuery.$or?.push({
-                        discordId: nameRes[0].currentDiscordId
-                    });
+                if (nameRes.length === 0)
+                    return false;
 
-                    // For logging purposes
-                    if (nameRes.length > 1)
-                        console.log(`${member.name} has multiple documents in IDName Collection.`);
-                }
+                filterQuery.$or?.push({
+                    discordId: nameRes[0].currentDiscordId
+                });
+
+                // For logging purposes
+                if (nameRes.length > 1)
+                    console.log(`${member.name} has multiple documents in IDName Collection.`);
             }
             else {
                 filterQuery.$or?.push({
@@ -490,10 +499,64 @@ export namespace PunishmentManager {
 }
 
 export namespace SuspensionManager {
+    interface ISuspensionAdditionalParams {
+        /**
+         * The duration, in milliseconds.
+         *
+         * @type {number}
+         */
+        duration: number;
+
+        /**
+         * The guild document.
+         *
+         * @type {IGuildInfo}
+         */
+        guildDoc: IGuildInfo;
+
+        /**
+         * The section where this punishment will occur.
+         *
+         * @type {ISectionInfo}
+         */
+        section: ISectionInfo;
+
+        /**
+         * The reason for this punishment.
+         *
+         * @type {string}
+         */
+        reason: string;
+
+        /**
+         * The action ID to look up.
+         *
+         * @type {string}
+         */
+        actionId?: string;
+
+        /**
+         * Whether to notify the user. If not specified, this defaults to `true`.
+         *
+         * @type {boolean}
+         */
+        notifyUser?: boolean;
+
+        /**
+         * Whether to send a log message. If not specified, this defaults to `true`.
+         *
+         * @type {boolean}
+         */
+        sendLogMsg?: boolean;
+    }
+
     // key = guild ID
     // value = collection of member IDs, suspension info
     const SuspendedMembers = new Collection<string, Collection<string, ISuspendedUser>>();
-    const SectionSuspendedMembers = new Collection<string, Collection<string, ISuspendedUser & {secId: string;}>>();
+    // key = Guild ID
+    //  value = collection, key = Section ID
+    //      value = Array of all suspended people.
+    const SectionSuspendedMembers = new Collection<string, Collection<string, ISuspendedUser[]>>();
 
     let IsRunning = false;
 
@@ -512,6 +575,7 @@ export namespace SuspensionManager {
                 const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
                 if (!guild) continue;
 
+                // GUILD SUSPENSIONS
                 for await (const suspendedUser of guildDoc.moderation.suspendedUsers) {
                     if (suspendedUser.timeEnd === -1)
                         continue;
@@ -519,14 +583,14 @@ export namespace SuspensionManager {
                     serverSus.set(suspendedUser.affectedUser.id, suspendedUser);
                 }
 
-                const sectionSus = new Collection<string, ISuspendedUser & {secId: string;}>();
+                // SECTION SUSPENSIONS
+                const sectionSus = new Collection<string, ISuspendedUser[]>();
                 for (const section of guildDoc.guildSections) {
-                    for await (const secSusUser of section.moderation.sectionSuspended) {
-                        if (secSusUser.timeEnd === -1)
-                            continue;
-
-                        sectionSus.set(secSusUser.affectedUser.id, {...secSusUser, secId: section.uniqueIdentifier});
-                    }
+                    sectionSus.set(
+                        section.uniqueIdentifier,
+                        section.moderation.sectionSuspended
+                            .filter(x => x.timeEnd !== -1)
+                    );
                 }
 
                 SectionSuspendedMembers.set(guild.id, sectionSus);
@@ -552,13 +616,12 @@ export namespace SuspensionManager {
     async function suspensionChecker(): Promise<void> {
         if (!IsRunning) return;
 
-        const idsToRemove = new Queue<{ guildId: string; memberId: string; removeFromDb: boolean; secId: string; }>();
-
         // Section suspended
         // Go through every guild that we need to process
         const allGuildsSecSus = await Promise.all(
             Array.from(SectionSuspendedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
         );
+
         for await (const guild of allGuildsSecSus) {
             // Make sure guild + guild document exists.
             if (!guild) continue;
@@ -566,108 +629,56 @@ export namespace SuspensionManager {
             const guildDoc = MongoManager.CachedGuildCollection.get(guild.id);
             if (!guildDoc) continue;
 
-            const secSuspendedPpl = SectionSuspendedMembers.get(guild.id)!;
+            const sectionSuspensions = SectionSuspendedMembers.get(guild.id)!;
+            const sectionsToRemove: string[] = [];
 
-            // Go through all section suspended members for this guild
-            // TODO might want to use Promise.all to speed process up
-            for await (const [memberId, details] of secSuspendedPpl) {
-                const suspendedMember = await GuildFgrUtilities.fetchGuildMember(guild, memberId);
-                // If no member is found, we can remove the member from the checker but NOT from the database.
-                if (!suspendedMember) {
-                    idsToRemove.enqueue({
-                        guildId: guild.id,
-                        memberId: memberId,
-                        removeFromDb: false,
-                        secId: details.secId
-                    });
-                    continue;
-                }
-
-                // Check if this person still needs to serve time.
-                if (Date.now() - details.timeEnd >= 0)
-                    continue;
-
-                // If no section is found, then remove this person from section suspension list
+            for await (const [sectionId, suspendedPplArr] of sectionSuspensions) {
+                // If no section is found, then queue the section for removal
                 // Since the section doesn't exist, then it follows that we cannot really "unsuspend" this person
                 // since there isn't said section
-                const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === details.secId);
+                const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === sectionId);
                 if (!section) {
-                    idsToRemove.enqueue({
-                        guildId: guild.id,
-                        memberId: memberId,
-                        removeFromDb: false,
-                        secId: details.secId
-                    });
-                    continue;
+                    sectionsToRemove.push(sectionId);
+                    break;
                 }
 
-                const secVerifRole = await GuildFgrUtilities.fetchRole(guild, section.roles.verifiedRoleId);
-                if (!secVerifRole) {
-                    idsToRemove.enqueue({
-                        guildId: guild.id,
-                        memberId: memberId,
-                        removeFromDb: true,
-                        secId: details.secId
-                    });
-                    continue;
-                }
+                const members = await Promise.all(
+                    suspendedPplArr.map(async x => GuildFgrUtilities.fetchGuildMember(guild, x.affectedUser.id))
+                );
 
-                // At this point, we can unsuspend this person.
-                if (section.properties.giveVerifiedRoleUponUnsuspend)
-                    await suspendedMember.roles.add(secVerifRole).catch();
+                for (let i = 0; i < members.length; i++) {
+                    const member = members[i];
 
-                idsToRemove.enqueue({
-                    guildId: guild.id,
-                    memberId: memberId,
-                    removeFromDb: true,
-                    secId: details.secId
-                });
+                    if (!member)
+                        continue;
 
-                PunishmentManager.logPunishment(
-                    suspendedMember,
-                    "SectionUnsuspend",
-                    {
-                        nickname: details.affectedUser.name,
-                        reason: details.reason,
-                        moderator: null,
-                        issuedTime: details.issuedAt,
-                        guildDoc: guildDoc,
-                        section: section,
-                        guild: guild,
-                        sendNoticeToAffectedUser: true
+                    const details = suspendedPplArr[i];
+                    if (member.id !== details.affectedUser.id) {
+                        console.log(`[INFO] ${guild.name}/${sectionId}/${member.id} incorrect entry given.`);
+                        continue;
                     }
-                ).then();
-            }
-        }
 
-        // Okay, now look into removing any entries from the collections.
-        const queries: Promise<IGuildInfo>[] = [];
-        while (idsToRemove.size() > 0) {
-            const {guildId, memberId, removeFromDb, secId} = idsToRemove.dequeue();
+                    // Check if this person still needs to serve time.
+                    if (Date.now() - details.timeEnd >= 0)
+                        continue;
 
-            if (removeFromDb) {
-                queries.push(MongoManager.updateAndFetchGuildDoc({
-                    guildId: guildId, "guildSections.uniqueIdentifier": secId
-                }, {
-                    $pull: {
-                        "guildSections.$.properties.sectionSuspended": {
-                            discordId: memberId
+                    removeSectionSuspension(
+                        member,
+                        null,
+                        {
+                            guildDoc: guildDoc,
+                            section: section,
+                            reason: "The user has served the duration of the section suspension.",
+                            actionId: details.actionId
                         }
-                    }
-                }));
+                    ).then();
+                }
             }
 
-            SectionSuspendedMembers.get(guildId)!.delete(memberId);
+            sectionsToRemove.forEach(sec => SectionSuspendedMembers.get(guild.id)!.delete(sec));
         }
-        // And finally, update the database.
-        await Promise.all(queries);
 
-        // Repeat the step for regular suspensions.
-        idsToRemove.clear();
-        // Reset the array to nothing.
-        // TODO check that this works.
-        queries.length = 0;
-
+        // Regular suspensions
         const allGuildsSuspend = await Promise.all(
             Array.from(SuspendedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
         );
@@ -683,77 +694,24 @@ export namespace SuspensionManager {
 
             for await (const [memberId, details] of suspendedPpl) {
                 const suspendedMember = await GuildFgrUtilities.fetchGuildMember(guild, memberId);
-                if (!suspendedMember) {
-                    idsToRemove.enqueue({
-                        guildId: guild.id,
-                        memberId: memberId,
-                        removeFromDb: false,
-                        secId: "MAIN"
-                    });
+                if (!suspendedMember)
                     continue;
-                }
 
                 if (Date.now() - details.timeEnd >= 0)
                     continue;
 
-                // Give back all valid roles
-                const rolesToGiveBack = details.oldRoles
-                    .map(x => GuildFgrUtilities.getCachedRole(guild, x))
-                    .filter(x => x !== null) as Role[];
-
-                try {
-                    await suspendedMember.roles.set(rolesToGiveBack);
-                    if (suspendedMember.nickname)
-                        await suspendedMember.setNickname(details.affectedUser.name).catch();
-
-                    idsToRemove.enqueue({
-                        guildId: guild.id,
-                        memberId: suspendedMember.id,
-                        removeFromDb: true,
-                        secId: "MAIN"
-                    });
-
-                    PunishmentManager.logPunishment(
-                        suspendedMember,
-                        "Unsuspend",
-                        {
-                            nickname: details.affectedUser.name,
-                            reason: details.reason,
-                            moderator: null,
-                            issuedTime: details.issuedAt,
-                            guildDoc: guildDoc,
-                            section: mainSection,
-                            guild: guild,
-                            sendNoticeToAffectedUser: true
-                        }
-                    ).then();
-                } catch (_) {
-                    // If the role couldn't be added, then don't remove the person from the list of suspended
-                    // people since we want to give the role back.
-                }
-            }
-        }
-
-        // Remove relevant entries from normal suspensions.
-        while (idsToRemove.size() > 0) {
-            const {guildId, memberId, removeFromDb} = idsToRemove.dequeue();
-
-            if (removeFromDb) {
-                queries.push(MongoManager.updateAndFetchGuildDoc({
-                    guildId: guildId
-                }, {
-                    $pull: {
-                        "guildSections.moderation.suspendedUsers": {
-                            discordId: memberId
-                        }
+                // Don't need to wait for this to resolve
+                removeSuspension(
+                    suspendedMember,
+                    null,
+                    {
+                        guildDoc: guildDoc,
+                        reason: "The user has served the entirety of his or her time.",
+                        actionId: details.actionId
                     }
-                }));
+                ).then();
             }
-
-            SuspendedMembers.get(guildId)!.delete(memberId);
         }
-
-        await Promise.all(queries);
 
         // Now, wait one minute before trying again.
         setTimeout(suspensionChecker, 60 * 1000);
@@ -764,17 +722,23 @@ export namespace SuspensionManager {
      * database.
      * @param {GuildMember} member The member to suspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
-     * @param {IGuildInfo} guildDoc The guild document.
-     * @param {number} duration The duration, in milliseconds. If this is a permanent suspension, use `-1`.
-     * @param {string} reason The reason.
+     * @param {ISuspensionAdditionalParams} info Any additional suspension information.
      * @returns {Promise<boolean>} Whether the suspension was successful.
      */
-    export async function addSuspension(member: GuildMember, mod: GuildMember | null, guildDoc: IGuildInfo,
-                                        duration: number, reason: string): Promise<boolean> {
+    export async function addSuspension(
+        member: GuildMember,
+        mod: GuildMember | null,
+        info: Omit<ISuspensionAdditionalParams, "actionId" | "section">
+    ): Promise<boolean> {
+        // If the person was already suspended, then we don't need to re-suspend the person.
+        if (member.roles.cache.has(info.guildDoc.roles.suspendedRoleId)
+            || info.guildDoc.moderation.suspendedUsers.some(x => x.affectedUser.id === member.id))
+            return false;
+
         const timeStarted = Date.now();
         const suspendedUserObj: ISuspendedUser = {
             issuedAt: timeStarted,
-            timeEnd: duration === -1 ? -1 : timeStarted + duration,
+            timeEnd: info.duration === -1 ? -1 : timeStarted + info.duration,
             oldRoles: member.roles.cache.map(x => x.id),
             affectedUser: {
                 id: member.id,
@@ -786,11 +750,11 @@ export namespace SuspensionManager {
                 tag: mod?.user.tag ?? "",
                 name: mod?.displayName ?? ""
             },
-            reason: reason,
+            reason: info.reason,
             actionId: StringUtil.generateRandomString(40)
         };
 
-        const queryRes = await MongoManager.getGuildCollection().updateOne({
+        await MongoManager.updateAndFetchGuildDoc({
             guildId: member.guild.id
         }, {
             $push: {
@@ -798,39 +762,37 @@ export namespace SuspensionManager {
             }
         });
 
-        // If nothing was modified, then don't add to database and tell user that suspension failed.
-        if (queryRes.modifiedCount === 0)
-            return false;
+        // Now, add it to the suspension timer.
+        if (!SuspendedMembers.has(member.guild.id))
+            SuspendedMembers.set(member.guild.id, new Collection<string, ISuspendedUser>());
+        SuspendedMembers.get(member.guild.id)!.set(member.id, suspendedUserObj);
 
+        // Remove roles and log it
         await member.roles.set(
-            GuildFgrUtilities.hasCachedRole(member.guild, guildDoc.roles.suspendedRoleId)
-                ? [guildDoc.roles.suspendedRoleId]
+            GuildFgrUtilities.hasCachedRole(member.guild, info.guildDoc.roles.suspendedRoleId)
+                ? [info.guildDoc.roles.suspendedRoleId]
                 : []
         ).catch();
 
         const logInfo: IPunishmentDetails = {
             nickname: member.displayName,
-            reason: reason,
-            duration: duration / 60000,
+            reason: info.reason,
+            duration: info.duration / 60000,
             issuedTime: Date.now(),
-            expiresAt: 0,
+            expiresAt: suspendedUserObj.timeEnd,
             moderator: mod,
-            guildDoc: guildDoc,
-            section: MongoManager.getMainSection(guildDoc),
+            guildDoc: info.guildDoc,
+            section: MongoManager.getMainSection(info.guildDoc),
             guild: member.guild,
-            sendNoticeToAffectedUser: true,
-            actionIdToResolve: suspendedUserObj.actionId
+            sendNoticeToAffectedUser: info.notifyUser ?? true,
+            sendLogInfo: info.sendLogMsg ?? true,
+            actionIdToUse: suspendedUserObj.actionId
         };
 
-        if (duration === -1) {
+        if (info.duration === -1) {
             logInfo.expiresAt = undefined;
             logInfo.duration = undefined;
         }
-
-        // Now, add it to the suspension timer.
-        if (!SuspendedMembers.has(member.guild.id))
-            SuspendedMembers.set(member.guild.id, new Collection<string, ISuspendedUser>());
-        SuspendedMembers.get(member.guild.id)!.set(member.id, suspendedUserObj);
 
         return await PunishmentManager.logPunishment(member, "Suspend", logInfo);
     }
@@ -839,13 +801,204 @@ export namespace SuspensionManager {
      * Removes a server suspension. This will unsuspend the specified `member` and log the event in the database.
      * @param {GuildMember} member The member to unsuspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
-     * @param {string} reason The reason.
+     * @param {ISuspensionAdditionalParams} info Any additional information for this removal of suspension.
      * @returns {Promise<boolean>} Whether the unsuspension was successful.
      */
-    export async function removeSuspension(member: GuildMember, mod: GuildMember | null,
-                                           reason: string): Promise<boolean> {
+    export async function removeSuspension(
+        member: GuildMember,
+        mod: GuildMember | null,
+        info: Omit<ISuspensionAdditionalParams, "section" | "duration">
+    ): Promise<boolean> {
+        // Find suspension info.
+        const memberLookup: ISuspendedUser | null = info.actionId
+            ? lookupSuspension(info.guildDoc, null, {actionId: info.actionId})
+            : lookupSuspension(info.guildDoc, null, {memberId: member.id});
 
-        return true;
+        if (!memberLookup)
+            return false;
+
+        // And remove it from guild suspension list.
+        await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
+            $pull: {
+                "moderation.suspendedUsers": {
+                    actionId: memberLookup.actionId
+                }
+            }
+        });
+        SuspendedMembers.get(member.guild.id)?.delete(member.id);
+
+        await member.roles.set(memberLookup.oldRoles).catch();
+        return await PunishmentManager.logPunishment(member, "Unsuspend", {
+            nickname: member.displayName,
+            reason: info.reason,
+            issuedTime: Date.now(),
+            moderator: mod,
+            guildDoc: info.guildDoc,
+            section: MongoManager.getMainSection(info.guildDoc),
+            guild: member.guild,
+            sendNoticeToAffectedUser: info.notifyUser ?? true,
+            sendLogInfo: info.sendLogMsg ?? true,
+            actionIdToResolve: memberLookup.actionId
+        });
+    }
+
+    /**
+     * Adds a server section suspension. This will suspend the specified `member` from the section and log the event
+     * in the database.
+     * @param {GuildMember} member The member to suspend.
+     * @param {GuildMember | null} mod The moderator responsible for this suspension.
+     * @param {ISuspensionAdditionalParams} info The additional information for this section suspension.
+     * @returns {Promise<boolean>} Whether the suspension was successful.
+     */
+    export async function addSectionSuspension(
+        member: GuildMember,
+        mod: GuildMember | null,
+        info: ISuspensionAdditionalParams
+    ): Promise<boolean> {
+        // If the person was already suspended, then we don't need to re-suspend the person.
+        if (info.section.moderation.sectionSuspended.some(x => x.affectedUser.id === member.id))
+            return false;
+
+        const timeStarted = Date.now();
+        const suspendedUserObj: ISuspendedUser = {
+            issuedAt: timeStarted,
+            timeEnd: info.duration === -1 ? -1 : timeStarted + info.duration,
+            oldRoles: [],
+            affectedUser: {
+                id: member.id,
+                tag: member.user.tag,
+                name: member.displayName
+            },
+            moderator: {
+                id: mod?.id ?? AUTOMATIC,
+                tag: mod?.user.tag ?? "",
+                name: mod?.displayName ?? ""
+            },
+            reason: info.reason,
+            actionId: StringUtil.generateRandomString(40)
+        };
+
+        await MongoManager.updateAndFetchGuildDoc({
+            guildId: member.guild.id,
+            "guildSections.uniqueIdentifier": info.section.uniqueIdentifier
+        }, {
+            $push: {
+                "guildSections.$.moderation.sectionSuspended": suspendedUserObj
+            }
+        });
+
+        // Now, add it to the suspension timer.
+        if (!SectionSuspendedMembers.has(member.guild.id))
+            SectionSuspendedMembers.set(member.guild.id, new Collection<string, ISuspendedUser[]>());
+        if (!SectionSuspendedMembers.get(member.guild.id)!.has(info.section.uniqueIdentifier))
+            SectionSuspendedMembers.get(member.guild.id)!.set(info.section.uniqueIdentifier, []);
+        SectionSuspendedMembers.get(member.guild.id)!.get(info.section.uniqueIdentifier)!.push(suspendedUserObj);
+
+        // Remove roles and log it
+        await member.roles.remove(info.section.roles.verifiedRoleId).catch();
+
+        const logInfo: IPunishmentDetails = {
+            nickname: member.displayName,
+            reason: info.reason,
+            duration: info.duration / 60000,
+            issuedTime: Date.now(),
+            expiresAt: suspendedUserObj.timeEnd,
+            moderator: mod,
+            guildDoc: info.guildDoc,
+            section: info.section,
+            guild: member.guild,
+            sendNoticeToAffectedUser: info.notifyUser ?? true,
+            sendLogInfo: info.sendLogMsg ?? true,
+            actionIdToUse: suspendedUserObj.actionId
+        };
+
+        if (info.duration === -1) {
+            logInfo.expiresAt = undefined;
+            logInfo.duration = undefined;
+        }
+
+        return await PunishmentManager.logPunishment(member, "SectionSuspend", logInfo);
+    }
+
+    /**
+     * Removes a server section suspension. This will "unsuspend" the specified `member` from the section and log the
+     * event in the database.
+     * @param {GuildMember} member The member to unsuspend.
+     * @param {GuildMember | null} mod The moderator responsible for this suspension.
+     * @param {ISuspensionAdditionalParams} info Information regarding this unsuspension.
+     * @returns {Promise<boolean>} Whether the unsuspension was successful.
+     */
+    export async function removeSectionSuspension(
+        member: GuildMember,
+        mod: GuildMember | null,
+        info: Omit<ISuspensionAdditionalParams, "duration">
+    ): Promise<boolean> {
+        // Find suspension info.
+        const memberLookup: ISuspendedUser | null = info.actionId
+            ? lookupSuspension(info.guildDoc, info.section, {actionId: info.actionId})
+            : lookupSuspension(info.guildDoc, info.section, {memberId: member.id});
+
+        if (!memberLookup)
+            return false;
+
+        // And remove it from guild suspension list.
+        await MongoManager.updateAndFetchGuildDoc({
+            guildId: member.guild.id,
+            "guildSections.uniqueIdentifier": info.section.uniqueIdentifier
+        }, {
+            $pull: {
+                "guildSections.$.moderation.sectionSuspended": {
+                    actionId: memberLookup.actionId
+                }
+            }
+        });
+
+        const arrSuspendedPpl = SectionSuspendedMembers.get(member.guild.id)?.get(info.section.uniqueIdentifier)!;
+        arrSuspendedPpl.splice(arrSuspendedPpl.findIndex(x => x.actionId === memberLookup.actionId), 1);
+
+        if (info.section.properties.giveVerifiedRoleUponUnsuspend
+            && GuildFgrUtilities.hasCachedRole(member.guild, info.section.roles.verifiedRoleId)) {
+            await member.roles.add(info.section.roles.verifiedRoleId).catch();
+        }
+
+        return await PunishmentManager.logPunishment(member, "SectionUnsuspend", {
+            nickname: member.displayName,
+            reason: info.reason,
+            issuedTime: Date.now(),
+            moderator: mod,
+            guildDoc: info.guildDoc,
+            section: info.section,
+            guild: member.guild,
+            sendNoticeToAffectedUser: info.notifyUser ?? true,
+            sendLogInfo: info.sendLogMsg ?? true,
+            actionIdToResolve: memberLookup.actionId
+        });
+    }
+
+    /**
+     * Looks up a suspension based on either the action ID or member ID,
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ISectionInfo | null} section The section. If `null`, then this checks the main section.
+     * @param {object} lookupType The lookup type. Can be either member or action ID.
+     * @returns {ISuspendedUser | null} The suspension information, if any.
+     * @private
+     */
+    function lookupSuspension(guildDoc: IGuildInfo, section: ISectionInfo | null, lookupType: {
+        memberId?: string;
+        actionId?: string;
+    }): ISuspendedUser | null {
+        if (!lookupType.memberId && !lookupType.actionId)
+            return null;
+
+        if (lookupType.memberId) {
+            return !section || section.isMainSection
+                ? guildDoc.moderation.suspendedUsers.find(x => x.affectedUser.id === lookupType.memberId) ?? null
+                : section.moderation.sectionSuspended.find(x => x.affectedUser.id === lookupType.memberId) ?? null;
+        }
+
+        return !section || section.isMainSection
+            ? guildDoc.moderation.suspendedUsers.find(x => x.actionId === lookupType.actionId) ?? null
+            : section.moderation.sectionSuspended.find(x => x.actionId === lookupType.actionId) ?? null;
     }
 }
 
