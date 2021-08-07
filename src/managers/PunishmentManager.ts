@@ -1,4 +1,4 @@
-import {Collection, Guild, GuildMember, MessageEmbed, TextChannel} from "discord.js";
+import {Collection, Guild, GuildChannel, GuildMember, MessageEmbed, TextChannel} from "discord.js";
 import {IGuildInfo, IMutedUser, IPunishmentHistoryEntry, ISectionInfo, ISuspendedUser, IUserInfo} from "../definitions";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -104,6 +104,57 @@ interface IPunishmentDetails {
      * @type {string}
      */
     actionIdToUse?: string;
+}
+
+interface IAdditionalPunishmentParams {
+    /**
+     * The duration, in milliseconds.
+     *
+     * @type {number}
+     */
+    duration: number;
+
+    /**
+     * The guild document.
+     *
+     * @type {IGuildInfo}
+     */
+    guildDoc: IGuildInfo;
+
+    /**
+     * The section where this punishment will occur.
+     *
+     * @type {ISectionInfo}
+     */
+    section: ISectionInfo;
+
+    /**
+     * The reason for this punishment.
+     *
+     * @type {string}
+     */
+    reason: string;
+
+    /**
+     * The action ID to look up.
+     *
+     * @type {string}
+     */
+    actionId?: string;
+
+    /**
+     * Whether to notify the user. If not specified, this defaults to `true`.
+     *
+     * @type {boolean}
+     */
+    notifyUser?: boolean;
+
+    /**
+     * Whether to send a log message. If not specified, this defaults to `true`.
+     *
+     * @type {boolean}
+     */
+    sendLogMsg?: boolean;
 }
 
 const AUTOMATIC: string = "Automatic";
@@ -500,57 +551,6 @@ export namespace PunishmentManager {
 }
 
 export namespace SuspensionManager {
-    interface ISuspensionAdditionalParams {
-        /**
-         * The duration, in milliseconds.
-         *
-         * @type {number}
-         */
-        duration: number;
-
-        /**
-         * The guild document.
-         *
-         * @type {IGuildInfo}
-         */
-        guildDoc: IGuildInfo;
-
-        /**
-         * The section where this punishment will occur.
-         *
-         * @type {ISectionInfo}
-         */
-        section: ISectionInfo;
-
-        /**
-         * The reason for this punishment.
-         *
-         * @type {string}
-         */
-        reason: string;
-
-        /**
-         * The action ID to look up.
-         *
-         * @type {string}
-         */
-        actionId?: string;
-
-        /**
-         * Whether to notify the user. If not specified, this defaults to `true`.
-         *
-         * @type {boolean}
-         */
-        notifyUser?: boolean;
-
-        /**
-         * Whether to send a log message. If not specified, this defaults to `true`.
-         *
-         * @type {boolean}
-         */
-        sendLogMsg?: boolean;
-    }
-
     // key = guild ID, value = collection of member IDs, suspension info
     export const SuspendedMembers = new Collection<string, Collection<string, ISuspendedUser>>();
     // key = Guild ID, value = collection | key = Section ID, value = Array of all suspended people.
@@ -558,9 +558,9 @@ export namespace SuspensionManager {
 
     // For deletion purposes. Instead of removing the elements in a for... of loop, we queue the following entries
     // for removal. The next time the `startChecker` function is called, we can immediately remove the entries.
-    const _queuedDelSuspendedMembers = new Queue<ISuspendedUser & {guildId: string;}>();
-    const _queuedDelSectionSuspendedMembers = new Queue<ISuspendedUser & {guildId: string; sectionId: string;}>();
-    const _queuedDelSectionIds = new Queue<{guildId: string; sectionId: string;}>();
+    const _queuedDelSuspendedMembers = new Queue<ISuspendedUser & { guildId: string; }>();
+    const _queuedDelSectionSuspendedMembers = new Queue<ISuspendedUser & { guildId: string; sectionId: string; }>();
+    const _queuedDelSectionIds = new Queue<{ guildId: string; sectionId: string; }>();
 
 
     let _isRunning = false;
@@ -629,13 +629,13 @@ export namespace SuspensionManager {
 
         while (_queuedDelSectionSuspendedMembers.size() > 0) {
             const dequeuedElem = _queuedDelSectionSuspendedMembers.dequeue();
-            const arrRemovedElems = SectionSuspendedMembers.get(dequeuedElem.guildId)?.get(dequeuedElem.sectionId);
-            if (!arrRemovedElems)
+            const allSusUsersInSec = SectionSuspendedMembers.get(dequeuedElem.guildId)?.get(dequeuedElem.sectionId);
+            if (!allSusUsersInSec)
                 continue;
 
-            for (const susSecInfo of arrRemovedElems) {
-                arrRemovedElems.splice(
-                    arrRemovedElems.findIndex(x => x.actionId === susSecInfo.actionId),
+            for (const susSecInfo of allSusUsersInSec) {
+                allSusUsersInSec.splice(
+                    allSusUsersInSec.findIndex(x => x.actionId === susSecInfo.actionId),
                     1
                 );
             }
@@ -749,13 +749,13 @@ export namespace SuspensionManager {
      * database.
      * @param {GuildMember} member The member to suspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
-     * @param {ISuspensionAdditionalParams} info Any additional suspension information.
+     * @param {IAdditionalPunishmentParams} info Any additional suspension information.
      * @returns {Promise<boolean>} Whether the suspension was successful.
      */
     export async function addSuspension(
         member: GuildMember,
         mod: GuildMember | null,
-        info: Omit<ISuspensionAdditionalParams, "actionId" | "section">
+        info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
     ): Promise<boolean> {
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (member.roles.cache.has(info.guildDoc.roles.suspendedRoleId)
@@ -801,12 +801,12 @@ export namespace SuspensionManager {
                 : []
         ).catch();
 
-        const logInfo: IPunishmentDetails = {
+        return await PunishmentManager.logPunishment(member, "Suspend", {
             nickname: member.displayName,
             reason: info.reason,
-            duration: info.duration / 60000,
+            duration: info.duration === -1 ? undefined : info.duration / 60000,
             issuedTime: Date.now(),
-            expiresAt: suspendedUserObj.timeEnd,
+            expiresAt: info.duration === -1 ? undefined : suspendedUserObj.timeEnd,
             moderator: mod,
             guildDoc: info.guildDoc,
             section: MongoManager.getMainSection(info.guildDoc),
@@ -814,27 +814,20 @@ export namespace SuspensionManager {
             sendNoticeToAffectedUser: info.notifyUser ?? true,
             sendLogInfo: info.sendLogMsg ?? true,
             actionIdToUse: suspendedUserObj.actionId
-        };
-
-        if (info.duration === -1) {
-            logInfo.expiresAt = undefined;
-            logInfo.duration = undefined;
-        }
-
-        return await PunishmentManager.logPunishment(member, "Suspend", logInfo);
+        });
     }
 
     /**
      * Removes a server suspension. This will unsuspend the specified `member` and log the event in the database.
      * @param {GuildMember} member The member to unsuspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
-     * @param {ISuspensionAdditionalParams} info Any additional information for this removal of suspension.
+     * @param {IAdditionalPunishmentParams} info Any additional information for this removal of suspension.
      * @returns {Promise<boolean>} Whether the unsuspension was successful.
      */
     export async function removeSuspension(
         member: GuildMember,
         mod: GuildMember | null,
-        info: Omit<ISuspensionAdditionalParams, "section" | "duration">
+        info: Omit<IAdditionalPunishmentParams, "section" | "duration">
     ): Promise<boolean> {
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
@@ -879,13 +872,13 @@ export namespace SuspensionManager {
      * in the database.
      * @param {GuildMember} member The member to suspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
-     * @param {ISuspensionAdditionalParams} info The additional information for this section suspension.
+     * @param {IAdditionalPunishmentParams} info The additional information for this section suspension.
      * @returns {Promise<boolean>} Whether the suspension was successful.
      */
     export async function addSectionSuspension(
         member: GuildMember,
         mod: GuildMember | null,
-        info: ISuspensionAdditionalParams
+        info: IAdditionalPunishmentParams
     ): Promise<boolean> {
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (info.section.moderation.sectionSuspended.some(x => x.affectedUser.id === member.id))
@@ -928,13 +921,12 @@ export namespace SuspensionManager {
 
         // Remove roles and log it
         await member.roles.remove(info.section.roles.verifiedRoleId).catch();
-
-        const logInfo: IPunishmentDetails = {
+        return await PunishmentManager.logPunishment(member, "SectionSuspend", {
             nickname: member.displayName,
             reason: info.reason,
-            duration: info.duration / 60000,
+            duration: info.duration === -1 ? undefined : info.duration / 60000,
             issuedTime: Date.now(),
-            expiresAt: suspendedUserObj.timeEnd,
+            expiresAt: info.duration === -1 ? undefined : suspendedUserObj.timeEnd,
             moderator: mod,
             guildDoc: info.guildDoc,
             section: info.section,
@@ -942,28 +934,21 @@ export namespace SuspensionManager {
             sendNoticeToAffectedUser: info.notifyUser ?? true,
             sendLogInfo: info.sendLogMsg ?? true,
             actionIdToUse: suspendedUserObj.actionId
-        };
-
-        if (info.duration === -1) {
-            logInfo.expiresAt = undefined;
-            logInfo.duration = undefined;
-        }
-
-        return await PunishmentManager.logPunishment(member, "SectionSuspend", logInfo);
+        });
     }
 
     /**
      * Removes a server section suspension. This will "unsuspend" the specified `member` from the section and log the
      * event in the database.
      * @param {GuildMember} member The member to unsuspend.
-     * @param {GuildMember | null} mod The moderator responsible for this suspension.
-     * @param {ISuspensionAdditionalParams} info Information regarding this unsuspension.
+     * @param {GuildMember | null} mod The moderator responsible for this unsuspension.
+     * @param {IAdditionalPunishmentParams} info Information regarding this unsuspension.
      * @returns {Promise<boolean>} Whether the unsuspension was successful.
      */
     export async function removeSectionSuspension(
         member: GuildMember,
         mod: GuildMember | null,
-        info: Omit<ISuspensionAdditionalParams, "duration">
+        info: Omit<IAdditionalPunishmentParams, "duration">
     ): Promise<boolean> {
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
@@ -1044,6 +1029,7 @@ export namespace SuspensionManager {
 
 export namespace MuteManager {
     export const MutedMembers = new Collection<string, IMutedUser[]>();
+    const _queuedDelMutedUsers = new Queue<IMutedUser & { guildId: string; }>();
 
     let _isRunning = false;
 
@@ -1067,6 +1053,8 @@ export namespace MuteManager {
                 );
             } // End of loop
         }
+
+        muteChecker().then();
     }
 
     /**
@@ -1083,6 +1071,17 @@ export namespace MuteManager {
      */
     async function muteChecker(): Promise<void> {
         if (!_isRunning) return;
+        // Remove all users that were already queued for unmuting from checker
+        while (_queuedDelMutedUsers.size() > 0) {
+            const dequeuedElem = _queuedDelMutedUsers.dequeue();
+            const mutedTimedUsers = MutedMembers.get(dequeuedElem.guildId);
+            if (!mutedTimedUsers)
+                continue;
+            mutedTimedUsers.splice(
+                mutedTimedUsers.findIndex(x => x.actionId === dequeuedElem.actionId),
+                1
+            );
+        }
 
         const allGuildsSecSus = await Promise.all(
             Array.from(MutedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
@@ -1090,6 +1089,10 @@ export namespace MuteManager {
 
         for (const guild of allGuildsSecSus) {
             if (!guild) continue;
+
+            const guildDoc = MongoManager.CachedGuildCollection.get(guild.id);
+            if (!guildDoc) continue;
+
             const allMutedInfo = MutedMembers.get(guild.id);
             if (!allMutedInfo) continue;
 
@@ -1102,9 +1105,226 @@ export namespace MuteManager {
                     continue;
 
                 // Handle unmuting.
+                await removeMute(mutedMember, null, {
+                    guildDoc: guildDoc,
+                    reason: "The user has served the entirety of his or her time.",
+                    actionId: mutedInfo.actionId
+                });
             }
         }
 
         setTimeout(muteChecker, 60 * 1000);
+    }
+
+    /**
+     * Adds a server mute. This will mute the specified `member` from the server and log the event in the
+     * database.
+     * @param {GuildMember} member The member to suspend.
+     * @param {GuildMember | null} mod The moderator responsible for this mute.
+     * @param {IAdditionalPunishmentParams} info Any additional mute information.
+     * @returns {Promise<boolean>} Whether the mute was successful.
+     */
+    export async function addMute(
+        member: GuildMember,
+        mod: GuildMember | null,
+        info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
+    ): Promise<boolean> {
+        // Create the role if it doesn't already exist.
+        let mutedRole = await GuildFgrUtilities.fetchRole(member.guild, info.guildDoc.roles.mutedRoleId);
+        if (!mutedRole) {
+            mutedRole = await member.guild.roles.create({
+                name: "Muted",
+                permissions: []
+            });
+
+            const promisesToResolve: Promise<GuildChannel>[] = [];
+            for (const [id, channel] of member.guild.channels.cache) {
+                if (channel.isThread() || !channel.isText())
+                    continue;
+
+                promisesToResolve.push(channel.permissionOverwrites.edit(mutedRole.id, {
+                    "SEND_MESSAGES": false,
+                    "USE_PUBLIC_THREADS": false,
+                    "USE_PRIVATE_THREADS": false,
+                    "SPEAK": false
+                }).catch());
+            }
+
+            await Promise.all(promisesToResolve);
+
+            info.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
+                $set: {
+                    "roles.mutedRoleId": mutedRole.id
+                }
+            });
+        }
+
+        // If the person was already muted, then we don't need to mute the person again.
+        if (member.roles.cache.has(info.guildDoc.roles.mutedRoleId)
+            || info.guildDoc.moderation.mutedUsers.some(x => x.affectedUser.id === member.id))
+            return false;
+
+        const timeStarted = Date.now();
+        const mutedUserObj: IMutedUser = {
+            issuedAt: timeStarted,
+            timeEnd: info.duration === -1 ? -1 : timeStarted + info.duration,
+            affectedUser: {
+                id: member.id,
+                tag: member.user.tag,
+                name: member.displayName
+            },
+            moderator: {
+                id: mod?.id ?? AUTOMATIC,
+                tag: mod?.user.tag ?? "",
+                name: mod?.displayName ?? ""
+            },
+            reason: info.reason,
+            actionId: StringUtil.generateRandomString(40)
+        };
+
+        await MongoManager.updateAndFetchGuildDoc({
+            guildId: member.guild.id
+        }, {
+            $push: {
+                "moderation.mutedUsers": mutedUserObj
+            }
+        });
+
+        // Now, add it to the timer.
+        if (!MutedMembers.has(member.guild.id))
+            MutedMembers.set(member.guild.id, []);
+        MutedMembers.get(member.guild.id)!.push(mutedUserObj);
+        await member.roles.add(mutedRole).catch();
+
+        return await PunishmentManager.logPunishment(member, "Mute", {
+            nickname: member.displayName,
+            reason: info.reason,
+            duration: info.duration === -1 ? undefined : info.duration / 60000,
+            issuedTime: Date.now(),
+            moderator: mod,
+            expiresAt: info.duration === -1 ? undefined : mutedUserObj.timeEnd,
+            guildDoc: info.guildDoc,
+            section: MongoManager.getMainSection(info.guildDoc),
+            guild: member.guild,
+            sendNoticeToAffectedUser: info.notifyUser ?? true,
+            sendLogInfo: info.sendLogMsg ?? true,
+            actionIdToUse: mutedUserObj.actionId
+        });
+    }
+
+    /**
+     * Removes a mute. This will unmute the specified `member` and log the event in the database.
+     * @param {GuildMember} member The member to unmute.
+     * @param {GuildMember | null} mod The moderator responsible for this unmute.
+     * @param {IAdditionalPunishmentParams} info Any additional information for this unmute.
+     * @returns {Promise<boolean>} Whether the unmute was successful.
+     */
+    export async function removeMute(
+        member: GuildMember,
+        mod: GuildMember | null,
+        info: Omit<IAdditionalPunishmentParams, "section" | "duration">
+    ): Promise<boolean> {
+        if (!GuildFgrUtilities.hasCachedRole(member.guild, info.guildDoc.roles.mutedRoleId))
+            return false;
+
+        // Find mute info.
+        const memberLookup: IMutedUser | null = info.actionId
+            ? lookupMute(info.guildDoc, {actionId: info.actionId})
+            : lookupMute(info.guildDoc, {memberId: member.id});
+
+        if (!memberLookup)
+            return false;
+
+        // And remove it from guild suspension list.
+        await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
+            $pull: {
+                "moderation.mutedUsers": {
+                    actionId: memberLookup.actionId
+                }
+            }
+        });
+
+        // Might be inefficient in the long term.
+        const data = MutedMembers.get(member.guild.id)?.find(x => x.actionId === memberLookup.actionId);
+        if (data) {
+            _queuedDelMutedUsers.enqueue({...data, guildId: member.guild.id});
+        }
+
+        await member.roles.remove(info.guildDoc.roles.mutedRoleId).catch();
+        return await PunishmentManager.logPunishment(member, "Unmute", {
+            nickname: member.displayName,
+            reason: info.reason,
+            issuedTime: Date.now(),
+            moderator: mod,
+            guildDoc: info.guildDoc,
+            section: MongoManager.getMainSection(info.guildDoc),
+            guild: member.guild,
+            sendNoticeToAffectedUser: info.notifyUser ?? true,
+            sendLogInfo: info.sendLogMsg ?? true,
+            actionIdToResolve: memberLookup.actionId
+        });
+    }
+
+    /**
+     * Removes all muted users from a particular guild from the checker. This is useful if the muted role was
+     * deleted for some reason.
+     * @param {Guild} guild The guild.
+     * @param {GuildMember | null} mod The moderator.
+     * @param {string} [reason] The reason, if any.
+     * @returns {Promise<boolean>} Whether the function executed successfully.
+     */
+    export async function removeAllMuteInGuild(guild: Guild, mod: GuildMember | null,
+                                               reason?: string): Promise<boolean> {
+        MutedMembers.get(guild.id)?.forEach(x => {
+            _queuedDelMutedUsers.enqueue({...x, guildId: guild.id});
+        });
+
+        const guildDoc = MongoManager.CachedGuildCollection.get(guild.id)!;
+        const membersToUnmute = guildDoc.moderation.mutedUsers.map(async info => {
+            const memberToUnmute = await GuildFgrUtilities.fetchGuildMember(guild, info.affectedUser.id);
+            if (!memberToUnmute)
+                return;
+
+            return await PunishmentManager.logPunishment(memberToUnmute, "Unmute", {
+                nickname: memberToUnmute.displayName,
+                reason: reason ?? "The Muted role was deleted while the person was muted.",
+                issuedTime: Date.now(),
+                moderator: mod,
+                guildDoc: guildDoc,
+                section: MongoManager.getMainSection(guildDoc),
+                guild: memberToUnmute.guild,
+                sendNoticeToAffectedUser: false,
+                sendLogInfo: true,
+                actionIdToResolve: info.actionId
+            });
+        });
+
+        await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+            $set: {
+                "moderation.mutedUsers": []
+            }
+        });
+
+        await Promise.all(membersToUnmute);
+        return true;
+    }
+
+    /**
+     * Looks up a mute based on either the action ID or member ID,
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {object} lookupType The lookup type. Can be either member or action ID.
+     * @returns {ISuspendedUser | null} The mute information, if any.
+     * @private
+     */
+    function lookupMute(guildDoc: IGuildInfo, lookupType: {
+        memberId?: string;
+        actionId?: string;
+    }): IMutedUser | null {
+        if (!lookupType.memberId && !lookupType.actionId)
+            return null;
+
+        return lookupType.memberId
+            ? guildDoc.moderation.mutedUsers.find(x => x.affectedUser.id === lookupType.memberId) ?? null
+            : guildDoc.moderation.mutedUsers.find(x => x.actionId === lookupType.actionId) ?? null;
     }
 }
