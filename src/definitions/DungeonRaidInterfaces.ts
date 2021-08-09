@@ -211,14 +211,6 @@ export interface IAfkCheckProperties {
     afkCheckTimeout: number;
 
     /**
-     * Lets you specify who can bypass a full VC. For example, you can set it so priority reactions and key reacts
-     * can join a full VC, or you can specify that no one can join a full VC.
-     *
-     * @type {BypassFullVcOption}
-     */
-    bypassFullVcOption: BypassFullVcOption;
-
-    /**
      * The permissions to set on the raid VC for the duration of the AFK check.
      *
      * @type {IPropertyKeyValuePair<string, IPermAllowDeny>[]}
@@ -252,12 +244,6 @@ export interface IAfkCheckProperties {
 interface IAfkCheckProperty<T> {
     value: T;
     allowEdit: boolean;
-}
-
-export enum BypassFullVcOption {
-    NotAllowed = (1 << 0),
-    KeysOnly = (1 << 1),
-    KeysAndPriority = (1 << 2)
 }
 
 /**

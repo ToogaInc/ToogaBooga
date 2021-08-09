@@ -5,7 +5,8 @@ import {UserManager} from "./UserManager";
 import {GuildMember, Collection as DCollection} from "discord.js";
 import {DUNGEON_DATA} from "../constants/DungeonData";
 import {
-    BypassFullVcOption, IBotInfo, IGuildInfo,
+    IBotInfo,
+    IGuildInfo,
     IIdNameInfo,
     IPermAllowDeny,
     IPropertyKeyValuePair,
@@ -346,18 +347,18 @@ export namespace MongoManager {
      * @return {IGuildInfo} The guild configuration object.
      */
     export function getDefaultGuildConfig(guildId: string): IGuildInfo {
-        const prePostAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
+        const generalAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
         GeneralConstants.DEFAULT_AFK_CHECK_PERMISSIONS.forEach(permObj => {
-            prePostAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
+            generalAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
         });
 
-        const generalAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
+        const prePostAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
         const tempPerms = GeneralConstants.DEFAULT_AFK_CHECK_PERMISSIONS.slice();
         // Using .slice to make a copy of this array.
-        // Get everyone role and allow people to connect
+        // Get everyone role and don't allow everyone to connect
         tempPerms[0].deny = ["VIEW_CHANNEL", "SPEAK", "STREAM"];
         tempPerms.forEach(permObj => {
-            generalAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
+            prePostAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
         });
 
         return {
@@ -444,7 +445,6 @@ export namespace MongoManager {
                     nitroEarlyLocationLimit: 5,
                     additionalAfkCheckInfo: "",
                     afkCheckTimeout: 30 * 60 * 1000,
-                    bypassFullVcOption: BypassFullVcOption.KeysAndPriority,
                     afkCheckPermissions: generalAfkCheckPerms,
                     prePostAfkCheckPermissions: prePostAfkCheckPerms,
                     allowedDungeons: DUNGEON_DATA.map(x => x.codeName),
