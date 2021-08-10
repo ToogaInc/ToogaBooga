@@ -104,7 +104,7 @@ export namespace AdvancedCollector {
      * function parameter and then returns a value based on that message.
      * @param {IMessageCollectorArgument} options The message options.
      * @param {Function} func The function used to filter the message.
-     * @returns {Promise<T | null>} The parsed content specified by your filter, or null if the collector was
+     * @returns {Promise<T | null>} The parsed content specified by your filter, or `null` if the collector was
      * stopped due to time or via the "cancel" command.
      * @template T
      */

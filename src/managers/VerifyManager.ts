@@ -1,4 +1,12 @@
-import {DMChannel, GuildMember, Interaction, Message, TextChannel} from "discord.js";
+import {
+    GuildMember,
+    Interaction,
+    Message,
+    MessageButton,
+    MessageEmbed,
+    MessageSelectMenu,
+    TextChannel
+} from "discord.js";
 import {InteractionManager} from "./InteractionManager";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MessageUtilities} from "../utilities/MessageUtilities";
@@ -6,11 +14,30 @@ import {StringBuilder} from "../utilities/StringBuilder";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
-import {PrivateApiDefinitions} from "../private-api/PrivateApiDefinitions";
+import {PrivateApiDefinitions as PAD} from "../private-api/PrivateApiDefinitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {IGuildInfo, IPropertyKeyValuePair, ISectionInfo, IVerificationRequirements} from "../definitions";
+import {
+    IGuildInfo,
+    IPropertyKeyValuePair,
+    ISectionInfo,
+    IVerificationProperties,
+    IVerificationRequirements
+} from "../definitions";
+import {MiscUtilities} from "../utilities/MiscUtilities";
+import {MongoManager} from "./MongoManager";
+import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
+import {Emojis} from "../constants/Emojis";
 
 export namespace VerifyManager {
+    const CHECK_PROFILE_BUTTON = new MessageButton()
+        .setLabel("Check Profile")
+        .setCustomId("check_profile")
+        .setStyle("PRIMARY");
+    const CANCEL_PROFILE_CHECK_BUTTON = new MessageButton()
+        .setLabel("Cancel")
+        .setCustomId("cancel")
+        .setStyle("DANGER");
+
     const GUILD_ROLES: string[] = [
         "Founder",
         "Leader",
@@ -19,10 +46,34 @@ export namespace VerifyManager {
         "Initiate"
     ];
 
-    // An interface with the relevant channels for this verification session.
-    interface IChannels {
-        verificationChannel?: TextChannel;
+    // An interface representing a "kit" with the relevant channels for this verification session, along with the
+    // message to be used for the verification process.
+    interface IVerificationKit {
+        verifyChannel: TextChannel | null;
+        verifySuccess: TextChannel | null;
+        verifyFail: TextChannel | null;
+        verifyStep: TextChannel | null;
+        verifyStart: TextChannel | null;
+        msg: Message;
+    }
 
+    /**
+     * Checks whether a guild member can receive direct messages.
+     * @param {GuildMember} member The guild member to check.
+     * @returns {Promise<Message | null>} The message that was sent to the member, or `null` if such message could
+     * not be sent.
+     * @private
+     */
+    async function getInitialMessage(member: GuildMember): Promise<Message | null> {
+        return await GlobalFgrUtilities.tryExecuteAsync<Message>(async () => {
+            return await member.send({
+                embeds: [
+                    new MessageEmbed()
+                        .setColor("YELLOW")
+                        .setDescription("This is a test message to ensure that you can receive direct messages.")
+                ]
+            });
+        });
     }
 
     /**
@@ -30,9 +81,71 @@ export namespace VerifyManager {
      * pressed. Applies to any section.
      * @param {Interaction} i The interaction.
      * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ISectionInfo} section The section where verification will occur.
      */
-    export async function verifyInteraction(i: Interaction, guildDoc: IGuildInfo): Promise<void> {
+    export async function verifyInteraction(i: Interaction, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
+        if (!i.isButton()) return;
 
+        await i.deferUpdate();
+        if (!i.guild) return;
+
+        const member = await GuildFgrUtilities.fetchGuildMember(i.guild, i.user.id);
+        if (!member) return;
+
+        // Get logging channels ready
+        const loggingChannels = section.isMainSection
+            ? guildDoc.channels.loggingChannels
+            : section.channels.loggingChannels;
+
+        const verifyStartChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            loggingChannels.find(x => x.key === "VerifyStart")?.value ?? ""
+        );
+
+        const verifyFailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            loggingChannels.find(x => x.key === "VerifyFail")?.value ?? ""
+        );
+
+        verifyStartChannel?.send(`[${section.sectionName}] ${member} has started the verification process.`)
+            .catch();
+
+        // If we can't open a DM, then don't bother.
+        const dmMsg = await getInitialMessage(member);
+        if (!dmMsg) {
+            await i.reply({
+                content: "I can't seem to message you directly. Please make sure your privacy settings are set so"
+                    + " anyone can send you direct messages.",
+                ephemeral: true
+            });
+
+            verifyFailChannel?.send(`[${section.sectionName}] ${member} could not be directly messaged.`)
+                .catch();
+            return;
+        }
+
+
+        const verifyStepChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            loggingChannels.find(x => x.key === "VerifyStep")?.value ?? ""
+        );
+        const verifySuccessChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            loggingChannels.find(x => x.key === "VerifySuccess")?.value ?? ""
+        );
+        const getVerifiedChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            section.channels.verification.verificationChannelId
+        );
+
+        verify(member, guildDoc, section, {
+            verifyStart: verifyStartChannel,
+            verifySuccess: verifySuccessChannel,
+            verifyStep: verifyStepChannel,
+            verifyFail: verifyFailChannel,
+            verifyChannel: getVerifiedChannel,
+            msg: dmMsg
+        }).catch();
     }
 
     /**
@@ -42,25 +155,81 @@ export namespace VerifyManager {
      * @param {IGuildInfo} guildDoc The guild document.
      */
     export async function verifyMainCommand(msg: Message, guildDoc: IGuildInfo): Promise<void> {
+        const member = msg.member;
+        if (!member)
+            return;
 
+        const verifyStartChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            guildDoc.channels.loggingChannels.find(x => x.key === "VerifyStart")?.value ?? ""
+        );
+        const verifyFailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            guildDoc.channels.loggingChannels.find(x => x.key === "VerifyFail")?.value ?? ""
+        );
+
+        verifyStartChannel?.send(`[Main] ${member} has started the verification process.`)
+            .catch();
+
+        // If we can't open a DM, then don't bother.
+        const dmMsg = await getInitialMessage(member);
+        if (!dmMsg) {
+            const m = await msg.channel.send({
+                content: "I can't seem to message you directly. Please make sure your privacy settings are set so"
+                    + " anyone can send you direct messages."
+            });
+
+            verifyFailChannel?.send(`[Main] ${member} could not be directly messaged.`)
+                .catch();
+
+            await MiscUtilities.stopFor(5 * 1000);
+            m.delete().catch();
+            return;
+        }
+
+        const verifyStepChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            guildDoc.channels.loggingChannels.find(x => x.key === "VerifyStep")?.value ?? ""
+        );
+        const verifySuccessChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            guildDoc.channels.loggingChannels.find(x => x.key === "VerifySuccess")?.value ?? ""
+        );
+        const getVerifiedChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            guildDoc.channels.verification.verificationChannelId
+        );
+
+
+        verify(member, guildDoc, MongoManager.getMainSection(guildDoc), {
+            verifyStart: verifyStartChannel,
+            verifySuccess: verifySuccessChannel,
+            verifyStep: verifyStepChannel,
+            verifyFail: verifyFailChannel,
+            verifyChannel: getVerifiedChannel,
+            msg: dmMsg
+        }).catch();
     }
 
     /**
      * The function where verification will begin. This should be called through an entry function (for example, a
-     * function that is called when a button is pressed or the verify command is executed).
+     * function that is called when a button is pressed or the verify command is executed). This assumes that the
+     * member to be verified can receive direct messages.
      * @param {GuildMember} member The member to verify.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section to verify in.
+     * @param {IVerificationKit} verifKit The verification "kit."
      * @private
      */
-    async function verify(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
+    async function verify(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
+                          verifKit: IVerificationKit): Promise<void> {
         if (!(await RealmSharperWrapper.isOnline())) {
             await GlobalFgrUtilities.sendMsg(member, {
                 embeds: [
                     MessageUtilities.generateBlankEmbed(member, "RED")
-                    .setTitle("Verification Unavailable.")
-                    .setDescription("Verification is currently unavailable. Please try again later.")
-                    .setTimestamp()
+                        .setTitle("Verification Unavailable.")
+                        .setDescription("Verification is currently unavailable. Please try again later.")
+                        .setTimestamp()
                 ]
             });
             return;
@@ -73,28 +242,6 @@ export namespace VerifyManager {
         // Check if the verified role exists.
         const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
 
-        // We need this so we can send the person a message if needed.
-        const verificationChannel = GuildFgrUtilities
-            .getCachedChannel<TextChannel>(member.guild, section.channels.verification.verificationChannelId);
-
-        // No verification channel = leave.
-        if (!verificationChannel)
-            return;
-
-        const dmChannel = await GlobalFgrUtilities.tryExecuteAsync<DMChannel>(async () => {
-            const dm = await member.createDM();
-            if (!dm) return null;
-            await dm.send("This is a test message to ensure that I can send messages to your direct messages.");
-            return dm;
-        });
-
-        // If we can't open a DM, then don't bother.
-        if (!dmChannel) {
-            await verificationChannel.send(`${member}, I couldn't direct message you. Please make sure anyone can `
-                + "direct message you and then try again.").catch();
-            return;
-        }
-
         // No verified role = no go. Or, if the person is verified, no need for them to get verified.
         if (!verifiedRole || member.roles.cache.has(verifiedRole.id))
             return;
@@ -106,31 +253,521 @@ export namespace VerifyManager {
         // If this is true, then this person is being manually verified.
         if (manualVerifyEntry) {
             await member.send("Your profile is currently under manual verification. Please try again later.");
+            verifKit.verifyFail?.send({
+                content: `[${section.sectionName}] ${member} tried to verify but he or she is currently under manual `
+                    + "verification."
+            }).catch();
             return;
         }
 
         // This has to be a verification channel so we don't need to double check.
         InteractionManager.InteractiveMenu.set(member.id, "VERIFICATION");
         if (section.isMainSection) {
-            await verifyMain(member, guildDoc, dmChannel);
+            verifyMain(member, guildDoc, verifKit).catch();
             return;
         }
 
-        await verifySection(member, section, dmChannel);
+        verifySection(member, section, verifKit).catch();
     }
 
     /**
      * Verifies in the main server.
      * @param {GuildMember} member The member.
      * @param {IGuildInfo} guildDoc The guild document.
-     * @param {DMChannel} dmChannel The DM channel.
+     * @param {IVerificationKit} verifKit The verification "kit."
      * @private
      */
-    async function verifyMain(member: GuildMember, guildDoc: IGuildInfo, dmChannel: DMChannel): Promise<void> {
-        // TODO
+    async function verifyMain(member: GuildMember, guildDoc: IGuildInfo, verifKit: IVerificationKit): Promise<void> {
+        const dmChannel = await member.createDM();
+        const userDb = await MongoManager.findIdInIdNameCollection(member.id);
+        let nameToVerify: string | null = null;
+        if (userDb.length > 0) {
+            await verifKit.msg.edit({
+                embeds: [
+                    MessageUtilities.generateBlankEmbed(member.user, "RED")
+                        .setTitle(`**${member.guild.name}**: Guild Verification`)
+                        .setDescription(
+                            "It appears that you have one or more name(s) associated with this Discord account. Please"
+                            + " select a name that you want to use to verify with this server. If you want to use a"
+                            + " name that isn't listed, simply press the **Skip** button."
+                        )
+                        .setFooter("Respond By")
+                        .setTimestamp(Date.now() + 2 * 60 * 1000)
+                ],
+                components: AdvancedCollector.getActionRowsFromComponents([
+                    new MessageSelectMenu()
+                        .setMaxValues(1)
+                        .setMinValues(1)
+                        .addOptions(userDb[0].rotmgNames.map(x => {
+                            return {label: x.ign, value: x.ign};
+                        }))
+                        .setCustomId("select"),
+                    new MessageButton()
+                        .setStyle("DANGER")
+                        .setLabel("Skip")
+                        .setCustomId("skip"),
+                    new MessageButton()
+                        .setStyle("DANGER")
+                        .setLabel("Cancel")
+                        .setCustomId("cancel")
+                ])
+            });
+            const selectedOption = await AdvancedCollector.startInteractionCollector({
+                oldMsg: verifKit.msg,
+                acknowledgeImmediately: true,
+                duration: 2 * 60 * 1000,
+                clearInteractionsAfterComplete: true,
+                deleteBaseMsgAfterComplete: false,
+                targetAuthor: member,
+                targetChannel: dmChannel
+            });
+
+            // No option = terminate process
+            if (!selectedOption) {
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} was asked to select a name previously associated with the Discord `
+                        + "account, but he or she did not select a name within the specified time."
+                });
+
+                verifKit.msg.delete().catch();
+                return;
+            }
+
+            if (selectedOption.isSelectMenu() && selectedOption.values.length > 0)
+                nameToVerify = selectedOption.values[0];
+
+            if (selectedOption.isButton() && selectedOption.customId === "cancel") {
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} has stopped the verification process. This occurred when the person was `
+                        + "asked to either use an existing name or provide a new name."
+                });
+
+                verifKit.msg.delete().catch();
+                return;
+            }
+        }
+
+        // Ask for a name if no name is provided.
+        if (!nameToVerify) {
+            await verifKit.msg.edit({
+                embeds: [
+                    MessageUtilities.generateBlankEmbed(member.user, "RED")
+                        .setTitle(`**${member.guild.name}**: Guild Verification`)
+                        .setDescription(
+                            "Please type the name that you want to verify with. Make sure you have access to the"
+                            + " **RealmEye** profile associated with the name that you want to use."
+                        )
+                        .addField("Cancel Process", "To cancel the verification process, simply type **`-cancel`**.")
+                        .setFooter("Respond By")
+                        .setTimestamp(Date.now() + 2 * 60 * 1000)
+                ]
+            });
+
+            const nameToUse = await AdvancedCollector.startNormalCollector({
+                cancelFlag: "-cancel",
+                deleteResponseMessage: false,
+                oldMsg: verifKit.msg,
+                duration: 2 * 60 * 1000,
+                deleteBaseMsgAfterComplete: false,
+                targetAuthor: member,
+                targetChannel: dmChannel
+            }, AdvancedCollector.getStringPrompt(member, {min: 1, max: 15}));
+
+            if (!nameToUse) {
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} has stopped the verification process. This occurred when the person was `
+                        + "asked to provide a name for verification."
+                });
+
+                verifKit.msg.delete().catch();
+                return;
+            }
+
+            // Check if the name is being used in database or in guild
+            const matchedNameUserDb = await MongoManager.findNameInIdNameCollection(nameToUse);
+            // Make sure this isn't already registered to this user.
+            if (matchedNameUserDb.length > 0 && matchedNameUserDb.every(x => x.currentDiscordId !== member.id)) {
+                const idsRegistered = matchedNameUserDb.map(x => x.pastDiscordIds).join(", ");
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} tried to verify with the name, **\`${nameToUse}\`**, but this name `
+                        + `has already been registered by the following Discord ID(s): ${idsRegistered}`
+                });
+
+                verifKit.msg.edit({
+                    embeds: [
+                        MessageUtilities.generateBlankEmbed(member.user, "RED")
+                            .setTitle(`**${member.guild.name}**: Guild Verification __Failed__`)
+                            .setDescription(`The name, **\`${nameToUse}\`**, has already been registered by another`
+                                + " user. You will need to resolve this issue by messaging a staff member for"
+                                + " assistance. If you want to verify with a different in-game name, please"
+                                + " restart the verification process.")
+                            .setFooter("Verification Process Stopped.")
+                    ]
+                }).catch();
+                return;
+            }
+
+            nameToVerify = nameToUse;
+        }
+
+        const code = StringUtil.generateRandomString(15);
+        verifKit.verifyStep?.send({
+            content: `[Main] ${member} will be trying to verify under the name: **\`${nameToVerify}\`**`
+        });
+
+        const timeStarted = Date.now();
+        await verifKit.msg.edit({
+            embeds: [
+                getVerifEmbed(member, nameToVerify, code, guildDoc.otherMajorConfig.verificationProperties)
+                    .setFooter("Verification Process Expires")
+                    .setTimestamp(timeStarted + 20 * 60 * 1000)
+            ],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                CHECK_PROFILE_BUTTON,
+                CANCEL_PROFILE_CHECK_BUTTON
+            ])
+        });
+
+        const collector = verifKit.msg.createMessageComponentCollector({
+            filter: i => i.user.id === member.id,
+            time: 20 * 60 * 1000
+        });
+
+        collector.on("end", () => {
+            InteractionManager.InteractiveMenu.delete(member.id);
+        });
+
+        collector.on("collect", async i => {
+            if (i.customId === "cancel") {
+                await verifKit.msg.edit({
+                    embeds: [
+                        MessageUtilities.generateBlankEmbed(member.guild, "RED")
+                            .setTitle(`**${member.guild.name}**: Guild Verification Canceled`)
+                            .setDescription(
+                                "You have canceled the verification process. To verify again, please restart the"
+                                + " verification process."
+                            )
+                            .setTimestamp()
+                    ],
+                    components: []
+                });
+
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} has canceled the verification process.`
+                });
+
+                collector.stop();
+                return;
+            }
+
+            await verifKit.msg.edit({
+                embeds: [
+                    MessageUtilities.generateBlankEmbed(member.guild, "RED")
+                        .setTitle(`**${member.guild.name}**: Guild Verification Checking`)
+                        .setDescription(
+                            "Your RealmEye profile is currently being checked. Please wait patiently. Once your"
+                            + " profile has been checked, I will edit this message (and send you a new message to"
+                            + " notify you). This should take no more than one minute."
+                        )
+                        .setTimestamp()
+                ],
+                components: []
+            });
+
+            // Grab normal data.
+            const requestData = await GlobalFgrUtilities.tryExecuteAsync<PAD.IPlayerData>(async () => {
+                return await RealmSharperWrapper.getPlayerInfo(nameToVerify!);
+            });
+
+            if (!requestData) {
+                await verifKit.msg.edit({
+                    embeds: [
+                        MessageUtilities.generateBlankEmbed(member.guild, "RED")
+                            .setTitle(`**${member.guild.name}**: Guild Verification Error`)
+                            .setDescription(
+                                "An unknown error occurred when trying to reach your RealmEye profile's basic data."
+                                + " This error is usually caused by one of several things.\n\n"
+                                + `The URL I tried to reach is https://www.realmeye.com/player/${nameToVerify!}.`
+                            )
+                            .addField(
+                                "1. Private Profile",
+                                "Make sure __anyone__ can view your profile. To confirm that this is the case, use"
+                                + " your browser's private browsing feature to check your profile."
+                            )
+                            .addField(
+                                "2. RealmEye API Error",
+                                "It's possible that the API that the bot uses to check RealmEye is currently down."
+                                + " Think of an API as the bot's way of checking your profile. Usually, this is"
+                                + " caused by the API being down."
+                            )
+                            .addField(
+                                "Now What?",
+                                "The verification process has been stopped. You'll need to restart the verification"
+                                + " process. **If** this issue persists, please message a staff member for assistance."
+                            )
+                            .setTimestamp()
+                    ],
+                    components: []
+                });
+                await member.send({
+                    content: "An error occurred while trying to get basic data from your profile. Please see the above"
+                        + " embed."
+                }).catch();
+
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but an unknown error `
+                        + "occurred when trying to reach his or her RealmEye profile's basic data"
+                        + ` (https://www.realmeye.com/player/${nameToVerify!}). Is the profile`
+                        + " private?"
+                });
+
+                collector.stop();
+                return;
+            }
+
+            // Grab name history.
+            const nameHistory = await GlobalFgrUtilities.tryExecuteAsync<PAD.INameHistory>(async () => {
+                return await RealmSharperWrapper.getNameHistory(nameToVerify!);
+            });
+
+            if (!nameHistory) {
+                await verifKit.msg.edit({
+                    embeds: [
+                        getVerifEmbed(member, nameToVerify!, code, guildDoc.otherMajorConfig.verificationProperties)
+                            .setFooter("Verification Process Expires")
+                            .setTimestamp(timeStarted + 20 * 60 * 1000)
+                            .addField(
+                                `${Emojis.WARNING_EMOJI} Verification Issues`,
+                                "Something went wrong when trying to get your RealmEye profile's **name history.**"
+                                + " Make sure anyone can view your profile's name history. If this issue persists,"
+                                + " please **stop** the verification process and contact a staff member for assistance."
+                            )
+                    ],
+                    components: AdvancedCollector.getActionRowsFromComponents([
+                        CHECK_PROFILE_BUTTON,
+                        CANCEL_PROFILE_CHECK_BUTTON
+                    ])
+                });
+                await member.send({
+                    content: "An error occurred while trying to get your name history. Please see the above embed."
+                }).catch();
+
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but an unknown error `
+                        + "occurred when trying to reach his or her profile's **name history**."
+                });
+                return;
+            }
+
+            // Check blacklist info
+            // TODO might be worth checking discord ID vs. blacklisted names
+            for (const blacklistEntry of guildDoc.moderation.blacklistedUsers) {
+                for (const nameEntry of [requestData.name, ...nameHistory.nameHistory.map(x => x.name)]) {
+                    if (blacklistEntry.realmName.lowercaseIgn !== nameEntry.toLowerCase())
+                        continue;
+
+                    // Person is blacklisted.
+                    await verifKit.msg.edit({
+                        embeds: [
+                            MessageUtilities.generateBlankEmbed(member.guild, "RED")
+                                .setTitle(`**${member.guild.name}**: Guild Verification Error`)
+                                .setDescription(
+                                    `The name, **\`${nameEntry}\`**, is blacklisted from this server.`
+                                )
+                                .addField(
+                                    "Associated Discord ID",
+                                    `${blacklistEntry.discordId} (Your ID: ${member.id})`
+                                )
+                                .addField("Reason", blacklistEntry.reason)
+                                .addField(
+                                    "Now What?",
+                                    "You cannot verify in this server right now. You can try to appeal your"
+                                    + " blacklist with the server staff. When doing so, please give them the"
+                                    + " moderation ID associated with your blacklist (shown below)."
+                                )
+                                .setFooter(`Mod. ID: ${blacklistEntry.actionId}`)
+                                .setTimestamp()
+                        ],
+                        components: []
+                    });
+                    await member.send({
+                        content: "You are blacklisted and cannot verify in this server at this time. Please see the"
+                            + " above embed."
+                    }).catch();
+
+                    verifKit.verifyFail?.send({
+                        content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but he or she is `
+                            + `blacklisted from this server under the name: \`${nameEntry}\`. The corresponding `
+                            + `Moderation ID is: \`${blacklistEntry.actionId}\`.`
+                    });
+
+                    collector.stop();
+                    return;
+                }
+            }
+
+            // Check everything else
+            const checkRes = await checkRequirements(member, MongoManager.getMainSection(guildDoc), requestData);
+            if (checkRes.conclusion === "FAIL") {
+                const failEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
+                    .setTitle(`**${member.guild.name}**: Guild Verification Failed`)
+                    .setDescription(
+                        "You have failed to meet one or more requirements. These requirements are listed below."
+                    )
+                    .setTimestamp();
+
+                for (const failedReq of checkRes.fatalIssues) {
+                    failEmbed.addField(
+                        "[Fatal] " + failedReq.key,
+                        failedReq.value
+                    );
+                }
+
+                failEmbed.addField(
+                    "What Now?",
+                    "These are requirements that you absolutely must meet in order to get verified. Since you failed"
+                    + " to meet these requirements, you aren't able to get manually verified through the bot."
+                    + " Message a staff member for more assistance."
+                );
+
+                await verifKit.msg.edit({
+                    embeds: [failEmbed],
+                    components: []
+                });
+
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but there were several `
+                        + "fatal issues with the person's profile."
+                });
+
+                collector.stop();
+                return;
+            }
+        });
     }
 
-    async function verifySection(member: GuildMember, section: ISectionInfo, dmChannel: DMChannel): Promise<void> {
+    /**
+     * Generates the embed that will be used for verification.
+     * @param {GuildMember} member The member.
+     * @param {string} ign The in-game name.
+     * @param {string} code The verification code.
+     * @param {IVerificationProperties} verifProps The verification properties.
+     * @returns {MessageEmbed} The message embed containing the verification steps.
+     * @private
+     */
+    function getVerifEmbed(member: GuildMember, ign: string, code: string,
+                           verifProps: IVerificationProperties): MessageEmbed {
+        return MessageUtilities.generateBlankEmbed(member.guild)
+            .setTitle(`**${member.guild.name}**: Guild Verification`)
+            .setDescription(new StringBuilder()
+                .append(`You have selected the in-game name: **\`${ign}\`**. To access your Realm profile, click `)
+                .append(`[here](https://www.realmeye.com/player/${ign}). If you don't have your RealmEye account `)
+                .append("password, you can learn how to get one [here](https://www.realmeye.com/mreyeball#password).")
+                .appendLine(2)
+                .append("As a reminder, the requirements for verification is:")
+                .append(StringUtil.codifyString(getVerificationRequirements(verifProps)))
+                .append("Please complete the following steps. If you do not want to complete verification at this ")
+                .append("time, press the **Cancel** button.")
+                .toString())
+            .setFooter("You have 15 minutes to complete this process.")
+            .addField(
+                "1. Verification Code",
+                new StringBuilder().append(`Your verification code is: ${StringUtil.codifyString(code)}`)
+                    .append("Put this verification code in __one__ of your three lines of your RealmEye profile's ")
+                    .append("description.")
+                    .toString()
+            )
+            .addField(
+                "2. Check Profile Settings",
+                "Make sure anyone can see your general profile, exaltations, graveyard (summary), and name history."
+                + " Additionally, make sure the bot can easily see that the above requirements are satisfied."
+                + ` You can access your profile settings [here](https://www.realmeye.com/settings-of/${ign}).`
+            )
+            .addField(
+                "3. Wait",
+                "RealmEye may sometimes take a while before registering any chances. It is recommended that you wait"
+                + " before continuing."
+            )
+            .addField(
+                "4. Confirm",
+                "Press the **Check Profile** button to begin the verification check. During this time, you won't be"
+                + " able to do anything. If something goes wrong, an error message will be shown below."
+            );
+    }
+
+    /**
+     * Generates verification requirements from the given properties.
+     * @param {IVerificationProperties} verifProps The verification properties.
+     * @returns {string} The requirements.
+     */
+    export function getVerificationRequirements(verifProps: IVerificationProperties): string {
+        const sb = new StringBuilder();
+        if (!verifProps.checkRequirements)
+            return sb.append("No Requirements.").toString();
+        if (verifProps.verifReq.lastSeen.mustBeHidden)
+            sb.append("- Private Location.").appendLine();
+        if (verifProps.verifReq.rank.checkThis)
+            sb.append(`- At Least ${verifProps.verifReq.rank.minRank} Stars.`).appendLine();
+        if (verifProps.verifReq.guild.checkThis) {
+            if (verifProps.verifReq.guild.guildName.checkThis)
+                sb.append(`- In Guild: ${verifProps.verifReq.guild.guildName.name}.`).appendLine();
+            if (verifProps.verifReq.guild.guildRank.checkThis) {
+                if (verifProps.verifReq.guild.guildRank.exact)
+                    sb.append(`- Must Be Rank: ${verifProps.verifReq.guild.guildRank.minRank}.`).appendLine();
+                else
+                    sb.append(`- Must Be At Least Rank: ${verifProps.verifReq.guild.guildRank.minRank}.`).appendLine();
+            }
+        }
+        if (verifProps.verifReq.aliveFame.checkThis)
+            sb.append(`- At Least ${verifProps.verifReq.aliveFame.minFame} Alive Fame.`).appendLine();
+        if (verifProps.verifReq.characters.checkThis) {
+            const checkPastDeaths = verifProps.verifReq.characters.checkPastDeaths;
+            for (let i = 0; i < verifProps.verifReq.characters.statsNeeded.length; i++) {
+                const numNeeded = verifProps.verifReq.characters.statsNeeded[i];
+                sb.append(`- ${numNeeded} ${i}/${GeneralConstants.NUMBER_OF_STATS} Characters`)
+                    .append(checkPastDeaths ? " (Past Deaths Allowed)." : ".").appendLine();
+            }
+        }
+
+        if (verifProps.verifReq.exaltations.checkThis) {
+            let added = false;
+            for (const stat in verifProps.verifReq.exaltations.minimum) {
+                if (!verifProps.verifReq.exaltations.minimum.hasOwnProperty(stat))
+                    continue;
+
+                const numNeeded = verifProps.verifReq.exaltations.minimum[stat];
+                if (numNeeded === 0) continue;
+                // Put here so this shows up first on list
+                if (!added) {
+                    sb.append("- Exaltations is Public.").appendLine();
+                    added = true;
+                }
+                const displayedVersion = GeneralConstants.SHORT_STAT_TO_LONG[stat][1];
+                sb.append(`- ${numNeeded} ${displayedVersion} Exaltations.`).appendLine();
+            }
+
+            if (added && verifProps.verifReq.exaltations.onOneChar)
+                sb.append("- Exaltations Must Be On One Character.").appendLine();
+        }
+
+        if (verifProps.verifReq.graveyardSummary.checkThis) {
+            let added = false;
+            for (const entry of verifProps.verifReq.graveyardSummary.minimum) {
+                if (entry.value === 0) continue;
+                // Put here so this shows up first on list
+                if (!added) {
+                    sb.append("- Graveyard History is Public.").appendLine();
+                    added = true;
+                }
+                const display = GeneralConstants.GY_HIST_TO_DISPLAY[entry.key];
+                sb.append(`- ${entry.value} ${display} Completions.`).appendLine();
+            }
+        }
+
+        return sb.toString();
+    }
+
+    async function verifySection(member: GuildMember, section: ISectionInfo, channels: IVerificationKit): Promise<void> {
         // TODO
     }
 
@@ -148,15 +785,14 @@ export namespace VerifyManager {
     /**
      * Checks a series of requirements to ensure that they are fulfilled.
      * @param {GuildMember} member The member to check.
-     * @param {DMChannel} dmChannel The DM channel.
      * @param {ISectionInfo | IGuildInfo} section The section to check the requirements for.
      * @param {PrivateApiDefinitions.IPlayerData} resp The player's stats.
      * @return {Promise<IReqCheckResult>} The results of this check.
      * @private
      */
-    async function checkRequirements(member: GuildMember, dmChannel: DMChannel, section: ISectionInfo | IGuildInfo,
-                                     resp: PrivateApiDefinitions.IPlayerData): Promise<IReqCheckResult> {
-        const verifReq = section.otherMajorConfig.verificationProperties.verificationRequirements;
+    async function checkRequirements(member: GuildMember, section: ISectionInfo | IGuildInfo,
+                                     resp: PAD.IPlayerData): Promise<IReqCheckResult> {
+        const verifReq = section.otherMajorConfig.verificationProperties.verifReq;
         const result: IReqCheckResult = {
             conclusion: "PASS",
             manualIssues: [],
@@ -193,21 +829,38 @@ export namespace VerifyManager {
                 return result;
             }
 
-            if (verifReq.guild.guildRank.checkThis
-                && !isValidGuildRank(verifReq.guild.guildRank.minRank, resp.guildRank)) {
+            if (verifReq.guild.guildRank.checkThis) {
                 const rankHasDisplay = `**\`${resp.rank}\`**`;
                 const rankNeedDisplay = `**\`${verifReq.rank}\`**`;
-                result.fatalIssues.push({
-                    key: "Not In Correct Guild",
-                    value: resp.guild
-                        ? `You have the rank ${rankHasDisplay} but must have at least rank ${rankNeedDisplay}.`
-                        : `You must be in the guild, **\`${verifReq.guild.guildName.name}\`**.`,
-                    log: resp.guild
-                        ? `User has the rank ${rankHasDisplay} but must have at least rank ${rankNeedDisplay}.`
-                        : `User is not in the guild **\`${verifReq.guild.guildName.name}\`**.`
-                });
-                result.conclusion = "FAIL";
-                return result;
+
+                if (verifReq.guild.guildRank.exact) {
+                    if (verifReq.guild.guildRank.minRank !== resp.guildRank) {
+                        result.fatalIssues.push({
+                            key: "Not In Correct Guild",
+                            value: resp.guild
+                                ? `You have the rank ${rankHasDisplay} but must have the rank ${rankNeedDisplay}.`
+                                : `You must be in the guild, **\`${verifReq.guild.guildName.name}\`**.`,
+                            log: resp.guild
+                                ? `User has the rank ${rankHasDisplay} but must have the rank ${rankNeedDisplay}.`
+                                : `User is not in the guild **\`${verifReq.guild.guildName.name}\`**.`
+                        });
+                        result.conclusion = "FAIL";
+                        return result;
+                    }
+                }
+                else if (!isValidGuildRank(verifReq.guild.guildRank.minRank, resp.guildRank)) {
+                    result.fatalIssues.push({
+                        key: "Not In Correct Guild",
+                        value: resp.guild
+                            ? `You have the rank ${rankHasDisplay} but must have at least rank ${rankNeedDisplay}.`
+                            : `You must be in the guild, **\`${verifReq.guild.guildName.name}\`**.`,
+                        log: resp.guild
+                            ? `User has the rank ${rankHasDisplay} but must have at least rank ${rankNeedDisplay}.`
+                            : `User is not in the guild **\`${verifReq.guild.guildName.name}\`**.`
+                    });
+                    result.conclusion = "FAIL";
+                    return result;
+                }
             }
         }
 
@@ -305,8 +958,8 @@ export namespace VerifyManager {
                 const issues: string[] = [];
                 const logIssues: string[] = [];
                 for (const gyStat of verifReq.graveyardSummary.minimum) {
-                    if (!(gyStat.key in GeneralConstants.GY_HIST_ACHIEVEMENTS)) continue;
-                    const gyHistKey = GeneralConstants.GY_HIST_ACHIEVEMENTS[gyStat.key];
+                    if (!(gyStat.key in GeneralConstants.DISPLAY_TO_GY_HIST)) continue;
+                    const gyHistKey = GeneralConstants.DISPLAY_TO_GY_HIST[gyStat.key];
                     const data = gyHist.properties.find(x => x.achievement === gyHistKey);
                     // Doesn't qualify because dungeon doesn't exist.
                     if (!data) {
@@ -346,29 +999,67 @@ export namespace VerifyManager {
             }
             else {
                 // We use this variable to keep track of each stat and corresponding exaltations needed.
+                // neededExalt will have keys "att" "spd" "hp" etc
                 const neededExalt: { [s: string]: number } = {};
                 for (const d of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
                     neededExalt[d] = verifReq.exaltations.minimum[d];
 
-                // For each character...
-                for (const entry of exaltData.exaltations) {
-                    // For each stat...
-                    for (const actExaltStat of Object.keys(entry.exaltationStats)) {
-                        for (const stat of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
-                            if (actExaltStat === GeneralConstants.SHORT_STAT_TO_LONG[stat].toLowerCase())
-                                neededExalt[stat] -= entry.exaltationStats[actExaltStat];
+                if (verifReq.exaltations.onOneChar) {
+                    for (const entry of exaltData.exaltations) {
+                        let passed = true;
+                        // exaltationStats will have keys like "attack" "speed" "health" etc
+                        for (const longStat in entry.exaltationStats) {
+                            if (!entry.exaltationStats.hasOwnProperty(longStat))
+                                continue;
+
+                            const shortenedStat = GeneralConstants.LONG_STAT_TO_SHORT[longStat];
+                            if (neededExalt[shortenedStat] - entry.exaltationStats[longStat] > 0) {
+                                passed = false;
+                                break;
+                            }
+                        }
+
+                        // If passed, then set neededExalts to 0. Otherwise, try again
+                        if (passed) {
+                            for (const k in neededExalt) {
+                                if (!neededExalt.hasOwnProperty(k))
+                                    continue;
+
+                                neededExalt[k] = 0;
+                            }
+                            break;
+                        }
+                    }
+                }
+                else {
+                    for (const entry of exaltData.exaltations) {
+                        for (const longStat in entry.exaltationStats) {
+                            if (!entry.exaltationStats.hasOwnProperty(longStat))
+                                continue;
+
+                            const shortenedStat = GeneralConstants.LONG_STAT_TO_SHORT[longStat];
+                            neededExalt[shortenedStat] -= entry.exaltationStats[longStat];
+                        }
                     }
                 }
 
                 // If we happen to have any stats whose exaltation number is > 0, then we want to show them.
                 const notMetExaltations = Object.keys(neededExalt)
                     .filter(x => neededExalt[x] > 0);
+
                 if (notMetExaltations.length > 0) {
                     const issuesExaltations = new StringBuilder();
-                    for (const statNotFulfilled of notMetExaltations) {
-                        const statName = GeneralConstants.SHORT_STAT_TO_LONG[statNotFulfilled];
-                        issuesExaltations.append(`- Need ${neededExalt[statNotFulfilled]} ${statName} Exaltations.`)
-                            .appendLine();
+                    if (verifReq.exaltations.onOneChar) {
+                        issuesExaltations.append(
+                            "- You do not have one character that meets all exaltation requirements."
+                        ).appendLine();
+                    }
+                    else {
+                        for (const statNotFulfilled of notMetExaltations) {
+                            const statName = GeneralConstants.SHORT_STAT_TO_LONG[statNotFulfilled];
+                            issuesExaltations.append(`- Need ${neededExalt[statNotFulfilled]} ${statName} Exaltations.`)
+                                .appendLine();
+                        }
                     }
 
                     const strDisplay = StringUtil.codifyString(issuesExaltations.toString());
@@ -455,7 +1146,7 @@ export namespace VerifyManager {
         if (verifyReqs.graveyardSummary.checkThis) {
             for (const gyStat of verifyReqs.graveyardSummary.minimum) {
                 if (gyStat.value <= 0) continue;
-                if (!(gyStat.key in GeneralConstants.GY_HIST_ACHIEVEMENTS)) continue;
+                if (!(gyStat.key in GeneralConstants.DISPLAY_TO_GY_HIST)) continue;
                 requirementInfo.append(`• ${gyStat.value} ${gyStat.key} Completed`)
                     .appendLine();
             }

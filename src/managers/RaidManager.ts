@@ -579,7 +579,7 @@ export class RaidManager {
         await this.setRaidStatus(RaidStatus.AFK_CHECK);
         await this._raidVc.permissionOverwrites.set(this.getPermissionsForRaidVc(true));
 
-        // We do need to start the control panel collector.
+        // We do need to restart the control panel collector.
         this._controlPanelReactionCollector?.stop();
         this.startControlPanelCollector();
 

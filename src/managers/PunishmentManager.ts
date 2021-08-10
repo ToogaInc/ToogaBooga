@@ -26,7 +26,7 @@ interface IPunishmentDetails {
     reason: string;
 
     /**
-     * The duration of the punishment, in minutes. This is not used in any computations, only for logging.
+     * The duration of the punishment, in milliseconds.
      *
      * @type {number}
      */
@@ -258,9 +258,9 @@ export namespace PunishmentManager {
             .toString();
 
         const durationStr = new StringBuilder()
-            .append(`- Duration: ${entry.duration === -1 ? "Indefinite." : `${entry.duration} Minutes`}`)
+            .append(`- Duration: ${entry.duration! === -1 ? "N/A" : MiscUtilities.formatDuration(entry.duration!)}`)
             .appendLine()
-            .append(`- Ends At: ${entry.expiresAt === -1 ? "N/A" : `${MiscUtilities.getTime(entry.expiresAt)} UTC`}`)
+            .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${MiscUtilities.getTime(entry.expiresAt!)} UTC`}`)
             .toString();
 
         const logToChanEmbed = new MessageEmbed()
@@ -804,7 +804,7 @@ export namespace SuspensionManager {
         return await PunishmentManager.logPunishment(member, "Suspend", {
             nickname: member.displayName,
             reason: info.reason,
-            duration: info.duration === -1 ? undefined : info.duration / 60000,
+            duration: info.duration === -1 ? undefined : info.duration,
             issuedTime: Date.now(),
             expiresAt: info.duration === -1 ? undefined : suspendedUserObj.timeEnd,
             moderator: mod,
@@ -924,7 +924,7 @@ export namespace SuspensionManager {
         return await PunishmentManager.logPunishment(member, "SectionSuspend", {
             nickname: member.displayName,
             reason: info.reason,
-            duration: info.duration === -1 ? undefined : info.duration / 60000,
+            duration: info.duration === -1 ? undefined : info.duration,
             issuedTime: Date.now(),
             expiresAt: info.duration === -1 ? undefined : suspendedUserObj.timeEnd,
             moderator: mod,
@@ -1199,7 +1199,7 @@ export namespace MuteManager {
         return await PunishmentManager.logPunishment(member, "Mute", {
             nickname: member.displayName,
             reason: info.reason,
-            duration: info.duration === -1 ? undefined : info.duration / 60000,
+            duration: info.duration === -1 ? undefined : info.duration,
             issuedTime: Date.now(),
             moderator: mod,
             expiresAt: info.duration === -1 ? undefined : mutedUserObj.timeEnd,

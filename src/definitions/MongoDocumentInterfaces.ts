@@ -22,6 +22,8 @@ export interface IBaseDocument<T = ObjectID> {
     _id: T;
 }
 
+// TODO blacklist collection for easier storage of blacklists?
+
 export interface IBotInfo {
     activeEvents: {
         issuedTime: number;
@@ -719,7 +721,7 @@ export interface IPunishmentHistoryEntry extends IBasePunishment {
     moderationType: MainOnlyModLogType | SectionModLogType;
 
     /**
-     * The duration of this moderation type, if any, in minutes. If there is no time, then this will be `-1`.
+     * The duration of this moderation type, if any, in milliseconds. If there is no time, then this will be `-1`.
      *
      * This is REQUIRED for a punishment. This is NOT REQUIRED for a resolution.
      *

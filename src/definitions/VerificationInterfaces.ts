@@ -43,7 +43,7 @@ export interface IVerificationProperties {
      *
      * @type {IVerificationRequirements}
      */
-    verificationRequirements: IVerificationRequirements;
+    verifReq: IVerificationRequirements;
 
     /**
      * Whether to check the requirements at all. If this is `true`, then this will check RealmEye. If this is
@@ -135,6 +135,13 @@ export interface IVerificationRequirements {
              * @type {string}
              */
             minRank: string;
+
+            /**
+             * Whether the person must have exactly this rank.
+             *
+             * @type {boolean}
+             */
+            exact: boolean;
         };
     };
 
@@ -214,6 +221,13 @@ export interface IVerificationRequirements {
      * @type {object}
      */
     exaltations: {
+        /**
+         * Whether the exaltation requirements must be met on one character.
+         *
+         * @type {boolean}
+         */
+        onOneChar: boolean;
+
         /**
          * Whether to check this requirement.
          *

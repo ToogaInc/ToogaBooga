@@ -15,18 +15,75 @@ export namespace GeneralConstants {
     ];
 
     // These are from the IVerificationRequirements.ts file
-    export const SHORT_STAT_TO_LONG: { [s: string]: string } = {
-        "att": "Attack",
-        "def": "Defense",
-        "spd": "Speed",
-        "dex": "Dexterity",
-        "vit": "Vitality",
-        "wis": "Wisdom",
-        "hp": "Health",
-        "mp": "Magic"
+    export const SHORT_STAT_TO_LONG: { [s: string]: [string, string] } = {
+        "att": ["attack", "Attack"],
+        "def": ["defense", "Defense"],
+        "spd": ["speed", "Speed"],
+        "dex": ["dexterity", "Dexterity"],
+        "vit": ["vitality", "Vitality"],
+        "wis": ["wisdom", "Wisdom"],
+        "hp": ["health", "Health"],
+        "mp": ["magic", "Magic"]
     };
 
-    export const GY_HIST_ACHIEVEMENTS: { [s: string]: string } = {
+    export const LONG_STAT_TO_SHORT: { [s: string]: string } = {
+        "attack": "att",
+        "defense": "def",
+        "speed": "spd",
+        "dexterity": "dex",
+        "vitality": "vit",
+        "wisdom": "wis",
+        "health": "hp",
+        "magic": "mp"
+    };
+
+    export const GY_HIST_TO_DISPLAY: { [s: string]: string } = {
+        "Lost Halls completed": "Lost Halls",
+        "Voids completed": "Voids",
+        "Cultist Hideouts completed": "Cultist Hideouts",
+        "Nests completed2": "Nests",
+        "Shatters completed1": "Shatters",
+        "Tombs completed": "Tomb of the Ancients",
+        "Ocean Trenches completed": "Ocean Trenches",
+        "Parasite chambers completed4": "Parasite Chambers",
+        "Lairs of Shaitan completed4": "Lair of Shaitans",
+        "Puppet Master's Encores completed4": "Puppet Master's Encores",
+        "Cnidarian Reefs completed": "Cnidarian Reefs",
+        "Secluded Thickets completed": "Secluded Thickets",
+        "Cursed Libraries completed": "Cursed Libraries",
+        "Fungal Caverns completed": "Fungal Caverns",
+        "Crystal Caverns completed": "Crystal Caverns",
+        "Lairs of Draconis (hard mode) completed2": "Lair of Draconis (Hard)",
+        "Lairs of Draconis (easy mode) completed1": "Lair of Draconis (Easy)",
+        "Mountain Temples completed2": "Mountain Temples",
+        "Crawling Depths completed1": "Crawling Depths",
+        "Woodland Labyrinths completed1": "Woodland Labyrinths",
+        "Deadwater Docks completed1": "Deadwater Docks",
+        "Ice Caves completed1": "Ice Cave",
+        "Bella Donnas completed3": "Belladonna's Gardens",
+        "Davy Jones's Lockers completed1": "Davy Jones' Lockers",
+        "Battle for the Nexuses completed1": "Battle of the Nexus",
+        "Candyland Hunting Grounds completed": "Candyland Hunting Grounds",
+        "Puppet Master's Theatres completed1": "Puppet Master's Theatres",
+        "Toxic Sewers completed1": "Toxic Sewers",
+        "Haunted Cemeteries completed1": "Haunted Cemetaries",
+        "Mad Labs completed1": "Mad Labs",
+        "Abysses of Demons completed": "Abyss of Demons",
+        "Manors of the Immortals completed": "Manor of the Immortals",
+        "Ancient Ruins completed": "Ancient Ruins",
+        "Undead Lairs completed": "Undead Lairs",
+        "Sprite Worlds completed": "Sprite Worlds",
+        "Snake Pits completed": "Snake Pits",
+        "Caves of a Thousand Treasures completed1": "Cave of a Thousand Treasures",
+        "Magic Woods completed": "Magic Woods",
+        "Hives completed1": "Hives",
+        "Spider Dens completed": "Spider Dens",
+        "Forbidden Jungles completed": "Forbidden Jungles",
+        "Forest Mazes completed1": "Forest Mazes",
+        "Pirate Caves completed": "Pirate Caves"
+    };
+
+    export const DISPLAY_TO_GY_HIST: { [s: string]: string } = {
         "Lost Halls": "Lost Halls completed",
         "Voids": "Voids completed",
         "Cultist Hideouts": "Cultist Hideouts completed",

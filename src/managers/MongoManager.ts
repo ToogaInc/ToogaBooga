@@ -55,6 +55,19 @@ export namespace MongoManager {
     }
 
     /**
+     * Gets the ID/name collection, if the program is connected to Mongo.
+     *
+     * @return {MCollection<IIdNameInfo>} The guild collection.
+     * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
+     */
+    export function getIdNameCollection(): MCollection<IIdNameInfo> {
+        if (IdNameCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
+            throw new ReferenceError("IdNameCollection null. Use connect method first.");
+
+        return IdNameCollection;
+    }
+
+    /**
      * Gets the guild collection, if the program is connected to Mongo.
      *
      * @return {MCollection<IGuildInfo>} The guild collection.
@@ -390,7 +403,7 @@ export namespace MongoManager {
                     checkRequirements: true,
                     additionalVerificationInfo: "",
                     verificationSuccessMessage: "",
-                    verificationRequirements: {
+                    verifReq: {
                         aliveFame: {
                             checkThis: false,
                             minFame: 0
@@ -403,7 +416,8 @@ export namespace MongoManager {
                             },
                             guildRank: {
                                 checkThis: false,
-                                minRank: ""
+                                minRank: "",
+                                exact: false
                             },
                         },
                         lastSeen: {
@@ -419,6 +433,7 @@ export namespace MongoManager {
                             checkPastDeaths: true
                         },
                         exaltations: {
+                            onOneChar: false,
                             checkThis: false,
                             minimum: {
                                 hp: 0,
