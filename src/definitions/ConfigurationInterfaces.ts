@@ -68,6 +68,14 @@ export interface IConfiguration {
              * @type {string}
              */
             idNameCollection: string;
+
+            /**
+             * The unclaimed blacklist collection. This is where a person's blacklist history will be stored if the
+             * person doesn't exist in the database.
+             *
+             * @type {string}
+             */
+            unclaimedBlCollection: string;
         };
     };
 

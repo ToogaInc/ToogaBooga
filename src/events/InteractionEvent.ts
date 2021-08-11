@@ -18,12 +18,13 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     // Get corresponding channel.
     const channel = interaction.channel;
     if (!channel || !channel.isText() || channel instanceof NewsChannel) return;
+    const resolvedChannel = await channel.fetch();
 
     // Get guild document, users, and message.
     const [resolvedUser, resolvedMember, message, guildDoc] = await Promise.all([
         GlobalFgrUtilities.fetchUser(interaction.user.id),
         GuildFgrUtilities.fetchGuildMember(guild, interaction.user.id),
-        GuildFgrUtilities.fetchMessage(channel, interaction.message.id),
+        GuildFgrUtilities.fetchMessage(resolvedChannel, interaction.message.id),
         MongoManager.getOrCreateGuildDoc(guild.id)
     ]);
 

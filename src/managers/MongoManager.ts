@@ -10,7 +10,7 @@ import {
     IIdNameInfo,
     IPermAllowDeny,
     IPropertyKeyValuePair,
-    ISectionInfo,
+    ISectionInfo, IUnclaimedBlacklistInfo,
     IUserInfo
 } from "../definitions";
 
@@ -22,6 +22,7 @@ export namespace MongoManager {
     let GuildCollection: MCollection<IGuildInfo> | null = null;
     let BotCollection: MCollection<IBotInfo> | null = null;
     let IdNameCollection: MCollection<IIdNameInfo> | null = null;
+    let UnclaimedBlacklistCollection: MCollection<IUnclaimedBlacklistInfo> | null = null;
 
     interface IDbConfiguration {
         dbUrl: string;
@@ -30,6 +31,7 @@ export namespace MongoManager {
         userColName: string;
         botColName: string;
         idNameColName: string;
+        unclaimedBlName: string;
     }
 
     /**
@@ -106,6 +108,18 @@ export namespace MongoManager {
     }
 
     /**
+     * Gets the unclaimed blacklist collection, if the program is connected to Mongo.
+     * @return {MCollection<UnclaimedBlacklistCollection>} The unclaimed blacklist collection.
+     * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
+     */
+    export function getUnclaimedBlacklistCollection(): MCollection<IUnclaimedBlacklistInfo> {
+        if (UnclaimedBlacklistCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
+            throw new ReferenceError("UnclaimedBlacklistCollection null.");
+
+        return UnclaimedBlacklistCollection;
+    }
+
+    /**
      * Connects to the MongoDB instance.
      *
      * @param {IDbConfiguration} config The Mongo configuration info.
@@ -131,8 +145,11 @@ export namespace MongoManager {
             .db(config.dbName)
             .collection<IBotInfo>(config.botColName);
         IdNameCollection = ThisMongoClient
-            .db(config.idNameColName)
+            .db(config.dbName)
             .collection<IIdNameInfo>(config.idNameColName);
+        UnclaimedBlacklistCollection = ThisMongoClient
+            .db(config.dbName)
+            .collection<IUnclaimedBlacklistInfo>(config.unclaimedBlName);
         return true;
     }
 
@@ -308,7 +325,11 @@ export namespace MongoManager {
             $or: filterQuery
         }).toArray();
 
+        if (foundDocs.length === 0)
+            return;
+
         const userDoc = getDefaultUserConfig(member.id, ign);
+        const allNotes: string[] = [];
         // Copy all old values to the new document
         for (const doc of foundDocs) {
             // Copy all logged info to the user document.
@@ -329,21 +350,22 @@ export namespace MongoManager {
             for (const punishmentHist of doc.details.moderationHistory)
                 userDoc.details.moderationHistory.push(punishmentHist);
 
-            // Copy all settings
-            /*
-            for (const setting of doc.details.settings) {
-                const idx = userDoc.details.settings.findIndex(x => x.key === setting.key);
+            // Copy all notes
+            allNotes.push(...doc.details.universalNotes);
+            for (const note of doc.details.guildNotes) {
+                const k = note.key;
+                const v = note.value;
+                const idx = userDoc.details.guildNotes.findIndex(x => x.key === k);
                 if (idx === -1) {
-                    userDoc.details.settings.push({
-                        key: setting.key,
-                        value: setting.value
-                    });
+                    userDoc.details.guildNotes.push({key: k, value: v});
                     continue;
                 }
 
-                userDoc.details.settings[idx].value = setting.value;
-            }*/
+                userDoc.details.guildNotes[idx].value += "\n\n" + v;
+            }
         }
+
+        userDoc.details.universalNotes = allNotes.join("\n\n");
 
         // Delete all old documents.
         await getUserCollection().deleteMany({
@@ -537,9 +559,28 @@ export namespace MongoManager {
     }
 
     /**
-     * Gets a guild document or creates a new one if it doesn't exist.
+     * Gets a user document ot creates a new one if it doesn't exist.
+     * @param {string} userId The user ID.
+     * @returns {Promise<IUserInfo>} The user document.
+     * @throws {Error} If adding a new user document is not possible.
+     */
+    export async function getOrCreateUserDoc(userId: string): Promise<IUserInfo> {
+        const docs = await getUserCollection().find({discordId: userId}).toArray();
+        if (docs.length === 0) {
+            const insertRes = await getUserCollection().insertOne(getDefaultUserConfig(userId));
+            if (insertRes.ops.length > 0)
+                return insertRes.ops[0];
+
+            throw new Error(`Insert failed: ${userId}`);
+        }
+
+        return docs[0];
+    }
+
+    /**
+     * Gets a guild document or creates a new one if it doesn't exist. This also caches the new document in the cache.
      * @param {string} guildId The guild ID.
-     * @param {boolean} [checkCached] Whether to check cache for the guild document..
+     * @param {boolean} [checkCached] Whether to check cache for the guild document.
      * @return {Promise<IGuildInfo>} The guild document.
      * @throws {Error} If adding a new guild document is not possible.
      */

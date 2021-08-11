@@ -79,7 +79,8 @@ export class OneLifeBot {
             guildColName: this._config.database.collectionNames.guildCollection,
             userColName: this._config.database.collectionNames.userCollection,
             botColName: this._config.database.collectionNames.botCollection,
-            idNameColName: this.config.database.collectionNames.idNameCollection
+            idNameColName: this.config.database.collectionNames.idNameCollection,
+            unclaimedBlName: this.config.database.collectionNames.unclaimedBlCollection
         });
         // make sure the database is connected
         assert(MongoManager.isConnected());

@@ -36,7 +36,7 @@ export interface IBotInfo {
 }
 
 /**
- * An interface that represents a guild document that is stored in the MongoDB database.
+ * An interface that represents a guild document that is stored in MongoDB.
  */
 export interface IGuildInfo extends IBaseDocument {
     /**
@@ -453,6 +453,13 @@ export interface IGuildInfo extends IBaseDocument {
      */
     manualVerificationEntries: IManualVerificationEntry[];
 }
+
+/**
+ * An interface that represents punishment history, specifically, blacklists. We use this in the case that there is
+ * a person that we're trying to blacklist that hasn't verified with the bot. When said person verifies with the
+ * bot, we can remove the entry from this document and put the entry into the person's punishment history.
+ */
+export interface IUnclaimedBlacklistInfo extends IPunishmentHistoryEntry, IBaseDocument {}
 
 /**
  * An interface that represents a linked Discord ID to a series of linked IGNs. Any person that verifies through the

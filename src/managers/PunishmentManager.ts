@@ -495,9 +495,16 @@ export namespace PunishmentManager {
 
                 // For logging purposes
                 if (nameRes.length > 1)
-                    console.log(`${member.name} has multiple documents in IDName Collection.`);
+                    console.log(`[name] ${member.name} has multiple documents in IDName Collection.`);
             }
             else {
+                const idRes = await MongoManager.findIdInIdNameCollection(member.id);
+                if (idRes.length === 0)
+                    return false;
+
+                if (idRes.length > 1)
+                    console.log(`[id] ${member.id} has multiple documents in IDName Collection.`);
+
                 filterQuery.$or?.push({
                     discordId: member.id
                 });
@@ -514,7 +521,15 @@ export namespace PunishmentManager {
                 }
             });
 
-            return queryResult.modifiedCount > 0;
+            if (queryResult.modifiedCount > 0)
+                return true;
+
+            // If no modifications were made, then we assume that this person has never verified w/ bot.
+            if (punishmentType !== "Blacklist")
+                return false;
+
+            const addRes = await MongoManager.getUnclaimedBlacklistCollection().insertOne(entry);
+            return addRes.insertedCount > 0;
         }
         else {
             delete entry.expiresAt;
@@ -527,7 +542,20 @@ export namespace PunishmentManager {
                 }
             });
 
-            return queryResult.modifiedCount > 0;
+            if (queryResult.modifiedCount > 0)
+                return true;
+
+            if (punishmentType !== "Unblacklist")
+                return false;
+
+            const res = await MongoManager.getUnclaimedBlacklistCollection().updateOne({
+                actionId: details.actionIdToResolve
+            }, {
+                $set: {
+                    resolved: entry
+                }
+            });
+            return res.modifiedCount > 0;
         }
     }
 

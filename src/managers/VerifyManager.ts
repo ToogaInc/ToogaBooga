@@ -1,4 +1,5 @@
 import {
+    EmbedFieldData,
     GuildMember,
     Interaction,
     Message,
@@ -574,6 +575,7 @@ export namespace VerifyManager {
                                 .setDescription(
                                     `The name, **\`${nameEntry}\`**, is blacklisted from this server.`
                                 )
+                                // TODO omit discord ID field if not exist
                                 .addField(
                                     "Associated Discord ID",
                                     `${blacklistEntry.discordId} (Your ID: ${member.id})`
@@ -608,20 +610,26 @@ export namespace VerifyManager {
 
             // Check everything else
             const checkRes = await checkRequirements(member, MongoManager.getMainSection(guildDoc), requestData);
+            const fields: EmbedFieldData[] = [];
+            for (const failedReq of checkRes.fatalIssues)
+                fields.push({name: "[Fatal] " + failedReq.key, value: failedReq.value});
+
+            for (const taReq of checkRes.taIssues)
+                fields.push({name: "[Non-Fatal] " + taReq.key, value: taReq.value});
+
+            for (const manualVerifyReq of checkRes.manualIssues)
+                fields.push({name: "[Manual] " + manualVerifyReq.key, value: manualVerifyReq.value});
+
+            const logStr = fields.map(x => `- **[${x.name}]** ${x.value}`).join("\n");
+
             if (checkRes.conclusion === "FAIL") {
                 const failEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
                     .setTitle(`**${member.guild.name}**: Guild Verification Failed`)
                     .setDescription(
                         "You have failed to meet one or more requirements. These requirements are listed below."
                     )
+                    .addFields(fields)
                     .setTimestamp();
-
-                for (const failedReq of checkRes.fatalIssues) {
-                    failEmbed.addField(
-                        "[Fatal] " + failedReq.key,
-                        failedReq.value
-                    );
-                }
 
                 failEmbed.addField(
                     "What Now?",
@@ -643,6 +651,18 @@ export namespace VerifyManager {
                 collector.stop();
                 return;
             }
+
+            if (checkRes.conclusion === "MANUAL") {
+                collector.stop();
+                return;
+            }
+
+            if (checkRes.conclusion === "TRY_AGAIN") {
+                return;
+            }
+
+            collector.stop();
+
         });
     }
 
