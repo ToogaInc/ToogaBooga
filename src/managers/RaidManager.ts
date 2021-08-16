@@ -643,10 +643,10 @@ export class RaidManager {
                     : `The AFK check has ended automatically. The raid is currently ongoing.`
             );
 
-        if (this._raidSection.otherMajorConfig.afkCheckProperties.additionalAfkCheckInfo){
+        if (this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo) {
             afkEndedEnded.addField(
-                "Section Raid Info",
-                this._raidSection.otherMajorConfig.afkCheckProperties.additionalAfkCheckInfo
+                "Post-AFK Info",
+                this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo
             );
         }
 
@@ -1350,10 +1350,10 @@ export class RaidManager {
             afkCheckEmbed.addField("", field);
         }
 
-        if (this._raidSection.otherMajorConfig.afkCheckProperties.additionalAfkCheckInfo) {
+        if (this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.additionalAfkCheckInfo) {
             afkCheckEmbed.addField(
                 "Section Raid Info",
-                this._raidSection.otherMajorConfig.afkCheckProperties.additionalAfkCheckInfo
+                this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.additionalAfkCheckInfo
             );
         }
 
@@ -1698,8 +1698,12 @@ export class RaidManager {
                 .append(`The raid location is: **${this._location}**.`)
                 .appendLine(2);
 
-            if (reactInfo.type !== "EARLY_LOCATION")
-                confirmationContent.append(this._raidSection.otherMajorConfig.afkCheckProperties.earlyLocConfirmMsg);
+            if (reactInfo.type !== "EARLY_LOCATION"
+                && this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.earlyLocConfirmMsg) {
+                confirmationContent.append(
+                    this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.earlyLocConfirmMsg
+                );
+            }
 
             confirmationContent.appendLine(2)
                 .append("**Make sure** the bot can send you direct messages. If the raid leader changes the ")

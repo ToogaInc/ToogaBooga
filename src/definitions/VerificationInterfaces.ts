@@ -52,6 +52,48 @@ export interface IVerificationProperties {
      * @type {boolean}
      */
     checkRequirements: boolean;
+
+    /**
+     * Whether to allow members to attach screenshots when getting manual verified.
+     *
+     * @type {object}
+     */
+    evidenceWithManualVerif: {
+        /**
+         * The message to display to users when they want to attach evidence when getting manually verified.
+         *
+         * @type {string}
+         */
+        messageToShow: string;
+
+        /**
+         * Whether to allow people to attach evidence with manual verification.
+         *
+         * @type {boolean}
+         */
+        allowEvidenceWithManualVerif: boolean;
+    };
+
+    /**
+     * Whether to allow members to manually verify when the API is down.
+     *
+     * @type {object}
+     */
+    manualVerifyWhenOffline: {
+        /**
+         * The message to display to users when they want to attach evidence when getting manually verified.
+         *
+         * @type {string}
+         */
+        messageToShow: string;
+
+        /**
+         * Whether to allow people to automatically manual verify when the API is down.
+         *
+         * @type {boolean}
+         */
+        allowManualVerifyWhenOffline: boolean;
+    };
 }
 
 /**

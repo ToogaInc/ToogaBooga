@@ -194,14 +194,40 @@ export interface IAfkCheckProperties {
     nitroEarlyLocationLimit: number;
 
     /**
-     * Any information to display on all AFK checks. This is different from the custom message raid leaders can
-     * specify when creating an AFK check.
+     * All custom messages to display to members, in various aspects.
      *
-     * For example, you might link the rules channel.
-     *
-     * @type {string}
+     * @type {object}
      */
-    additionalAfkCheckInfo: string;
+    customMsg: {
+        /**
+         * Any information to display on all AFK checks. This is different from the custom message raid leaders can
+         * specify when creating an AFK check. This is displayed during pre-AFK check and current AFK check.
+         *
+         * For example, you might link the rules channel or tell people to look at a channel regarding reactions.
+         *
+         * @type {string}
+         */
+        additionalAfkCheckInfo: string;
+
+        /**
+         * Any information to display on all raid embeds/post-raid embeds. This is displayed during post-AFK
+         * check/raid mode and even when the raid is over.
+         *
+         * For example, you might tell raiders to lead.
+         *
+         * @type {string}
+         */
+        postAfkCheckInfo: string;
+
+        /**
+         * The message that will be displayed to the raider when he or she confirms that he or she is bringing an
+         * essential reaction that gives early location. Generally speaking, this should contain information on things
+         * like confirming reactions or some other information.
+         *
+         * @type {string}
+         */
+        earlyLocConfirmMsg: string;
+    };
 
     /**
      * The AFK check timeout, in minutes. You must specify a timeout. The maximum timeout is 2 hours.
@@ -223,15 +249,6 @@ export interface IAfkCheckProperties {
      * @type {IPropertyKeyValuePair<string, IPermAllowDeny>[]}
      */
     prePostAfkCheckPermissions: IPropertyKeyValuePair<string, IPermAllowDeny>[];
-
-    /**
-     * The message that will be displayed to the raider when he or she confirms that he or she is bringing an
-     * essential reaction that gives early location. Generally speaking, this should contain information on things
-     * like confirming reactions or some other information.
-     *
-     * @type {string}
-     */
-    earlyLocConfirmMsg: string;
 
     /**
      * The dungeons that can be raided in this section. Use the dungeon's code name (not name).

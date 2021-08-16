@@ -472,6 +472,14 @@ export namespace MongoManager {
                             checkThis: false,
                             minimum: []
                         }
+                    },
+                    evidenceWithManualVerif: {
+                        allowEvidenceWithManualVerif: false,
+                        messageToShow: ""
+                    },
+                    manualVerifyWhenOffline: {
+                        allowManualVerifyWhenOffline: false,
+                        messageToShow: ""
                     }
                 },
                 afkCheckProperties: {
@@ -480,14 +488,17 @@ export namespace MongoManager {
                         value: 60
                     },
                     nitroEarlyLocationLimit: 5,
-                    additionalAfkCheckInfo: "",
+                    customMsg: {
+                        additionalAfkCheckInfo: "",
+                        earlyLocConfirmMsg: "You must bring the class/gear choice that you indicated you would bring."
+                            + " Failure to do so may result in consequences. Additionally, do not share this location"
+                            + " with anyone else.",
+                        postAfkCheckInfo: ""
+                    },
                     afkCheckTimeout: 30 * 60 * 1000,
                     afkCheckPermissions: generalAfkCheckPerms,
                     prePostAfkCheckPermissions: prePostAfkCheckPerms,
-                    allowedDungeons: DUNGEON_DATA.map(x => x.codeName),
-                    earlyLocConfirmMsg: "You must bring the class/gear choice that you indicated you would bring."
-                        + " Failure to do so may result in consequences. Additionally, do not share this location"
-                        + " with anyone else."
+                    allowedDungeons: DUNGEON_DATA.map(x => x.codeName)
                 }
             },
             properties: {

@@ -30,14 +30,32 @@ import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {Emojis} from "../constants/Emojis";
 
 export namespace VerifyManager {
+    const CANCEL_ID: string = "cancel";
+    const CHECK_PROFILE_ID: string = "check_profile";
+    const NO_MANUAL_VERIFY_ID: string = "deny";
+    const MANUAL_VERIFY_ID: string = "manual_verify";
+    const MANUAL_EVIDENCE_ID: string = "manual_evidence";
+
     const CHECK_PROFILE_BUTTON = new MessageButton()
         .setLabel("Check Profile")
-        .setCustomId("check_profile")
+        .setCustomId(CHECK_PROFILE_ID)
         .setStyle("PRIMARY");
     const CANCEL_PROFILE_CHECK_BUTTON = new MessageButton()
         .setLabel("Cancel")
-        .setCustomId("cancel")
+        .setCustomId(CANCEL_ID)
         .setStyle("DANGER");
+    const NO_MANUAL_VERIFY_BUTTON = new MessageButton()
+        .setLabel("Deny Manual Verify")
+        .setCustomId(NO_MANUAL_VERIFY_ID)
+        .setStyle("DANGER");
+    const MANUAL_VERIFY_BUTTON = new MessageButton()
+        .setLabel("Accept")
+        .setCustomId(MANUAL_VERIFY_ID)
+        .setStyle("PRIMARY");
+    const MANUAL_EVIDENCE_BUTTON = new MessageButton()
+        .setLabel("Accept With Evidence")
+        .setCustomId(MANUAL_EVIDENCE_ID)
+        .setStyle("PRIMARY");
 
     const GUILD_ROLES: string[] = [
         "Founder",
@@ -561,7 +579,6 @@ export namespace VerifyManager {
             }
 
             // Check blacklist info
-            // TODO might be worth checking discord ID vs. blacklisted names
             for (const blacklistEntry of guildDoc.moderation.blacklistedUsers) {
                 for (const nameEntry of [requestData.name, ...nameHistory.nameHistory.map(x => x.name)]) {
                     if (blacklistEntry.realmName.lowercaseIgn !== nameEntry.toLowerCase())
@@ -610,19 +627,13 @@ export namespace VerifyManager {
 
             // Check everything else
             const checkRes = await checkRequirements(member, MongoManager.getMainSection(guildDoc), requestData);
-            const fields: EmbedFieldData[] = [];
-            for (const failedReq of checkRes.fatalIssues)
-                fields.push({name: "[Fatal] " + failedReq.key, value: failedReq.value});
-
-            for (const taReq of checkRes.taIssues)
-                fields.push({name: "[Non-Fatal] " + taReq.key, value: taReq.value});
-
-            for (const manualVerifyReq of checkRes.manualIssues)
-                fields.push({name: "[Manual] " + manualVerifyReq.key, value: manualVerifyReq.value});
-
-            const logStr = fields.map(x => `- **[${x.name}]** ${x.value}`).join("\n");
 
             if (checkRes.conclusion === "FAIL") {
+                const fields: EmbedFieldData[] = checkRes.fatalIssues.map(x => {
+                    return {name: x.key, value: x.value};
+                });
+                const logStr = checkRes.fatalIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n");
+
                 const failEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
                     .setTitle(`**${member.guild.name}**: Guild Verification Failed`)
                     .setDescription(
@@ -642,28 +653,190 @@ export namespace VerifyManager {
                     embeds: [failEmbed],
                     components: []
                 });
+                await member.send({
+                    content: "A major requirement was not met. Please review the above embed."
+                }).catch();
 
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but there were several `
-                        + "fatal issues with the person's profile."
+                        + "fatal issues with the person's profile. These issues are listed below:\n"
+                        + logStr
                 });
 
                 collector.stop();
                 return;
             }
 
-            if (checkRes.conclusion === "MANUAL") {
-                collector.stop();
+            if (checkRes.conclusion === "TRY_AGAIN") {
+                await verifKit.msg.edit({
+                    embeds: [
+                        getVerifEmbed(member, nameToVerify!, code, guildDoc.otherMajorConfig.verificationProperties)
+                            .setFooter("Verification Process Expires")
+                            .setTimestamp(timeStarted + 20 * 60 * 1000)
+                            .addField(
+                                `${Emojis.WARNING_EMOJI} Verification Issues`,
+                                "Something went wrong when fully reviewing your profile. Please resolve these issues"
+                                + " and try again.\n"
+                                + checkRes.taIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n")
+                            )
+                    ],
+                    components: AdvancedCollector.getActionRowsFromComponents([
+                        CHECK_PROFILE_BUTTON,
+                        CANCEL_PROFILE_CHECK_BUTTON
+                    ])
+                });
+                await member.send({
+                    content: "An error occurred while reviewing your profile. Please see the above embed."
+                }).catch();
+
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but there were several `
+                        + "minor issues with the person's profile. These issues are listed below:\n"
+                        + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                });
+
                 return;
             }
 
-            if (checkRes.conclusion === "TRY_AGAIN") {
+            if (checkRes.conclusion === "MANUAL") {
+                handleManualVerificationCase(member, checkRes, verifKit, MongoManager.getMainSection(guildDoc))
+                    .then();
+                collector.stop();
                 return;
             }
 
             collector.stop();
 
         });
+    }
+
+    /**
+     * Handles the case where we need to deal with manual verification.
+     * @param {GuildMember} member The member to manually verify.
+     * @param {VerifyManager.IReqCheckResult} checkRes The original check results.
+     * @param {VerifyManager.IVerificationKit} verifKit The verification kit.
+     * @param {ISectionInfo} section The section.
+     * @private
+     */
+    async function handleManualVerificationCase(member: GuildMember, checkRes: IReqCheckResult,
+                                            verifKit: IVerificationKit, section: ISectionInfo): Promise<void> {
+        const failedStr = checkRes.manualIssues.map(x => `- **[${x.key}]** ${x.value}`).join("\n");
+        const logStr = checkRes.manualIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n");
+        const buttonsToUse: MessageButton[] = [NO_MANUAL_VERIFY_BUTTON, MANUAL_VERIFY_BUTTON];
+
+        verifKit.verifyStep?.send({
+            content: `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but there were several `
+                + "minor issues with the person's profile. The user is currently being asked if he or she wants"
+                + " to get manually verified. The outstanding issues are listed below:\n"
+                + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+        });
+
+        const failEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
+            .setTitle(
+                section.isMainSection
+                    ? `**${member.guild.name}**: Guild Verification Failed`
+                    : `${member.guild.name} ⇨ **${section.sectionName}**: Section Verification Failed`
+            )
+            .setDescription(
+                new StringBuilder()
+                    .append("You have failed to meet one or more requirements. These requirements are listed ")
+                    .append("below:")
+                    .appendLine()
+                    .append(failedStr)
+                    .appendLine(2)
+                    .append("*However*, you have the opportunity to get manually verified by a staff member. ")
+                    .append("Please review the following options.")
+                    .toString()
+            )
+            .addField(
+                "No Manual Verification",
+                "To prevent your profile from getting manually verified, click the **Deny Manual Verify**"
+                + " button. If chosen, your profile will **not** be reviewed by staff, and you can verify again in"
+                + " your free time."
+            )
+            .addField(
+                "Allow Manual Verification",
+                "If you want your profile to be manually verified, click the **Accept** button. If chosen,"
+                + " your profile will be reviewed by staff. During manual verification, one or more server"
+                + " staff member(s) will review your RealmEye profile. The staff member(s) will have the"
+                + " final say in whether you get verified. Once the staff member(s) decide, you will be notified."
+                + " **Keep in mind** that you will not be able to verify in this server or section until your"
+                + " manual verification results come back, and you will **not** be able to stop this process."
+            )
+            .setFooter("Respond By:")
+            .setTimestamp(Date.now() + 2 * 60 * 1000);
+
+        if (section.otherMajorConfig.verificationProperties.evidenceWithManualVerif.allowEvidenceWithManualVerif) {
+            failEmbed.addField(
+                "Allow Manual Verification and Attach Evidence",
+                "If you want to attach evidence before getting your profile manually verified, click the"
+                + " **Accept with Evidence** button. You will have the opportunity to attach any evidence"
+                + " that shows that you do, indeed, meet verification requirements."
+            );
+            buttonsToUse.push(MANUAL_EVIDENCE_BUTTON);
+        }
+
+        const [,, dmChannel] = await Promise.all([
+            verifKit.msg.edit({
+                embeds: [failEmbed],
+                components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
+            }),
+            member.send({
+                content: "You do not meet the requirements to verify in this server or section. Please review the above."
+            }).catch(),
+            await member.createDM()
+        ]);
+
+        const selected = await AdvancedCollector.startInteractionCollector({
+            oldMsg: verifKit.msg,
+            acknowledgeImmediately: true,
+            duration: 2 * 60 * 1000,
+            clearInteractionsAfterComplete: true,
+            deleteBaseMsgAfterComplete: false,
+            targetAuthor: member,
+            targetChannel: dmChannel
+        });
+
+        const acknowledgementEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
+            .setTitle(
+                section.isMainSection
+                    ? `**${member.guild.name}**: Guild Verification Failed`
+                    : `${member.guild.name} ⇨ **${section.sectionName}**: Section Verification Failed`
+            )
+            .setTimestamp();
+
+        if (!selected || selected.customId === NO_MANUAL_VERIFY_ID) {
+            verifKit.verifyFail?.send({
+                content: `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but did not want to get `
+                    + "manually verified."
+            });
+
+            await verifKit.msg.edit({
+                embeds: [acknowledgementEmbed.setDescription("You have chosen not to get manually verified. If you"
+                    + " want to try to verify again, please start the verification process again.")],
+                components: []
+            });
+
+            return;
+        }
+
+        if (selected.customId === MANUAL_VERIFY_ID) {
+            verifKit.verifyFail?.send({
+                content: `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but did not meet the `
+                    + "requirements. He or she has opted for manual verification."
+            });
+
+            await verifKit.msg.edit({
+                embeds: [acknowledgementEmbed.setDescription("You have chosen to get manually verified. A staff"
+                    + " member will look through your profile shortly. Please do **not** make your profile private.")],
+                components: []
+            });
+
+            return;
+        }
+
+        InteractionManager.InteractiveMenu.set(member.id, "VERIF_EVIDENCE");
+
     }
 
     /**
@@ -791,11 +964,8 @@ export namespace VerifyManager {
         // TODO
     }
 
-    async function handleManualVerification(member: GuildMember): Promise<void> {
-
-    }
-
     interface IReqCheckResult {
+        name: string;
         conclusion: "PASS" | "TRY_AGAIN" | "MANUAL" | "FAIL";
         manualIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
         fatalIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
@@ -814,6 +984,7 @@ export namespace VerifyManager {
                                      resp: PAD.IPlayerData): Promise<IReqCheckResult> {
         const verifReq = section.otherMajorConfig.verificationProperties.verifReq;
         const result: IReqCheckResult = {
+            name: resp.name,
             conclusion: "PASS",
             manualIssues: [],
             fatalIssues: [],
