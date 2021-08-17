@@ -153,14 +153,11 @@ export interface IConfiguration {
         devMailChannel: string;
 
         /**
-         * The custom emoji/image validation channel. This is where any custom emojis and images will be validated
-         * by the developer(s). This does not need to be specified if `validateEmojisImage` is `false`.
-         *
-         * This is not displayed if the person reacts with Nitro.
+         * The storage channel. If the server didn't define a storage channel, it will default to this.
          *
          * @type {string}
          */
-        customEmojiImgValidatorChannel: string;
+        mainStorageChannel: string;
     };
 
     /**

@@ -71,7 +71,14 @@ export interface IBasePunishment {
     reason: string;
 
     /**
-     * The action ID for this punishment.
+     * Any evidence for this punishment.
+     *
+     * @type {string[]}
+     */
+    evidence: string[];
+
+    /**
+     * An ID consisting of 30 letters used to identify this moderation action.
      *
      * @type {string}
      */

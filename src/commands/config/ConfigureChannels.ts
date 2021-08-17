@@ -121,28 +121,13 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             description: "This is the channel where new modmail messages will be forwarded to. __Additionally__, in"
                 + " the case a modmail *thread* text channel needs to be created, the channel will be created in the"
                 + " same __category__ as the modmail channel's category.",
-            guildDocPath: "channels.modmail.modmailChannelId",
+            guildDocPath: "channels.modmailChannelId",
             sectionPath: "",
             channelType: ChannelCategoryType.Modmail,
             configTypeOrInstructions: ConfigType.Channel,
             getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
                 if (!section.isMainSection) throw new Error("modmail is a main-only feature.");
-                return guildDoc.channels.modmail.modmailChannelId;
-            }
-        },
-        {
-            name: "Modmail Storage Channel",
-            description: "This is the channel where any files from modmail messages or threads will be stored to."
-                + " These files can include modmail threads conversations, modmail responses, images, and more. If"
-                + " no channel is set, then the bot will store the files in a private channel in the development"
-                + " server (you are able to configure this in the `configmisc` command).",
-            guildDocPath: "channels.modmail.modmailStorageChannelId",
-            sectionPath: "",
-            channelType: ChannelCategoryType.Modmail,
-            configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
-                if (!section.isMainSection) throw new Error("modmail is a main-only feature.");
-                return guildDoc.channels.modmail.modmailStorageChannelId;
+                return guildDoc.channels.modmailChannelId;
             }
         },
         {
@@ -618,11 +603,11 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                     break;
                 }
                 case "reset": {
-                    guildDoc = await MongoManager.updateAndFetchGuildDoc(query, {
+                    guildDoc = (await MongoManager.updateAndFetchGuildDoc(query, {
                         $set: {
                             [keySetter]: ""
                         }
-                    });
+                    }))!;
                     section = MongoManager.getAllSections(guildDoc)
                         .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                     break;
@@ -666,13 +651,10 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
 
         if (section.isMainSection) {
             if (displayFilter & DisplayFilter.Modmail) {
-                const modmailChannels = guildDoc.channels.modmail;
-                const mmChannel = getCachedChannel<TextChannel>(guild, modmailChannels.modmailChannelId);
-                const mmStorageChannel = getCachedChannel<TextChannel>(guild, modmailChannels.modmailStorageChannelId);
+                const mmChannel = getCachedChannel<TextChannel>(guild, guildDoc.channels.modmailChannelId);
 
                 currentConfiguration.append("__**Modmail Channels**__").appendLine()
                     .append(`⇒ Modmail Channel: ${mmChannel ?? ConfigureChannelsCommand.NA}`).appendLine()
-                    .append(`⇒ Modmail Storage Channel: ${mmStorageChannel ?? ConfigureChannelsCommand.NA}`).appendLine()
                     .appendLine();
             }
 

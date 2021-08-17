@@ -16,7 +16,7 @@ import {
     ISuspendedUser
 } from "./PunishmentInterfaces";
 import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
-import {MainLogType, MainOnlyModLogType, SectionLogType, SectionModLogType} from "./Types";
+import {MainLogType, MainOnlyModLogType, QuotaLogType, SectionLogType, SectionModLogType} from "./Types";
 
 export interface IBaseDocument<T = ObjectID> {
     _id: T;
@@ -193,25 +193,11 @@ export interface IGuildInfo extends IBaseDocument {
         raids: IRaidChannels;
 
         /**
-         * The modmail channels.
+         * The modmail channel ID.
          *
          * @type {object}
          */
-        modmail: {
-            /**
-             * The modmail channel.
-             *
-             * @type {string}
-             */
-            modmailChannelId: string;
-
-            /**
-             * The modmail storage channel.
-             *
-             * @type {string}
-             */
-            modmailStorageChannelId: string;
-        };
+        modmailChannelId: string;
 
         /**
          * Any applicable logging channels. The key is the logging type (for example, suspensions, blacklists, mutes,
@@ -227,6 +213,13 @@ export interface IGuildInfo extends IBaseDocument {
          * @type {string}
          */
         botUpdatesChannelId: string;
+
+        /**
+         * The storage channel. All files will be sent here.
+         *
+         * @type {string}
+         */
+        storageChannelId: string;
     };
 
     /**
@@ -277,8 +270,6 @@ export interface IGuildInfo extends IBaseDocument {
      * @type {object}
      */
     properties: {
-        // TODO add quotas
-
         /**
          * Any blocked commands. Use the command code/identifier.
          *
@@ -426,6 +417,124 @@ export interface IGuildInfo extends IBaseDocument {
     };
 
     /**
+     * An object that represents quota configuration and current quotas.
+     *
+     * @type {object}
+     */
+    quotas: {
+        /**
+         * Quota configuration information + logged info.
+         *
+         * @type {object}
+         */
+        quotaInfo: {
+            /**
+             * The role ID for this quota.
+             *
+             * @type {string}
+             */
+            roleId: string;
+
+            /**
+             * When this quota was last reset.
+             *
+             * @type {number}
+             */
+            lastReset: number;
+
+            /**
+             * A log of all quotas for this period. This array will be reset upon the reset of quotas.
+             *
+             * @type {object[]}
+             */
+            quotaLog: {
+                /**
+                 * The user responsible for this.
+                 *
+                 * @type {string}
+                 */
+                userId: string;
+
+                /**
+                 * The log type.
+                 *
+                 * @type {string}
+                 */
+                logType: QuotaLogType;
+
+                /**
+                 * The amount being logged.
+                 *
+                 * @type {number}
+                 */
+                amount: number;
+
+                /**
+                 * The time that this was issued.
+                 *
+                 * @type {number}
+                 */
+                timeIssued: number;
+            }[];
+
+            /**
+             * The channel where this should be logged to.
+             *
+             * @type {string}
+             */
+            channel: string;
+
+            /**
+             * The message ID corresponding to this quota's leaderboard.
+             *
+             * @type {string}
+             */
+            messageId: string;
+
+            /**
+             * The number of points needed to complete this quota.
+             *
+             * @type {number}
+             */
+            pointsNeeded: number;
+
+            /**
+             * The points system. Each quota entry can be associated to a certain number of points (for example,
+             * you can set `RunComplete` to 1 point). This is used in the calculation of `currentQuotas`. This
+             * is only specific to this section.
+             *
+             * @type {IPropertyKeyValuePair<QuotaLogType, number>[]}
+             */
+            pointValue: IPropertyKeyValuePair<QuotaLogType, number>[];
+        }[];
+
+        /**
+         * The time when quotas should be reset. Times are based on
+         * [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time), or the Coordinated Universal Time zone.
+         *
+         * @type {object}
+         */
+        resetTime: {
+            /**
+             * The day of week to reset quotas. Uses `Date#getDay`; documentation for this can be be found
+             * [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getDay).
+             *
+             * @type {number}
+             */
+            dayOfWeek: number;
+
+            /**
+             * The time to reset quotas. This will be represented in military time, by
+             * `Date#getHours * 100 + Date#getMinutes`.
+             * For example, to represent `1:15 PM UTC`, use `1315`.
+             *
+             * @type {number}
+             */
+            time: number;
+        };
+    };
+
+    /**
      * All other sections within the guild. For example, you can create a Veteran section, Events section, and more.
      *
      * @type {ISectionInfo[]}
@@ -459,7 +568,8 @@ export interface IGuildInfo extends IBaseDocument {
  * a person that we're trying to blacklist that hasn't verified with the bot. When said person verifies with the
  * bot, we can remove the entry from this document and put the entry into the person's punishment history.
  */
-export interface IUnclaimedBlacklistInfo extends IPunishmentHistoryEntry, IBaseDocument {}
+export interface IUnclaimedBlacklistInfo extends IPunishmentHistoryEntry, IBaseDocument {
+}
 
 /**
  * An interface that represents a linked Discord ID to a series of linked IGNs. Any person that verifies through the
@@ -744,13 +854,6 @@ export interface IPunishmentHistoryEntry extends IBasePunishment {
      * @type {number}
      */
     expiresAt?: number;
-
-    /**
-     * An ID consisting of 30 letters used to identify this moderation action.
-     *
-     * @type {string}
-     */
-    actionId: string;
 
     /**
      * Whether the punishment was resolved. If this property doesn't exist, then this implies that the punishment is

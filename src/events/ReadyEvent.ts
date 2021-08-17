@@ -39,7 +39,7 @@ export async function onReadyEvent(): Promise<void> {
     await Promise.all(OneLifeBot.BotInstance.client.guilds.cache.map(async x => {
         if (OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(x.id))
             return null;
-        await MongoManager.getOrCreateGuildDoc(x.id);
+        await MongoManager.getOrCreateGuildDoc(x.id, false);
     }));
 
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();

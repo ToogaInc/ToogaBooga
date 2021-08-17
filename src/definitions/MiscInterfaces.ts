@@ -1,10 +1,5 @@
 import {PermissionResolvable, PermissionString} from "discord.js";
 
-export interface IQuotaLoggingInfo {
-    userId: string;
-    amt: number;
-}
-
 export interface IPermAllowDeny {
     allow: PermissionResolvable[];
     deny: PermissionResolvable[];

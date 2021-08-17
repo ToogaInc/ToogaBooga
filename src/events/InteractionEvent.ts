@@ -25,7 +25,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         GlobalFgrUtilities.fetchUser(interaction.user.id),
         GuildFgrUtilities.fetchGuildMember(guild, interaction.user.id),
         GuildFgrUtilities.fetchMessage(resolvedChannel, interaction.message.id),
-        MongoManager.getOrCreateGuildDoc(guild.id)
+        MongoManager.getOrCreateGuildDoc(guild.id, true)
     ]);
 
     // All must exist.

@@ -2,7 +2,7 @@ import {Collection as MCollection, FilterQuery, MongoClient, ObjectID, UpdateQue
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {UserManager} from "./UserManager";
-import {GuildMember, Collection as DCollection} from "discord.js";
+import {GuildMember, Collection as DCollection, Guild, TextChannel} from "discord.js";
 import {DUNGEON_DATA} from "../constants/DungeonData";
 import {
     IBotInfo,
@@ -13,6 +13,7 @@ import {
     ISectionInfo, IUnclaimedBlacklistInfo,
     IUserInfo
 } from "../definitions";
+import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export namespace MongoManager {
     export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();
@@ -401,11 +402,9 @@ export namespace MongoManager {
             activeRaids: [],
             manualVerificationEntries: [],
             channels: {
+                storageChannelId: "",
                 botUpdatesChannelId: "",
-                modmail: {
-                    modmailChannelId: "",
-                    modmailStorageChannelId: ""
-                },
+                modmailChannelId: "",
                 raids: {
                     afkCheckChannelId: "",
                     controlPanelChannelId: "",
@@ -534,7 +533,15 @@ export namespace MongoManager {
                 suspendedRoleId: "",
                 verifiedRoleId: ""
             },
-            prefix: OneLifeBot.BotInstance.config.misc.defaultPrefix
+            prefix: OneLifeBot.BotInstance.config.misc.defaultPrefix,
+            quotas: {
+                quotaInfo: [],
+                resetTime: {
+                    // Sunday at 12:00 AM
+                    dayOfWeek: 0,
+                    time: 0
+                }
+            }
         };
     }
 
@@ -590,28 +597,29 @@ export namespace MongoManager {
 
     /**
      * Gets a guild document or creates a new one if it doesn't exist. This also caches the new document in the cache.
-     * @param {string} guildId The guild ID.
-     * @param {boolean} [checkCached] Whether to check cache for the guild document.
+     * @param {string} guild The guild ID.
+     * @param {boolean} checkCached Whether to check cache for the guild document.
      * @return {Promise<IGuildInfo>} The guild document.
      * @throws {Error} If adding a new guild document is not possible.
      */
-    export async function getOrCreateGuildDoc(guildId: string, checkCached: boolean = false): Promise<IGuildInfo> {
-        if (checkCached && CachedGuildCollection.has(guildId)) {
-            return CachedGuildCollection.get(guildId)!;
+    export async function getOrCreateGuildDoc(guild: string | Guild, checkCached: boolean): Promise<IGuildInfo> {
+        const id = typeof guild === "string" ? guild : guild.id;
+        if (checkCached && CachedGuildCollection.has(id)) {
+            return CachedGuildCollection.get(id)!;
         }
 
-        const docs = await getGuildCollection().find({guildId: guildId}).toArray();
+        const docs = await getGuildCollection().find({guildId: id}).toArray();
         if (docs.length === 0) {
-            const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(guildId));
+            const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(id));
             if (insertRes.ops.length > 0) {
-                CachedGuildCollection.set(guildId, insertRes.ops[0]);
+                CachedGuildCollection.set(id, insertRes.ops[0]);
                 return insertRes.ops[0];
             }
 
-            throw new Error(`Insert failed: ${guildId}`);
+            throw new Error(`Insert failed: ${id}`);
         }
 
-        CachedGuildCollection.set(guildId, docs[0]);
+        CachedGuildCollection.set(id, docs[0]);
         return docs[0];
     }
 
@@ -620,17 +628,16 @@ export namespace MongoManager {
      * will automatically set `returnDocument` to `true`. Additionally, this updates the cached guild document.
      * @param {FilterQuery<IGuildInfo>} filter The filter query.
      * @param {UpdateQuery<IGuildInfo>} update The update query.
-     * @return {Promise<IGuildInfo>} The new guild document.
+     * @return {Promise<IGuildInfo | null>} The new guild document, if any.
      */
     export async function updateAndFetchGuildDoc(filter: FilterQuery<IGuildInfo>,
-                                                 update: UpdateQuery<IGuildInfo>): Promise<IGuildInfo> {
+                                                 update: UpdateQuery<IGuildInfo>): Promise<IGuildInfo | null> {
         const res = await getGuildCollection().findOneAndUpdate(filter, update, {
            returnDocument: "after"
         });
 
-        if (!res.value) {
-            throw new Error("Something went wrong when trying to update the guild document.");
-        }
+        if (!res.value)
+            return null;
 
         CachedGuildCollection.set(res.value.guildId, res.value);
         return res.value;
@@ -709,5 +716,25 @@ export namespace MongoManager {
         return await getUserCollection().findOne({
             "details.moderationHistory.$.actionId": punishmentId
         });
+    }
+
+    /**
+     * Gets the storage channel.
+     * @param {Guild} [guild] The guild, if any. If none is specified, this defaults to the main storage channel.
+     * @returns {Promise<TextChannel | null>} The storage channel, if any.
+     */
+    export async function getStorageChannel(guild?: Guild): Promise<TextChannel | null> {
+        const db: IGuildInfo | null = guild ? await getOrCreateGuildDoc(guild.id, true) : null;
+        const channels = await Promise.all([
+            GlobalFgrUtilities.fetchChannel<TextChannel>(db?.channels.storageChannelId ?? ""),
+            GlobalFgrUtilities.fetchChannel<TextChannel>(OneLifeBot.BotInstance.config.ids.mainStorageChannel)
+        ]);
+
+        for (const channel of channels) {
+            if (!channel) continue;
+            return channel;
+        }
+
+        return null;
     }
 }

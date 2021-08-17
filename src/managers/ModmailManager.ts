@@ -1,3 +1,4 @@
+// TODO change methods to work with GuildFgrUtilities
 import {
     Collection,
     Guild,
@@ -168,7 +169,7 @@ export namespace ModmailManager {
         // We have a modmail channel because that was one condition of the chooseGuild function
         const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
-            guildDoc.channels.modmail.modmailChannelId
+            guildDoc.channels.modmailChannelId
         )!;
         // Check if the person is blacklisted from using modmail.
         if (guildDoc.moderation.blacklistedModmailUsers.some(x => x.affectedUser.id === author.id)) {
@@ -290,7 +291,7 @@ export namespace ModmailManager {
         // If the modmail channel doesn't exists, then return.
         const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             targetMember.guild,
-            guildDoc.channels.modmail.modmailChannelId
+            guildDoc.channels.modmailChannelId
         );
         if (!modmailChannel) {
             const mmChannelNoExistEmbed = MessageUtilities.generateBlankEmbed(initiatedBy, "RED")
@@ -459,7 +460,7 @@ export namespace ModmailManager {
         const oldEmbed = originalMmMsg.embeds[0];
         const authorOfModmailId = oldEmbed.footer!.text!.split("•")[0].trim();
         const guild = originalMmMsg.guild as Guild;
-        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id);
+        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
 
         // Is the person still in the guild?
         const authorOfModmail = await GuildFgrUtilities.fetchGuildMember(guild, authorOfModmailId);
@@ -518,7 +519,7 @@ export namespace ModmailManager {
         // Now we can begin.
         const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
-            guildDoc.channels.modmail.modmailChannelId
+            guildDoc.channels.modmailChannelId
         );
         if (!modmailChannel) return;
         const modmailCategory = modmailChannel.parent;
@@ -865,13 +866,13 @@ export namespace ModmailManager {
 
                 // If one exists (and this should always be the case), then update it to include thread info
                 if (lastRespLastIdx !== -1) {
-                    const modmailStorage = GuildFgrUtilities.getCachedChannel<TextChannel>(
+                    const storageChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
                         closedBy.guild,
-                        guildDoc.channels.modmail.modmailStorageChannelId
+                        guildDoc.channels.storageChannelId
                     );
 
                     let additionalRespInfo = "";
-                    if (modmailStorage) {
+                    if (storageChannel) {
                         const msgHistory = new StringBuilder()
                             .append("======== Modmail Thread Summary ========")
                             .appendLine()
@@ -901,7 +902,7 @@ export namespace ModmailManager {
                         }
 
                         const storageMsg = await GlobalFgrUtilities.sendMsg(
-                            modmailStorage,
+                            storageChannel,
                             {
                                 files: [
                                     new MessageAttachment(Buffer.from(msgHistory.toString(), "utf8"),
@@ -1101,12 +1102,9 @@ export namespace ModmailManager {
             .appendLine()
             .append(`Sent Status: ${sentMsg ? "Message Sent Successfully" : "Message Failed To Send"}`);
 
-        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id);
+        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
         // see if we should store this string.
-        const modMailStorage = GuildFgrUtilities.getCachedChannel<TextChannel>(
-            responder.guild,
-            guildDoc.channels.modmail.modmailStorageChannelId
-        );
+        const modMailStorage = await MongoManager.getStorageChannel(guild);
         let addLogStr = "";
         if (modMailStorage) {
             const logMsg = await GlobalFgrUtilities.sendMsg(
@@ -1172,7 +1170,7 @@ export namespace ModmailManager {
             // Guild must have the modmail channel.
             if (guild.members.cache.has(user.id)
                 && guild.roles.cache.has(allGuilds[idx].roles.verifiedRoleId as Snowflake)
-                && guild.channels.cache.has(allGuilds[idx].channels.modmail.modmailChannelId as Snowflake))
+                && guild.channels.cache.has(allGuilds[idx].channels.modmailChannelId as Snowflake))
                 guildsToChoose.push([guild, allGuilds[idx]]);
         }
 

@@ -1,3 +1,10 @@
+export type QuotaLogType = "RunComplete"
+    | "RunFailed"
+    | "RunAssist"
+    | "Parse"
+    | "ManualVerify"
+    | "PunishmentIssued";
+
 /**
  * The different role permissions.
  */

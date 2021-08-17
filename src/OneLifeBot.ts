@@ -3,17 +3,13 @@ import {
     Client,
     Collection, Guild,
     Interaction,
-    Message,
-    MessageReaction,
-    PartialMessageReaction,
-    PartialUser,
-    User
+    Message
 } from "discord.js";
 import {MongoManager} from "./managers/MongoManager";
 import * as assert from "assert";
 import axios, {AxiosInstance} from "axios";
 import {BaseCommand} from "./commands";
-import {onGuildCreateEvent, onInteractionEvent, onMessageEvent, onMessageReactionAdd, onReadyEvent} from "./events";
+import {onGuildCreateEvent, onInteractionEvent, onMessageEvent, onReadyEvent} from "./events";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -58,8 +54,6 @@ export class OneLifeBot {
     public startAllEvents(): void {
         this._bot.on("ready", async () => onReadyEvent());
         this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
-        this._bot.on("messageReactionAdd",
-            async (r: MessageReaction | PartialMessageReaction, u: User | PartialUser) => onMessageReactionAdd(r, u));
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
         this._bot.on("guildCreate", async (g: Guild) => onGuildCreateEvent(g));
         this._eventsIsStarted = true;

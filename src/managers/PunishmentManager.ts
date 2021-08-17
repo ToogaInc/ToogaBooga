@@ -104,6 +104,13 @@ interface IPunishmentDetails {
      * @type {string}
      */
     actionIdToUse?: string;
+
+    /**
+     * The evidence for this punishment.
+     *
+     * @type {string[]}
+     */
+    evidence: string[];
 }
 
 interface IAdditionalPunishmentParams {
@@ -155,6 +162,13 @@ interface IAdditionalPunishmentParams {
      * @type {boolean}
      */
     sendLogMsg?: boolean;
+
+    /**
+     * The evidence.
+     *
+     * @type {string}
+     */
+    evidence: string[];
 }
 
 const AUTOMATIC: string = "Automatic";
@@ -246,7 +260,8 @@ export namespace PunishmentManager {
             expiresAt: details.expiresAt ?? -1,
             duration: details.duration ?? -1,
             reason: details.reason,
-            actionId: actionId
+            actionId: actionId,
+            evidence: details.evidence
         };
 
         const modStr = new StringBuilder()
@@ -726,7 +741,8 @@ export namespace SuspensionManager {
                             guildDoc: guildDoc,
                             section: section,
                             reason: "The user has served the duration of the section suspension.",
-                            actionId: details.actionId
+                            actionId: details.actionId,
+                            evidence: []
                         }
                     ).then();
                 }
@@ -762,7 +778,8 @@ export namespace SuspensionManager {
                     {
                         guildDoc: guildDoc,
                         reason: "The user has served the entirety of his or her time.",
-                        actionId: details.actionId
+                        actionId: details.actionId,
+                        evidence: []
                     }
                 ).then();
             }
@@ -806,7 +823,8 @@ export namespace SuspensionManager {
                 name: mod?.displayName ?? ""
             },
             reason: info.reason,
-            actionId: StringUtil.generateRandomString(40)
+            actionId: StringUtil.generateRandomString(40),
+            evidence: info.evidence
         };
 
         await MongoManager.updateAndFetchGuildDoc({
@@ -841,7 +859,8 @@ export namespace SuspensionManager {
             guild: member.guild,
             sendNoticeToAffectedUser: info.notifyUser ?? true,
             sendLogInfo: info.sendLogMsg ?? true,
-            actionIdToUse: suspendedUserObj.actionId
+            actionIdToUse: suspendedUserObj.actionId,
+            evidence: info.evidence
         });
     }
 
@@ -891,7 +910,8 @@ export namespace SuspensionManager {
             guild: member.guild,
             sendNoticeToAffectedUser: info.notifyUser ?? true,
             sendLogInfo: info.sendLogMsg ?? true,
-            actionIdToResolve: memberLookup.actionId
+            actionIdToResolve: memberLookup.actionId,
+            evidence: info.evidence
         });
     }
 
@@ -928,7 +948,8 @@ export namespace SuspensionManager {
                 name: mod?.displayName ?? ""
             },
             reason: info.reason,
-            actionId: StringUtil.generateRandomString(40)
+            actionId: StringUtil.generateRandomString(40),
+            evidence: info.evidence
         };
 
         await MongoManager.updateAndFetchGuildDoc({
@@ -961,7 +982,8 @@ export namespace SuspensionManager {
             guild: member.guild,
             sendNoticeToAffectedUser: info.notifyUser ?? true,
             sendLogInfo: info.sendLogMsg ?? true,
-            actionIdToUse: suspendedUserObj.actionId
+            actionIdToUse: suspendedUserObj.actionId,
+            evidence: info.evidence
         });
     }
 
@@ -1024,7 +1046,8 @@ export namespace SuspensionManager {
             guild: member.guild,
             sendNoticeToAffectedUser: info.notifyUser ?? true,
             sendLogInfo: info.sendLogMsg ?? true,
-            actionIdToResolve: memberLookup.actionId
+            actionIdToResolve: memberLookup.actionId,
+            evidence: info.evidence
         });
     }
 
@@ -1136,7 +1159,8 @@ export namespace MuteManager {
                 await removeMute(mutedMember, null, {
                     guildDoc: guildDoc,
                     reason: "The user has served the entirety of his or her time.",
-                    actionId: mutedInfo.actionId
+                    actionId: mutedInfo.actionId,
+                    evidence: []
                 });
             }
         }
@@ -1180,11 +1204,11 @@ export namespace MuteManager {
 
             await Promise.all(promisesToResolve);
 
-            info.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
+            info.guildDoc = (await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
                 $set: {
                     "roles.mutedRoleId": mutedRole.id
                 }
-            });
+            }))!;
         }
 
         // If the person was already muted, then we don't need to mute the person again.
@@ -1207,7 +1231,8 @@ export namespace MuteManager {
                 name: mod?.displayName ?? ""
             },
             reason: info.reason,
-            actionId: StringUtil.generateRandomString(40)
+            actionId: StringUtil.generateRandomString(40),
+            evidence: info.evidence
         };
 
         await MongoManager.updateAndFetchGuildDoc({
@@ -1236,7 +1261,8 @@ export namespace MuteManager {
             guild: member.guild,
             sendNoticeToAffectedUser: info.notifyUser ?? true,
             sendLogInfo: info.sendLogMsg ?? true,
-            actionIdToUse: mutedUserObj.actionId
+            actionIdToUse: mutedUserObj.actionId,
+            evidence: info.evidence
         });
     }
 
@@ -1289,7 +1315,8 @@ export namespace MuteManager {
             guild: member.guild,
             sendNoticeToAffectedUser: info.notifyUser ?? true,
             sendLogInfo: info.sendLogMsg ?? true,
-            actionIdToResolve: memberLookup.actionId
+            actionIdToResolve: memberLookup.actionId,
+            evidence: info.evidence
         });
     }
 
@@ -1323,7 +1350,8 @@ export namespace MuteManager {
                 guild: memberToUnmute.guild,
                 sendNoticeToAffectedUser: false,
                 sendLogInfo: true,
-                actionIdToResolve: info.actionId
+                actionIdToResolve: info.actionId,
+                evidence: []
             });
         });
 

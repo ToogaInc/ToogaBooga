@@ -767,7 +767,7 @@ export class RaidManager {
         if (!addToDb || !this._raidVc)
             return true;
 
-        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({
+        const res = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
@@ -778,20 +778,23 @@ export class RaidManager {
                 }
             }
         });
+        if (!res) return false;
+        this._guildDoc = res;
         return true;
     }
 
     /**
      * Updates the location to the specified location.
      * @param {string} newLoc The specified location.
+     * @returns {Promise<boolean>} Whether this was successful.
      * @private
      */
-    private async updateLocation(newLoc: string): Promise<void> {
+    private async updateLocation(newLoc: string): Promise<boolean> {
         this._location = newLoc;
         if (!this._raidVc)
-            return;
+            return false;
         // Update the location in the database.
-        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({
+        const res = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
@@ -799,47 +802,62 @@ export class RaidManager {
                 "activeRaids.$.location": newLoc
             }
         });
+
+        if (!res)
+            return false;
+        this._guildDoc = res;
+        return true;
     }
 
     /**
      * Adds a raid object to the database. This should only be called once the AFK check has started.
+     * @returns {Promise<boolean>} Whether this was successful.
      * @private
      */
-    private async addRaidToDatabase(): Promise<void> {
+    private async addRaidToDatabase(): Promise<boolean> {
         const obj = this.getRaidInfoObject();
-        if (!obj) return;
-        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
+        if (!obj) return false;
+        const res = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
             $push: {
                 activeRaids: obj
             }
         });
+
+        if (!res) return false;
+        this._guildDoc = res;
+        return true;
     }
 
     /**
      * Removes a raid object from the database. This should only be called once per raid.
+     * @returns {Promise<boolean>} Whether this was successful.
      * @private
      */
-    private async removeRaidFromDatabase(): Promise<void> {
-        if (!this._raidVc) return;
-        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
+    private async removeRaidFromDatabase(): Promise<boolean> {
+        if (!this._raidVc) return false;
+        const res = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
             $pull: {
                 activeRaids: {
                     vcId: this._raidVc.id
                 }
             }
         });
+        if (!res) return false;
+        this._guildDoc = res;
+        return true;
     }
 
     /**
      * Sets the raid status to an ongoing raid. This should only be called once per raid.
      * @param {RaidStatus} status The status to set this raid to.
+     * @returns {Promise<boolean>} Whether this was successful.
      * @private
      */
-    private async setRaidStatus(status: RaidStatus): Promise<void> {
-        if (!this._raidVc) return;
+    private async setRaidStatus(status: RaidStatus): Promise<boolean> {
+        if (!this._raidVc) return false;
         this._raidStatus = status;
         // Update the location in the database.
-        this._guildDoc = await MongoManager.updateAndFetchGuildDoc({
+        const res = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
         }, {
@@ -847,6 +865,9 @@ export class RaidManager {
                 "activeRaids.$.status": status
             }
         });
+        if (!res) return false;
+        this._guildDoc = res;
+        return true;
     }
 
     /**

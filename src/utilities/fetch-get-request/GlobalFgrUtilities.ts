@@ -1,4 +1,5 @@
 import {
+    Channel,
     DMChannel,
     Guild,
     GuildEmoji,
@@ -25,6 +26,45 @@ export namespace GlobalFgrUtilities {
     export async function openDirectMessage(targetUser: User): Promise<DMChannel | null> {
         try {
             return await targetUser.createDM();
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Gets a cached channel.
+     * @param {string} channelId The channel ID. This assumes a valid ID. If an invalid ID is given, `null` will be
+     * returned.
+     * @return {T | null} The channel, if at all. Otherwise, `null`.
+     */
+    export function getCachedChannel<T extends Channel>(channelId: string): T | null {
+        if (!MiscUtilities.isSnowflake(channelId)) return null;
+        const c = OneLifeBot.BotInstance.client.channels.cache.get(channelId) ?? null;
+        return c ? c as T : null;
+    }
+
+    /**
+     * Fetches a cached channel.
+     * @param {string} channelId The channel ID. This assumes a valid ID. If an invalid ID is given, `null` will be
+     * returned.
+     * @return {T | null} The channel, if at all. Otherwise, `null`.
+     */
+    export async function fetchChannel<T extends Channel>(channelId: string): Promise<T | null> {
+        if (!MiscUtilities.isSnowflake(channelId)) return null;
+        const c = await OneLifeBot.BotInstance.client.channels.fetch(channelId) ?? null;
+        return c ? c as T : null;
+    }
+
+    /**
+     * A simple function that attempts to fetch a guild. This will handle any exceptions that may occur.
+     * @param {string} guildId The ID corresponding to the guild that you want to fetch. This assumes a valid ID; if
+     * the ID is invalid, then this will return `null`.
+     * @returns {Promise<Guild | null>} The guild object, if one exists. Null otherwise.
+     */
+    export async function fetchGuild(guildId: string): Promise<Guild | null> {
+        if (!MiscUtilities.isSnowflake(guildId)) return null;
+        try {
+            return await OneLifeBot.BotInstance.client.guilds.fetch(guildId);
         } catch (e) {
             return null;
         }
@@ -94,21 +134,6 @@ export namespace GlobalFgrUtilities {
                 files: msgOptions.files,
                 allowedMentions: msgOptions.allowedMentions
             });
-        } catch (e) {
-            return null;
-        }
-    }
-
-    /**
-     * A simple function that attempts to fetch a guild. This will handle any exceptions that may occur.
-     * @param {string} guildId The ID corresponding to the guild that you want to fetch. This assumes a valid ID; if
-     * the ID is invalid, then this will return `null`.
-     * @returns {Promise<Guild | null>} The guild object, if one exists. Null otherwise.
-     */
-    export async function fetchGuild(guildId: string): Promise<Guild | null> {
-        if (!MiscUtilities.isSnowflake(guildId)) return null;
-        try {
-            return await OneLifeBot.BotInstance.client.guilds.fetch(guildId);
         } catch (e) {
             return null;
         }
