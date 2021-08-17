@@ -25,6 +25,9 @@
     },
     "no-bitwise": {
       "severity": "off"
+    },
+    "prefer-const": {
+      "severity": "warning"
     }
   },
   "rulesDirectory": []
