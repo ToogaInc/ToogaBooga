@@ -407,3 +407,8 @@ export namespace QuotaManager {
         return true;
     }
 }
+
+// Service that updates quota leaderboards every 5 minutes
+export namespace QuotaService {
+
+}

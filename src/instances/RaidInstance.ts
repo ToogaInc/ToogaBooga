@@ -30,14 +30,14 @@ import {MessageUtilities} from "../utilities/MessageUtilities";
 import {DUNGEON_DATA} from "../constants/DungeonData";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {MongoManager} from "./MongoManager";
+import {MongoManager} from "../managers/MongoManager";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {OneLifeBot} from "../OneLifeBot";
 import {Emojis} from "../constants/Emojis";
 import {MiscUtilities} from "../utilities/MiscUtilities";
-import {UserManager} from "./UserManager";
+import {UserManager} from "../managers/UserManager";
 import {
     IAfkCheckReaction,
     IDungeonInfo,
@@ -53,14 +53,14 @@ type ReactionInfoMore = IReactionInfo & { earlyLocAmt: number; isCustomReaction:
 /**
  * This class represents a raid.
  */
-export class RaidManager {
+export class RaidInstance {
     /**
      * A collection of active AFK checks and raids. The key is the AFK check message ID and the value is the raid
      * manager object.
      *
-     * @type {Collection<string, RaidManager>}
+     * @type {Collection<string, RaidInstance>}
      */
-    public static ActiveRaids: Collection<string, RaidManager> = new Collection<string, RaidManager>();
+    public static ActiveRaids: Collection<string, RaidInstance> = new Collection<string, RaidInstance>();
 
     private static readonly START_AFK_CHECK_ID: string = "start_afk";
     private static readonly START_RAID_ID: string = "start_raid";
@@ -75,12 +75,12 @@ export class RaidManager {
         new MessageButton()
             .setLabel("Start AFK Check")
             .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
-            .setCustomId(RaidManager.START_AFK_CHECK_ID)
+            .setCustomId(RaidInstance.START_AFK_CHECK_ID)
             .setStyle(MessageButtonStyles.PRIMARY),
         new MessageButton()
             .setLabel("Abort AFK Check")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
-            .setCustomId(RaidManager.ABORT_AFK_ID)
+            .setCustomId(RaidInstance.ABORT_AFK_ID)
             .setStyle(MessageButtonStyles.DANGER)
     ]);
 
@@ -88,17 +88,17 @@ export class RaidManager {
         new MessageButton()
             .setLabel("Start Raid")
             .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
-            .setCustomId(RaidManager.START_RAID_ID)
+            .setCustomId(RaidInstance.START_RAID_ID)
             .setStyle(MessageButtonStyles.PRIMARY),
         new MessageButton()
             .setLabel("Abort AFK Check")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
-            .setCustomId(RaidManager.ABORT_AFK_ID)
+            .setCustomId(RaidInstance.ABORT_AFK_ID)
             .setStyle(MessageButtonStyles.DANGER),
         new MessageButton()
             .setLabel("Set Location")
             .setEmoji(Emojis.MAP_EMOJI)
-            .setCustomId(RaidManager.SET_LOCATION_ID)
+            .setCustomId(RaidInstance.SET_LOCATION_ID)
             .setStyle(MessageButtonStyles.PRIMARY)
     ]);
 
@@ -106,27 +106,27 @@ export class RaidManager {
         new MessageButton()
             .setLabel("End Raid")
             .setEmoji(Emojis.RED_SQUARE_EMOJI)
-            .setCustomId(RaidManager.END_RAID_ID)
+            .setCustomId(RaidInstance.END_RAID_ID)
             .setStyle(MessageButtonStyles.DANGER),
         new MessageButton()
             .setLabel("Set Location")
             .setEmoji(Emojis.MAP_EMOJI)
-            .setCustomId(RaidManager.SET_LOCATION_ID)
+            .setCustomId(RaidInstance.SET_LOCATION_ID)
             .setStyle(MessageButtonStyles.PRIMARY),
         new MessageButton()
             .setLabel("Lock Raid VC")
             .setEmoji(Emojis.LOCK_EMOJI)
-            .setCustomId(RaidManager.LOCK_VC_ID)
+            .setCustomId(RaidInstance.LOCK_VC_ID)
             .setStyle(MessageButtonStyles.PRIMARY),
         new MessageButton()
             .setLabel("Unlock Raid VC")
             .setEmoji(Emojis.UNLOCK_EMOJI)
-            .setCustomId(RaidManager.UNLOCK_VC_ID)
+            .setCustomId(RaidInstance.UNLOCK_VC_ID)
             .setStyle(MessageButtonStyles.PRIMARY),
         new MessageButton()
             .setLabel("Parse Raid VC")
             .setEmoji(Emojis.PRINTER_EMOJI)
-            .setCustomId(RaidManager.PARSE_VC_ID)
+            .setCustomId(RaidInstance.PARSE_VC_ID)
             .setStyle(MessageButtonStyles.PRIMARY)
     ]);
 
@@ -197,7 +197,7 @@ export class RaidManager {
     private readonly _membersThatJoined: string[] = [];
 
     /**
-     * Creates a new `RaidManager` object.
+     * Creates a new `RaidInstance` object.
      * @param {GuildMember} memberInit The member that initiated this raid.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section where this raid is occurring. Note that the verified role must exist.
@@ -241,7 +241,7 @@ export class RaidManager {
         )!;
 
         // Which essential reacts are we going to use.
-        const reactions = RaidManager.getReactions(dungeon, guildDoc);
+        const reactions = RaidInstance.getReactions(dungeon, guildDoc);
         const overrideSettings = guildDoc.properties.dungeonOverride.find(x => x.codeName === dungeon.codeName);
 
         // Check if we should add nitro
@@ -404,18 +404,18 @@ export class RaidManager {
     }
 
     /**
-     * Creates a new `RaidManager` object. Use this method to create a new instance instead of the constructor.
+     * Creates a new `RaidInstance` object. Use this method to create a new instance instead of the constructor.
      * @param {GuildMember} memberInit The member that initiated this raid.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section where this raid is occurring. Note that the verified role must exist.
      * @param {IDungeonInfo} dungeon The dungeon that is being raided.
      * @param {string} location The location.
      * @param {IRaidOptions} raidOptions The raid message, if any.
-     * @returns {RaidManager | null} The `RaidManager` object, or `null` if the AFK check channel or control panel
+     * @returns {RaidInstance | null} The `RaidInstance` object, or `null` if the AFK check channel or control panel
      * channel or the verified role is invalid or both channels don't have a category.
      */
     public static new(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo, dungeon: IDungeonInfo,
-                      location: string, raidOptions: IRaidOptions): RaidManager | null {
+                      location: string, raidOptions: IRaidOptions): RaidInstance | null {
         // Could put these all in one if-statement but too long.
         if (!memberInit.guild)
             return null;
@@ -438,18 +438,18 @@ export class RaidManager {
         if (!afkChannel.parentId || !controlPanel.parentId || afkChannel.parentId !== controlPanel.parentId)
             return null;
 
-        return new RaidManager(memberInit, guildDoc, section, dungeon, location, raidOptions);
+        return new RaidInstance(memberInit, guildDoc, section, dungeon, location, raidOptions);
     }
 
     /**
-     * Creates a new instance of `RaidManager`. This method should be called when there is an active raid but no
-     * corresponding `RaidManager` object (e.g. when the bot restarted).
+     * Creates a new instance of `RaidInstance`. This method should be called when there is an active raid but no
+     * corresponding `RaidInstance` object (e.g. when the bot restarted).
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {IRaidInfo} raidInfo The raid information.
-     * @returns {Promise<RaidManager | null>} The `RaidManager` instance. `null` if an error occurred.
+     * @returns {Promise<RaidInstance | null>} The `RaidInstance` instance. `null` if an error occurred.
      */
     public static async createNewLivingInstance(guildDoc: IGuildInfo,
-                                                raidInfo: IRaidInfo): Promise<RaidManager | null> {
+                                                raidInfo: IRaidInfo): Promise<RaidInstance | null> {
         const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
         if (!guild) return null;
 
@@ -490,7 +490,7 @@ export class RaidManager {
         if (!afkCheckMsg || !controlPanelMsg) return null;
 
         // Create the raid manager instance.
-        const rm = new RaidManager(memberInit, guildDoc, section, dungeon, raidInfo.location, {
+        const rm = new RaidInstance(memberInit, guildDoc, section, dungeon, raidInfo.location, {
             raidMessage: raidInfo.raidMessage,
             vcLimit: raidVc.userLimit
         });
@@ -541,7 +541,7 @@ export class RaidManager {
         // Create our initial control panel message.
         this._controlPanelMsg = await this._controlPanelChannel.send({
             embeds: [this.getControlPanelEmbed()!],
-            components: RaidManager.CP_PRE_AFK_BUTTONS
+            components: RaidInstance.CP_PRE_AFK_BUTTONS
         });
         this.startControlPanelCollector();
 
@@ -557,7 +557,7 @@ export class RaidManager {
         // Start our intervals so we can continuously update the embeds.
         this.startIntervals();
         this.startAfkCheckCollector();
-        RaidManager.ActiveRaids.set(this._afkCheckMsg.id, this);
+        RaidInstance.ActiveRaids.set(this._afkCheckMsg.id, this);
     }
 
     /**
@@ -591,7 +591,7 @@ export class RaidManager {
         AdvancedCollector.reactFaster(this._afkCheckMsg, this._nonEssentialReactions);
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
-            components: RaidManager.CP_AFK_BUTTONS
+            components: RaidInstance.CP_AFK_BUTTONS
         });
     }
 
@@ -625,7 +625,7 @@ export class RaidManager {
         // Edit the control panel accordingly and re-react and start collector + intervals again.
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
-            components: RaidManager.CP_RAID_BUTTONS
+            components: RaidInstance.CP_RAID_BUTTONS
         }).catch();
         this.startControlPanelCollector();
         this.startIntervals();
@@ -1024,7 +1024,7 @@ export class RaidManager {
         }
 
         // Step 4: Remove from ActiveRaids collection
-        RaidManager.ActiveRaids.delete(this._afkCheckMsg!.id);
+        RaidInstance.ActiveRaids.delete(this._afkCheckMsg!.id);
     }
 
     /**
@@ -1755,12 +1755,12 @@ export class RaidManager {
         if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
             this._controlPanelReactionCollector.on("collect", async i => {
                 await i.deferUpdate();
-                if (i.customId === RaidManager.START_AFK_CHECK_ID) {
+                if (i.customId === RaidInstance.START_AFK_CHECK_ID) {
                     this.startAfkCheck().then();
                     return;
                 }
 
-                if (i.customId === RaidManager.ABORT_AFK_ID) {
+                if (i.customId === RaidInstance.ABORT_AFK_ID) {
                     this.endRaid(i.user).then();
                     return;
                 }
@@ -1771,17 +1771,17 @@ export class RaidManager {
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
             this._controlPanelReactionCollector.on("collect", async i => {
                 await i.deferUpdate();
-                if (i.customId === RaidManager.START_RAID_ID) {
+                if (i.customId === RaidInstance.START_RAID_ID) {
                     this.endAfkCheck(i.user).then();
                     return;
                 }
 
-                if (i.customId === RaidManager.ABORT_AFK_ID) {
+                if (i.customId === RaidInstance.ABORT_AFK_ID) {
                     this.endRaid(i.user).then();
                     return;
                 }
 
-                if (i.customId === RaidManager.SET_LOCATION_ID) {
+                if (i.customId === RaidInstance.SET_LOCATION_ID) {
                     this.getNewLocation(i.user).then();
                     return;
                 }
@@ -1792,17 +1792,17 @@ export class RaidManager {
 
         this._controlPanelReactionCollector.on("collect", async i => {
             await i.deferUpdate();
-            if (i.customId === RaidManager.END_RAID_ID) {
+            if (i.customId === RaidInstance.END_RAID_ID) {
                 this.endRaid(i.user).then();
                 return;
             }
 
-            if (i.customId === RaidManager.SET_LOCATION_ID) {
+            if (i.customId === RaidInstance.SET_LOCATION_ID) {
                 this.getNewLocation(i.user).then();
                 return;
             }
 
-            if (i.customId === RaidManager.LOCK_VC_ID) {
+            if (i.customId === RaidInstance.LOCK_VC_ID) {
                 await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
                     "CONNECT": false
                 }).catch();
@@ -1813,7 +1813,7 @@ export class RaidManager {
                 return;
             }
 
-            if (i.customId === RaidManager.UNLOCK_VC_ID) {
+            if (i.customId === RaidInstance.UNLOCK_VC_ID) {
                 await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
                     "CONNECT": null
                 }).catch();
@@ -1824,7 +1824,7 @@ export class RaidManager {
                 return;
             }
 
-            if (i.customId === RaidManager.PARSE_VC_ID) {
+            if (i.customId === RaidInstance.PARSE_VC_ID) {
                 const res = await AdvancedCollector.startNormalCollector<MessageAttachment>({
                     msgOptions: {
                         content: "Please send a **screenshot** (not a URL to a screenshot, but an actual attachment)"

@@ -4,6 +4,7 @@ import {GeneralConstants} from "../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {IGuildInfo} from "../definitions";
 import {RolePermissions} from "../definitions/Types";
+import {MiscUtilities} from "../utilities/MiscUtilities";
 
 // Type alias
 
@@ -287,7 +288,7 @@ export abstract class BaseCommand {
             }
         }
 
-        return Array.from(roleCollection.values()).flat().concat(rolePerms.filter(x => !Number.isNaN(x)));
+        return Array.from(roleCollection.values()).flat().concat(rolePerms.filter(x => MiscUtilities.isSnowflake(x)));
     }
 }
 
