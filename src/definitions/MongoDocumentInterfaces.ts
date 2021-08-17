@@ -926,11 +926,4 @@ export interface ISectionLeaderRoles {
      * @type {string}
      */
     sectionVetLeaderRoleId: string;
-
-    /**
-     * The section head leader role.
-     *
-     * @type {string}
-     */
-    sectionHeadLeaderRoleId: string;
 }

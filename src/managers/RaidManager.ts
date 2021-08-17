@@ -400,7 +400,6 @@ export class RaidManager {
             findAndAddReaction(r);
         }
 
-
         return reactions;
     }
 
@@ -1073,7 +1072,6 @@ export class RaidManager {
         return [
             section.roles.leaders.sectionLeaderRoleId,
             section.roles.leaders.sectionAlmostLeaderRoleId,
-            section.roles.leaders.sectionHeadLeaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
@@ -1145,11 +1143,6 @@ export class RaidManager {
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
             },
             {
-                id: this._raidSection.roles.leaders.sectionHeadLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.deny
-            },
-            {
                 id: this._raidSection.roles.leaders.sectionVetLeaderRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.deny
@@ -1158,7 +1151,7 @@ export class RaidManager {
             && ((y.allow && y.allow.length !== 0) || (y.deny && y.deny.length !== 0)));
         // And then define any additional roles.
         // We only want role IDs here.
-        permsToEvaluate.filter(x => !Number.isNaN(x))
+        permsToEvaluate.filter(x => MiscUtilities.isSnowflake(x.key))
             .filter(x => x.value.allow.length !== 0 || x.value.deny.length !== 0)
             .forEach(perm => permsToReturn.push({
                 id: perm.key as Snowflake,
@@ -1244,7 +1237,6 @@ export class RaidManager {
 
         const neededRoles: string[] = [
             // This section's leader roles
-            this._raidSection.roles.leaders.sectionHeadLeaderRoleId,
             this._raidSection.roles.leaders.sectionLeaderRoleId,
             this._raidSection.roles.leaders.sectionAlmostLeaderRoleId,
             this._raidSection.roles.leaders.sectionVetLeaderRoleId,

@@ -1,3 +1,7 @@
+// Note
+// Currently, the bot only supports MAIN pre-defined `RolePermissions` object. In other words, there is NO support
+// for section roles.
+
 import {
     Collection,
     DMChannel,
@@ -285,10 +289,12 @@ export namespace QuotaManager {
         const doc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
         if (doc.quotas.quotaInfo.length === 0) return false;
 
-        let possibleChoices = doc.quotas.quotaInfo.filter(
-            x => (x.pointValue.find(y => y.key === logType)?.value ?? 0) > 0
-                && member.roles.cache.has(x.roleId)
-        );
+        let possibleChoices = doc.quotas.quotaInfo.filter(x => {
+            const role = GuildFgrUtilities.resolveMainCachedGuildRoles(guild, doc, x.roleId);
+
+            return (x.pointValue.find(y => y.key === logType)?.value ?? 0) > 0
+                && member.roles.cache.has(role?.id ?? "");
+        });
 
         if (possibleChoices.length === 0)
             return false;
@@ -339,7 +345,7 @@ export namespace QuotaManager {
                     value: "cancel"
                 });
             for await (const choice of possibleChoices) {
-                const role = await GuildFgrUtilities.fetchRole(guild, choice.roleId);
+                const role = await GuildFgrUtilities.fetchMainGuildRole(guild, doc, choice.roleId);
                 if (!role)
                     continue;
 
@@ -353,7 +359,7 @@ export namespace QuotaManager {
                 selectMenu.addOptions({
                     label: role.name,
                     description: `${ptsEarned}/${choice.pointValue} PTS. Possible PTS: ${ptsCanEarn.value * amt}.`,
-                    value: role.id
+                    value: choice.roleId
                 });
             }
 

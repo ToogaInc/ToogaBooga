@@ -225,8 +225,7 @@ export abstract class BaseCommand {
     private getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo,
                                      usingCustomPermissions: boolean): string[] {
         const allHrl: string[] = [
-            guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
-            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionHeadLeaderRoleId
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
         ];
         const allVrl: string[] = [
             guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
@@ -242,7 +241,6 @@ export abstract class BaseCommand {
         ];
         const allVerified: string[] = [guildDoc.roles.verifiedRoleId];
         for (const section of guildDoc.guildSections) {
-            allHrl.push(section.roles.leaders.sectionHeadLeaderRoleId);
             allRl.push(section.roles.leaders.sectionLeaderRoleId);
             allVrl.push(section.roles.leaders.sectionVetLeaderRoleId);
             allArl.push(section.roles.leaders.sectionAlmostLeaderRoleId);

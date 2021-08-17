@@ -519,7 +519,6 @@ export namespace MongoManager {
                     sectionLeaderRoleIds: {
                         sectionAlmostLeaderRoleId: "",
                         sectionLeaderRoleId: "",
-                        sectionHeadLeaderRoleId: "",
                         sectionVetLeaderRoleId: ""
                     },
                     teamRoleId: "",
