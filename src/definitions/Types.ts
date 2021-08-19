@@ -1,3 +1,7 @@
+// =============================================== //
+//          TYPINGS FOR BOT OPERATIONS             //
+// =============================================== //
+
 export type QuotaLogType = "RunComplete"
     | "RunFailed"
     | "RunAssist"

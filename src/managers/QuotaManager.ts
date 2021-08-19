@@ -1,6 +1,5 @@
-// Note
-// Currently, the bot only supports MAIN pre-defined `RolePermissions` object. In other words, there is NO support
-// for section roles.
+// QuotaManager does NOT support the use of placeholder role values (for example, "RaidLeader").
+// It only supports role IDs.
 
 import {
     Collection,
@@ -22,6 +21,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {IGuildInfo} from "../definitions";
+import {DUNGEON_DATA} from "../constants/DungeonData";
 
 export namespace QuotaManager {
     /**
@@ -56,7 +56,7 @@ export namespace QuotaManager {
         const role = await GuildFgrUtilities.fetchRole(guild, roleId);
         const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, oldQuotas.messageId);
         // Only care about quota actions worth points
-        const quotaLogMap = new Collection<QuotaLogType, number>();
+        const quotaLogMap = new Collection<string, number>();
         for (const {key, value} of oldQuotas.pointValue) {
             if (value === 0) continue;
             quotaLogMap.set(key, value);
@@ -123,6 +123,28 @@ export namespace QuotaManager {
             }
             else {
                 for (const [quotaType, num] of entries) {
+                    // Need to look into quota types like `RunComplete:DUNGEON_ID` or `Parse`.
+                    const logArr = quotaType.split(":");
+                    if (logArr.length === 2) {
+                        // We assume the second element is the dungeon ID.
+                        // Get the dungeon name
+                        let dungeonName: string = logArr[1];
+                        // Begin by looking for any custom dungeons.
+                        const overrideDgn = guildDoc.properties.customDungeons.find(x => x.codeName === logArr[1]);
+                        if (overrideDgn)
+                            dungeonName = overrideDgn.dungeonName;
+                        else {
+                            // Next, look for the general dungeon
+                            const dgnData = DUNGEON_DATA.find(x => x.codeName === logArr[1]);
+                            if (dgnData)
+                                dungeonName = dgnData.dungeonName;
+                        }
+
+                        sb.append(`\t\t- ${logArr[0]} (${dungeonName}): ${num}`)
+                            .appendLine();
+                        continue;
+                    }
+
                     sb.append(`\t\t- ${quotaType}: ${num}`)
                         .appendLine();
                 }
@@ -232,7 +254,7 @@ export namespace QuotaManager {
      * @param {QuotaLogType} logType The quota type.
      * @param {number} amt The amount of said action to log.
      */
-    export async function logQuota(member: GuildMember, roleId: string, logType: QuotaLogType,
+    export async function logQuota(member: GuildMember, roleId: string, logType: string,
                                    amt: number): Promise<void> {
         await MongoManager.updateAndFetchGuildDoc({
             guildId: member.guild.id,
@@ -256,7 +278,7 @@ export namespace QuotaManager {
      * @param {IGuildInfo} guildDoc The guild document.
      * @returns {number} The number of points.
      */
-    export function calculatePoints(memberId: string, roleId: string, guildDoc: IGuildInfo): number {
+    export function calcTotalQuotaPtsForMember(memberId: string, roleId: string, guildDoc: IGuildInfo): number {
         const quotaInfo = guildDoc.quotas.quotaInfo.find(x => x.roleId === roleId);
         if (!quotaInfo) return 0;
 
@@ -275,9 +297,17 @@ export namespace QuotaManager {
      * member, use a guild member. The only difference is how the bot will send the message (to a channel or DM).
      * @param {QuotaLogType} logType The quota type.
      * @param {number} amt The amount of said action to log.
+     * @param {string} [dungeonId] The dungeon ID. This must be specified if we're logging dungeon completions,
+     * assists, or failures.
      */
     export async function logQuotaInteractive(obj: Message | GuildMember, logType: QuotaLogType,
-                                              amt: number): Promise<boolean> {
+                                              amt: number, dungeonId?: string): Promise<boolean> {
+        let resolvedLogType: string = logType;
+        if (logType === "RunAssist" || logType === "RunComplete" || logType === "RunFailed") {
+            if (!dungeonId) return false;
+            resolvedLogType = `${logType}:${dungeonId}`;
+        }
+
         const member = "member" in obj ? obj.member! : obj;
         let channel: TextChannel | DMChannel | null;
         if ("channel" in obj)
@@ -292,7 +322,7 @@ export namespace QuotaManager {
         let possibleChoices = doc.quotas.quotaInfo.filter(x => {
             const role = GuildFgrUtilities.resolveMainCachedGuildRoles(guild, doc, x.roleId);
 
-            return (x.pointValue.find(y => y.key === logType)?.value ?? 0) > 0
+            return (x.pointValue.find(y => y.key === resolvedLogType)?.value ?? 0) > 0
                 && member.roles.cache.has(role?.id ?? "");
         });
 
@@ -300,7 +330,7 @@ export namespace QuotaManager {
             return false;
 
         if (possibleChoices.length === 1) {
-            await QuotaManager.logQuota(member, possibleChoices[0].roleId, logType, amt);
+            await QuotaManager.logQuota(member, possibleChoices[0].roleId, resolvedLogType, amt);
             return true;
         }
 
@@ -308,7 +338,7 @@ export namespace QuotaManager {
         const lowestPoints: [string, number] = ["", Number.MAX_SAFE_INTEGER];
         const canAddChoices = [];
         for (const choice of possibleChoices) {
-            const ptsEarned = calculatePoints(member.id, choice.roleId, doc);
+            const ptsEarned = calcTotalQuotaPtsForMember(member.id, choice.roleId, doc);
 
             if (ptsEarned >= choice.pointsNeeded)
                 continue;
@@ -325,7 +355,7 @@ export namespace QuotaManager {
         // - Otherwise, break it down
         if (canAddChoices.length > 0) {
             if (canAddChoices.length === 1) {
-                await QuotaManager.logQuota(member, canAddChoices[0].roleId, logType, amt);
+                await QuotaManager.logQuota(member, canAddChoices[0].roleId, resolvedLogType, amt);
                 return true;
             }
 
@@ -350,11 +380,11 @@ export namespace QuotaManager {
                     continue;
 
                 // If this particular log type doesn't give you points, then don't show it.
-                const ptsCanEarn = choice.pointValue.find(x => x.key === logType);
+                const ptsCanEarn = choice.pointValue.find(x => x.key === resolvedLogType);
                 if (!ptsCanEarn)
                     continue;
 
-                const ptsEarned = calculatePoints(member.id, choice.roleId, doc);
+                const ptsEarned = calcTotalQuotaPtsForMember(member.id, choice.roleId, doc);
 
                 selectMenu.addOptions({
                     label: role.name,
@@ -364,13 +394,14 @@ export namespace QuotaManager {
             }
 
             try {
+                // TODO resolve dungeon name here.
                 const questionMsg = await member.send({
                     embeds: [
                         MessageUtilities.generateBlankEmbed(member, "RANDOM")
                             .setTitle("Select Quota Logging Type")
                             .setDescription(
                                 new StringBuilder()
-                                    .append(`You are logging: ${amt} ${logType}.`)
+                                    .append(`You are logging: ${amt} ${resolvedLogType}.`)
                                     .appendLine(2)
                                     .append("You can use the above log type to satisfy one of many quotas. Please ")
                                     .append("select the quota that you want to use this for. If you don't want to ")
@@ -395,7 +426,7 @@ export namespace QuotaManager {
                 if (!res || !res.isSelectMenu() || res.values[0] === "cancel")
                     return false;
 
-                await QuotaManager.logQuota(member, res.values[0], logType, amt);
+                await QuotaManager.logQuota(member, res.values[0], resolvedLogType, amt);
                 return true;
             } catch (_) {
                 // If it falls to the catch block, then keep going
@@ -403,7 +434,7 @@ export namespace QuotaManager {
         }
 
         // Otherwise, pick the first one and use that.
-        await QuotaManager.logQuota(member, lowestPoints[0], logType, amt);
+        await QuotaManager.logQuota(member, lowestPoints[0], resolvedLogType, amt);
         return true;
     }
 }

@@ -1,3 +1,5 @@
+// TODO add temp event handlers to client here.
+
 // Suppress unused methods for this file.
 // noinspection JSUnusedGlobalSymbols
 
@@ -6,7 +8,7 @@ import {
     Collection,
     Guild,
     GuildEmoji,
-    GuildMember,
+    GuildMember, Interaction,
     InteractionCollector,
     Message,
     MessageActionRow, MessageAttachment,
@@ -19,7 +21,7 @@ import {
     Snowflake,
     TextChannel,
     User,
-    VoiceChannel
+    VoiceChannel, VoiceState
 } from "discord.js";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
@@ -39,7 +41,7 @@ import {Emojis} from "../constants/Emojis";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {UserManager} from "../managers/UserManager";
 import {
-    IAfkCheckReaction,
+    IAfkCheckReaction, ICustomDungeonInfo,
     IDungeonInfo,
     IGuildInfo,
     IRaidInfo,
@@ -195,18 +197,19 @@ export class RaidInstance {
 
     // The members that are joining this raid.
     private readonly _membersThatJoined: string[] = [];
+    private readonly _raidLogs: string[] = [];
 
     /**
      * Creates a new `RaidInstance` object.
      * @param {GuildMember} memberInit The member that initiated this raid.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section where this raid is occurring. Note that the verified role must exist.
-     * @param {IDungeonInfo} dungeon The dungeon that is being raided.
+     * @param {IDungeonInfo | ICustomDungeonInfo} dungeon The dungeon that is being raided.
      * @param {string} location The location.
      * @param {IRaidOptions} raidOptions The raid message, if any.
      */
-    private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo, dungeon: IDungeonInfo,
-                        location: string, raidOptions: IRaidOptions) {
+    private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
+                        dungeon: IDungeonInfo | ICustomDungeonInfo, location: string, raidOptions: IRaidOptions) {
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
         this._dungeon = dungeon;
@@ -220,7 +223,6 @@ export class RaidInstance {
         this._controlPanelInterval = null;
         this._guildDoc = guildDoc;
         this._raidSection = section;
-        this._vcLimit = raidOptions.vcLimit;
         this._membersThatJoined = [];
 
         this._afkCheckButtonCollector = null;
@@ -242,16 +244,43 @@ export class RaidInstance {
 
         // Which essential reacts are we going to use.
         const reactions = RaidInstance.getReactions(dungeon, guildDoc);
-        const overrideSettings = guildDoc.properties.dungeonOverride.find(x => x.codeName === dungeon.codeName);
 
-        // Check if we should add nitro
-        let numEarlyLoc: number;
-        if (overrideSettings && overrideSettings.nitroEarlyLocationLimit !== -1)
-            numEarlyLoc = overrideSettings.nitroEarlyLocationLimit;
-        else if (section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit !== -1)
-            numEarlyLoc = section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit;
-        else
-            numEarlyLoc = Math.floor(this._vcLimit * 0.08);
+        // This defines the number of people that gets early location via NITRO only.
+        let numEarlyLoc: number = -2;
+        // And this is the raid VC limit
+        let vcLimit: number = -2;
+        // Process dungeon based on whether it is custom or not.
+        if (dungeon.isBaseOrDerived) {
+            const dgnOverride = guildDoc.properties.dungeonOverride
+                .find(x => x.codeName === dungeon.codeName);
+
+            if (dgnOverride && dgnOverride.vcLimit !== -1)
+                vcLimit = dgnOverride.vcLimit;
+
+            if (dgnOverride && dgnOverride.nitroEarlyLocationLimit !== -1)
+                numEarlyLoc = dgnOverride.nitroEarlyLocationLimit;
+            else if (section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit !== -1)
+                numEarlyLoc = section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit;
+        }
+        else {
+            // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
+            // limit.
+            numEarlyLoc = (dungeon as ICustomDungeonInfo).nitroEarlyLocationLimit;
+        }
+
+        if (vcLimit === -2) {
+            if (section.otherMajorConfig.afkCheckProperties.vcLimit !== -1)
+                vcLimit = section.otherMajorConfig.afkCheckProperties.vcLimit;
+            else
+                vcLimit = 60;
+        }
+
+        if (numEarlyLoc === -2) {
+            numEarlyLoc = Math.max(Math.floor(vcLimit * 0.1), 1);
+        }
+
+        this._vcLimit = vcLimit;
+        this._numNitroEarlyLoc = numEarlyLoc;
 
         if (numEarlyLoc !== 0 && this._guild.roles.premiumSubscriberRole) {
             reactions.set("NITRO", {
@@ -345,6 +374,9 @@ export class RaidInstance {
         function findAndAddReaction(reaction: IAfkCheckReaction): void {
             // Is the reaction key in MappedAfkCheckReactions? If so, it's as simple as grabbing that data.
             if (reaction.mapKey in MAPPED_AFK_CHECK_REACTIONS) {
+                if (!GlobalFgrUtilities.hasCachedEmoji(MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey].emojiId))
+                    return;
+
                 reactions.set(reaction.mapKey, {
                     ...MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey],
                     earlyLocAmt: reaction.maxEarlyLocation,
@@ -356,6 +388,9 @@ export class RaidInstance {
             // Is the reaction key associated with a custom emoji? If so, grab that as well. 
             const customEmoji = guildDoc.properties.customReactions.findIndex(x => x.key === reaction.mapKey);
             if (customEmoji !== -1) {
+                if (!GlobalFgrUtilities.hasCachedEmoji(guildDoc.properties.customReactions[customEmoji].value.emojiId))
+                    return;
+
                 reactions.set(reaction.mapKey, {
                     ...guildDoc.properties.customReactions[customEmoji].value,
                     earlyLocAmt: reaction.maxEarlyLocation,
@@ -367,14 +402,14 @@ export class RaidInstance {
         // If the dungeon is base or derived base, we need to check for dungeon overrides. 
         if (dungeon.isBaseOrDerived) {
             // Check if we need to deal with any dungeon overrides. 
-            const idxOfCustom = guildDoc.properties.dungeonOverride.findIndex(x => x.codeName === dungeon.codeName);
+            const overrideIdx = guildDoc.properties.dungeonOverride.findIndex(x => x.codeName === dungeon.codeName);
 
-            if (idxOfCustom !== -1) {
+            if (overrideIdx !== -1) {
                 // We need to deal with overrides. In this case, go through every reaction defined in the override
                 // info and add them to the collection of reactions.
-                const overrideInfo = guildDoc.properties.dungeonOverride[idxOfCustom];
+                const overrideInfo = guildDoc.properties.dungeonOverride[overrideIdx];
 
-                for (const reaction of overrideInfo.keyData.concat(overrideInfo.otherData)) {
+                for (const reaction of overrideInfo.keyReactions.concat(overrideInfo.otherReactions)) {
                     findAndAddReaction(reaction);
                 }
 
@@ -395,7 +430,8 @@ export class RaidInstance {
             return reactions;
         }
 
-        // Otherwise, this is a fully custom dungeon.
+        // Otherwise, this is a fully custom dungeon so we can simply just combine all reactions into one array and
+        // process that.
         for (const r of dungeon.keyReactions.concat(dungeon.otherReactions)) {
             findAndAddReaction(r);
         }
@@ -507,12 +543,17 @@ export class RaidInstance {
             await rm.addEarlyLocationReaction(member, entry.reactCodeName, false);
         }
 
-        if (rm._raidStatus === RaidStatus.AFK_CHECK) {
-            // TODO
+        if (rm._raidStatus === RaidStatus.PRE_AFK_CHECK || rm._raidStatus === RaidStatus.AFK_CHECK) {
+            rm.startControlPanelCollector();
+            rm.startIntervals();
+            rm.startAfkCheckCollector();
         }
         else if (rm._raidStatus === RaidStatus.IN_RUN) {
-            // TODO
+            rm.startControlPanelCollector();
+            rm.startIntervals();
         }
+
+        RaidInstance.ActiveRaids.set(rm._afkCheckMsg.id, rm);
         return rm;
     }
 
@@ -1735,6 +1776,99 @@ export class RaidInstance {
         });
 
         return true;
+    }
+
+    /**
+     * Event handler that deals with voice state changes.
+     * @param {VoiceState} oldState The old voice state.
+     * @param {VoiceState} newState The new voice state.
+     * @private
+     */
+    public async voiceStateUpdateEventFunction(oldState: VoiceState, newState: VoiceState): Promise<void> {
+        if (!this._raidVc)
+            return;
+
+        // Event must be regarding this raid VC.
+        if (oldState.channelId !== this._raidVc.id && newState.channelId !== this._raidVc.id)
+            return;
+
+        if (oldState.channelId !== newState.channelId) {
+            if (oldState.channelId && !newState.channelId) {
+                // person left the VC
+            }
+
+            if (!oldState.channelId && newState.channelId) {
+                // person joined the VC
+            }
+
+            // otherwise, changed VC
+        }
+
+        if (oldState.mute && !newState.mute) {
+            // person no longer server/local muted
+        }
+
+        if (!oldState.mute && newState.mute) {
+            // person server/local muted
+        }
+
+        if (oldState.deaf && !newState.deaf) {
+            // person no longer server/local deaf
+        }
+
+        if (!oldState.deaf && newState.deaf) {
+            // person server/local deaf
+        }
+
+        if (oldState.selfVideo && !newState.selfVideo) {
+            // person video off
+        }
+
+        if (!oldState.selfVideo && newState.selfVideo) {
+            // person video on
+        }
+
+        if (oldState.streaming && !newState.streaming) {
+            // person stream off
+        }
+
+        if (!oldState.streaming && newState.streaming) {
+            // person stream on
+        }
+    }
+
+    /**
+     * Event handler that deals with interactions.
+     * @param {Interaction} interaction The interaction.
+     * @private
+     */
+    private async interactionEventFunction(interaction: Interaction): Promise<void> {
+        if (!interaction.isButton() || !this._afkCheckMsg)
+            return;
+
+        if (!this.membersThatJoinedVc.includes(interaction.user.id)) {
+            await interaction.reply({
+                ephemeral: true,
+                content: "You didn't join this raid, so you can't be moved in at this time."
+            });
+        }
+
+        if (interaction.customId !== `reconnect_${this._afkCheckMsg.id}`)
+            return;
+
+        const member = await GuildFgrUtilities.fetchGuildMember(this._guild, interaction.user.id);
+        if (!member)
+            return;
+
+        if (!member.voice.channel) {
+            await interaction.reply({
+                ephemeral: true,
+                content: "Please join a voice channel first."
+            });
+            return;
+        }
+
+        await member.voice.setChannel(this._raidVc).catch();
     }
 
     /**

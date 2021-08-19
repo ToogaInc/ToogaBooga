@@ -2,9 +2,8 @@ import {ObjectID} from "mongodb";
 import {
     IAfkCheckReaction,
     IAfkCheckProperties,
-    IDungeonInfo,
     IRaidChannels,
-    IRaidInfo, IReactionInfo
+    IRaidInfo, IReactionInfo, ICustomDungeonInfo
 } from "./DungeonRaidInterfaces";
 import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
 import {IModmailThread} from "./ModmailInterfaces";
@@ -16,7 +15,7 @@ import {
     ISuspendedUser
 } from "./PunishmentInterfaces";
 import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
-import {MainLogType, MainOnlyModLogType, QuotaLogType, SectionLogType, SectionModLogType} from "./Types";
+import {MainLogType, MainOnlyModLogType, SectionLogType, SectionModLogType} from "./Types";
 
 export interface IBaseDocument<T = ObjectID> {
     _id: T;
@@ -296,13 +295,13 @@ export interface IGuildInfo extends IBaseDocument {
          * Any custom dungeons. This will be made available to all sections, and can be filtered out based on the
          * `allowedDungeons` property. This should NEVER contain base dungeons or derived based dungeons.
          *
-         * @type {IDungeonInfo[]}
+         * @type {ICustomDungeonInfo[]}
          */
-        customDungeons: IDungeonInfo[];
+        customDungeons: ICustomDungeonInfo[];
 
         /**
          * Any dungeon overrides. This will be made available to all sections. Guilds can use this to edit existing
-         * dungeons or create new dungeons for their server.
+         * dungeons only.
          *
          * @type {object}
          */
@@ -330,7 +329,7 @@ export interface IGuildInfo extends IBaseDocument {
              *
              * @type {IAfkCheckReaction[]}
              */
-            keyData: IAfkCheckReaction[];
+            keyReactions: IAfkCheckReaction[];
 
             /**
              * Any other "reactions" needed for this dungeon. For example, for Oryx 3, you might have various class
@@ -344,7 +343,7 @@ export interface IGuildInfo extends IBaseDocument {
              *
              * @type {IAfkCheckReaction[]}
              */
-            otherData: IAfkCheckReaction[];
+            otherReactions: IAfkCheckReaction[];
 
             /**
              * The default number of people that can get early location by reacting to the Nitro button.
@@ -359,6 +358,10 @@ export interface IGuildInfo extends IBaseDocument {
 
             /**
              * The VC limit. This will override the section-defined VC limit.
+             *
+             * Use `-1` to default to whatever the section default is.
+             *
+             * Use `100` for infinite.
              *
              * @type {number}
              */
@@ -456,11 +459,11 @@ export interface IGuildInfo extends IBaseDocument {
                 userId: string;
 
                 /**
-                 * The log type.
+                 * The log type. This value should be defined as a key in `pointValue`.
                  *
                  * @type {string}
                  */
-                logType: QuotaLogType;
+                logType: string;
 
                 /**
                  * The amount being logged.
@@ -501,11 +504,19 @@ export interface IGuildInfo extends IBaseDocument {
             /**
              * The points system. Each quota entry can be associated to a certain number of points (for example,
              * you can set `RunComplete` to 1 point). This is used in the calculation of `currentQuotas`. This
-             * is only specific to this section.
+             * is only specific to this role.
              *
-             * @type {IPropertyKeyValuePair<QuotaLogType, number>[]}
+             * Possible keys include:
+             * - `RunComplete:DUNGEON_ID`
+             * - `RunFailed:DUNGEON_ID`
+             * - `RunAssist:DUNGEON_ID`
+             * - `Parse`
+             * - `ManualVerify`
+             * - `PunishmentIssued`
+             *
+             * @type {IPropertyKeyValuePair<string, number>[]}
              */
-            pointValue: IPropertyKeyValuePair<QuotaLogType, number>[];
+            pointValue: IPropertyKeyValuePair<string, number>[];
         }[];
 
         /**

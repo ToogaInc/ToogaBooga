@@ -482,10 +482,7 @@ export namespace MongoManager {
                     }
                 },
                 afkCheckProperties: {
-                    vcLimit: {
-                        allowEdit: true,
-                        value: 60
-                    },
+                    vcLimit: 60,
                     nitroEarlyLocationLimit: 5,
                     customMsg: {
                         additionalAfkCheckInfo: "",

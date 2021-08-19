@@ -3,8 +3,6 @@ import {IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
 
 /**
  * An interface representing a dungeon that can be used for AFK checks and headcounts.
- *
- * Guilds are able to create their own "dungeons" for their own purposes.
  */
 export interface IDungeonInfo {
     /**
@@ -111,6 +109,43 @@ export interface IDungeonInfo {
 }
 
 /**
+ * An interface representing a custom dungeon that can be used for AFK checks and headcounts.
+ *
+ * Guilds are able to create their own "dungeons" for their own purposes. These dungeons are represented by this
+ * interface.
+ */
+export interface ICustomDungeonInfo extends IDungeonInfo {
+    /**
+     * The default number of people that can get early location by reacting to the Nitro button.
+     *
+     * Use `-1` to default to whatever the section default is.
+     *
+     * This does not apply to priority reactions (key, class, etc.).
+     *
+     * @type {number}
+     */
+    nitroEarlyLocationLimit: number;
+
+    /**
+     * The VC limit. This will override the section-defined VC limit.
+     *
+     * Use `-1` to default to whatever the section default is.
+     *
+     * Use `100` for infinite.
+     *
+     * @type {number}
+     */
+    vcLimit: number;
+
+    /**
+     * Since this is a custom dungeon, this value must be `false`.
+     *
+     * @type {boolean}
+     */
+    isBaseOrDerived: false;
+}
+
+/**
  * An interface that essentially linked a reaction to the maximum number of people that can get early location.
  */
 export interface IAfkCheckReaction {
@@ -175,9 +210,9 @@ export interface IAfkCheckProperties {
      *
      * This can be overridden by the guild on a per-section basis.
      *
-     * @type {IAfkCheckProperty<number>}
+     * @type {number}
      */
-    vcLimit: IAfkCheckProperty<number>;
+    vcLimit: number;
 
     /**
      * The default number of people that can get early location by reacting to the Nitro button.
@@ -256,11 +291,6 @@ export interface IAfkCheckProperties {
      * @type {string[]}
      */
     allowedDungeons: string[];
-}
-
-interface IAfkCheckProperty<T> {
-    value: T;
-    allowEdit: boolean;
 }
 
 /**
