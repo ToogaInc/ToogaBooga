@@ -5,10 +5,10 @@ import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilit
 import {MongoManager} from "./MongoManager";
 import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {MiscUtilities} from "../utilities/MiscUtilities";
 import {AllModLogType, MainOnlyModLogType, SectionModLogType} from "../definitions/Types";
 import {FilterQuery} from "mongodb";
 import {Queue} from "../utilities/Queue";
+import {TimeUtilities} from "../utilities/TimeUtilities";
 
 interface IPunishmentDetails {
     /**
@@ -273,9 +273,9 @@ export namespace PunishmentManager {
             .toString();
 
         const durationStr = new StringBuilder()
-            .append(`- Duration: ${entry.duration! === -1 ? "N/A" : MiscUtilities.formatDuration(entry.duration!)}`)
+            .append(`- Duration: ${entry.duration! === -1 ? "N/A" : TimeUtilities.formatDuration(entry.duration!)}`)
             .appendLine()
-            .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${MiscUtilities.getTime(entry.expiresAt!)} UTC`}`)
+            .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${TimeUtilities.getTime(entry.expiresAt!)} UTC`}`)
             .toString();
 
         const logToChanEmbed = new MessageEmbed()

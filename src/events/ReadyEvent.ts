@@ -1,9 +1,9 @@
 import {OneLifeBot} from "../OneLifeBot";
 import {MongoManager} from "../managers/MongoManager";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {MiscUtilities} from "../utilities/MiscUtilities";
 import {IBotInfo} from "../definitions";
 import {MuteManager, SuspensionManager} from "../managers/PunishmentManager";
+import {TimeUtilities} from "../utilities/TimeUtilities";
 
 export async function onReadyEvent(): Promise<void> {
     const botUser = OneLifeBot.BotInstance.client.user;
@@ -48,7 +48,7 @@ export async function onReadyEvent(): Promise<void> {
     const readyLog = new StringBuilder()
         .append(`${botUser.tag} has started successfully.`)
         .appendLine()
-        .append(`Time: ${MiscUtilities.getTime()}`);
+        .append(`Time: ${TimeUtilities.getTime()}`);
 
     console.info(readyLog.toString());
 }

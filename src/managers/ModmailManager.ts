@@ -27,6 +27,7 @@ import {GeneralConstants} from "../constants/GeneralConstants";
 import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {IModmailThread, IModmailThreadMessage, IGuildInfo} from "../definitions";
+import {TimeUtilities} from "../utilities/TimeUtilities";
 
 export namespace ModmailManager {
     // Key: person responding to modmail.
@@ -366,7 +367,7 @@ export namespace ModmailManager {
             parent: modmailCategory,
             topic: new StringBuilder().append(`Modmail Thread For: ${targetMember}`).appendLine()
                 .append(`Created By: ${initiatedBy}`).appendLine()
-                .append(`Created Time: ${MiscUtilities.getTime(createdTime)}`).toString()
+                .append(`Created Time: ${TimeUtilities.getTime(createdTime)}`).toString()
         }) as TextChannel;
 
         await threadChannel.lockPermissions().catch();
@@ -375,7 +376,7 @@ export namespace ModmailManager {
             .appendLine()
             .append(`⇒ **Recipient:** ${targetMember}`)
             .appendLine()
-            .append(`⇒ **Thread Creation Time:** ${MiscUtilities.getTime(createdTime)}`);
+            .append(`⇒ **Thread Creation Time:** ${TimeUtilities.getTime(createdTime)}`);
         const reactionSb = new StringBuilder()
             .append(`⇒ React with ${Emojis.CLIPBOARD_EMOJI} to send a message. You may also use the \`;respond\` `)
             .append("command.")
@@ -536,7 +537,7 @@ export namespace ModmailManager {
             .appendLine()
             .append(`⇒ **Converted to Thread by:** ${convertedToThreadBy}`)
             .appendLine()
-            .append(`⇒ **Created By:** ${MiscUtilities.getTime(createdTime)}`);
+            .append(`⇒ **Created By:** ${TimeUtilities.getTime(createdTime)}`);
         const threadChannel = await convertedToThreadBy.guild.channels.create(channelName, {
             type: ChannelTypes.GUILD_TEXT,
             parent: modmailCategory,
@@ -610,7 +611,7 @@ export namespace ModmailManager {
             .appendLine()
             .append(`⇒ **Converted to Thread by:** ${convertedToThreadBy}`)
             .appendLine()
-            .append(`⇒ **Created By:** ${MiscUtilities.getTime(createdTime)}`)
+            .append(`⇒ **Created By:** ${TimeUtilities.getTime(createdTime)}`)
             .toString());
         await originalMmMsg.edit({embeds: [oldEmbed]}).catch();
         await originalMmMsg.reactions.removeAll().catch();
@@ -878,7 +879,7 @@ export namespace ModmailManager {
                             .appendLine()
                             .append(`⇒ Modmail Initiator Author ID: ${threadInfo.initiatorId}`)
                             .appendLine()
-                            .append(`⇒ Thread Creation Time: ${MiscUtilities.getTime(threadInfo.startedOn)}`)
+                            .append(`⇒ Thread Creation Time: ${TimeUtilities.getTime(threadInfo.startedOn)}`)
                             .appendLine()
                             .append(`⇒ Converted To Thread By (ID): ${threadInfo.initiatedById}`)
                             .appendLine()
@@ -888,7 +889,7 @@ export namespace ModmailManager {
                             .append("========================================")
                             .appendLine();
                         for (const mmMessage of threadInfo.messages) {
-                            msgHistory.append(`[${MiscUtilities.getTime(mmMessage.timeSent)}] ${mmMessage.tag} `)
+                            msgHistory.append(`[${TimeUtilities.getTime(mmMessage.timeSent)}] ${mmMessage.tag} `)
                                 .append(`(${mmMessage.authorId})`)
                                 .appendLine()
                                 .appendLine()
@@ -914,11 +915,11 @@ export namespace ModmailManager {
                         if (storageMsg && storageMsg.attachments.size > 0) {
                             const urlToAttachment = storageMsg.attachments.first()!.url;
                             const linkedStr = `[[Thread Messages](${urlToAttachment})]`;
-                            additionalRespInfo += `${closedBy} (${MiscUtilities.getTime()}) ${linkedStr}\n`;
+                            additionalRespInfo += `${closedBy} (${TimeUtilities.getTime()}) ${linkedStr}\n`;
                         }
-                        else additionalRespInfo += `${closedBy} (${MiscUtilities.getTime()}) \`[Thread Closed]\`\n`;
+                        else additionalRespInfo += `${closedBy} (${TimeUtilities.getTime()}) \`[Thread Closed]\`\n`;
                     }
-                    else additionalRespInfo += `${closedBy} (${MiscUtilities.getTime()}) \`[Thread Closed]\`\n`;
+                    else additionalRespInfo += `${closedBy} (${TimeUtilities.getTime()}) \`[Thread Closed]\`\n`;
 
                     if (modmailEmbed.fields[lastRespLastIdx].value === "None.")
                         modmailEmbed.fields[lastRespLastIdx].value = additionalRespInfo;
@@ -1015,7 +1016,7 @@ export namespace ModmailManager {
         if (attachments)
             respInProgressEmbed.addField(attachments.name, attachments.value);
         respInProgressEmbed.addField("Sender Info", senderInfo)
-            .addField("Current Responder", `${responder}: \`${MiscUtilities.getTime()}\``);
+            .addField("Current Responder", `${responder}: \`${TimeUtilities.getTime()}\``);
 
         await originalMmMsg.edit({embeds: [respInProgressEmbed]}).catch();
 
@@ -1098,7 +1099,7 @@ export namespace ModmailManager {
             .appendLine()
             .append(`Responder Tag: ${responder.user.tag}`)
             .appendLine()
-            .append(`Time: ${MiscUtilities.getTime()} (UTC)`)
+            .append(`Time: ${TimeUtilities.getTime()} (UTC)`)
             .appendLine()
             .append(`Sent Status: ${sentMsg ? "Message Sent Successfully" : "Message Failed To Send"}`);
 
@@ -1131,7 +1132,7 @@ export namespace ModmailManager {
             }
         }
 
-        const timeStr = MiscUtilities.getTime();
+        const timeStr = TimeUtilities.getTime();
         const tempLastResp = `${responder} (${timeStr}) ${addLogStr} ${sentMsg ? "" : Emojis.WARNING_EMOJI}`;
         if (oldEmbed.fields[lastRespLastIdx].value === "None.")
             oldEmbed.fields[lastRespLastIdx].value = tempLastResp;

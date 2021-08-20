@@ -49,6 +49,7 @@ import {
     IReactionInfo,
     ISectionInfo
 } from "../definitions";
+import {TimeUtilities} from "../utilities/TimeUtilities";
 
 type ReactionInfoMore = IReactionInfo & { earlyLocAmt: number; isCustomReaction: boolean; };
 
@@ -1457,7 +1458,7 @@ export class RaidInstance {
                 : "Raid";
 
         const generalStatus = new StringBuilder()
-            .append(`⇨ AFK Check Started At: ${MiscUtilities.getTime(this._raidVc.createdTimestamp)} UTC`)
+            .append(`⇨ AFK Check Started At: ${TimeUtilities.getTime(this._raidVc.createdTimestamp)} UTC`)
             .appendLine()
             .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
             .appendLine()
