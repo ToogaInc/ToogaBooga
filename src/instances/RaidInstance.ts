@@ -1402,7 +1402,7 @@ export class RaidInstance {
 
         const brokenUpFields = ArrayUtilities.arrayToStringFields(afkCheckFields, (_, elem) => elem);
         for (const field of brokenUpFields) {
-            afkCheckEmbed.addField("", field);
+            afkCheckEmbed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
         }
 
         if (this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.additionalAfkCheckInfo) {
@@ -1538,7 +1538,7 @@ export class RaidInstance {
             .setDescription(descSb.toString());
 
         for (const field of fields)
-            controlPanelEmbed.addField("", field);
+            controlPanelEmbed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
 
         return controlPanelEmbed;
     }

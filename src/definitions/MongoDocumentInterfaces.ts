@@ -430,94 +430,7 @@ export interface IGuildInfo extends IBaseDocument {
          *
          * @type {object}
          */
-        quotaInfo: {
-            /**
-             * The role ID for this quota.
-             *
-             * @type {string}
-             */
-            roleId: string;
-
-            /**
-             * When this quota was last reset.
-             *
-             * @type {number}
-             */
-            lastReset: number;
-
-            /**
-             * A log of all quotas for this period. This array will be reset upon the reset of quotas.
-             *
-             * @type {object[]}
-             */
-            quotaLog: {
-                /**
-                 * The user responsible for this.
-                 *
-                 * @type {string}
-                 */
-                userId: string;
-
-                /**
-                 * The log type. This value should be defined as a key in `pointValue`.
-                 *
-                 * @type {string}
-                 */
-                logType: string;
-
-                /**
-                 * The amount being logged.
-                 *
-                 * @type {number}
-                 */
-                amount: number;
-
-                /**
-                 * The time that this was issued.
-                 *
-                 * @type {number}
-                 */
-                timeIssued: number;
-            }[];
-
-            /**
-             * The channel where this should be logged to.
-             *
-             * @type {string}
-             */
-            channel: string;
-
-            /**
-             * The message ID corresponding to this quota's leaderboard.
-             *
-             * @type {string}
-             */
-            messageId: string;
-
-            /**
-             * The number of points needed to complete this quota.
-             *
-             * @type {number}
-             */
-            pointsNeeded: number;
-
-            /**
-             * The points system. Each quota entry can be associated to a certain number of points (for example,
-             * you can set `RunComplete` to 1 point). This is used in the calculation of `currentQuotas`. This
-             * is only specific to this role.
-             *
-             * Possible keys include:
-             * - `RunComplete:DUNGEON_ID`
-             * - `RunFailed:DUNGEON_ID`
-             * - `RunAssist:DUNGEON_ID`
-             * - `Parse`
-             * - `ManualVerify`
-             * - `PunishmentIssued`
-             *
-             * @type {IPropertyKeyValuePair<string, number>[]}
-             */
-            pointValue: IPropertyKeyValuePair<string, number>[];
-        }[];
+        quotaInfo: IQuotaInfo[];
 
         /**
          * The time when quotas should be reset. Times are based on
@@ -572,6 +485,98 @@ export interface IGuildInfo extends IBaseDocument {
      * @type {IManualVerificationEntry[]}
      */
     manualVerificationEntries: IManualVerificationEntry[];
+}
+
+/**
+ * An interface that represents a quota.
+ */
+export interface IQuotaInfo {
+    /**
+     * The role ID for this quota.
+     *
+     * @type {string}
+     */
+    roleId: string;
+
+    /**
+     * When this quota was last reset.
+     *
+     * @type {number}
+     */
+    lastReset: number;
+
+    /**
+     * A log of all quotas for this period. This array will be reset upon the reset of quotas.
+     *
+     * @type {object[]}
+     */
+    quotaLog: {
+        /**
+         * The user responsible for this.
+         *
+         * @type {string}
+         */
+        userId: string;
+
+        /**
+         * The log type. This value should be defined as a key in `pointValue`.
+         *
+         * @type {string}
+         */
+        logType: string;
+
+        /**
+         * The amount being logged.
+         *
+         * @type {number}
+         */
+        amount: number;
+
+        /**
+         * The time that this was issued.
+         *
+         * @type {number}
+         */
+        timeIssued: number;
+    }[];
+
+    /**
+     * The channel where this should be logged to.
+     *
+     * @type {string}
+     */
+    channel: string;
+
+    /**
+     * The message ID corresponding to this quota's leaderboard.
+     *
+     * @type {string}
+     */
+    messageId: string;
+
+    /**
+     * The number of points needed to complete this quota.
+     *
+     * @type {number}
+     */
+    pointsNeeded: number;
+
+    /**
+     * The points system. Each quota entry can be associated to a certain number of points (for example,
+     * you can set `RunComplete` to 1 point). This is used in the calculation of `currentQuotas`. This
+     * is only specific to this role.
+     *
+     * Possible keys include:
+     * - `RunComplete:DUNGEON_ID`
+     * - `RunFailed:DUNGEON_ID`
+     * - `RunAssist:DUNGEON_ID`
+     * - `Parse`
+     * - `ManualVerify`
+     * - `PunishmentIssued`
+     *
+     * @type {IPropertyKeyValuePair<string, number>[]}
+     */
+    pointValue: IPropertyKeyValuePair<string, number>[];
 }
 
 /**

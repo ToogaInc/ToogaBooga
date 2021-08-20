@@ -6,6 +6,8 @@ import {IPermAllowDeny} from "../definitions";
 import {RolePermissions} from "../definitions/Types";
 
 export namespace GeneralConstants {
+    export const ZERO_WIDTH_SPACE: string = "\u200b";
+
     export const NUMBER_OF_STATS: number = 8;
 
     export const ALL_CHARACTERS: string[] = [

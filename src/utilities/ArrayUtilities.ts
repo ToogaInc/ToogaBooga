@@ -123,4 +123,45 @@ export namespace ArrayUtilities {
 
         return chunks;
     }
+
+    /**
+     * Generates a leaderboard array (a 2D array with the first element being the place and the second being the value).
+     * @param {T[]} data The data.
+     * @param {Function} func The function that decides what data will be sorted.
+     * @param {Function} compareFn How to compare each element.
+     * @returns The leaderboard array.
+     */
+    export function generateLeaderboardArray<T>(
+        data: T[],
+        func: (val: T) => number,
+        compareFn: ((a: T, b: T) => number) = (x, y) => func(y) - func(x)
+    ): [number, T][] {
+        data.sort(compareFn);
+        let place: number = 1;
+        let diff: number = 0;
+        let lastIndexOfData: number = 0;
+        const returnData: [number, T][] = [];
+
+        for (let i = 0; i < data.length; i++) {
+            if (i === 0) {
+                returnData.push([place, data[i]]);
+                continue;
+            }
+
+            const val: number = func(data[i]);
+
+            if (val === func(returnData[lastIndexOfData][1])) {
+                returnData.push([place, data[i]]);
+                diff++;
+            }
+            else {
+                place += diff + 1;
+                diff = 0;
+                returnData.push([place, data[i]]);
+            }
+            lastIndexOfData++;
+        }
+
+        return returnData;
+    }
 }
