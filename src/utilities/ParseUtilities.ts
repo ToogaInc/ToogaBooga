@@ -7,7 +7,7 @@ export namespace ParseUtilities {
     /**
      * Parses a role from a message object.
      * @param {Message} msg The message.
-     * @return {Role | null} The role, if any; null otherwise.
+     * @return {Role | null} The role object, if any; null otherwise.
      */
     export function parseRole(msg: Message): Role | null {
         if (!msg.guild) return null;
@@ -20,7 +20,7 @@ export namespace ParseUtilities {
     /**
      * Parses a channel from a message object.
      * @param {Message} msg The message.
-     * @return {T | null} The channel, if any; null otherwise.
+     * @return {T | null} The channel object, if any; null otherwise.
      */
     export function parseChannel<T extends GuildChannel>(msg: Message): T | null {
         if (!msg.guild) return null;
@@ -30,6 +30,11 @@ export namespace ParseUtilities {
         return msg.mentions.channels.first() as T ?? null;
     }
 
+    /**
+     * Parses a user mention from the message object.
+     * @param {Message} msg The message.
+     * @returns {User | null} The user object, if any; null otherwise.
+     */
     export function parseUser(msg: Message): User | null {
         if (MiscUtilities.isSnowflake(msg.content))
             return GlobalFgrUtilities.getCachedUser(msg.content);

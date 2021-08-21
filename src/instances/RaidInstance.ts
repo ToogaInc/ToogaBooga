@@ -1843,7 +1843,7 @@ export class RaidInstance {
      * @param {Interaction} interaction The interaction.
      * @private
      */
-    private async interactionEventFunction(interaction: Interaction): Promise<void> {
+    public async interactionEventFunction(interaction: Interaction): Promise<void> {
         if (!interaction.isButton() || !this._afkCheckMsg)
             return;
 
@@ -2038,6 +2038,14 @@ export class RaidInstance {
         });
 
         return true;
+    }
+
+    /**
+     * Gets the raid voice channel, if any.
+     * @returns {VoiceChannel | null} The raid voice channel.
+     */
+    public get raidVc(): VoiceChannel | null {
+        return this._raidVc;
     }
 }
 

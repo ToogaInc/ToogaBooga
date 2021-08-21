@@ -3,13 +3,14 @@ import {
     Client,
     Collection, Guild,
     Interaction,
-    Message
+    Message, VoiceState
 } from "discord.js";
 import {MongoManager} from "./managers/MongoManager";
 import * as assert from "assert";
 import axios, {AxiosInstance} from "axios";
 import {BaseCommand} from "./commands";
-import {onGuildCreateEvent, onInteractionEvent, onMessageEvent, onReadyEvent} from "./events";
+import {onGuildCreateEvent, onInteractionEvent, onMessageEvent, onReadyEvent, onVoiceStateEvent} from "./events";
+import {QuotaService} from "./managers/QuotaManager";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -56,6 +57,7 @@ export class OneLifeBot {
         this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
         this._bot.on("guildCreate", async (g: Guild) => onGuildCreateEvent(g));
+        this._bot.on("voiceStateUpdate", async (o: VoiceState, n: VoiceState) => onVoiceStateEvent(o, n));
         this._eventsIsStarted = true;
     }
 
@@ -88,6 +90,8 @@ export class OneLifeBot {
      * @returns {boolean} Whether the services all started successfully.
      */
     public initServices(): boolean {
+        // MuteManager + SuspensionManager started in ready event.
+        QuotaService.startService().then();
         return true;
     }
 

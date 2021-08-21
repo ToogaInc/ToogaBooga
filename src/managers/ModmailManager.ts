@@ -34,34 +34,39 @@ export namespace ModmailManager {
     // Value: the person that is being responded to.
     export const CurrentlyRespondingToModMail: Collection<string, string> = new Collection<string, string>();
 
+    export const MODMAIL_REPLY_ID: string = "modmail_reply";
+    export const MODMAIL_DELETE_ID: string = "modmail_delete";
+    export const MODMAIL_BLACKLIST_ID: string = "modmail_blacklist";
+    export const MODMAIL_CREATE_ID: string = "modmail_create";
+    
     const ReplyActionRow: MessageActionRow = new MessageActionRow()
         .addComponents(new MessageButton()
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomId("modmail_reply"));
+            .setCustomId(MODMAIL_REPLY_ID));
 
     const ModmailGeneralActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomId("modmail_reply"),
+            .setCustomId(MODMAIL_REPLY_ID),
         new MessageButton()
             .setLabel("Delete")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
             .setStyle(MessageButtonStyles.DANGER)
-            .setCustomId("modmail_delete"),
+            .setCustomId(MODMAIL_DELETE_ID),
         new MessageButton()
             .setLabel("Blacklist")
             .setEmoji(Emojis.DENIED_EMOJI)
             .setStyle(MessageButtonStyles.DANGER)
-            .setCustomId("modmail_blacklist"),
+            .setCustomId(MODMAIL_BLACKLIST_ID),
         new MessageButton()
             .setLabel("Convert to Thread")
             .setEmoji(Emojis.REDIRECT_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomId("modmail_create_thread")
+            .setCustomId(MODMAIL_CREATE_ID)
     ]);
 
     const ModmailThreadActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
@@ -69,17 +74,17 @@ export namespace ModmailManager {
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
             .setStyle(MessageButtonStyles.PRIMARY)
-            .setCustomId("modmail_reply"),
+            .setCustomId(MODMAIL_REPLY_ID),
         new MessageButton()
-            .setLabel("Delete")
+            .setLabel("End Thread")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
             .setStyle(MessageButtonStyles.DANGER)
-            .setCustomId("modmail_delete"),
+            .setCustomId(MODMAIL_DELETE_ID),
         new MessageButton()
             .setLabel("Blacklist")
             .setEmoji(Emojis.DENIED_EMOJI)
             .setStyle(MessageButtonStyles.DANGER)
-            .setCustomId("modmail_blacklist")
+            .setCustomId(MODMAIL_BLACKLIST_ID)
     ]);
 
     const ModmailResponseEmbedActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
@@ -626,6 +631,7 @@ export namespace ModmailManager {
      */
     export async function blacklistFromModmail(origMmMessage: Message, mod: GuildMember, guildDoc: IGuildInfo,
                                                threadInfo?: IModmailThread): Promise<void> {
+        // TODO what if the button was pressed in modmail thread channel
         const oldEmbed = origMmMessage.embeds[0];
         const authorOfModmailId = threadInfo
             ? threadInfo.originalModmailMessageId
@@ -765,7 +771,7 @@ export namespace ModmailManager {
         // make sure member exists
         const memberToRespondTo = await GuildFgrUtilities.fetchGuildMember(
             memberThatWillRespond.guild,
-            modmailThread.originalModmailMessageId
+            modmailThread.initiatorId
         );
 
         if (!memberToRespondTo) {

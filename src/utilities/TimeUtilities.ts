@@ -2,7 +2,7 @@ export namespace TimeUtilities {
     /**
      * Gets the current time in a nice string format.
      * @param {Date | number} [date = new Date()] The date to choose, if any.
-     * @param {string} [timezone = "Atlantic/Reykjavik"] The timezone, if applicable. Otherwise, UTC is used.
+     * @param {string} [timezone] The timezone, if applicable. Otherwise, UTC is used.
      * @returns {string} The current formatter date & time.
      */
     export function getTime(date: Date | number = new Date(), timezone: string = "Atlantic/Reykjavik"): string {
@@ -36,10 +36,6 @@ export namespace TimeUtilities {
      * @see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
      */
     export function isValidTimeZone(tz: string): boolean {
-        /*
-        if (Intl || !Intl.DateTimeFormat().resolvedOptions().timeZone) {
-            throw 'Time zones are not available in this environment';
-        }*/
         try {
             Intl.DateTimeFormat(undefined, {timeZone: tz.trim()});
             return true;
