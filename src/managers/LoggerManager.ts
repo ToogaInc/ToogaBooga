@@ -4,6 +4,7 @@ import {FilterQuery, UpdateQuery} from "mongodb";
 import {IUserInfo} from "../definitions";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
 import {DUNGEON_DATA} from "../constants/DungeonData";
+import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export namespace LoggerManager {
     enum RunResult {
@@ -43,6 +44,13 @@ export namespace LoggerManager {
          * where the key is the dungeon name (not ID) and the value is the number completed/failed/assisted.
          */
         dungeonsLed: Collection<string, Collection<string, { completed: number; failed: number; assisted: number; }>>;
+
+        /**
+         * The points that this person has.
+         *
+         * @type {Collection<string, number>}
+         */
+        points: Collection<string, number>;
     }
 
     /**
@@ -50,13 +58,18 @@ export namespace LoggerManager {
      * @param {GuildMember} member The member.
      * @param {string} id The ID, represented by the `key` property.
      * @param {number} amt The amount to log.
+     * @param {IUserInfo} [userDoc] The user document, if any.
      * @private
      */
-    async function internalUpdateLoggedInfo(member: GuildMember, id: string, amt: number): Promise<void> {
-        const userDoc = await MongoManager.getOrCreateUserDoc(member.id);
+    async function internalUpdateLoggedInfo(member: GuildMember, id: string, amt: number,
+                                            userDoc?: IUserInfo): Promise<void> {
+        const userDocToUse = userDoc ?? await MongoManager.getOrCreateUserDoc(member.id);
+        if (userDocToUse.discordId !== member.id)
+            return;
+
         let filterQuery: FilterQuery<IUserInfo>;
         let updateQuery: UpdateQuery<IUserInfo>;
-        if (userDoc.loggedInfo.some(x => x.key === id)) {
+        if (userDocToUse.loggedInfo.some(x => x.key === id)) {
             filterQuery = {
                 discordId: member.id,
                 "loggedInfo.key": id
@@ -82,21 +95,32 @@ export namespace LoggerManager {
     }
 
     /**
-     * Logs a key use into the user document.
+     * Logs a key use into the user document. This will also give the user the points, if any, for this key log.
      * @param {GuildMember} member The member.
      * @param {string | null} keyId The key ID, if any.
      * @param {number} amt The number of the specified key to add.
      */
-    export async function logKeyUse(member: GuildMember, keyId: string | null, amt: number): Promise<void> {
+    export async function logKeyUse(member: GuildMember, keyId: string, amt: number): Promise<void> {
         // Format:      K:GUILD_ID:KEY_ID:USE     For runes, vials, "bigger" keys.
         //              K:GUILD_ID:GENERAL:USE            For anything else.
-        let key: string;
-        if (keyId && KEY_IDS_TO_STORE.includes(keyId))
-            key = `${member.guild.id}:${keyId}:USE`;
+        let dbKeyId: string;
+        if (KEY_IDS_TO_STORE.includes(keyId))
+            dbKeyId = `K:${member.guild.id}:${keyId}:USE`;
         else
-            key = `${member.guild.id}:GENERAL:USE`;
+            dbKeyId = `K:${member.guild.id}:GENERAL:USE`;
 
-        await internalUpdateLoggedInfo(member, key, amt);
+        const [guildDoc, userDoc] = await Promise.all([
+            await MongoManager.getOrCreateGuildDoc(member.guild.id, true),
+            await MongoManager.getOrCreateUserDoc(member.id)
+        ]);
+        await internalUpdateLoggedInfo(member, dbKeyId, amt, userDoc);
+
+        // Points system
+        // Recall that the {key = reaction ID (i.e. the key ID), value = points}.
+        const ptsForReact = guildDoc.properties.reactionPoints.find(x => x.key === keyId);
+        if (!ptsForReact)
+            return;
+        await logPoints(member, ptsForReact.value * amt);
     }
 
     /**
@@ -109,7 +133,7 @@ export namespace LoggerManager {
     export async function logDungeonRun(member: GuildMember, dungeonId: string, completed: boolean,
                                         amt: number = 1): Promise<void> {
         // Format:      R:GUILD_ID:DUNGEON_ID:COMPLETED(1/0)
-        await internalUpdateLoggedInfo(member, `${member.guild.id}:${dungeonId}:${completed ? 1 : 0}`, amt);
+        await internalUpdateLoggedInfo(member, `R:${member.guild.id}:${dungeonId}:${completed ? 1 : 0}`, amt);
     }
 
     /**
@@ -122,7 +146,30 @@ export namespace LoggerManager {
     export async function logDungeonLead(member: GuildMember, dungeonId: string, result: RunResult,
                                          amt: number = 1): Promise<void> {
         // Format:      L:GUILD_ID:DUNGEON_ID:RESULT
-        await internalUpdateLoggedInfo(member, `${member.guild.id}:${dungeonId}:${result}`, amt);
+        await internalUpdateLoggedInfo(member, `L:${member.guild.id}:${dungeonId}:${result}`, amt);
+    }
+
+    /**
+     * Logs points for a certain person.
+     * @param {GuildMember} member The member.
+     * @param {number} points The points to log.
+     */
+    export async function logPoints(member: GuildMember, points: number): Promise<void> {
+        // Format:      P:GUILD_ID:POINTS
+        await internalUpdateLoggedInfo(member, `P:${member.guild.id}`, points);
+    }
+
+    /**
+     * Gets the number of points that this person has.
+     * @param {GuildMember} member The guild member.
+     * @returns {Promise<number>} The number of points.
+     */
+    export async function getPoints(member: GuildMember): Promise<number> {
+        const doc = await MongoManager.getUserCollection().findOne({
+            discordId: member.id
+        });
+
+        return doc?.loggedInfo.find(x => x.key === `P:${member.guild.id}`)?.value ?? 0;
     }
 
     /**
@@ -146,7 +193,8 @@ export namespace LoggerManager {
             dungeonRuns: new Collection<string, Collection<string, {
                 completed: number;
                 failed: number
-            }>>()
+            }>>(),
+            points: new Collection<string, number>()
         };
 
         const guildDoc = guildId
@@ -161,30 +209,32 @@ export namespace LoggerManager {
             // vId = value ID
             const [type, gId, vId, ...rest] = key.split(":");
             switch (type) {
+                case "P": {
+                    const guild = await GlobalFgrUtilities.fetchGuild(gId);
+                    stats.points.set(guild?.name ?? `ID: ${gId}`, value);
+                    break;
+                }
                 case "K": {
                     // K = Key flag
                     let keyName: string | null = null;
                     if (vId === "GENERAL")
                         keyName = "General";
-                    else if (vId in MAPPED_AFK_CHECK_REACTIONS)
+                    else if (vId in MAPPED_AFK_CHECK_REACTIONS && MAPPED_AFK_CHECK_REACTIONS[vId].type === "KEY")
                         keyName = MAPPED_AFK_CHECK_REACTIONS[vId].name;
                     else {
-                        const customKey = guildDoc?.properties.customReactions.find(x => x.key === vId);
+                        const customKey = guildDoc?.properties.customReactions
+                            .find(x => x.key === vId && x.value.type === "KEY");
                         if (customKey)
                             keyName = customKey.value.name;
                     }
 
+                    // No support for custom reactions
                     if (!keyName)
                         break;
 
                     if (!stats.keyUse.has(gId))
                         stats.keyUse.set(gId, new Collection<string, number>());
-
-                    if (stats.keyUse.get(gId)!.has(keyName))
-                        stats.keyUse.get(gId)!.set(keyName, stats.keyUse.get(gId)!.get(keyName)! + value);
-                    else
-                        stats.keyUse.get(gId)!.set(keyName, value);
-
+                    stats.keyUse.get(gId)!.set(keyName, value);
                     break;
                 }
                 case "L": {
@@ -234,6 +284,7 @@ export namespace LoggerManager {
                     if (!dgnName)
                         break;
 
+                    // result -> 1 = completed, 0 = failed
                     const result = Number.parseInt(rest[0], 10);
                     if (!result)
                         break;

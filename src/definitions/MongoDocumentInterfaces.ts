@@ -417,6 +417,14 @@ export interface IGuildInfo extends IBaseDocument {
          * @type {IPropertyKeyValuePair<string, string[]>[]}
          */
         genEarlyLocReactions: IPropertyKeyValuePair<string, string[]>[];
+
+        /**
+         * An array that represents the number of points you can get for reacting to certain things. This is
+         * validated when the raid leader logs the reactions, not when the person actually reacts.
+         *
+         * @type {IPropertyKeyValuePair<string, number>[]}
+         */
+        reactionPoints: IPropertyKeyValuePair<string, number>[];
     };
 
     /**

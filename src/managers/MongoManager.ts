@@ -506,7 +506,8 @@ export namespace MongoManager {
                 customReactions: [],
                 approvedCustomImages: [],
                 approvedCustomEmojiIds: [],
-                genEarlyLocReactions: []
+                genEarlyLocReactions: [],
+                reactionPoints: []
             },
             roles: {
                 mutedRoleId: "",
