@@ -18,7 +18,7 @@ import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {PrivateApiDefinitions as PAD} from "../private-api/PrivateApiDefinitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {
-    IGuildInfo,
+    IGuildInfo, IManualVerificationEntry,
     IPropertyKeyValuePair,
     ISectionInfo,
     IVerificationProperties,
@@ -28,6 +28,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {Emojis} from "../constants/Emojis";
+import {TimeUtilities} from "../utilities/TimeUtilities";
 
 export namespace VerifyManager {
     const CANCEL_ID: string = "cancel";
@@ -68,6 +69,7 @@ export namespace VerifyManager {
     // An interface representing a "kit" with the relevant channels for this verification session, along with the
     // message to be used for the verification process.
     interface IVerificationKit {
+        manualVerify: TextChannel | null;
         verifyChannel: TextChannel | null;
         verifySuccess: TextChannel | null;
         verifyFail: TextChannel | null;
@@ -111,6 +113,13 @@ export namespace VerifyManager {
         const member = await GuildFgrUtilities.fetchGuildMember(i.guild, i.user.id);
         if (!member) return;
 
+        // Check if the verified role exists.
+        const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
+
+        // No verified role = no go. Or, if the person is verified, no need for them to get verified.
+        if (!verifiedRole || member.roles.cache.has(verifiedRole.id))
+            return;
+
         // Get logging channels ready
         const loggingChannels = section.isMainSection
             ? guildDoc.channels.loggingChannels
@@ -143,7 +152,6 @@ export namespace VerifyManager {
             return;
         }
 
-
         const verifyStepChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             member.guild,
             loggingChannels.find(x => x.key === "VerifyStep")?.value ?? ""
@@ -156,8 +164,13 @@ export namespace VerifyManager {
             member.guild,
             section.channels.verification.verificationChannelId
         );
+        const manualVerifyChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            section.channels.verification.manualVerificationChannelId
+        );
 
         verify(member, guildDoc, section, {
+            manualVerify: manualVerifyChannel,
             verifyStart: verifyStartChannel,
             verifySuccess: verifySuccessChannel,
             verifyStep: verifyStepChannel,
@@ -176,6 +189,13 @@ export namespace VerifyManager {
     export async function verifyMainCommand(msg: Message, guildDoc: IGuildInfo): Promise<void> {
         const member = msg.member;
         if (!member)
+            return;
+
+        // Check if the verified role exists.
+        const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, guildDoc.roles.verifiedRoleId);
+
+        // No verified role = no go. Or, if the person is verified, no need for them to get verified.
+        if (!verifiedRole || member.roles.cache.has(verifiedRole.id))
             return;
 
         const verifyStartChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
@@ -218,9 +238,13 @@ export namespace VerifyManager {
             member.guild,
             guildDoc.channels.verification.verificationChannelId
         );
-
+        const manualVerifyChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            member.guild,
+            guildDoc.channels.verification.manualVerificationChannelId
+        );
 
         verify(member, guildDoc, MongoManager.getMainSection(guildDoc), {
+            manualVerify: manualVerifyChannel,
             verifyStart: verifyStartChannel,
             verifySuccess: verifySuccessChannel,
             verifyStep: verifyStepChannel,
@@ -256,13 +280,6 @@ export namespace VerifyManager {
 
         // If the person is currently interacting with something, don't let them verify.
         if (InteractionManager.InteractiveMenu.has(member.id))
-            return;
-
-        // Check if the verified role exists.
-        const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
-
-        // No verified role = no go. Or, if the person is verified, no need for them to get verified.
-        if (!verifiedRole || member.roles.cache.has(verifiedRole.id))
             return;
 
         // Check if this person is currently being manually verified.
@@ -376,7 +393,10 @@ export namespace VerifyManager {
                             "Please type the name that you want to verify with. Make sure you have access to the"
                             + " **RealmEye** profile associated with the name that you want to use."
                         )
-                        .addField("Cancel Process", "To cancel the verification process, simply type **`-cancel`**.")
+                        .addField(
+                            "Cancel Process",
+                            "To cancel the verification process, simply type **`-cancel`**."
+                        )
                         .setFooter("Respond By")
                         .setTimestamp(Date.now() + 2 * 60 * 1000)
                 ]
@@ -423,6 +443,8 @@ export namespace VerifyManager {
                             .setFooter("Verification Process Stopped.")
                     ]
                 }).catch();
+
+                InteractionManager.InteractiveMenu.delete(member.id);
                 return;
             }
 
@@ -592,10 +614,9 @@ export namespace VerifyManager {
                                 .setDescription(
                                     `The name, **\`${nameEntry}\`**, is blacklisted from this server.`
                                 )
-                                // TODO omit discord ID field if not exist
                                 .addField(
                                     "Associated Discord ID",
-                                    `${blacklistEntry.discordId} (Your ID: ${member.id})`
+                                    `${blacklistEntry.discordId ?? "N/A"} (Your ID: ${member.id})`
                                 )
                                 .addField("Reason", blacklistEntry.reason)
                                 .addField(
@@ -706,7 +727,32 @@ export namespace VerifyManager {
             }
 
             collector.stop();
+            await Promise.all([
+                MongoManager.addIdNameToTheCollection(member, requestData.name),
+                member.roles.add(guildDoc.roles.verifiedRoleId).catch(),
+                member.setNickname(requestData.name, "Verified in the main section successfully.")
+            ]);
 
+            const finishedEmbed = MessageUtilities.generateBlankEmbed(member.guild, "GREEN")
+                .setTitle(`**${member.guild.name}**: Guild Verification Successful`)
+                .setFooter("Verification Completed At")
+                .setTimestamp();
+            if (guildDoc.otherMajorConfig.verificationProperties.verificationSuccessMessage) {
+                finishedEmbed.setDescription(
+                    guildDoc.otherMajorConfig.verificationProperties.verificationSuccessMessage
+                );
+            }
+            else {
+                finishedEmbed.setDescription(
+                    "You have successfully been verified in this server. Please make sure to read the applicable"
+                    + " rules/guidelines. If you have any questions, please message a staff member. Thanks!"
+                );
+            }
+
+            await verifKit.msg.edit({embeds: [finishedEmbed]}).catch();
+            await member.send({
+                content: "Your verification was successful."
+            }).catch();
         });
     }
 
@@ -719,7 +765,7 @@ export namespace VerifyManager {
      * @private
      */
     async function handleManualVerificationCase(member: GuildMember, checkRes: IReqCheckResult,
-                                            verifKit: IVerificationKit, section: ISectionInfo): Promise<void> {
+                                                verifKit: IVerificationKit, section: ISectionInfo): Promise<void> {
         const failedStr = checkRes.manualIssues.map(x => `- **[${x.key}]** ${x.value}`).join("\n");
         const logStr = checkRes.manualIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n");
         const buttonsToUse: MessageButton[] = [NO_MANUAL_VERIFY_BUTTON, MANUAL_VERIFY_BUTTON];
@@ -776,7 +822,7 @@ export namespace VerifyManager {
             buttonsToUse.push(MANUAL_EVIDENCE_BUTTON);
         }
 
-        const [,, dmChannel] = await Promise.all([
+        const [, , dmChannel] = await Promise.all([
             verifKit.msg.edit({
                 embeds: [failEmbed],
                 components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
@@ -832,11 +878,72 @@ export namespace VerifyManager {
                 components: []
             });
 
+            await sendManualVerifyEmbedAndLog(member, checkRes, verifKit, section).catch();
             return;
         }
 
         InteractionManager.InteractiveMenu.set(member.id, "VERIF_EVIDENCE");
+    }
 
+    /**
+     * Sends the manual verification message to the appropriate channel and logs it in the database.
+     * @param {GuildMember} member The member.
+     * @param {IReqCheckResult} checkRes The check results.
+     * @param {IVerificationKit} verifKit The verification "kit"
+     * @param {ISectionInfo} section The section.
+     * @private
+     */
+    async function sendManualVerifyEmbedAndLog(member: GuildMember, checkRes: IReqCheckResult,
+                                               verifKit: IVerificationKit, section: ISectionInfo): Promise<void> {
+        const descSb = new StringBuilder()
+            .append(`The following user tried to verify in the section: **\`${section.sectionName}\`**.`).appendLine()
+            .appendLine()
+            .append("__**Discord Account**__").appendLine()
+            .append(`- Discord Mention: ${member} (${member.id})`).appendLine()
+            .append(`- Discord Tag: ${member.user.tag}`).appendLine()
+            .append(`- Discord Created: ${TimeUtilities.getTime(member.user.createdAt)} UTC`).appendLine()
+            .appendLine()
+            .append("__**RotMG Account**__").appendLine()
+            .append(`- Account IGN: **\`${checkRes.orig.name}\`**`).appendLine()
+            .append(`- RealmEye Link: [Here](https://www.realmeye.com/player/${checkRes.orig.name}).`).appendLine()
+            .append(`- Rank: **\`${checkRes.orig.rank}\`**`).appendLine()
+            .append(`- Alive Fame: **\`${checkRes.orig.fame}\`**`).appendLine();
+        if (checkRes.orig.created)
+            descSb.append(`- Account Created: **\`${checkRes.orig.created}\`**`).appendLine();
+        else if (checkRes.orig.firstSeen)
+            descSb.append(`- First Seen: **\`${checkRes.orig.firstSeen}\`**`).appendLine();
+        else
+            descSb.append("- Account Created: **\`N/A\`**").appendLine();
+
+        descSb.append(`- Last Seen: **\`${checkRes.orig.lastSeen}\`**`).appendLine();
+
+        if (checkRes.orig.guild) {
+            descSb.append(`- Guild: **\`${checkRes.orig.guild}\`**`).appendLine()
+                .append(`- Guild Rank: **\`${checkRes.orig.guildRank}\`**`).appendLine();
+        }
+
+        descSb.append(`- RealmEye Description: ${StringUtil.codifyString(checkRes.orig.description.join("\n"))}`);
+
+        const embed = MessageUtilities.generateBlankEmbed(member, "RED")
+            .setTitle(`[${section.sectionName}] Manual Verification: **${checkRes.name}**`)
+            .setDescription(descSb.toString());
+
+        embed.addField(
+            "Reason(s) for Manual Verification",
+            checkRes.manualIssues.join("\n")
+        );
+    }
+
+    /**
+     * Acknowledges a manual verification message. This should be called when the person decides to accept, or
+     * reject, a manual verification application.
+     * @param {IManualVerificationEntry} manualVerifyRes The manual verification object.
+     * @param {ISectionInfo} section The section.
+     * @private
+     */
+    async function acknowledgeManualVerifyRes(manualVerifyRes: IManualVerificationEntry,
+                                              section: ISectionInfo): Promise<void> {
+        // TODO
     }
 
     /**
@@ -970,6 +1077,7 @@ export namespace VerifyManager {
         manualIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
         fatalIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
         taIssues: (IPropertyKeyValuePair<string, string> & { log: string; })[];
+        orig: PAD.IPlayerData;
     }
 
     /**
@@ -988,7 +1096,8 @@ export namespace VerifyManager {
             conclusion: "PASS",
             manualIssues: [],
             fatalIssues: [],
-            taIssues: []
+            taIssues: [],
+            orig: resp
         };
 
         // Check requirements.
@@ -1264,13 +1373,19 @@ export namespace VerifyManager {
         }
 
         // Assess whether this person passed verification requirements.
-        result.conclusion = result.fatalIssues.length > 0
-            ? "FAIL"
-            : result.taIssues.length > 0
-                ? "TRY_AGAIN"
-                : result.manualIssues.length > 0
-                    ? "MANUAL"
-                    : "PASS";
+        if (result.fatalIssues.length > 0)
+            result.conclusion = "FAIL";
+        else if (result.taIssues.length > 0)
+            result.conclusion = "TRY_AGAIN";
+        else if (result.manualIssues.length > 0)
+            result.conclusion = "MANUAL";
+        else
+            result.conclusion = "PASS";
+
+        if (result.conclusion === "MANUAL"
+            && GuildFgrUtilities.hasCachedChannel(member.guild, section.channels.verification.manualVerificationChannelId))
+            result.conclusion = "FAIL";
+
         return result;
     }
 

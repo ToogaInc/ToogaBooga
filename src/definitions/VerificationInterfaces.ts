@@ -1,4 +1,3 @@
-import {PrivateApiDefinitions} from "../private-api/PrivateApiDefinitions";
 import {IPropertyKeyValuePair} from "./MiscInterfaces";
 
 /**
@@ -399,13 +398,6 @@ export interface IManualVerificationEntry {
      * @type {string}
      */
     ign: string;
-
-    /**
-     * The person's name history.
-     *
-     * @type {PrivateApiDefinitions.INameHistory}
-     */
-    nameHistory: PrivateApiDefinitions.INameHistory;
 
     /**
      * The manual verification message ID. This is the message that staff will have to acknowledge (i.e.
