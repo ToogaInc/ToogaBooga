@@ -134,6 +134,7 @@ export namespace GeneralConstants {
     export const EVERYONE_ROLE: RolePermissions = "Everyone";
     export const SUSPENDED_ROLE: RolePermissions = "Suspended";
     export const MEMBER_ROLE: RolePermissions = "Raider";
+    export const HELPER_ROLE: RolePermissions = "Helper";
     export const SECURITY_ROLE: RolePermissions = "Security";
     export const OFFICER_ROLE: RolePermissions = "Officer";
     export const MODERATOR_ROLE: RolePermissions = "Moderator";
@@ -155,6 +156,11 @@ export namespace GeneralConstants {
         {
             id: MEMBER_ROLE,
             allow: ["VIEW_CHANNEL"],
+            deny: []
+        },
+        {
+            id: HELPER_ROLE,
+            allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS"],
             deny: []
         },
         {

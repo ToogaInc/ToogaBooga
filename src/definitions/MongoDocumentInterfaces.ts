@@ -148,6 +148,13 @@ export interface IGuildInfo extends IBaseDocument {
              */
             moderation: {
                 /**
+                 * The helper role.
+                 *
+                 * @type {string}
+                 */
+                helperRoleId: string;
+
+                /**
                  * The security role.
                  *
                  * @type {string}

@@ -37,6 +37,12 @@ export namespace VerifyManager {
     const MANUAL_VERIFY_ID: string = "manual_verify";
     const MANUAL_EVIDENCE_ID: string = "manual_evidence";
 
+    // For approving or denying manual verification applications
+    export const MANUAL_VERIFY_ACCEPT_ID: string = "accept_manual";
+    export const MANUAL_VERIFY_DENY_ID: string = "reject_manual";
+    export const MANUAL_VERIFY_MODMAIL_ID: string = "modmail_manual";
+
+
     const CHECK_PROFILE_BUTTON = new MessageButton()
         .setLabel("Check Profile")
         .setCustomId(CHECK_PROFILE_ID)
@@ -749,10 +755,15 @@ export namespace VerifyManager {
                 );
             }
 
-            await verifKit.msg.edit({embeds: [finishedEmbed]}).catch();
-            await member.send({
-                content: "Your verification was successful."
-            }).catch();
+            await Promise.all([
+                verifKit.msg.edit({embeds: [finishedEmbed]}).catch(),
+                await member.send({
+                    content: "Your verification was successful."
+                }).catch(),
+                verifKit.verifySuccess?.send({
+                    content: `[Main] ${member} has successfully verified as **\`${nameToVerify}\`**.`
+                })
+            ]);
         });
     }
 
@@ -895,6 +906,10 @@ export namespace VerifyManager {
      */
     async function sendManualVerifyEmbedAndLog(member: GuildMember, checkRes: IReqCheckResult,
                                                verifKit: IVerificationKit, section: ISectionInfo): Promise<void> {
+        // Should never hit since this should've been pre-validated
+        if (!verifKit.manualVerify)
+            return;
+
         const descSb = new StringBuilder()
             .append(`The following user tried to verify in the section: **\`${section.sectionName}\`**.`).appendLine()
             .appendLine()
@@ -932,18 +947,37 @@ export namespace VerifyManager {
             "Reason(s) for Manual Verification",
             checkRes.manualIssues.join("\n")
         );
+
+        const manualVerifMsg = await verifKit.manualVerify.send({
+            embeds: [embed],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                new MessageButton()
+                    .setLabel("Accept")
+                    .setCustomId(MANUAL_VERIFY_ACCEPT_ID)
+                    .setStyle("SUCCESS"),
+                new MessageButton()
+                    .setLabel("Deny")
+                    .setCustomId(MANUAL_VERIFY_DENY_ID)
+                    .setStyle("DANGER"),
+                new MessageButton()
+                    .setLabel("Start Modmail Thread")
+                    .setCustomId(MANUAL_VERIFY_MODMAIL_ID)
+                    .setStyle("PRIMARY")
+            ])
+        });
     }
 
     /**
      * Acknowledges a manual verification message. This should be called when the person decides to accept, or
      * reject, a manual verification application.
      * @param {IManualVerificationEntry} manualVerifyRes The manual verification object.
-     * @param {ISectionInfo} section The section.
+     * @param {GuildMember} member The member that acknowledged this manual verification request.
+     * @param {string} responseId The response ID. This should be the custom ID from the interaction.
      * @private
      */
-    async function acknowledgeManualVerifyRes(manualVerifyRes: IManualVerificationEntry,
-                                              section: ISectionInfo): Promise<void> {
-        // TODO
+    async function acknowledgeManualVerifyRes(manualVerifyRes: IManualVerificationEntry, member: GuildMember,
+                                              responseId: string): Promise<void> {
+
     }
 
     /**
@@ -1382,9 +1416,12 @@ export namespace VerifyManager {
         else
             result.conclusion = "PASS";
 
-        if (result.conclusion === "MANUAL"
-            && GuildFgrUtilities.hasCachedChannel(member.guild, section.channels.verification.manualVerificationChannelId))
+        if (result.conclusion === "MANUAL" && GuildFgrUtilities.hasCachedChannel(
+            member.guild,
+            section.channels.verification.manualVerificationChannelId
+        )) {
             result.conclusion = "FAIL";
+        }
 
         return result;
     }

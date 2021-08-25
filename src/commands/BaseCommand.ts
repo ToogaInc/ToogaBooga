@@ -17,6 +17,7 @@ export abstract class BaseCommand {
         GeneralConstants.LEADER_ROLE,
         GeneralConstants.SECURITY_ROLE,
         GeneralConstants.ALMOST_LEADER_ROLE,
+        GeneralConstants.HELPER_ROLE,
         GeneralConstants.TEAM_ROLE,
         GeneralConstants.MEMBER_ROLE,
         GeneralConstants.SUSPENDED_ROLE,

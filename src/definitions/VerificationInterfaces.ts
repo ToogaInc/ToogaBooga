@@ -416,6 +416,13 @@ export interface IManualVerificationEntry {
     manualVerifyChannelId: string;
 
     /**
+     * The section identifier.
+     *
+     * @type {string}
+     */
+    sectionId: string;
+
+    /**
      * The ID corresponding to the person that is currently looking at this.
      *
      * @type {string}
