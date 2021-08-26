@@ -182,10 +182,17 @@ export interface IMappedAfkCheckReactions {
  */
 export interface IReactionInfo {
     /**
-     * The emoji type.
+     * The emoji type. The properties are as follows:
+     * - `KEY`: A key that can be modified.
+     * - `NM_KEY`: A key that cannot be modified.
+     * - `STATUS_EFFECT`: A status effect reaction.
+     * - `CLASS`: A class reaction.
+     * - `ITEM`: An item reaction.
+     * - `EARLY_LOCATION`: A reaction that gives early location.
+     * - `UTILITY`: A utility reaction.
      * @type {string}
      */
-    type: "KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "EARLY_LOCATION" | "UTILITY";
+    type: "KEY" | "NM_KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "EARLY_LOCATION" | "UTILITY";
 
     /**
      * The emoji ID. This is needed for getting the emoji object.

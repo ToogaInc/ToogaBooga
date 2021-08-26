@@ -347,22 +347,22 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Miscellaneous Dungeon Key"
     },
     WC_INC: {
-        type: "KEY",
+        type: "NM_KEY",
         emojiId: "",
         name: "Wine Cellar Incantation"
     },
     SHIELD_RUNE: {
-        type: "KEY",
+        type: "NM_KEY",
         emojiId: "",
         name: "Shield Rune"
     },
     SWORD_RUNE: {
-        type: "KEY",
+        type: "NM_KEY",
         emojiId: "",
         name: "Sword Rune"
     },
     HELM_RUNE: {
-        type: "KEY",
+        type: "NM_KEY",
         emojiId: "",
         name: "Helm Rune"
     },
