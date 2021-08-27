@@ -14,6 +14,7 @@ export namespace Emojis {
         "🔟",
     ];
 
+    export const TICKET_EMOJI: EmojiIdentifierResolvable = "🎟️";
     export const HASH_EMOJI: EmojiIdentifierResolvable = "#️⃣";
     export const X_EMOJI: EmojiIdentifierResolvable = "❌";
     export const RED_SQUARE_EMOJI: EmojiIdentifierResolvable = "🟥";

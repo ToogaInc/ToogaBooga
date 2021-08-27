@@ -373,6 +373,13 @@ export interface IGuildInfo extends IBaseDocument {
              * @type {number}
              */
             vcLimit: number;
+
+            /**
+             * The cost, in points, to get early location and get moved into this raid.
+             *
+             * @type {number}
+             */
+            pointCost: number;
         }[];
 
         /**

@@ -116,6 +116,13 @@ export interface IDungeonInfo {
  */
 export interface ICustomDungeonInfo extends IDungeonInfo {
     /**
+     * The cost, in points, to get early location and get moved into this raid.
+     *
+     * @type {number}
+     */
+    pointCost: number;
+
+    /**
      * The default number of people that can get early location by reacting to the Nitro button.
      *
      * Use `-1` to default to whatever the section default is.
@@ -234,6 +241,14 @@ export interface IAfkCheckProperties {
      * @type {number}
      */
     nitroEarlyLocationLimit: number;
+
+    /**
+     * The number of people that can redeem points for early location. If you don't want the ticket emoji to appear
+     * at all, set this to 0.
+     *
+     * @type {number}
+     */
+    pointUserLimit: number;
 
     /**
      * All custom messages to display to members, in various aspects.

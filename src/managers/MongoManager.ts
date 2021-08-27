@@ -482,6 +482,7 @@ export namespace MongoManager {
                     }
                 },
                 afkCheckProperties: {
+                    pointUserLimit: 5,
                     vcLimit: 60,
                     nitroEarlyLocationLimit: 5,
                     customMsg: {

@@ -1,11 +1,12 @@
-// TODO add temp event handlers to client here.
+// TODO add points system to this
+// TODO key modifiers
 
 // Suppress unused methods for this file.
 // noinspection JSUnusedGlobalSymbols
 
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {
-    Collection,
+    Collection, DMChannel, EmojiIdentifierResolvable,
     Guild,
     GuildEmoji,
     GuildMember, Interaction,
@@ -15,7 +16,7 @@ import {
     MessageButton,
     MessageComponentInteraction,
     MessageEmbed,
-    MessageOptions,
+    MessageOptions, MessageSelectMenu,
     OverwriteResolvable,
     Role,
     Snowflake,
@@ -43,7 +44,7 @@ import {UserManager} from "../managers/UserManager";
 import {
     IAfkCheckReaction, ICustomDungeonInfo,
     IDungeonInfo,
-    IGuildInfo,
+    IGuildInfo, IMappedAfkCheckReactions,
     IRaidInfo,
     IRaidOptions,
     IReactionInfo,
@@ -51,12 +52,133 @@ import {
 } from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 
-type ReactionInfoMore = IReactionInfo & { earlyLocAmt: number; isCustomReaction: boolean; };
+type ReactionInfoMore = IReactionInfo & {
+    earlyLocAmt: number;
+    isCustomReaction: boolean;
+    builtInEmoji?: EmojiIdentifierResolvable;
+};
+
+interface IDungeonModifier {
+    modifierName: string;
+    maxLevel: number;
+    description: string;
+}
+
+interface IKeyReactInfo {
+    mapKey: keyof IMappedAfkCheckReactions;
+    modifiers: string[];
+    accidentCt: number;
+}
 
 /**
  * This class represents a raid.
  */
 export class RaidInstance {
+    public static readonly HIGHEST_MODIFIER_LEVEL: number = 4;
+    public static readonly DUNGEON_MODIFIERS: IDungeonModifier[] = [
+        {
+            modifierName: "Agent of Oryx",
+            description: "Boss can drop Agent of Oryx Shards.",
+            maxLevel: 1
+        },
+        {
+            modifierName: "Bis",
+            description: "Boss will drop a portal to the same dungeon.",
+            maxLevel: 1
+        },
+        {
+            modifierName: "Bored Minions",
+            description: "Minions’ projectiles have x% less lifetime.",
+            maxLevel: 3
+        },
+        {
+            modifierName: "Bulky Minions",
+            description: "Minions have x% more HP.",
+            maxLevel: 3
+        },
+        {
+            modifierName: "Chef",
+            description: "Boss has a x% chance of dropping a food item.",
+            maxLevel: 1
+        },
+
+        {
+            modifierName: "Colorful",
+            description: "Boss always drops a Color Dye.",
+            maxLevel: 1
+        },
+        {
+            modifierName: "Dimitus",
+            description: "Dimitus will appear after the Boss is defeated.",
+            maxLevel: 1
+        },
+        {
+            modifierName: "Dull Minions",
+            description: "Minions’ projectiles travel x% slower.",
+            maxLevel: 4
+        },
+        {
+            modifierName: "Elite Boss",
+            description: "Boss enemies have x% more HP.",
+            maxLevel: 3
+        },
+        {
+            modifierName: "Energized Minions",
+            description: "Minions’ projectiles have x% more lifetime.",
+            maxLevel: 3
+        },
+        {
+            modifierName: "Feeble Boss",
+            description: "Boss enemies have x% less DEF.",
+            maxLevel: 4
+        },
+        {
+            modifierName: "Feeble Minions",
+            description: "Minions have x% less DEF.",
+            maxLevel: 4
+        },
+        {
+            modifierName: "Ferocious Boss",
+            description: "Boss enemies deal x% more DMG.",
+            maxLevel: 4
+        },
+        {
+            modifierName: "Ferocious Minions",
+            description: "Minions deal x% more DMG.",
+            maxLevel: 3
+        },
+        {
+            modifierName: "Generous",
+            description: "Boss always drops a Quest Chest.",
+            maxLevel: 1
+        },
+        {
+            modifierName: "Guaranteed Stat Potion",
+            description: "Boss enemies will always drop a Stat Potion.",
+            maxLevel: 1
+        },
+        {
+            modifierName: "Keen Minions",
+            description: "Minions’ projectiles travel x% faster.",
+            maxLevel: 4
+        },
+        {
+            modifierName: "Lazy Minions",
+            description: "Minions attack x% slower.",
+            maxLevel: 3
+        },
+        {
+            modifierName: "Mystery Stat Potion",
+            description: "Boss always drops a Mystery Stat Potion.",
+            maxLevel: 1
+        },
+        {
+            modifierName: "Noble Boss",
+            description: "After completion Oryx’s Court dungeons will spawn.",
+            maxLevel: 1
+        }
+    ];
+
     /**
      * A collection of active AFK checks and raids. The key is the AFK check message ID and the value is the raid
      * manager object.
@@ -195,6 +317,8 @@ export class RaidInstance {
     private readonly _leaderName: string;
     // The raid message defined by the raid leader.
     private readonly _raidMsg: string;
+    // The cost, in points, for early location.
+    private readonly _earlyLocPointCost: number;
 
     // The members that are joining this raid.
     private readonly _membersThatJoined: string[] = [];
@@ -250,6 +374,8 @@ export class RaidInstance {
         let numEarlyLoc: number = -2;
         // And this is the raid VC limit
         let vcLimit: number = -2;
+        // And this is the point cost.
+        let costForEarlyLoc: number = 0;
         // Process dungeon based on whether it is custom or not.
         if (dungeon.isBaseOrDerived) {
             const dgnOverride = guildDoc.properties.dungeonOverride
@@ -262,12 +388,18 @@ export class RaidInstance {
                 numEarlyLoc = dgnOverride.nitroEarlyLocationLimit;
             else if (section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit !== -1)
                 numEarlyLoc = section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit;
+
+            if (dgnOverride && dgnOverride.pointCost)
+                costForEarlyLoc = dgnOverride.pointCost;
         }
         else {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
             numEarlyLoc = (dungeon as ICustomDungeonInfo).nitroEarlyLocationLimit;
+            costForEarlyLoc = (dungeon as ICustomDungeonInfo).pointCost;
         }
+
+        this._earlyLocPointCost = costForEarlyLoc;
 
         if (vcLimit === -2) {
             if (section.otherMajorConfig.afkCheckProperties.vcLimit !== -1)
@@ -288,6 +420,17 @@ export class RaidInstance {
                 ...MAPPED_AFK_CHECK_REACTIONS.NITRO,
                 earlyLocAmt: numEarlyLoc,
                 isCustomReaction: false
+            });
+        }
+
+        if (this._guildDoc.properties.reactionPoints.some(x => x.value > 0) && this._earlyLocPointCost > 0) {
+            reactions.set("EARLY_LOC_POINTS", {
+                earlyLocAmt: section.otherMajorConfig.afkCheckProperties.pointUserLimit,
+                isCustomReaction: false,
+                emojiId: "",
+                name: "Points",
+                type: "EARLY_LOCATION",
+                builtInEmoji: Emojis.TICKET_EMOJI
             });
         }
 
@@ -1673,10 +1816,11 @@ export class RaidInstance {
                 return;
 
             // Item display for future use
-            const itemDisplay = new StringBuilder();
+            const itemDisplaySb = new StringBuilder();
             if (GlobalFgrUtilities.hasCachedEmoji(reactInfo.emojiId))
-                itemDisplay.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiId)!).append(" ");
-            itemDisplay.append(`**\`${reactInfo.name}\`**`);
+                itemDisplaySb.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiId)!).append(" ");
+            itemDisplaySb.append(`**\`${reactInfo.name}\`**`);
+            const itemDisplay = itemDisplaySb.toString();
 
             // If we no longer need this anymore, then notify them
             if (!this.stillNeedEssentialReact(mapKey)) {
@@ -1693,35 +1837,12 @@ export class RaidInstance {
                 }).catch();
             }
 
-            // Ask the member if they're willing to actually bring it.
-            const contentDisplay = new StringBuilder()
-                .append(`You pressed the ${itemDisplay} button.`)
-                .appendLine(2);
-
-            if (reactInfo.type !== "EARLY_LOCATION") {
-                contentDisplay.append(`Please confirm that you will bring ${itemDisplay} to the raid by pressing `)
-                    .append("the **Yes** button. If you do not plan on bring said item, then please press **No** ")
-                    .append("or don't respond.")
-                    .appendLine(2);
-            }
-
-            contentDisplay
-                .append("You have **15** seconds to choose. Failure to respond will result in an ")
-                .append("automatic **no**.")
-                .toString();
-            const [, response] = await AdvancedCollector.askBoolFollowUp({
-                interaction: i,
-                time: 15 * 1000,
-                contentToSend: {
-                    content: contentDisplay.toString()
-                },
-                channel: i.channel as TextChannel
-            });
-
-            // Response of "no" or failure to respond implies no.
-            if (!response) {
+            const res = await RaidInstance.confirmReaction(i, this);
+            if (!res) {
                 await i.editReply({
-                    content: "You failed to respond within 15 seconds.",
+                    content: "You either did not respond to a question that was asked, or chose to cancel this"
+                        + " process. Either way, the preference that you selected has **not** been logged with the"
+                        + " raid leader.",
                     components: []
                 });
                 return;
@@ -2046,6 +2167,202 @@ export class RaidInstance {
      */
     public get raidVc(): VoiceChannel | null {
         return this._raidVc;
+    }
+
+    /**
+     * Gets the item display.
+     * @param {ReactionInfoMore} reactInfo More reaction information.
+     * @returns {string} The item display.
+     */
+    public static getItemDisplay(reactInfo: ReactionInfoMore): string {
+        const itemDisplayBuilder = new StringBuilder();
+        if (GlobalFgrUtilities.hasCachedEmoji(reactInfo.emojiId))
+            itemDisplayBuilder.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiId)!).append(" ");
+        itemDisplayBuilder.append(`**\`${reactInfo.name}\`**`);
+        return itemDisplayBuilder.toString();
+    }
+
+    /**
+     * Confirms the key reacts. This asks the person what modifiers the key has.
+     * @param {MessageComponentInteraction} interaction The interactions.
+     * @param {RaidInstance} raidInstance The raid instance.
+     * @param {boolean} [isAfk] Whether this is an AFK check. If this is not an AFk check, then only the key checker
+     * will be invoked.
+     * @returns {Promise<IKeyReactInfo | null>} The reaction result, if any.
+     */
+    public static async confirmReaction(
+        interaction: MessageComponentInteraction,
+        raidInstance: RaidInstance,
+        isAfk: boolean = true
+    ): Promise<IKeyReactInfo | null> {
+        if (!interaction.guild)
+            return null;
+
+        const member = await GuildFgrUtilities.fetchGuildMember(interaction.guild, interaction.user.id);
+        if (!member)
+            return null;
+
+        const mapKey = interaction.customId;
+        const reactInfo = raidInstance._allEssentialOptions.get(mapKey)!;
+        const itemDisplay = RaidInstance.getItemDisplay(reactInfo);
+
+        if (reactInfo.type === "KEY") {
+            const selectMenu = new MessageSelectMenu()
+                .setMinValues(0)
+                .setMaxValues(4);
+            for (const modifier of RaidInstance.DUNGEON_MODIFIERS) {
+                selectMenu.addOptions({
+                    description: modifier.description,
+                    label: modifier.modifierName,
+                    value: modifier.modifierName
+                });
+            }
+
+            const uniqueIdentifier = StringUtil.generateRandomString(20);
+            const noModifierId = `${uniqueIdentifier}_no_modifier`;
+            const cancelModId = `${uniqueIdentifier}_cancel_mods`;
+            const cancelButton = new MessageButton()
+                .setLabel("Cancel")
+                .setStyle("DANGER")
+                .setCustomId(cancelModId);
+
+            await interaction.reply({
+                ephemeral: true,
+                content: `You pressed the ${itemDisplay} button. What modifiers does this key have? You have two`
+                    + " minutes to answer this question. **Lying about what modifiers your key has may result in"
+                    + " consequences**; thus, it is important that you be careful when selecting what modifiers your"
+                    + " key has.\n"
+                    + "- If you have **multiple** keys, please specify the modifiers for **one** of your keys and"
+                    + " message the raid leader the modifiers of the remaining key.\n"
+                    + "- If you do not have any modifiers, please press the **No Modifier** button.\n"
+                    + "- If you did not mean to press this button, please press the **Cancel** button.",
+                components: AdvancedCollector.getActionRowsFromComponents([
+                    selectMenu,
+                    new MessageButton()
+                        .setLabel("No Modifier")
+                        .setStyle("PRIMARY")
+                        .setCustomId(noModifierId),
+                    cancelButton
+                ])
+            });
+
+            const modifierRes = await AdvancedCollector.startInteractionEphemeralCollector({
+                targetChannel: interaction.channel as TextChannel | DMChannel,
+                duration: 2 * 60 * 1000,
+                targetAuthor: interaction.user
+            }, uniqueIdentifier);
+
+            if (!modifierRes) {
+                await interaction.editReply({
+                    content: "You did not respond to this question in time.",
+                    components: []
+                });
+
+                return null;
+            }
+
+            if (modifierRes.isButton()) {
+                return modifierRes.customId === noModifierId
+                    ? {mapKey: mapKey, modifiers: [], accidentCt: 0}
+                    : null;
+            }
+
+            // Should never hit
+            if (!modifierRes.isSelectMenu())
+                return null;
+
+            const selectedModifiers = RaidInstance.DUNGEON_MODIFIERS
+                .filter(x => modifierRes.values.includes(x.modifierName));
+
+            const returnObj: IKeyReactInfo = {mapKey: mapKey, modifiers: [], accidentCt: 0};
+            // Define all possible buttons, don't construct new buttons for each modifier
+            const numButtons: MessageButton[] = [];
+            const accidentCustomId = `${uniqueIdentifier}_accident`;
+            const accidentButton = new MessageButton()
+                .setLabel("Accident")
+                .setCustomId(accidentCustomId)
+                .setStyle("DANGER");
+
+            for (let i = 0; i < RaidInstance.HIGHEST_MODIFIER_LEVEL; i++) {
+                numButtons.push(
+                    new MessageButton()
+                        .setLabel((i + 1).toString())
+                        .setCustomId(`${uniqueIdentifier}_${(i + 1)}`)
+                        .setStyle("PRIMARY")
+                );
+            }
+
+            // ask for individual levels.
+            for (const modifier of selectedModifiers) {
+                if (modifier.maxLevel === 1) {
+                    returnObj.modifiers.push(modifier.modifierName);
+                    continue;
+                }
+
+                const buttonsToUse: MessageButton[] = [cancelButton, accidentButton];
+                for (let i = 0; i < modifier.maxLevel; i++)
+                    buttonsToUse.push(numButtons[i]);
+
+                await interaction.editReply({
+                    content: `What **level** is the **${modifier.modifierName}** modifier? If you want to cancel this,`
+                        + " press the **Cancel** button. If you mistakenly specified this modifier, press the"
+                        + " **Accident** button.",
+                    components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
+                });
+
+                const levelRes = await AdvancedCollector.startInteractionEphemeralCollector({
+                    targetChannel: interaction.channel as TextChannel | DMChannel,
+                    duration: 2 * 60 * 1000,
+                    targetAuthor: interaction.user
+                }, uniqueIdentifier);
+
+                if (!levelRes) return null;
+
+                if (levelRes.customId === accidentCustomId) {
+                    returnObj.accidentCt++;
+                    continue;
+                }
+
+                if (levelRes.customId === cancelModId)
+                    return null;
+
+                returnObj.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
+            }
+
+            return returnObj;
+        }
+        else if (!isAfk)
+            return null;
+
+        if (reactInfo.type === "EARLY_LOCATION")
+            return {mapKey: mapKey, modifiers: [], accidentCt: 0};
+
+        // Ask the member if they're willing to actually bring said priority item
+        const contentDisplay = new StringBuilder()
+            .append(`You pressed the ${itemDisplay} button.`)
+            .appendLine(2)
+            .append(`Please confirm that you will bring ${itemDisplay} to the raid by pressing `)
+            .append("the **Yes** button. If you **do not** plan on bring said selection, then please press **No** ")
+            .append("or don't respond.")
+            .appendLine(2)
+            .append("You have **15** seconds to select an option. Failure to respond will result in an ")
+            .append("automatic **no**.")
+            .toString();
+
+        const [, response] = await AdvancedCollector.askBoolFollowUp({
+            interaction: interaction,
+            time: 15 * 1000,
+            contentToSend: {
+                content: contentDisplay.toString()
+            },
+            channel: interaction.channel as TextChannel
+        });
+
+        // Response of "no" or failure to respond implies no.
+        if (!response)
+            return null;
+
+        return {mapKey: mapKey, modifiers: [], accidentCt: 0};
     }
 }
 
