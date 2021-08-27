@@ -147,6 +147,42 @@ export namespace AdvancedCollector {
     }
 
     /**
+     * Starts an interaction ephemeral collector. This is essentially the same thing as `startInteractionCollector`,
+     * but this works for ephemeral messages.
+     *
+     * Note: Due to the nature of ephemeral messages, it is not possible to "deferUpdate" to an interaction from an
+     * ephemeral message (at least, from my knowledge). Thus, you must acknowledge any button presses immediately.
+     *
+     * @param {IInteractionBase} options The collector options. This contains a subset of all possible collector
+     * options.
+     * @param {string} uniqueIdentifier The unique identifier. This should be a string that prepends the actual
+     * custom ID of the components. For example, instead of `yes` for the custom ID, use `<uniq_id>_yes`, where
+     * `<uniq_id>` is the unique identifier.
+     * @returns {Promise<MessageComponentInteraction | null>} The interaction, if available. `null` otherwise.
+     */
+    export async function startInteractionEphemeralCollector(
+        options: Omit<IInteractionBase, "msgOptions"
+            | "oldMsg"
+            | "deleteBaseMsgAfterComplete"
+            | "clearInteractionsAfterComplete"
+            | "acknowledgeImmediately">,
+        uniqueIdentifier: string
+    ): Promise<MessageComponentInteraction | null> {
+        let returnButton: MessageComponentInteraction | null = null;
+        try {
+            returnButton = await options.targetChannel.awaitMessageComponent({
+                filter: i => i.user.id === options.targetAuthor.id
+                    && i.customId.startsWith(uniqueIdentifier),
+                time: options.duration
+            });
+        } catch (e) {
+            // Ignore the error; this is because the collector timed out.
+        }
+
+        return returnButton;
+    }
+
+    /**
      * Starts a general interaction collector. This will wait for the user to interact with one component and then
      * return the result of that component.
      * @param {IInteractionBase} options The collector options.
@@ -158,20 +194,16 @@ export namespace AdvancedCollector {
         const botMsg = await initSendCollectorMessage(options);
         if (!botMsg) return null;
 
-        let returnButton: ButtonInteraction | null = null;
+        let returnButton: MessageComponentInteraction | null = null;
         try {
-            const clickedButton = await botMsg.awaitMessageComponent({
+            returnButton = await botMsg.awaitMessageComponent({
                 filter: i => i.user.id === options.targetAuthor.id,
                 time: options.duration
             });
 
             // For TS reasons
-            if (clickedButton.isButton()) {
-                if (options.acknowledgeImmediately)
-                    await clickedButton.deferUpdate();
-
-                returnButton = clickedButton;
-            }
+            if (options.acknowledgeImmediately)
+                await returnButton.deferUpdate();
         } catch (e) {
             // Ignore the error; this is because the collector timed out.
         } finally {

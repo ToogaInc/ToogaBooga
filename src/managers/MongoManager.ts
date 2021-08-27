@@ -512,7 +512,7 @@ export namespace MongoManager {
             roles: {
                 mutedRoleId: "",
                 staffRoles: {
-                    moderation: {moderatorRoleId: "", officerRoleId: "", securityRoleId: ""},
+                    moderation: {helperRoleId: "", moderatorRoleId: "", officerRoleId: "", securityRoleId: ""},
                     otherStaffRoleIds: [],
                     sectionLeaderRoleIds: {
                         sectionAlmostLeaderRoleId: "",
