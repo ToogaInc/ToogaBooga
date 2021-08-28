@@ -1,12 +1,64 @@
-import {Collection, Guild, GuildMember, Message, PermissionString, Role, User} from "discord.js";
+import {
+    Collection,
+    CommandInteraction,
+    Guild,
+    GuildMember,
+    PermissionString,
+    Role,
+    TextBasedChannels,
+    User
+} from "discord.js";
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {IGuildInfo} from "../definitions";
 import {RolePermissions} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
+import {SlashCommandBuilder} from "@discordjs/builders";
 
-// Type alias
+export interface ICommandContext {
+    /**
+     * The guild member that initiated this interaction, if any.
+     *
+     * @type {GuildMember | null}
+     */
+    member: GuildMember | null;
+
+    /**
+     * The user that initiated this interaction.
+     *
+     * @type {User}
+     */
+    user: User;
+
+    /**
+     * The guild, if any.
+     *
+     * @type {Guild | null}
+     */
+    guild: Guild | null;
+
+    /**
+     * The guild document, if any.
+     *
+     * @type {IGuildInfo | null}
+     */
+    guildDoc: IGuildInfo | null;
+
+    /**
+     * The channel where this command was executed.
+     *
+     * @type {TextBasedChannels}
+     */
+    channel: TextBasedChannels;
+
+    /**
+     * The interaction that led to this command.
+     *
+     * @type {CommandInteraction}
+     */
+    interaction: CommandInteraction;
+}
 
 export abstract class BaseCommand {
     private static readonly ROLE_ORDER: RolePermissions[] = [
@@ -31,6 +83,12 @@ export abstract class BaseCommand {
     public readonly commandInfo: ICommandInfo;
 
     /**
+     * The slash command object. Used for slash commands.
+     * @type {SlashCommandBuilder}
+     */
+    public readonly data: SlashCommandBuilder;
+
+    /**
      * A collection of people that are in cooldown for this command. The K represents the ID; the V represents the
      * the time when the cooldown expires.
      * @type {Collection<string, number>}
@@ -40,29 +98,35 @@ export abstract class BaseCommand {
     /**
      * Creates a new `BaseCommand` object.
      * @param {ICommandInfo} cmi The command information object.
+     * @param {SlashCommandBuilder} [slashCmdBuilder] The slash command object. If none is specified, only the
+     * `name` and `description` of the slash command will be specified. If you need to supply arguments, provide
+     * this argument yourself.
      * @throws {Error} If the command has 0 or more than 1 role permission defined and is rule inclusive.
-     * @throws {Error} If the command doesn't have any way to be called.
+     * @throws {Error} If the command doesn't have any way to be called, or doesn't have a description, or doesn't
+     * have a name.
      * @protected
      */
-    protected constructor(cmi: ICommandInfo) {
+    protected constructor(cmi: ICommandInfo, slashCmdBuilder?: SlashCommandBuilder) {
         if (cmi.isRoleInclusive && cmi.rolePermissions.length !== 1)
             throw new Error(`${cmi.formalCommandName} is role inclusive but has 0 or 2+ roles specified.`);
 
-        if (cmi.botCommandNames.length === 0)
+        if (!cmi.botCommandName || !cmi.formalCommandName || !cmi.description)
             throw new Error(`${cmi.formalCommandName} does not have any way to be called.`);
 
         this.commandInfo = cmi;
+        this.data = slashCmdBuilder ?? new SlashCommandBuilder()
+            .setName(cmi.botCommandName)
+            .setDescription(cmi.description);
+
         this.onCooldown = new Collection<string, number>();
     }
 
     /**
      * Executes a command.
-     * @param {Message} msg The message object that initiated this command.
-     * @param {string[]} args The arguments, if any.
-     * @param {IGuildInfo} [guildDoc] The guild document.
+     * @param {ICommandContext} ctx The command context.
      * @return {Promise<number>} The command result. 0 = success, any other number = fail.
      */
-    public abstract run(msg: Message, args: string[], guildDoc?: IGuildInfo): Promise<number>;
+    public abstract run(ctx: ICommandContext): Promise<number>;
 
     /**
      * Checks to see if the specified person is on cooldown.
@@ -316,9 +380,9 @@ interface ICommandInfo {
 
     /**
      * The way a user would call this command.
-     * @type {string[]}
+     * @type {string}
      */
-    botCommandNames: string[];
+    botCommandName: string;
 
     /**
      * A description of what this command does.

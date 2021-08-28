@@ -10,7 +10,7 @@ import {Guild, Message, MessageButton, MessageEmbed, TextChannel} from "discord.
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {BaseCommand} from "../BaseCommand";
+import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {MessageButtonStyles} from "discord.js/typings/enums";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {FilterQuery} from "mongodb";
@@ -106,14 +106,14 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             description: "This is the channel where raiders can rate a leader's performance. You can either set this"
                 + " channel to a new channel or the AFK Check channel. If this is set to the AFK Check channel, the"
                 + " original AFK Check message will be edited with the poll.",
-            guildDocPath: "channels.raids.rateLeaderChannel",
-            sectionPath: "guildSections.$.channels.raids.rateLeaderChannel",
+            guildDocPath: "channels.raids.leaderFeedbackChannelId",
+            sectionPath: "guildSections.$.channels.raids.leaderFeedbackChannelId",
             channelType: ChannelCategoryType.Raiding,
             configTypeOrInstructions: ConfigType.Channel,
             getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
                 return section.isMainSection
-                    ? guildDoc.channels.raids.rateLeaderChannel
-                    : section.channels.raids.rateLeaderChannel;
+                    ? guildDoc.channels.raids.leaderFeedbackChannelId
+                    : section.channels.raids.leaderFeedbackChannelId;
             }
         },
         {
@@ -162,7 +162,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
         super({
             cmdCode: "CONFIGURE_CHANNEL_COMMAND",
             formalCommandName: "Configure Channel Command",
-            botCommandNames: ["configchannels"],
+            botCommandName: "configchannels",
             description: "Allows the user to configure channels for the entire server or for a specific section",
             usageGuide: ["configchannels"],
             exampleGuide: ["configchannels"],
@@ -179,28 +179,28 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
     }
 
     /** @inheritDoc */
-    public async run(msg: Message, args: string[], guildDoc: IGuildInfo): Promise<number> {
-        if (!(msg.channel instanceof TextChannel)) return -1;
-        this.entry(msg, guildDoc, null).then();
+    public async run(ctx: ICommandContext): Promise<number> {
+        if (!(ctx.channel instanceof TextChannel)) return -1;
+        this.entry(ctx, null).then();
         return 0;
     }
 
     /** @inheritDoc */
-    public async entry(msg: Message, guildDoc: IGuildInfo, botMsg: Message | null): Promise<void> {
-        const member = GuildFgrUtilities.getCachedMember(msg.guild!, msg.author.id);
+    public async entry(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
+        const member = GuildFgrUtilities.getCachedMember(ctx.guild!, ctx.user.id);
         if (!member) return;
 
         let selectedSection: ISectionInfo;
         let newBotMsg: Message;
         if (botMsg) {
             const queryResult = await InteractivityHelper.getSectionWithInitMsg(
-                guildDoc,
+                ctx.guildDoc!,
                 member,
                 botMsg
             );
 
             if (!queryResult) {
-                this.dispose(botMsg).then();
+                this.dispose(ctx).then();
                 return;
             }
 
@@ -209,9 +209,9 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
         }
         else {
             const queryResult = await InteractivityHelper.getSectionQuery(
-                guildDoc,
-                msg.member!,
-                msg.channel as TextChannel,
+                ctx.guildDoc!,
+                ctx.member!,
+                ctx.channel as TextChannel,
                 "Please select the appropriate section that you want to change channel settings for.",
                 true
             );
@@ -219,17 +219,16 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             [selectedSection, newBotMsg] = queryResult;
         }
 
-        this.mainMenu(msg, guildDoc, selectedSection, newBotMsg).then();
+        this.mainMenu(ctx, selectedSection, newBotMsg).then();
     }
 
     /** @inheritDoc */
-    public async mainMenu(origMsg: Message, guildDoc: IGuildInfo, section: ISectionInfo,
-                          botMsg: Message): Promise<void> {
-        const guild = origMsg.guild!;
+    public async mainMenu(ctx: ICommandContext, section: ISectionInfo, botMsg: Message): Promise<void> {
+        const guild = ctx.guild!;
         // Both main section + individual section will have their own AFK check + verification channel config.
         const currentConfiguration = this.getCurrentConfiguration(
-            guild,
-            guildDoc,
+            ctx.guild!,
+            ctx.guildDoc!,
             section,
             DisplayFilter.Verification | DisplayFilter.Raids | DisplayFilter.Other | DisplayFilter.Modmail
         );
@@ -306,17 +305,17 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
         });
 
         if (!selectedButton) {
-            this.dispose(botMsg).then();
+            this.dispose(ctx).then();
             return;
         }
 
         switch (selectedButton.customId) {
             case "go_back": {
-                this.entry(origMsg, guildDoc, botMsg).then();
+                this.entry(ctx, botMsg).then();
                 break;
             }
             case "base": {
-                this.doBaseChannels(origMsg, guildDoc, section, botMsg).then();
+                this.doBaseChannels(ctx, section, botMsg).then();
                 break;
             }
             case "expandable": {
@@ -328,7 +327,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 break;
             }
             case "exit": {
-                this.dispose(botMsg).then();
+                this.dispose(ctx).then();
                 return;
             }
         }
@@ -336,18 +335,16 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
 
     /**
      * A function that lets the user choose to configure either AFK check channels or verification channels.
-     * @param {Message} origMsg The original message.
-     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ICommandContext} ctx The command context.
      * @param {ISectionInfo} section The section to edit.
      * @param {Message} botMsg The bot message.
      * @private
      */
-    private async doBaseChannels(origMsg: Message, guildDoc: IGuildInfo, section: ISectionInfo,
-                                 botMsg: Message): Promise<void> {
-        const guild = origMsg.guild!;
+    private async doBaseChannels(ctx: ICommandContext, section: ISectionInfo, botMsg: Message): Promise<void> {
+        const guild = ctx.guild!;
         const curConf = this.getCurrentConfiguration(
-            guild,
-            guildDoc,
+            ctx.guild!,
+            ctx.guildDoc!,
             section,
             DisplayFilter.Verification | DisplayFilter.Raids | DisplayFilter.Modmail
         );
@@ -437,19 +434,18 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
         });
 
         if (!selectedButton) {
-            this.dispose(botMsg).then();
+            this.dispose(ctx).then();
             return;
         }
 
         switch (selectedButton.customId) {
             case "go_back": {
-                this.mainMenu(origMsg, guildDoc, section, botMsg).then();
+                this.mainMenu(ctx, section, botMsg).then();
                 break;
             }
             case "raids": {
                 this.editDatabaseSettings(
-                    origMsg,
-                    guildDoc,
+                    ctx,
                     section,
                     botMsg,
                     ConfigureChannelsCommand.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Raiding),
@@ -459,8 +455,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             }
             case "verification": {
                 this.editDatabaseSettings(
-                    origMsg,
-                    guildDoc,
+                    ctx,
                     section,
                     botMsg,
                     ConfigureChannelsCommand.CHANNEL_MONGO
@@ -472,8 +467,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             // This should only hit if it's the guild doc (not a section)
             case "modmail": {
                 this.editDatabaseSettings(
-                    origMsg,
-                    guildDoc,
+                    ctx,
                     section,
                     botMsg,
                     ConfigureChannelsCommand.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Modmail),
@@ -482,31 +476,30 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 break;
             }
             case "exit": {
-                this.dispose(botMsg).then();
+                this.dispose(ctx).then();
                 return;
             }
         }
     }
 
     /** @inheritDoc */
-    public async dispose(origMsg: Message, ...args: any[]): Promise<void> {
-        await origMsg.delete().catch();
+    public async dispose(ctx: ICommandContext, ...args: any[]): Promise<void> {
+        // nothing needs to be done here.
     }
 
 
     /**
      * Edits the database entries. This is the function that is responsible for editing the database.
-     * @param {Message} origMsg The original message.
-     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ICommandContext} ctx The command context.
      * @param {ISectionInfo} section The section to edit.
      * @param {Message} botMsg The bot message.
      * @param {IChannelMongo[]} entries The entries to manipulate.
      * @param {string} group The group name.
      * @private
      */
-    private async editDatabaseSettings(origMsg: Message, guildDoc: IGuildInfo, section: ISectionInfo,
+    private async editDatabaseSettings(ctx: ICommandContext, section: ISectionInfo,
                                        botMsg: Message, entries: IChannelMongo[], group: string): Promise<void> {
-        const guild = origMsg.guild!;
+        const guild = ctx.guild!;
 
         let selected = 0;
         while (true) {
@@ -518,7 +511,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             for (let i = 0; i < entries.length; i++) {
                 const currSet: TextChannel | null = GuildFgrUtilities.getCachedChannel<TextChannel>(
                     guild,
-                    entries[i].getCurrentValue(guildDoc, section) as string
+                    entries[i].getCurrentValue(ctx.guildDoc!, section) as string
                 );
                 embedToDisplay.addField(
                     i === selected ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${entries[i].name}` : entries[i].name,
@@ -533,7 +526,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
 
             const result = await AdvancedCollector.startDoubleCollector<number | TextChannel>({
                 targetChannel: botMsg.channel as TextChannel,
-                targetAuthor: origMsg.author,
+                targetAuthor: ctx.user,
                 duration: 60 * 1000,
                 deleteBaseMsgAfterComplete: false,
                 acknowledgeImmediately: true,
@@ -556,7 +549,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
 
             // Case 0: Nothing
             if (!result) {
-                this.dispose(botMsg).then();
+                this.dispose(ctx).then();
                 return;
             }
 
@@ -576,12 +569,12 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 : entries[selected].sectionPath;
 
             if (result instanceof TextChannel) {
-                guildDoc = (await MongoManager.getGuildCollection().findOneAndUpdate(query, {
+                ctx.guildDoc = (await MongoManager.getGuildCollection().findOneAndUpdate(query, {
                     $set: {
                         [keySetter]: result.id
                     }
                 }, {returnDocument: "after"})).value!;
-                section = MongoManager.getAllSections(guildDoc)
+                section = MongoManager.getAllSections(ctx.guildDoc!)
                     .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                 continue;
             }
@@ -589,7 +582,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             // Case 3: Button
             switch (result.customId) {
                 case "back": {
-                    this.doBaseChannels(origMsg, guildDoc, section, botMsg).then();
+                    this.doBaseChannels(ctx, section, botMsg).then();
                     return;
                 }
                 case "up": {
@@ -603,17 +596,17 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                     break;
                 }
                 case "reset": {
-                    guildDoc = (await MongoManager.updateAndFetchGuildDoc(query, {
+                    ctx.guildDoc = (await MongoManager.updateAndFetchGuildDoc(query, {
                         $set: {
                             [keySetter]: ""
                         }
                     }))!;
-                    section = MongoManager.getAllSections(guildDoc)
+                    section = MongoManager.getAllSections(ctx.guildDoc!)
                         .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                     break;
                 }
                 case "quit": {
-                    this.dispose(botMsg).then();
+                    this.dispose(ctx).then();
                     return;
                 }
             }
@@ -628,7 +621,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             const raidChannelObj = section.channels.raids;
             const afkCheckChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.afkCheckChannelId);
             const contPanelChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.controlPanelChannelId);
-            const rateLeaderChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.rateLeaderChannel);
+            const rateLeaderChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.leaderFeedbackChannelId);
 
             currentConfiguration.append("__**Raid Channels**__").appendLine()
                 .append(`⇒ AFK Check Channel: ${afkCheckChannel ?? ConfigureChannelsCommand.NA}`).appendLine()

@@ -8,7 +8,6 @@ import {
     MessageSelectMenu,
     TextChannel
 } from "discord.js";
-import {InteractionManager} from "./InteractionManager";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
@@ -284,10 +283,6 @@ export namespace VerifyManager {
             return;
         }
 
-        // If the person is currently interacting with something, don't let them verify.
-        if (InteractionManager.InteractiveMenu.has(member.id))
-            return;
-
         // Check if this person is currently being manually verified.
         const manualVerifyEntry = section.manualVerificationEntries
             .find(x => x.userId === member.id);
@@ -303,7 +298,6 @@ export namespace VerifyManager {
         }
 
         // This has to be a verification channel so we don't need to double check.
-        InteractionManager.InteractiveMenu.set(member.id, "VERIFICATION");
         if (section.isMainSection) {
             verifyMain(member, guildDoc, verifKit).catch();
             return;
@@ -450,7 +444,6 @@ export namespace VerifyManager {
                     ]
                 }).catch();
 
-                InteractionManager.InteractiveMenu.delete(member.id);
                 return;
             }
 
@@ -481,7 +474,7 @@ export namespace VerifyManager {
         });
 
         collector.on("end", () => {
-            InteractionManager.InteractiveMenu.delete(member.id);
+            // nothing for now
         });
 
         collector.on("collect", async i => {
@@ -877,23 +870,18 @@ export namespace VerifyManager {
             return;
         }
 
-        if (selected.customId === MANUAL_VERIFY_ID) {
-            verifKit.verifyFail?.send({
-                content: `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but did not meet the `
-                    + "requirements. He or she has opted for manual verification."
-            });
+        verifKit.verifyFail?.send({
+            content: `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but did not meet the `
+                + "requirements. He or she has opted for manual verification."
+        });
 
-            await verifKit.msg.edit({
-                embeds: [acknowledgementEmbed.setDescription("You have chosen to get manually verified. A staff"
-                    + " member will look through your profile shortly. Please do **not** make your profile private.")],
-                components: []
-            });
+        await verifKit.msg.edit({
+            embeds: [acknowledgementEmbed.setDescription("You have chosen to get manually verified. A staff"
+                + " member will look through your profile shortly. Please do **not** make your profile private.")],
+            components: []
+        });
 
-            await sendManualVerifyEmbedAndLog(member, checkRes, verifKit, section).catch();
-            return;
-        }
-
-        InteractionManager.InteractiveMenu.set(member.id, "VERIF_EVIDENCE");
+        await sendManualVerifyEmbedAndLog(member, checkRes, verifKit, section).catch();
     }
 
     /**
@@ -977,7 +965,7 @@ export namespace VerifyManager {
      */
     async function acknowledgeManualVerifyRes(manualVerifyRes: IManualVerificationEntry, member: GuildMember,
                                               responseId: string): Promise<void> {
-
+        // TODO
     }
 
     /**

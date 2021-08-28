@@ -1,6 +1,6 @@
 import {
     Channel,
-    DMChannel,
+    DMChannel, EmojiIdentifierResolvable,
     Guild,
     GuildEmoji,
     Message,
@@ -165,5 +165,18 @@ export namespace GlobalFgrUtilities {
         } catch (e) {
             return null;
         }
+    }
+
+    /**
+     * Given either an emoji ID or a built-in emoji, this will attempt to resolve an emoji.
+     * @param {string} emojiIdOrStr The emoji or string.
+     * @return {EmojiIdentifierResolvable | null} The resolved emoji, or the emoji string if it is built-in.
+     */
+    export function resolveEmoji(emojiIdOrStr: string): EmojiIdentifierResolvable | null {
+        if (MiscUtilities.isSnowflake(emojiIdOrStr)) {
+            return getCachedEmoji(emojiIdOrStr);
+        }
+
+        return null;
     }
 }

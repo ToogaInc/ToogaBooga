@@ -338,7 +338,7 @@ export interface IRaidChannels {
      *
      * @type {string}
      */
-    rateLeaderChannel: string;
+    leaderFeedbackChannelId: string;
 }
 
 /**

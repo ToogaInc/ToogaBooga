@@ -16,7 +16,6 @@ import {
 import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {InteractionManager} from "./InteractionManager";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {Emojis} from "../constants/Emojis";
 import {StringBuilder} from "../utilities/StringBuilder";
@@ -122,8 +121,6 @@ export namespace ModmailManager {
         if (!dmChannel)
             return;
 
-        // Validate that they are not in an interaction menu.
-        if (InteractionManager.InteractiveMenu.has(author.id)) return;
         // Validate that the message length is more than 15 characters long.
         if (msg.content.length <= 15 && msg.attachments.size === 0) {
             const baseMessage = await dmChannel.send({
@@ -150,11 +147,7 @@ export namespace ModmailManager {
             if (!confirmSend || confirmSend.customId === "no") return;
         }
 
-        // We begin by asking them what guild they want to send their message to.
-        InteractionManager.InteractiveMenu.set(author.id, "PRE_MODMAIL");
         const uncheckedGuild = await chooseGuild(author);
-        // Remove this entry after 1 second just in case.
-        setTimeout(() => InteractionManager.InteractiveMenu.delete(author.id), 1000);
 
         // No guilds are available.
         if (!uncheckedGuild) {

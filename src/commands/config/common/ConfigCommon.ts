@@ -3,7 +3,8 @@ import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector
 import {Emojis} from "../../../constants/Emojis";
 import {MessageButtonStyles} from "discord.js/typings/enums";
 import {StringBuilder} from "../../../utilities/StringBuilder";
-import {IGuildInfo, ISectionInfo} from "../../../definitions/MongoDocumentInterfaces";
+import {IGuildInfo, ISectionInfo} from "../../../definitions";
+import {ICommandContext} from "../../BaseCommand";
 
 export const DATABASE_CONFIG_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
     new MessageButton()
@@ -52,21 +53,19 @@ export const DATABASE_CONFIG_DESCRIPTION: string = new StringBuilder()
 export interface IConfigCommand {
     /**
      * The entry function. This is where the configuration interaction starts.
-     * @param {Message} msg The user-sent message that called this command.
-     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ICommandContext} ctx The command context.
      * @param {Message | null} botMsg The bot message. This will either be a defined message if the user went "back"
      * to the entry function or `null` if this is the first time.
      */
-    entry(msg: Message, guildDoc: IGuildInfo, botMsg: Message | null): Promise<void>;
+    entry(ctx: ICommandContext, botMsg: Message | null): Promise<void>;
 
     /**
      * The main menu function. This is where the configuration process actually begins.
-     * @param {Message} origMsg The user-sent message that called this command.
-     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ICommandContext} ctx The command context.
      * @param {ISectionInfo} section The section that will be configured.
      * @param {Message} botMsg The bot message, which will be used for interactivity (editing message).
      */
-    mainMenu(origMsg: Message, guildDoc: IGuildInfo, section: ISectionInfo, botMsg: Message): Promise<void>;
+    mainMenu(ctx: ICommandContext, section: ISectionInfo, botMsg: Message): Promise<void>;
 
     /**
      * Returns a string containing the current configuration information.
@@ -80,10 +79,10 @@ export interface IConfigCommand {
 
     /**
      * Disposes this instance. Use this function to clean up any messages that were used.
-     * @param {Message} origMsg The original message.
+     * @param {ICommandContext} ctx The command context.
      * @param args Anything else.
      */
-    dispose(origMsg: Message, ...args: any[]): Promise<void>;
+    dispose(ctx: ICommandContext, ...args: any[]): Promise<void>;
 }
 
 export interface IBaseDatabaseEntryInfo {

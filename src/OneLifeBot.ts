@@ -3,14 +3,16 @@ import {
     Client,
     Collection, Guild,
     Interaction,
-    Message, VoiceState
+    VoiceState
 } from "discord.js";
 import {MongoManager} from "./managers/MongoManager";
 import * as assert from "assert";
 import axios, {AxiosInstance} from "axios";
 import {BaseCommand} from "./commands";
-import {onGuildCreateEvent, onInteractionEvent, onMessageEvent, onReadyEvent, onVoiceStateEvent} from "./events";
+import {onGuildCreateEvent, onInteractionEvent, onReadyEvent, onVoiceStateEvent} from "./events";
 import {QuotaService} from "./managers/QuotaManager";
+import {REST} from "@discordjs/rest";
+import {APIApplicationCommandOption, Routes} from "discord-api-types";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -19,7 +21,17 @@ export class OneLifeBot {
 
     public static BotInstance: OneLifeBot;
     public static AxiosClient: AxiosInstance = axios.create();
-    public static Commands: Collection<string, BaseCommand[]>;
+
+    public static Commands: BaseCommand[];
+    public static AllCommands: Collection<string, BaseCommand>;
+    public static JsonCommands: {
+        name: string;
+        description: string;
+        options: APIApplicationCommandOption[];
+        default_permission: boolean | undefined;
+    }[];
+
+    public static Rest: REST;
 
     /**
      * Constructs a new Discord bot.
@@ -46,7 +58,37 @@ export class OneLifeBot {
         });
 
         OneLifeBot.BotInstance = this;
-        OneLifeBot.Commands = new Collection<string, BaseCommand[]>();
+        OneLifeBot.Commands = [];
+
+        // add commands to Commands collection
+
+        OneLifeBot.AllCommands = new Collection<string, BaseCommand>();
+        OneLifeBot.JsonCommands = [];
+        OneLifeBot.Rest = new REST({version: "9"}).setToken(config.botToken);
+        for (const command of OneLifeBot.Commands) {
+            OneLifeBot.AllCommands.set(command.data.name, command);
+            OneLifeBot.JsonCommands.push(command.data.toJSON());
+        }
+
+        // If length is 0, register globally
+        (async () => {
+            if (config.slash.guildIds.length === 0) {
+                await OneLifeBot.Rest.put(
+                    Routes.applicationCommands(config.slash.clientId),
+                    { body: OneLifeBot.JsonCommands }
+                );
+            }
+            else {
+                await Promise.all(
+                    config.slash.guildIds.map(async guildId => {
+                        await OneLifeBot.Rest.put(
+                            Routes.applicationGuildCommands(config.slash.clientId, guildId),
+                            { body: OneLifeBot.JsonCommands }
+                        );
+                    })
+                );
+            }
+        })();
     }
 
     /**
@@ -54,7 +96,6 @@ export class OneLifeBot {
      */
     public startAllEvents(): void {
         this._bot.on("ready", async () => onReadyEvent());
-        this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
         this._bot.on("guildCreate", async (g: Guild) => onGuildCreateEvent(g));
         this._bot.on("voiceStateUpdate", async (o: VoiceState, n: VoiceState) => onVoiceStateEvent(o, n));

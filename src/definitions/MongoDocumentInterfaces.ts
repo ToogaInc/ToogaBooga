@@ -495,13 +495,6 @@ export interface IGuildInfo extends IBaseDocument {
     activeRaids: IRaidInfo[];
 
     /**
-     * The prefix that can be used to call commands.
-     *
-     * @type {string}
-     */
-    prefix: string;
-
-    /**
      * All active manual verification requests for the main section.
      *
      * @type {IManualVerificationEntry[]}

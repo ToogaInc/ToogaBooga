@@ -10,6 +10,29 @@ export interface IConfiguration {
     botToken: string;
 
     /**
+     * Object that represents slash command configuration.
+     *
+     * @type {object}
+     */
+    slash: {
+        /**
+         * The bot's client ID.
+         *
+         * @type {string}
+         */
+        clientId: string;
+
+        /**
+         * The guild IDs where guild commands should exit. Specify this DURING DEVELOPMENT ONLY. This is because guild
+         * commands update instantly, whereas global commands do not. During production, set this to an empty array
+         * so the commands exist globally.
+         *
+         * @type {string[]}
+         */
+        guildIds: string[];
+    };
+
+    /**
      * The MongoDB database and collection names and other important things.
      *
      * @type {object}

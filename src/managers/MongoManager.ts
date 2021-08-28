@@ -408,7 +408,7 @@ export namespace MongoManager {
                 raids: {
                     afkCheckChannelId: "",
                     controlPanelChannelId: "",
-                    rateLeaderChannel: ""
+                    leaderFeedbackChannelId: ""
                 },
                 verification: {
                     verificationChannelId: "",
@@ -531,7 +531,6 @@ export namespace MongoManager {
                 suspendedRoleId: "",
                 verifiedRoleId: ""
             },
-            prefix: OneLifeBot.BotInstance.config.misc.defaultPrefix,
             quotas: {
                 quotaInfo: [],
                 resetTime: {

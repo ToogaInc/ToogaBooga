@@ -1,4 +1,4 @@
-import {Interaction, NewsChannel, TextChannel} from "discord.js";
+import {CommandInteraction, Interaction, NewsChannel, TextChannel} from "discord.js";
 import {OneLifeBot} from "../OneLifeBot";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
@@ -6,8 +6,38 @@ import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilit
 import {ModmailManager} from "../managers/ModmailManager";
 import {VerifyManager} from "../managers/VerifyManager";
 import {RaidInstance} from "../instances/RaidInstance";
+import {IGuildInfo} from "../definitions";
+
+/**
+ * Acknowledges a slash command.
+ * @param {CommandInteraction} interaction The interaction.
+ */
+async function acknowledgeSlashCmd(interaction: CommandInteraction): Promise<void> {
+    if (interaction.guild) {
+        if (OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(interaction.guild.id))
+            return;
+
+        return slashCommandHandler(
+            interaction,
+            await MongoManager.getOrCreateGuildDoc(interaction.guild.id, true)
+        );
+    }
+
+    return slashCommandHandler(interaction);
+}
+
+/**
+ * Executes the slash command, if any.
+ * @param {CommandInteraction} interaction The interaction.
+ * @param {IGuildInfo} guildDoc The guild document, if any.
+ */
+async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: IGuildInfo): Promise<void> {
+    // TODO
+}
+
 
 export async function onInteractionEvent(interaction: Interaction): Promise<void> {
+
     // Must be a button.
     if (!interaction.isButton()) return;
 
@@ -128,6 +158,4 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         await afkCheckInstance.interactionEventFunction(interaction);
         return;
     }
-
-
 }

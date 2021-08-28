@@ -1,9 +1,8 @@
-import {BaseCommand} from "../BaseCommand";
-import {Message, MessageEmbed} from "discord.js";
+import {BaseCommand, ICommandContext} from "../BaseCommand";
+import {MessageEmbed} from "discord.js";
 import {MongoManager} from "../../managers/MongoManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {OneLifeBot} from "../../OneLifeBot";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 class SendAnnouncementCommand extends BaseCommand {
@@ -12,10 +11,10 @@ class SendAnnouncementCommand extends BaseCommand {
         super({
             cmdCode: "SEND_ANNOUNCEMENTS_COMMAND",
             formalCommandName: "Send Announcements Command",
-            botCommandNames: ["sendannouncements", "announce"],
+            botCommandName: "sendbotannouncement",
             description: "Sends an announcement to every server that has a set bot updates channel.",
-            usageGuide: ["sendannouncements [Content: String]"],
-            exampleGuide: ["sendannouncements Hello world!"],
+            usageGuide: ["sendbotannouncement [Content, STR]"],
+            exampleGuide: ["sendbotannouncement Hello world!"],
             deleteCommandAfter: 10 * 1000,
             commandCooldown: 0,
             generalPermissions: [],
@@ -28,15 +27,17 @@ class SendAnnouncementCommand extends BaseCommand {
         });
     }
 
-    public async run(msg: Message, args: string[]): Promise<number> {
+    public async run(ctx: ICommandContext): Promise<number> {
+        const args = ctx.interaction.options.get("msg", true);
         const allGuildDocs = await MongoManager.getGuildCollection().find({}).toArray();
         const embedToSend = new MessageEmbed()
             .setColor("RANDOM")
             .setTitle("Message from OneLife Developers")
-            .setDescription(msg.content)
+            .setDescription(args.value as string)
             .setTimestamp()
-            .setAuthor("OneLife", msg.client.user?.displayAvatarURL());
+            .setAuthor("OneLife", OneLifeBot.BotInstance.client.user?.displayAvatarURL());
 
+        /*
         // If there is an attachment, get its contents.
         if (msg.attachments.size > 0) {
             const firstAttachment = msg.attachments.first()!;
@@ -51,8 +52,9 @@ class SendAnnouncementCommand extends BaseCommand {
                     embedToSend.addField("Message", f);
                 }
             }
-        }
+        }*/
 
+        let numServersSent = 0;
         for await (const guildDoc of allGuildDocs) {
             // Guild must exist.
             const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
@@ -65,8 +67,13 @@ class SendAnnouncementCommand extends BaseCommand {
             await GlobalFgrUtilities.sendMsg(botUpdatesChannel, {
                 embeds: [embedToSend]
             });
+            numServersSent++;
         }
 
+        await ctx.interaction.reply({
+            ephemeral: true,
+            content: `Your message has been sent to **${numServersSent}** server(s)!`
+        });
         return 0;
     }
 }
