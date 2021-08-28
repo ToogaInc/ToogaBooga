@@ -449,10 +449,4 @@ interface ICommandInfo {
      * @type {boolean}
      */
     botOwnerOnly: boolean;
-
-    /**
-     * Minimum arguments needed.
-     * @type {number}
-     */
-    minArgs: number;
 }

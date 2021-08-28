@@ -173,8 +173,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
             isRoleInclusive: false,
             guildOnly: true,
-            botOwnerOnly: false,
-            minArgs: 0
+            botOwnerOnly: false
         });
     }
 

@@ -22,8 +22,7 @@ class SendAnnouncementCommand extends BaseCommand {
             rolePermissions: [],
             isRoleInclusive: false,
             guildOnly: false,
-            botOwnerOnly: true,
-            minArgs: 1
+            botOwnerOnly: true
         });
     }
 
