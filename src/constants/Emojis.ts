@@ -1,7 +1,5 @@
-import {EmojiIdentifierResolvable} from "discord.js";
-
 export namespace Emojis {
-    export const NUMERICAL_EMOJIS: EmojiIdentifierResolvable[] = [
+    export const NUMERICAL_EMOJIS: string[] = [
         "1⃣",
         "2⃣",
         "3⃣",
@@ -14,72 +12,72 @@ export namespace Emojis {
         "🔟",
     ];
 
-    export const TICKET_EMOJI: EmojiIdentifierResolvable = "🎟️";
-    export const HASH_EMOJI: EmojiIdentifierResolvable = "#️⃣";
-    export const X_EMOJI: EmojiIdentifierResolvable = "❌";
-    export const RED_SQUARE_EMOJI: EmojiIdentifierResolvable = "🟥";
-    export const GREEN_SQUARE_EMOJI: EmojiIdentifierResolvable = "🟩";
-    export const WHITE_SQUARE_EMOJI: EmojiIdentifierResolvable = "⬜";
-    export const BLACK_SQUARE_EMOJI: EmojiIdentifierResolvable = "⬛";
-    export const YELLOW_SQUARE_EMOJI: EmojiIdentifierResolvable = "🟨";
-    export const GREEN_CHECK_EMOJI: EmojiIdentifierResolvable = "✅";
-    export const HOURGLASS_EMOJI: EmojiIdentifierResolvable = "⌛";
-    export const RIGHT_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "▶️";
-    export const UP_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "🔼 ";
-    export const DOWN_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "🔽";
-    export const LONG_LEFT_ARROW_EMOJI: EmojiIdentifierResolvable = "⬅️";
-    export const LONG_RIGHT_TRIANGLE_EMOJI: EmojiIdentifierResolvable = "➡️";
-    export const WASTEBIN_EMOJI: EmojiIdentifierResolvable = "🗑️";
-    export const MAP_EMOJI: EmojiIdentifierResolvable = "🗺️";
-    export const SPEECH_BUBBLE_EMOJI: EmojiIdentifierResolvable = "🗨️";
-    export const LOCK_EMOJI: EmojiIdentifierResolvable = "🔒";
-    export const UNLOCK_EMOJI: EmojiIdentifierResolvable = "🔓";
-    export const PRINTER_EMOJI: EmojiIdentifierResolvable = "🖨️";
-    export const KEY_EMOJI: EmojiIdentifierResolvable = "🔑";
-    export const PENCIL_PAPER_EMOJI: EmojiIdentifierResolvable = "📝";
-    export const PENCIL_EMOJI: EmojiIdentifierResolvable = "✏";
-    export const INBOX_EMOJI: EmojiIdentifierResolvable = "📥";
-    export const WARNING_EMOJI: EmojiIdentifierResolvable = "⚠";
-    export const DENIED_EMOJI: EmojiIdentifierResolvable = "⛔";
-    export const MAIL_EMOJI: EmojiIdentifierResolvable = "📧";
-    export const CLIPBOARD_EMOJI: EmojiIdentifierResolvable = "📝";
-    export const REDIRECT_EMOJI: EmojiIdentifierResolvable = "🔀";
-    export const STOP_SIGN_EMOJI: EmojiIdentifierResolvable = "🛑";
-    export const EYES_EMOJI: EmojiIdentifierResolvable = "👀";
+    export const TICKET_EMOJI: string = "🎟️";
+    export const HASH_EMOJI: string = "#️⃣";
+    export const X_EMOJI: string = "❌";
+    export const RED_SQUARE_EMOJI: string = "🟥";
+    export const GREEN_SQUARE_EMOJI: string = "🟩";
+    export const WHITE_SQUARE_EMOJI: string = "⬜";
+    export const BLACK_SQUARE_EMOJI: string = "⬛";
+    export const YELLOW_SQUARE_EMOJI: string = "🟨";
+    export const GREEN_CHECK_EMOJI: string = "✅";
+    export const HOURGLASS_EMOJI: string = "⌛";
+    export const RIGHT_TRIANGLE_EMOJI: string = "▶️";
+    export const UP_TRIANGLE_EMOJI: string = "🔼 ";
+    export const DOWN_TRIANGLE_EMOJI: string = "🔽";
+    export const LONG_LEFT_ARROW_EMOJI: string = "⬅️";
+    export const LONG_RIGHT_TRIANGLE_EMOJI: string = "➡️";
+    export const WASTEBIN_EMOJI: string = "🗑️";
+    export const MAP_EMOJI: string = "🗺️";
+    export const SPEECH_BUBBLE_EMOJI: string = "🗨️";
+    export const LOCK_EMOJI: string = "🔒";
+    export const UNLOCK_EMOJI: string = "🔓";
+    export const PRINTER_EMOJI: string = "🖨️";
+    export const KEY_EMOJI: string = "🔑";
+    export const PENCIL_PAPER_EMOJI: string = "📝";
+    export const PENCIL_EMOJI: string = "✏";
+    export const INBOX_EMOJI: string = "📥";
+    export const WARNING_EMOJI: string = "⚠";
+    export const DENIED_EMOJI: string = "⛔";
+    export const MAIL_EMOJI: string = "📧";
+    export const CLIPBOARD_EMOJI: string = "📝";
+    export const REDIRECT_EMOJI: string = "🔀";
+    export const STOP_SIGN_EMOJI: string = "🛑";
+    export const EYES_EMOJI: string = "👀";
 
     // specific classes
-    export const ROGUE: EmojiIdentifierResolvable = "";
-    export const ARCHER: EmojiIdentifierResolvable = "";
-    export const WIZARD: EmojiIdentifierResolvable = "";
-    export const PRIEST: EmojiIdentifierResolvable = "";
-    export const WARRIOR: EmojiIdentifierResolvable = "";
-    export const KNIGHT: EmojiIdentifierResolvable = "";
-    export const PALADIN: EmojiIdentifierResolvable = "";
-    export const ASSASSIN: EmojiIdentifierResolvable = "";
-    export const NECROMANCER: EmojiIdentifierResolvable = "";
-    export const HUNTRESS: EmojiIdentifierResolvable = "";
-    export const MYSTIC: EmojiIdentifierResolvable = "";
-    export const TRICKSTER: EmojiIdentifierResolvable = "";
-    export const SORCERER: EmojiIdentifierResolvable = "";
-    export const NINJA: EmojiIdentifierResolvable = "";
-    export const SAMURAI: EmojiIdentifierResolvable = "";
-    export const BARD: EmojiIdentifierResolvable = "";
+    export const ROGUE: string = "";
+    export const ARCHER: string = "";
+    export const WIZARD: string = "";
+    export const PRIEST: string = "";
+    export const WARRIOR: string = "";
+    export const KNIGHT: string = "";
+    export const PALADIN: string = "";
+    export const ASSASSIN: string = "";
+    export const NECROMANCER: string = "";
+    export const HUNTRESS: string = "";
+    export const MYSTIC: string = "";
+    export const TRICKSTER: string = "";
+    export const SORCERER: string = "";
+    export const NINJA: string = "";
+    export const SAMURAI: string = "";
+    export const BARD: string = "";
 
     // status effects
-    export const PARALYZE: EmojiIdentifierResolvable = "";
-    export const STUN: EmojiIdentifierResolvable = "";
-    export const SLOW: EmojiIdentifierResolvable = "";
-    export const DAZE: EmojiIdentifierResolvable = "";
-    export const ARMOR_BREAK: EmojiIdentifierResolvable = "";
+    export const PARALYZE: string = "";
+    export const STUN: string = "";
+    export const SLOW: string = "";
+    export const DAZE: string = "";
+    export const ARMOR_BREAK: string = "";
 
     // util/generic
-    export const RUSHING_CLASS: EmojiIdentifierResolvable = "";
+    export const RUSHING_CLASS: string = "";
 
     // items
-    export const MSEAL: EmojiIdentifierResolvable = "";
-    export const SCHOLAR_SEAL: EmojiIdentifierResolvable = "";
-    export const BRAIN_PRISM: EmojiIdentifierResolvable = "";
+    export const MSEAL: string = "";
+    export const SCHOLAR_SEAL: string = "";
+    export const BRAIN_PRISM: string = "";
 
     // otherButtons
-    export const NITRO_EMOJI: EmojiIdentifierResolvable = "";
+    export const NITRO_EMOJI: string = "";
 }

@@ -269,7 +269,7 @@ export class RaidInstance {
     private readonly _numNitroEarlyLoc: number;
 
     // Nonessential reactions. These are reactions that don't give any perks. More can be added at any point.
-    private readonly _nonEssentialReactions: GuildEmoji[];
+    private readonly _nonEssentialReactions: EmojiIdentifierResolvable[];
 
     // Buttons to display on the AFK check. These should only contain essential buttons.
     private readonly _afkCheckButtons: MessageButton[];
@@ -427,7 +427,10 @@ export class RaidInstance {
             reactions.set("EARLY_LOC_POINTS", {
                 earlyLocAmt: section.otherMajorConfig.afkCheckProperties.pointUserLimit,
                 isCustomReaction: false,
-                emojiId: "",
+                emojiInfo: {
+                    identifier: Emojis.TICKET_EMOJI,
+                    isCustom: false
+                },
                 name: "Points",
                 type: "EARLY_LOCATION",
                 builtInEmoji: Emojis.TICKET_EMOJI
@@ -468,7 +471,8 @@ export class RaidInstance {
             // Non-essential reaction.
             if (reactionInfo.earlyLocAmt <= 0) {
                 // No emoji = we can't do anything, so skip this one.
-                if (!GlobalFgrUtilities.hasCachedEmoji(reactionInfo.emojiId))
+                if (reactionInfo.emojiInfo.isCustom
+                    && !GlobalFgrUtilities.hasCachedEmoji(reactionInfo.emojiInfo.identifier))
                     continue;
 
                 // If this is early loc, then there's no point in putting it as an unessential react.
@@ -476,7 +480,9 @@ export class RaidInstance {
                     continue;
 
                 this._nonEssentialReactions.push(
-                    GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiId)!
+                    reactionInfo.emojiInfo.isCustom
+                        ? GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiInfo.identifier)!
+                        : reactionInfo.emojiInfo.identifier
                 );
 
                 continue;
@@ -492,9 +498,11 @@ export class RaidInstance {
                 .setStyle(MessageButtonStyles.PRIMARY)
                 .setCustomId(key);
 
-            const emoji = GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiId);
+            const emoji = reactionInfo.emojiInfo.isCustom
+                ? GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiInfo.identifier)
+                : reactionInfo.emojiInfo.identifier;
             if (emoji)
-                button.setEmoji(emoji.id ?? emoji.name!);
+                button.setEmoji(emoji);
 
             this._afkCheckButtons.push(button);
         }
@@ -518,7 +526,8 @@ export class RaidInstance {
         function findAndAddReaction(reaction: IAfkCheckReaction): void {
             // Is the reaction key in MappedAfkCheckReactions? If so, it's as simple as grabbing that data.
             if (reaction.mapKey in MAPPED_AFK_CHECK_REACTIONS) {
-                if (!GlobalFgrUtilities.hasCachedEmoji(MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey].emojiId))
+                const obj = MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey];
+                if (obj.emojiInfo.isCustom && !GlobalFgrUtilities.hasCachedEmoji(obj.emojiInfo.identifier))
                     return;
 
                 reactions.set(reaction.mapKey, {
@@ -530,13 +539,14 @@ export class RaidInstance {
             }
 
             // Is the reaction key associated with a custom emoji? If so, grab that as well. 
-            const customEmoji = guildDoc.properties.customReactions.findIndex(x => x.key === reaction.mapKey);
-            if (customEmoji !== -1) {
-                if (!GlobalFgrUtilities.hasCachedEmoji(guildDoc.properties.customReactions[customEmoji].value.emojiId))
+            const customEmoji = guildDoc.properties.customReactions.find(x => x.key === reaction.mapKey);
+            if (customEmoji) {
+                if (customEmoji.value.emojiInfo.isCustom
+                    && !GlobalFgrUtilities.hasCachedEmoji(customEmoji.value.emojiInfo.identifier))
                     return;
 
                 reactions.set(reaction.mapKey, {
-                    ...guildDoc.properties.customReactions[customEmoji].value,
+                    ...customEmoji.value,
                     earlyLocAmt: reaction.maxEarlyLocation,
                     isCustomReaction: true
                 });
@@ -1537,7 +1547,9 @@ export class RaidInstance {
             const currentAmt = peopleThatReacted.length;
             const maximum = this._allEssentialOptions.get(codeName)!.earlyLocAmt;
 
-            const emoji = GlobalFgrUtilities.getCachedEmoji(mappedAfkCheckOption.emojiId);
+            const emoji = mappedAfkCheckOption.emojiInfo.isCustom
+                ? GlobalFgrUtilities.getCachedEmoji(mappedAfkCheckOption.emojiInfo.identifier)
+                : mappedAfkCheckOption.emojiInfo.identifier;
             const percentBar = StringUtil.getEmojiProgressBar(8, currentAmt / maximum);
             const peopleNeededStr = `${currentAmt} / ${maximum}`;
             afkCheckFields.push(`${emoji ?? mappedAfkCheckOption.name}: ${percentBar} (${peopleNeededStr})`);
@@ -1577,7 +1589,9 @@ export class RaidInstance {
             if (!mappedAfkCheckOption)
                 continue;
 
-            const emoji = GlobalFgrUtilities.getCachedEmoji(mappedAfkCheckOption.emojiId);
+            const emoji = mappedAfkCheckOption.emojiInfo.isCustom
+                ? GlobalFgrUtilities.getCachedEmoji(mappedAfkCheckOption.emojiInfo.identifier)
+                : mappedAfkCheckOption.emojiInfo.identifier;
             const currentAmt = peopleThatReacted.length;
             const maximum = this._allEssentialOptions.get(codeName)!.earlyLocAmt;
 
@@ -1817,8 +1831,8 @@ export class RaidInstance {
 
             // Item display for future use
             const itemDisplaySb = new StringBuilder();
-            if (GlobalFgrUtilities.hasCachedEmoji(reactInfo.emojiId))
-                itemDisplaySb.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiId)!).append(" ");
+            if (reactInfo.emojiInfo.isCustom && !GlobalFgrUtilities.hasCachedEmoji(reactInfo.emojiInfo.identifier))
+                itemDisplaySb.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiInfo.identifier)!).append(" ");
             itemDisplaySb.append(`**\`${reactInfo.name}\`**`);
             const itemDisplay = itemDisplaySb.toString();
 
@@ -2176,8 +2190,15 @@ export class RaidInstance {
      */
     public static getItemDisplay(reactInfo: ReactionInfoMore): string {
         const itemDisplayBuilder = new StringBuilder();
-        if (GlobalFgrUtilities.hasCachedEmoji(reactInfo.emojiId))
-            itemDisplayBuilder.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiId)!).append(" ");
+        if (reactInfo.emojiInfo.isCustom) {
+            if (GlobalFgrUtilities.hasCachedEmoji(reactInfo.emojiInfo.identifier))
+                itemDisplayBuilder.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiInfo.identifier)!)
+                    .append(" ");
+        }
+        else {
+            itemDisplayBuilder.append(reactInfo.emojiInfo.identifier).append(" ");
+        }
+
         itemDisplayBuilder.append(`**\`${reactInfo.name}\`**`);
         return itemDisplayBuilder.toString();
     }

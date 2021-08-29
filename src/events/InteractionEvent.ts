@@ -38,7 +38,7 @@ async function acknowledgeSlashCmd(interaction: CommandInteraction): Promise<voi
  * @param {IGuildInfo} guildDoc The guild document, if any.
  */
 async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: IGuildInfo): Promise<void> {
-    const foundCommand = OneLifeBot.AllCommands.get(interaction.commandName);
+    const foundCommand = OneLifeBot.NameCommands.get(interaction.commandName);
     if (!foundCommand)
         return;
 

@@ -202,10 +202,24 @@ export interface IReactionInfo {
     type: "KEY" | "NM_KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "EARLY_LOCATION" | "UTILITY";
 
     /**
-     * The emoji ID. This is needed for getting the emoji object.
-     * @type {string}
+     * Information about this emoji.
+     * @type {object}
      */
-    emojiId: string;
+    emojiInfo: {
+        /**
+         * The emoji ID or unicode representation. Whether this is a custom emoji (i.e. ID) or unicode emoji (i.e.
+         * built-in) is specified by `isCustom`.
+         * @type {string}
+         */
+        identifier: string;
+
+        /**
+         * Whether `identifier` represents a custom emoji. Note that if this is `true`, then `identifier`
+         * will be an emoji ID.
+         * @type {boolean}
+         */
+        isCustom: boolean;
+    };
 
     /**
      * The name of the emoji.

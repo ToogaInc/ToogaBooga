@@ -19,11 +19,41 @@ export class OneLifeBot {
     private readonly _bot: Client;
     private _eventsIsStarted: boolean = false;
 
+    /**
+     * The bot instance.
+     * @type {OneLifeBot}
+     */
     public static BotInstance: OneLifeBot;
+
+    /**
+     * The HTTP client used to make web requests.
+     * @type {AxiosInstance}
+     */
     public static AxiosClient: AxiosInstance = axios.create();
 
-    public static Commands: BaseCommand[];
-    public static AllCommands: Collection<string, BaseCommand>;
+    /**
+     * All commands. The key is the category name and the value is the array of commands.
+     * @type {Collection<string, BaseCommand[]>}
+     */
+    public static Commands: Collection<string, BaseCommand[]>;
+
+    /**
+     * All commands. The key is the name of the command (essentially, the slash command name) and the value is the
+     * command object.
+     *
+     * **DO NOT MANUALLY POPULATE THIS OBJECT.**
+     *
+     * @type {Collection<string, BaseCommand>}
+     */
+    public static NameCommands: Collection<string, BaseCommand>;
+
+    /**
+     * All commands. This is sent to Discord for the purpose of slash commands.
+     *
+     * **DO NOT MANUALLY POPULATE THIS OBJECT.**
+     *
+     * @type {object[]}
+     */
     public static JsonCommands: {
         name: string;
         description: string;
@@ -37,6 +67,7 @@ export class OneLifeBot {
      * Constructs a new Discord bot.
      *
      * @param {IConfiguration} config The configuration file.
+     * @throws {Error} If a command name was registered twice or if `data.name` is not equal to `botCommandName`.
      */
     public constructor(config: IConfiguration | null) {
         if (!config)
@@ -58,16 +89,23 @@ export class OneLifeBot {
         });
 
         OneLifeBot.BotInstance = this;
-        OneLifeBot.Commands = [];
+        OneLifeBot.Commands = new Collection<string, BaseCommand[]>();
 
-        // add commands to Commands collection
 
-        OneLifeBot.AllCommands = new Collection<string, BaseCommand>();
+        // add commands to Commands collection only
+
         OneLifeBot.JsonCommands = [];
         OneLifeBot.Rest = new REST({version: "9"}).setToken(config.botToken);
-        for (const command of OneLifeBot.Commands) {
-            OneLifeBot.AllCommands.set(command.data.name, command);
+        for (const command of Array.from(OneLifeBot.Commands.values()).flat()) {
             OneLifeBot.JsonCommands.push(command.data.toJSON());
+
+            if (command.data.name !== command.commandInfo.botCommandName)
+                throw new Error(`Names not matched: "${command.data.name}" - "${command.commandInfo.botCommandName}"`);
+
+            if (OneLifeBot.NameCommands.has(command.data.name))
+                throw new Error(`Duplicate command "${command.data.name}" registered.`);
+
+            OneLifeBot.NameCommands.set(command.data.name, command);
         }
 
         // If length is 0, register globally

@@ -184,28 +184,6 @@ export interface IConfiguration {
     };
 
     /**
-     * Other random settings.
-     *
-     * @type {object}
-     */
-    misc: {
-        /**
-         * The default prefix. This should only be one character long.
-         */
-        defaultPrefix: string;
-
-        /**
-         * Whether to validate emojis and images. If this is `true`, then any requests to add an emoji or image will
-         * be sent to the `customEmojiImgValidatorChannel` channel.
-         *
-         * This should be `true` if this is a public bot and `false` if this is a self-hosted instance.
-         *
-         * @type {boolean}
-         */
-        validateEmojisImage: boolean;
-    };
-
-    /**
      * RealmEye API links. This exclusively uses [RealmEyeSharper](https://github.com/ewang2002/RealmEyeSharper/) as
      * the RealmEye API provider.
      *
