@@ -403,12 +403,6 @@ interface ICommandInfo {
     exampleGuide: string[];
 
     /**
-     * The duration, in milliseconds, in which the message that initiated a command should be kept up for.
-     * @type {number}
-     */
-    deleteCommandAfter: number;
-
-    /**
      * A cooldown, in milliseconds, that users will have to wait out after executing a command.
      * @type {number}
      */
