@@ -101,15 +101,11 @@ export abstract class BaseCommand {
      * @param {SlashCommandBuilder} [slashCmdBuilder] The slash command object. If none is specified, only the
      * `name` and `description` of the slash command will be specified. If you need to supply arguments, provide
      * this argument yourself.
-     * @throws {Error} If the command has 0 or more than 1 role permission defined and is rule inclusive.
      * @throws {Error} If the command doesn't have any way to be called, or doesn't have a description, or doesn't
      * have a name.
      * @protected
      */
     protected constructor(cmi: ICommandInfo, slashCmdBuilder?: SlashCommandBuilder) {
-        if (cmi.isRoleInclusive && cmi.rolePermissions.length !== 1)
-            throw new Error(`${cmi.formalCommandName} is role inclusive but has 0 or 2+ roles specified.`);
-
         if (!cmi.botCommandName || !cmi.formalCommandName || !cmi.description)
             throw new Error(`${cmi.formalCommandName} does not have any way to be called.`);
 
@@ -160,8 +156,6 @@ export abstract class BaseCommand {
      * @param {Guild | null} guild The guild.
      * @param {IGuildInfo | null} guildDoc The guild document.
      * @return {ICanRunResult} Results about whether a person can run this command.
-     * @throws {Error} If the command that was being checked has more than one role permission specified despite
-     * being role inclusive.
      * @throws {Error} If the command has invalid role permissions defined.
      */
     public hasPermissionToRun(userToTest: User | GuildMember, guild: Guild | null,
@@ -285,10 +279,10 @@ export abstract class BaseCommand {
      * only be one role.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {boolean} usingCustomPermissions Whether we are using custom permissions.
-     * @return {string[]} All roles that can be used to satisfy the requirement.
+     * @return {string[]} All role IDs that can be used to satisfy the requirement.
      * @private
      */
-    private getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo,
+    public getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo,
                                      usingCustomPermissions: boolean): string[] {
         const allHrl: string[] = [
             guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
@@ -321,38 +315,22 @@ export abstract class BaseCommand {
         roleCollection.set(GeneralConstants.LEADER_ROLE, allRl);
         roleCollection.set(GeneralConstants.SECURITY_ROLE, [guildDoc.roles.staffRoles.moderation.securityRoleId]);
         roleCollection.set(GeneralConstants.ALMOST_LEADER_ROLE, allArl);
+        roleCollection.set(GeneralConstants.HELPER_ROLE, [guildDoc.roles.staffRoles.moderation.helperRoleId]);
         roleCollection.set(GeneralConstants.TEAM_ROLE, [guildDoc.roles.staffRoles.teamRoleId]);
         roleCollection.set(GeneralConstants.MEMBER_ROLE, allVerified);
         roleCollection.set(GeneralConstants.SUSPENDED_ROLE, [guildDoc.roles.suspendedRoleId]);
 
-        // If this is true, then we cannot have custom permissions.
-        // So we don't need to worry about ID roles and we can assume that
-        // there is only one element in rolePerms.
-        if (this.commandInfo.isRoleInclusive && !usingCustomPermissions) {
-            if (rolePerms.length !== 1)
-                throw new Error("rolePerms needs exactly one role for isRoleInclusive check.");
-
-            // We want to specifically get rid of the lower roles so we are left with the lowest role possible
-            // and the ones directly above said role. Keep in mind that the array is ordered from highest rank
-            // (idx 0) to lowest rank (idx len - 1). That is, [mod, ..., suspended]
-            // Assume that the index exists.
-            let idx = BaseCommand.ROLE_ORDER.findIndex(x => x === rolePerms[0]);
-            // Increment the index so we don't remove the lowest possible included role.
-            idx++;
-            for (; idx < BaseCommand.ROLE_ORDER.length; idx++)
-                roleCollection.delete(BaseCommand.ROLE_ORDER[idx]);
-        }
-        else {
-            // Here, we need to assume that there are both role IDs along with concrete role names.
-            // Best way to handle this is to simply delete any entries in roleCollection that isn't allowed
-            // And then add the IDs later.
-            // Begin by getting rid of any roles from the collection that aren't needed at all.
-            for (const r of BaseCommand.ROLE_ORDER) {
-                if (rolePerms.includes(r)) continue;
-                roleCollection.delete(r);
-            }
+        // Here, we need to assume that there are both role IDs along with concrete role names.
+        // Best way to handle this is to simply delete any entries in roleCollection that isn't allowed
+        // And then add the IDs later.
+        // Begin by getting rid of any roles from the collection that aren't needed at all.
+        for (const r of BaseCommand.ROLE_ORDER) {
+            if (rolePerms.includes(r)) continue;
+            roleCollection.delete(r);
         }
 
+        // Get all values from roleCollection, flatten that collection so we have an array of role IDs, and append
+        // the remaining role IDs.
         return Array.from(roleCollection.values()).flat().concat(rolePerms.filter(x => MiscUtilities.isSnowflake(x)));
     }
 }
@@ -425,12 +403,6 @@ interface ICommandInfo {
      * @type {RolePermissions[]}
      */
     rolePermissions: RolePermissions[];
-
-    /**
-     * Whether the command can be used by any roles below the top role specified.
-     * @type {boolean[]}
-     */
-    isRoleInclusive: boolean;
 
     /**
      * Whether the command is for a server only.

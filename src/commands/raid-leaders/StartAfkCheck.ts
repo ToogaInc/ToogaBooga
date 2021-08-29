@@ -11,12 +11,10 @@ export class StartAfkCheck extends BaseCommand {
             description: "Starts a wizard that can be used to start an AFK check.",
             usageGuide: ["startafkcheck"],
             exampleGuide: ["startafkcheck"],
-            deleteCommandAfter: 5000,
-            commandCooldown: 5000,
+            commandCooldown: 8 * 1000,
             generalPermissions: [],
             botPermissions: [],
             rolePermissions: ["RaidLeader", "AlmostRaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
-            isRoleInclusive: false,
             guildOnly: true,
             botOwnerOnly: false
         });

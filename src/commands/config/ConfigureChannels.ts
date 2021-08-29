@@ -166,12 +166,10 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             description: "Allows the user to configure channels for the entire server or for a specific section",
             usageGuide: ["configchannels"],
             exampleGuide: ["configchannels"],
-            deleteCommandAfter: 0,
             commandCooldown: 10 * 1000,
             generalPermissions: ["MANAGE_GUILD"],
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
-            isRoleInclusive: false,
             guildOnly: true,
             botOwnerOnly: false
         });

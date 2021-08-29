@@ -2,12 +2,28 @@
  * An interface that represents a configuration file for this bot.
  */
 export interface IConfiguration {
+    tokens: {
+        /**
+         * The bot's token.
+         *
+         * @type {string}
+         */
+        botToken: string;
+
+        /**
+         * The Github token.
+         *
+         * @type {string}
+         */
+        githubToken: string;
+    };
+
     /**
-     * The bot's token.
+     * The bot's invite link.
      *
      * @type {string}
      */
-    botToken: string;
+    botInviteUrl: string;
 
     /**
      * Object that represents slash command configuration.
@@ -100,48 +116,6 @@ export interface IConfiguration {
              */
             unclaimedBlCollection: string;
         };
-    };
-
-    /**
-     * Github links. This is needed to link users to the proper Github repository and forward issues as necessary.
-     *
-     * @type {object}
-     */
-    github: {
-        /**
-         * The owner or organization that currently holds the repository. In a typical Github project URL, this
-         * looks like:
-         *
-         * ```
-         * https://github.com/owner/project
-         *                    ^^^^^
-         * ```
-         *
-         * @type {string}
-         */
-        repositoryOwner: string;
-
-        /**
-         * The project name. This is the Github project containing the code to this bot. In a typical Github project
-         * URL, this looks like:
-         *
-         * ```
-         * https://github.com/owner/project
-         *                          ^^^^^^^
-         * ```
-         *
-         * @type {string}
-         */
-        repositoryName: string;
-
-        /**
-         * The Github token. This is needed to forward issues submitted by users to Github Issues.
-         *
-         * If this isn't specified, then you cannot submit issues.
-         *
-         * @type {string}
-         */
-        githubToken: string;
     };
 
     /**

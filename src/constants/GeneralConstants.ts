@@ -212,4 +212,6 @@ export namespace GeneralConstants {
             .setEmoji(Emojis.X_EMOJI)
             .setLabel("No")
     ]);
+
+    export const GITHUB_URL: string = "https://github.com/ewang2002/OneLifeBot/";
 }

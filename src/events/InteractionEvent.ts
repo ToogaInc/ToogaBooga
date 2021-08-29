@@ -56,11 +56,11 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
 
     // Check cooldown.
     const cooldownLeft = foundCommand.checkCooldownFor(ctx.user);
-    if (cooldownLeft !== -1) {
+    if (cooldownLeft > 0) {
         const onCooldownEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "RED")
             .setTitle("On Cooldown.")
             .setDescription("You are currently on cooldown.")
-            .addField("Cooldown Remaining", StringUtil.codifyString(TimeUtilities.formatDuration(cooldownLeft)))
+            .addField("Remaining", StringUtil.codifyString(TimeUtilities.formatDuration(cooldownLeft, false)))
             .setTimestamp();
         return interaction.reply({
             embeds: [onCooldownEmbed],

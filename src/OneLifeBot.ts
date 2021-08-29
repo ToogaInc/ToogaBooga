@@ -8,7 +8,7 @@ import {
 import {MongoManager} from "./managers/MongoManager";
 import * as assert from "assert";
 import axios, {AxiosInstance} from "axios";
-import {BaseCommand} from "./commands";
+import * as Cmds from "./commands";
 import {onGuildCreateEvent, onInteractionEvent, onReadyEvent, onVoiceStateEvent} from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
@@ -18,6 +18,7 @@ export class OneLifeBot {
     private readonly _config: IConfiguration;
     private readonly _bot: Client;
     private _eventsIsStarted: boolean = false;
+    private _instanceStarted: Date;
 
     /**
      * The bot instance.
@@ -35,7 +36,7 @@ export class OneLifeBot {
      * All commands. The key is the category name and the value is the array of commands.
      * @type {Collection<string, BaseCommand[]>}
      */
-    public static Commands: Collection<string, BaseCommand[]>;
+    public static Commands: Collection<string, Cmds.BaseCommand[]>;
 
     /**
      * All commands. The key is the name of the command (essentially, the slash command name) and the value is the
@@ -45,7 +46,7 @@ export class OneLifeBot {
      *
      * @type {Collection<string, BaseCommand>}
      */
-    public static NameCommands: Collection<string, BaseCommand>;
+    public static NameCommands: Collection<string, Cmds.BaseCommand>;
 
     /**
      * All commands. This is sent to Discord for the purpose of slash commands.
@@ -73,6 +74,7 @@ export class OneLifeBot {
         if (!config)
             throw new Error("No config file given.");
 
+        this._instanceStarted = new Date();
         this._config = config;
         this._bot = new Client({
             partials: [
@@ -94,13 +96,16 @@ export class OneLifeBot {
         });
 
         OneLifeBot.BotInstance = this;
-        OneLifeBot.Commands = new Collection<string, BaseCommand[]>();
+        OneLifeBot.Commands = new Collection<string, Cmds.BaseCommand[]>();
 
-
-        // add commands to Commands collection only
+        OneLifeBot.Commands.set("Bot Information", [
+            new Cmds.Ping(),
+            new Cmds.BotInfo()
+        ]);
 
         OneLifeBot.JsonCommands = [];
-        OneLifeBot.Rest = new REST({version: "9"}).setToken(config.botToken);
+        OneLifeBot.NameCommands = new Collection<string, Cmds.BaseCommand>();
+        OneLifeBot.Rest = new REST({version: "9"}).setToken(config.tokens.botToken);
         for (const command of Array.from(OneLifeBot.Commands.values()).flat()) {
             OneLifeBot.JsonCommands.push(command.data.toJSON());
 
@@ -138,6 +143,9 @@ export class OneLifeBot {
      * Defines all necessary events for the bot to work.
      */
     public startAllEvents(): void {
+        if (this._eventsIsStarted)
+            return;
+
         this._bot.on("ready", async () => onReadyEvent());
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
         this._bot.on("guildCreate", async (g: Guild) => onGuildCreateEvent(g));
@@ -165,7 +173,7 @@ export class OneLifeBot {
         // make sure the database is connected
         assert(MongoManager.isConnected());
         // logs into the bot
-        await this._bot.login(this._config.botToken);
+        await this._bot.login(this._config.tokens.botToken);
     }
 
     /***
@@ -195,5 +203,13 @@ export class OneLifeBot {
      */
     public get config(): IConfiguration {
         return this._config;
+    }
+
+    /**
+     * Returns the date and time for which this instance was started.
+     * @return {Date} The date.
+     */
+    public get instanceStarted(): Date {
+        return this._instanceStarted;
     }
 }
