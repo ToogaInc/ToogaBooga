@@ -12,7 +12,7 @@ import {BaseCommand} from "./commands";
 import {onGuildCreateEvent, onInteractionEvent, onReadyEvent, onVoiceStateEvent} from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
-import {APIApplicationCommandOption, Routes} from "discord-api-types";
+import {APIApplicationCommandOption, Routes} from "discord-api-types/v9";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -80,11 +80,16 @@ export class OneLifeBot {
                 "CHANNEL"
             ],
             intents: [
+                // Need guild information for database, server management.
                 "GUILDS",
+                // Need guild members for managing member roles (suspensions, mutes, etc.), tracking join/leave, etc.
                 "GUILD_MEMBERS",
+                // Need guild messages for various collectors, AFK check confirmation, etc.
                 "GUILD_MESSAGES",
-                "GUILD_MESSAGE_REACTIONS",
-                "DIRECT_MESSAGES"
+                // Need direct messages for modmail
+                "DIRECT_MESSAGES",
+                // Need guild emojis for custom emojis
+                "GUILD_EMOJIS_AND_STICKERS"
             ]
         });
 

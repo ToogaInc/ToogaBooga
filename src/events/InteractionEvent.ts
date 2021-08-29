@@ -131,7 +131,7 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
 
 export async function onInteractionEvent(interaction: Interaction): Promise<void> {
     if (interaction.isCommand()) {
-        await slashCommandHandler(interaction);
+        await acknowledgeSlashCmd(interaction);
         return;
     }
 
