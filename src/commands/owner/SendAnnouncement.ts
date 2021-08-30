@@ -6,8 +6,7 @@ import {OneLifeBot} from "../../OneLifeBot";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {SlashCommandBuilder} from "@discordjs/builders";
 
-class SendAnnouncementCommand extends BaseCommand {
-
+export class SendAnnouncement extends BaseCommand {
     public constructor() {
         const cmi = {
             cmdCode: "SEND_ANNOUNCEMENTS_COMMAND",
@@ -48,23 +47,6 @@ class SendAnnouncementCommand extends BaseCommand {
             .setDescription(args.value as string)
             .setTimestamp()
             .setAuthor("OneLife", OneLifeBot.BotInstance.client.user?.displayAvatarURL());
-
-        /*
-        // If there is an attachment, get its contents.
-        if (msg.attachments.size > 0) {
-            const firstAttachment = msg.attachments.first()!;
-            const stringData = await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                return OneLifeBot.AxiosClient.get<string>(firstAttachment.url);
-            });
-            if (stringData) {
-                const desc = stringData.data.substring(0, 2000);
-                embedToSend.setDescription(desc);
-                const data = ArrayUtilities.breakStringIntoChunks(stringData.data.substring(2000), 1000);
-                for (const f of data) {
-                    embedToSend.addField("Message", f);
-                }
-            }
-        }*/
 
         let numServersSent = 0;
         for await (const guildDoc of allGuildDocs) {

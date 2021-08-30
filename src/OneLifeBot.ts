@@ -105,7 +105,12 @@ export class OneLifeBot {
         ]);
 
         OneLifeBot.Commands.set("Staff", [
-            new Cmds.FindPunishment()
+            new Cmds.FindPunishment(),
+            new Cmds.CheckBlacklist()
+        ]);
+
+        OneLifeBot.Commands.set("Bot Owner", [
+            new Cmds.SendAnnouncement()
         ]);
 
         OneLifeBot.JsonCommands = [];
