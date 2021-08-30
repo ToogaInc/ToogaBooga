@@ -18,7 +18,7 @@ export class OneLifeBot {
     private readonly _config: IConfiguration;
     private readonly _bot: Client;
     private _eventsIsStarted: boolean = false;
-    private _instanceStarted: Date;
+    private readonly _instanceStarted: Date;
 
     /**
      * The bot instance.
@@ -100,7 +100,12 @@ export class OneLifeBot {
 
         OneLifeBot.Commands.set("Bot Information", [
             new Cmds.Ping(),
-            new Cmds.BotInfo()
+            new Cmds.BotInfo(),
+            new Cmds.Help()
+        ]);
+
+        OneLifeBot.Commands.set("Staff", [
+            new Cmds.FindPunishment()
         ]);
 
         OneLifeBot.JsonCommands = [];

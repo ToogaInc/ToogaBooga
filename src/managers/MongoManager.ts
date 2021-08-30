@@ -2,7 +2,7 @@ import {Collection as MCollection, FilterQuery, MongoClient, ObjectID, UpdateQue
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {UserManager} from "./UserManager";
-import {GuildMember, Collection as DCollection, Guild, TextChannel} from "discord.js";
+import {Collection as DCollection, Guild, GuildMember, TextChannel} from "discord.js";
 import {DUNGEON_DATA} from "../constants/DungeonData";
 import {
     IBotInfo,
@@ -10,7 +10,9 @@ import {
     IIdNameInfo,
     IPermAllowDeny,
     IPropertyKeyValuePair,
-    ISectionInfo, IUnclaimedBlacklistInfo,
+    IPunishmentHistoryEntry,
+    ISectionInfo,
+    IUnclaimedBlacklistInfo,
     IUserInfo
 } from "../definitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -707,12 +709,39 @@ export namespace MongoManager {
     /**
      * Finds a user that has the corresponding punishment ID.
      * @param {string} punishmentId The punishment ID.
-     * @returns {Promise<IUserInfo | null>} The user data with the punishment ID, if any.
+     * @returns {Promise<IPunishmentHistoryEntry | null>} The punishment information, if any.
      */
-    export async function lookupUserByPunishmentId(punishmentId: string): Promise<IUserInfo | null> {
-        return await getUserCollection().findOne({
-            "details.moderationHistory.$.actionId": punishmentId
-        });
+    export async function lookupPunishmentById(punishmentId: string): Promise<IPunishmentHistoryEntry | null> {
+        const [userInfo, blacklistInfo] = await Promise.all([
+            getUserCollection().findOne({
+                $or: [
+                    {
+                        "details.moderationHistory.actionId": punishmentId
+                    },
+                    {
+                        "details.moderationHistory.resolved.actionId": punishmentId
+                    }
+                ]
+            }),
+            getUnclaimedBlacklistCollection().findOne({
+                $or: [
+                    {
+                        actionId: punishmentId
+                    },
+                    {
+                        "resolved.actionId": punishmentId
+                    }
+                ]
+            })
+        ]);
+
+
+        if (userInfo) {
+            return userInfo.details.moderationHistory
+                .find(x => x.actionId === punishmentId || x.resolved?.actionId === punishmentId)!;
+        }
+
+        return blacklistInfo;
     }
 
     /**

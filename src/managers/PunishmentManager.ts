@@ -525,8 +525,6 @@ export namespace PunishmentManager {
                 });
             }
 
-            // This should only hit when the person has NEVER verified with this bot.
-            // TODO what to do when a person is blacklisted when he or she never verified with the bot?
             if ((filterQuery.$or?.length ?? 0) === 0)
                 return false;
 
@@ -540,6 +538,7 @@ export namespace PunishmentManager {
                 return true;
 
             // If no modifications were made, then we assume that this person has never verified w/ bot.
+            // This should only hit when the person has NEVER verified with this bot.
             if (punishmentType !== "Blacklist")
                 return false;
 
@@ -563,6 +562,7 @@ export namespace PunishmentManager {
             if (punishmentType !== "Unblacklist")
                 return false;
 
+            // This should only hit when the person has NEVER verified with this bot.
             const res = await MongoManager.getUnclaimedBlacklistCollection().updateOne({
                 actionId: details.actionIdToResolve
             }, {

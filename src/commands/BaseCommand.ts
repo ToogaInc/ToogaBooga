@@ -103,11 +103,21 @@ export abstract class BaseCommand {
      * this argument yourself.
      * @throws {Error} If the command doesn't have any way to be called, or doesn't have a description, or doesn't
      * have a name.
+     * @throws {Error} If the command's `name` or `description` doesn't match the specified command information's
+     * `botCommandName` or `description`, respectively.
      * @protected
      */
     protected constructor(cmi: ICommandInfo, slashCmdBuilder?: SlashCommandBuilder) {
         if (!cmi.botCommandName || !cmi.formalCommandName || !cmi.description)
-            throw new Error(`${cmi.formalCommandName} does not have any way to be called.`);
+            throw new Error(`"${cmi.formalCommandName}" does not have any way to be called.`);
+
+        if (slashCmdBuilder) {
+            if (slashCmdBuilder.name !== cmi.botCommandName)
+                throw new Error(`"${cmi.botCommandName}" does not have matching command names w/ slash command.`);
+
+            if (slashCmdBuilder.description !== cmi.description)
+                throw new Error(`"${cmi.botCommandName}" does not have matching description w/ slash command.`);
+        }
 
         this.commandInfo = cmi;
         this.data = slashCmdBuilder ?? new SlashCommandBuilder()
@@ -343,7 +353,7 @@ interface ICanRunResult {
     missingBotPerms: string[];
 }
 
-interface ICommandInfo {
+export interface ICommandInfo {
     /**
      * An identifier for this command.
      * @type {string}
