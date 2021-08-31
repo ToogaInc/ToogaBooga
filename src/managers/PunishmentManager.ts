@@ -275,7 +275,7 @@ export namespace PunishmentManager {
         const durationStr = new StringBuilder()
             .append(`- Duration: ${entry.duration! === -1 ? "N/A" : TimeUtilities.formatDuration(entry.duration!)}`)
             .appendLine()
-            .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${TimeUtilities.getTime(entry.expiresAt!)} UTC`}`)
+            .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${TimeUtilities.getTime(entry.expiresAt!)} GMT`}`)
             .toString();
 
         const logToChanEmbed = new MessageEmbed()

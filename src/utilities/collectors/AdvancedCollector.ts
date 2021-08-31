@@ -9,7 +9,7 @@ import {
     MessageOptions, MessageSelectMenu,
     PartialTextBasedChannelFields,
     PermissionResolvable,
-    Role,
+    Role, TextBasedChannels,
     TextChannel,
     User
 } from "discord.js";
@@ -27,7 +27,7 @@ export namespace AdvancedCollector {
     const MAX_ACTION_ROWS: number = 5;
 
     interface ICollectorBaseArgument {
-        readonly targetChannel: TextChannel | DMChannel;
+        readonly targetChannel: TextBasedChannels;
         readonly targetAuthor: User | GuildMember;
         readonly duration: number;
 
@@ -148,10 +148,7 @@ export namespace AdvancedCollector {
 
     /**
      * Starts an interaction ephemeral collector. This is essentially the same thing as `startInteractionCollector`,
-     * but this works for ephemeral messages.
-     *
-     * Note: Due to the nature of ephemeral messages, it is not possible to "deferUpdate" to an interaction from an
-     * ephemeral message (at least, from my knowledge). Thus, you must acknowledge any button presses immediately.
+     * but this works for ephemeral messages or messages that may not necessarily have a message object linked to it.
      *
      * @param {IInteractionBase} options The collector options. This contains a subset of all possible collector
      * options.
@@ -164,22 +161,24 @@ export namespace AdvancedCollector {
         options: Omit<IInteractionBase, "msgOptions"
             | "oldMsg"
             | "deleteBaseMsgAfterComplete"
-            | "clearInteractionsAfterComplete"
-            | "acknowledgeImmediately">,
+            | "clearInteractionsAfterComplete">,
         uniqueIdentifier: string
     ): Promise<MessageComponentInteraction | null> {
-        let returnButton: MessageComponentInteraction | null = null;
+        let returnInteraction: MessageComponentInteraction | null = null;
         try {
-            returnButton = await options.targetChannel.awaitMessageComponent({
+            returnInteraction = await options.targetChannel.awaitMessageComponent({
                 filter: i => i.user.id === options.targetAuthor.id
                     && i.customId.startsWith(uniqueIdentifier),
                 time: options.duration
             });
+
+            if (options.acknowledgeImmediately)
+                await returnInteraction.deferUpdate();
         } catch (e) {
             // Ignore the error; this is because the collector timed out.
         }
 
-        return returnButton;
+        return returnInteraction;
     }
 
     /**
@@ -194,16 +193,15 @@ export namespace AdvancedCollector {
         const botMsg = await initSendCollectorMessage(options);
         if (!botMsg) return null;
 
-        let returnButton: MessageComponentInteraction | null = null;
+        let returnInteraction: MessageComponentInteraction | null = null;
         try {
-            returnButton = await botMsg.awaitMessageComponent({
+            returnInteraction = await botMsg.awaitMessageComponent({
                 filter: i => i.user.id === options.targetAuthor.id,
                 time: options.duration
             });
 
-            // For TS reasons
             if (options.acknowledgeImmediately)
-                await returnButton.deferUpdate();
+                await returnInteraction.deferUpdate();
         } catch (e) {
             // Ignore the error; this is because the collector timed out.
         } finally {
@@ -213,7 +211,7 @@ export namespace AdvancedCollector {
                 await botMsg.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
         }
 
-        return returnButton;
+        return returnInteraction;
     }
 
     /**

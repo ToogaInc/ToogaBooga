@@ -5,7 +5,7 @@ import {
     Message, Role, Snowflake,
 } from "discord.js";
 import {MiscUtilities} from "../MiscUtilities";
-import {RolePermissions} from "../../definitions/Types";
+import {DefinedRole} from "../../definitions/Types";
 import {IGuildInfo} from "../../definitions";
 
 /**
@@ -38,17 +38,17 @@ export namespace GuildFgrUtilities {
 
     /**
      * Resolves a given role string (either a role ID or a string). This is suitable when you want to find, from
-     * cache, either a role ID or a role defined by `RolePermissions`. This will only look in the main sections;
+     * cache, either a role ID or a role defined by `DefinedRole`. This will only look in the main sections;
      * this will NOT consider section roles at all.
      *
      * @param {Guild} guild The guild.
      * @param {IGuildInfo} guildDoc The guild document.
-     * @param {string | RolePermissions} roleIdOrStr The role ID. This can either be a role ID or one of
-     * `RolePermissions` (for example, `Raider`).
+     * @param {string | DefinedRole} roleIdOrStr The role ID. This can either be a role ID or one of
+     * `DefinedRole` (for example, `Raider`).
      * @returns {Role[]} All roles. Most results should yield one role. Leader roles will possibly yield two.
      */
     export function resolveMainCachedGuildRoles(guild: Guild, guildDoc: IGuildInfo,
-                                                roleIdOrStr: string | RolePermissions): Role | null {
+                                                roleIdOrStr: string | DefinedRole): Role | null {
         switch (roleIdOrStr) {
             case "Everyone": {
                 return guild.roles.everyone;
@@ -107,19 +107,19 @@ export namespace GuildFgrUtilities {
 
     /**
      * Fetches a given role string (either a role ID or a string). This is suitable when you want to find, from
-     * cache, either a role ID or a role defined by `RolePermissions`. This will only look in the main sections;
+     * cache, either a role ID or a role defined by `DefinedRole`. This will only look in the main sections;
      * this will NOT consider section roles at all.
      *
      * @param {Guild} guild The guild.
      * @param {IGuildInfo} guildDoc The guild document.
-     * @param {string | RolePermissions} roleIdOrStr The role ID. This can either be a role ID or one of
-     * `RolePermissions` (for example, `Raider`).
+     * @param {string | DefinedRole} roleIdOrStr The role ID. This can either be a role ID or one of
+     * `DefinedRole` (for example, `Raider`).
      * @returns {Role[]} All roles. Most results should yield one role. Leader roles will possibly yield two.
      */
     export async function fetchMainGuildRole(
         guild: Guild,
         guildDoc: IGuildInfo,
-        roleIdOrStr: string | RolePermissions
+        roleIdOrStr: string | DefinedRole
     ): Promise<Role | null> {
         switch (roleIdOrStr) {
             case "Everyone": {

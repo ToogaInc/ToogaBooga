@@ -72,7 +72,7 @@ export class CheckBlacklist extends BaseCommand {
             )
             .addField(
                 "Issued At",
-                StringUtil.codifyString(`${TimeUtilities.getTime(blInfo.issuedAt)} UTC`)
+                StringUtil.codifyString(`${TimeUtilities.getTime(blInfo.issuedAt)} GMT`)
             )
             .addField("Blacklist Reason", StringUtil.codifyString(blInfo.reason))
             .setFooter(`Moderation ID: ${blInfo.actionId}`);

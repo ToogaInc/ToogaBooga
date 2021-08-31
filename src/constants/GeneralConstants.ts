@@ -3,9 +3,24 @@ import {Emojis} from "./Emojis";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {MessageButtonStyles} from "discord.js/typings/enums";
 import {IPermAllowDeny} from "../definitions";
-import {RolePermissions} from "../definitions/Types";
+import {DefinedRole} from "../definitions/Types";
 
 export namespace GeneralConstants {
+    export const ROLE_ORDER: DefinedRole[] = [
+        GeneralConstants.MODERATOR_ROLE,
+        GeneralConstants.HEAD_LEADER_ROLE,
+        GeneralConstants.OFFICER_ROLE,
+        GeneralConstants.VETERAN_LEADER_ROLE,
+        GeneralConstants.LEADER_ROLE,
+        GeneralConstants.SECURITY_ROLE,
+        GeneralConstants.ALMOST_LEADER_ROLE,
+        GeneralConstants.HELPER_ROLE,
+        GeneralConstants.TEAM_ROLE,
+        GeneralConstants.MEMBER_ROLE,
+        GeneralConstants.SUSPENDED_ROLE,
+        GeneralConstants.EVERYONE_ROLE
+    ];
+
     export const ZERO_WIDTH_SPACE: string = "\u200b";
 
     export const NUMBER_OF_STATS: number = 8;
@@ -131,20 +146,20 @@ export namespace GeneralConstants {
         "Pirate Caves": "Pirate Caves completed"
     };
 
-    export const EVERYONE_ROLE: RolePermissions = "Everyone";
-    export const SUSPENDED_ROLE: RolePermissions = "Suspended";
-    export const MEMBER_ROLE: RolePermissions = "Raider";
-    export const HELPER_ROLE: RolePermissions = "Helper";
-    export const SECURITY_ROLE: RolePermissions = "Security";
-    export const OFFICER_ROLE: RolePermissions = "Officer";
-    export const MODERATOR_ROLE: RolePermissions = "Moderator";
-    export const LEADER_ROLE: RolePermissions = "RaidLeader";
-    export const ALMOST_LEADER_ROLE: RolePermissions = "AlmostRaidLeader";
-    export const VETERAN_LEADER_ROLE: RolePermissions = "VeteranRaidLeader";
-    export const HEAD_LEADER_ROLE: RolePermissions = "HeadRaidLeader";
+    export const EVERYONE_ROLE: DefinedRole = "Everyone";
+    export const SUSPENDED_ROLE: DefinedRole = "Suspended";
+    export const MEMBER_ROLE: DefinedRole = "Raider";
+    export const HELPER_ROLE: DefinedRole = "Helper";
+    export const SECURITY_ROLE: DefinedRole = "Security";
+    export const OFFICER_ROLE: DefinedRole = "Officer";
+    export const MODERATOR_ROLE: DefinedRole = "Moderator";
+    export const LEADER_ROLE: DefinedRole = "RaidLeader";
+    export const ALMOST_LEADER_ROLE: DefinedRole = "AlmostRaidLeader";
+    export const VETERAN_LEADER_ROLE: DefinedRole = "VeteranRaidLeader";
+    export const HEAD_LEADER_ROLE: DefinedRole = "HeadRaidLeader";
 
     // Essentially, any staff role.
-    export const TEAM_ROLE: RolePermissions = "Team";
+    export const TEAM_ROLE: DefinedRole = "Team";
 
     // Keep in mind that section RLs have the same power as regular RLs, just in their own sections.
     export const DEFAULT_AFK_CHECK_PERMISSIONS: (IPermAllowDeny & { id: string; })[] = [

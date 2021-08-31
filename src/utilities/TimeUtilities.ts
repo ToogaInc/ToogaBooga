@@ -2,7 +2,7 @@ export namespace TimeUtilities {
     /**
      * Gets the current time in a nice string format.
      * @param {Date | number} [date = new Date()] The date to choose, if any.
-     * @param {string} [timezone] The timezone, if applicable. Otherwise, UTC is used.
+     * @param {string} [timezone] The timezone, if applicable. Otherwise, GMT is used.
      * @returns {string} The current formatter date & time.
      */
     export function getTime(date: Date | number = new Date(), timezone: string = "Atlantic/Reykjavik"): string {

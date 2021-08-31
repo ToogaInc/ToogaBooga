@@ -12,7 +12,7 @@ export type QuotaLogType = "RunComplete"
 /**
  * The different role permissions.
  */
-export type RolePermissions = "Everyone"
+export type DefinedRole = "Everyone"
     | "Suspended"
     | "Raider"
     | "Team"

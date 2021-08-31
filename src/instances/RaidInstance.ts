@@ -6,9 +6,8 @@
 
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {
-    Collection, DMChannel, EmojiIdentifierResolvable,
+    Collection, EmojiIdentifierResolvable,
     Guild,
-    GuildEmoji,
     GuildMember, Interaction,
     InteractionCollector,
     Message,
@@ -315,8 +314,6 @@ export class RaidInstance {
     private readonly _memberInit: GuildMember;
     // The leader's name (as a string).
     private readonly _leaderName: string;
-    // The raid message defined by the raid leader.
-    private readonly _raidMsg: string;
     // The cost, in points, for early location.
     private readonly _earlyLocPointCost: number;
 
@@ -330,16 +327,14 @@ export class RaidInstance {
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section where this raid is occurring. Note that the verified role must exist.
      * @param {IDungeonInfo | ICustomDungeonInfo} dungeon The dungeon that is being raided.
-     * @param {string} location The location.
-     * @param {IRaidOptions} raidOptions The raid message, if any.
+     * @param {IRaidOptions} [raidOptions] The raid options, if any.
      */
     private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
-                        dungeon: IDungeonInfo | ICustomDungeonInfo, location: string, raidOptions: IRaidOptions) {
+                        dungeon: IDungeonInfo | ICustomDungeonInfo, raidOptions?: IRaidOptions) {
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
         this._dungeon = dungeon;
-        this._location = location;
-        this._raidMsg = raidOptions.raidMessage;
+        this._location = raidOptions?.location ?? "";
         this._raidStatus = RaidStatus.NOTHING;
         this._raidVc = null;
         this._afkCheckMsg = null;
@@ -599,13 +594,12 @@ export class RaidInstance {
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section where this raid is occurring. Note that the verified role must exist.
      * @param {IDungeonInfo} dungeon The dungeon that is being raided.
-     * @param {string} location The location.
-     * @param {IRaidOptions} raidOptions The raid message, if any.
+     * @param {IRaidOptions} [raidOptions] The raid options, if any.
      * @returns {RaidInstance | null} The `RaidInstance` object, or `null` if the AFK check channel or control panel
      * channel or the verified role is invalid or both channels don't have a category.
      */
     public static new(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo, dungeon: IDungeonInfo,
-                      location: string, raidOptions: IRaidOptions): RaidInstance | null {
+                      raidOptions?: IRaidOptions): RaidInstance | null {
         // Could put these all in one if-statement but too long.
         if (!memberInit.guild)
             return null;
@@ -628,7 +622,7 @@ export class RaidInstance {
         if (!afkChannel.parentId || !controlPanel.parentId || afkChannel.parentId !== controlPanel.parentId)
             return null;
 
-        return new RaidInstance(memberInit, guildDoc, section, dungeon, location, raidOptions);
+        return new RaidInstance(memberInit, guildDoc, section, dungeon, raidOptions);
     }
 
     /**
@@ -680,9 +674,8 @@ export class RaidInstance {
         if (!afkCheckMsg || !controlPanelMsg) return null;
 
         // Create the raid manager instance.
-        const rm = new RaidInstance(memberInit, guildDoc, section, dungeon, raidInfo.location, {
-            raidMessage: raidInfo.raidMessage,
-            vcLimit: raidVc.userLimit
+        const rm = new RaidInstance(memberInit, guildDoc, section, dungeon, {
+            location: raidInfo.location
         });
 
         rm._raidVc = raidVc;
@@ -843,9 +836,6 @@ export class RaidInstance {
                 this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo
             );
         }
-
-        if (this._raidMsg)
-            afkEndedEnded.addField("Message From Your Leader", this._raidMsg);
 
         const rejoinRaidSb = new StringBuilder()
             .append("If you disconnected from this raid voice channel, you are able to reconnect by pressing the ")
@@ -1101,7 +1091,6 @@ export class RaidInstance {
             channels: this._raidSection.channels.raids,
             afkCheckMessageId: this._afkCheckMsg.id,
             controlPanelMessageId: this._controlPanelMsg.id,
-            raidMessage: this._raidMsg,
             status: this._raidStatus,
             vcId: this._raidVc.id,
             location: this._location,
@@ -1265,10 +1254,12 @@ export class RaidInstance {
             return false;
 
         return [
+            section.roles.leaders.sectionVetLeaderRoleId,
             section.roles.leaders.sectionLeaderRoleId,
             section.roles.leaders.sectionAlmostLeaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+            guildInfo.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
         ].some(x => GuildFgrUtilities.hasCachedRole(guild, x));
     }
@@ -1567,9 +1558,6 @@ export class RaidInstance {
             );
         }
 
-        if (this._raidMsg)
-            afkCheckEmbed.addField("Message From Your Leader", this._raidMsg);
-
         return afkCheckEmbed;
     }
 
@@ -1615,11 +1603,11 @@ export class RaidInstance {
                 : "Raid";
 
         const generalStatus = new StringBuilder()
-            .append(`⇨ AFK Check Started At: ${TimeUtilities.getTime(this._raidVc.createdTimestamp)} UTC`)
+            .append(`⇨ AFK Check Started At: ${TimeUtilities.getTime(this._raidVc.createdTimestamp)} GMT`)
             .appendLine()
             .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
             .appendLine()
-            .append(`⇨ Location: **\`${this._location}\`**`)
+            .append(`⇨ Location: **\`${this._location ? this._location : "Not Set."}\`**`)
             .appendLine()
             .append(`⇨ Status: **\`${raidStatus}\`**`);
 
@@ -1885,7 +1873,11 @@ export class RaidInstance {
             const confirmationContent = new StringBuilder()
                 .append(`Thank you for confirming your choice of: ${itemDisplay}. `)
                 .appendLine(2)
-                .append(`The raid location is: **${this._location}**.`)
+                .append(
+                    this._location
+                        ? `The raid location is: **${this._location}**.`
+                        : "The raid location will be set shortly."
+                )
                 .appendLine(2);
 
             if (reactInfo.type !== "EARLY_LOCATION"
@@ -2268,10 +2260,12 @@ export class RaidInstance {
             });
 
             const modifierRes = await AdvancedCollector.startInteractionEphemeralCollector({
-                targetChannel: interaction.channel as TextChannel | DMChannel,
+                targetChannel: interaction.channel!,
                 duration: 2 * 60 * 1000,
-                targetAuthor: interaction.user
+                targetAuthor: interaction.user,
+                acknowledgeImmediately: false
             }, uniqueIdentifier);
+            // TODO might need to edit buttons so no interaction failed
 
             if (!modifierRes) {
                 await interaction.editReply({
@@ -2332,9 +2326,10 @@ export class RaidInstance {
                 });
 
                 const levelRes = await AdvancedCollector.startInteractionEphemeralCollector({
-                    targetChannel: interaction.channel as TextChannel | DMChannel,
+                    targetChannel: interaction.channel!,
                     duration: 2 * 60 * 1000,
-                    targetAuthor: interaction.user
+                    targetAuthor: interaction.user,
+                    acknowledgeImmediately: false
                 }, uniqueIdentifier);
 
                 if (!levelRes) return null;
@@ -2347,6 +2342,7 @@ export class RaidInstance {
                 if (levelRes.customId === cancelModId)
                     return null;
 
+                // TODO might need to edit buttons so no interaction failed
                 returnObj.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
             }
 

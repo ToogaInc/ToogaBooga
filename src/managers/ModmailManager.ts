@@ -1098,7 +1098,7 @@ export namespace ModmailManager {
             .appendLine()
             .append(`Responder Tag: ${responder.user.tag}`)
             .appendLine()
-            .append(`Time: ${TimeUtilities.getTime()} (UTC)`)
+            .append(`Time: ${TimeUtilities.getTime()} (GMT)`)
             .appendLine()
             .append(`Sent Status: ${sentMsg ? "Message Sent Successfully" : "Message Failed To Send"}`);
 

@@ -12,9 +12,10 @@ import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {IGuildInfo} from "../definitions";
-import {RolePermissions} from "../definitions/Types";
+import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {SlashCommandBuilder} from "@discordjs/builders";
+import {MongoManager} from "../managers/MongoManager";
 
 export interface ICommandContext {
     /**
@@ -61,21 +62,6 @@ export interface ICommandContext {
 }
 
 export abstract class BaseCommand {
-    private static readonly ROLE_ORDER: RolePermissions[] = [
-        GeneralConstants.MODERATOR_ROLE,
-        GeneralConstants.HEAD_LEADER_ROLE,
-        GeneralConstants.OFFICER_ROLE,
-        GeneralConstants.VETERAN_LEADER_ROLE,
-        GeneralConstants.LEADER_ROLE,
-        GeneralConstants.SECURITY_ROLE,
-        GeneralConstants.ALMOST_LEADER_ROLE,
-        GeneralConstants.HELPER_ROLE,
-        GeneralConstants.TEAM_ROLE,
-        GeneralConstants.MEMBER_ROLE,
-        GeneralConstants.SUSPENDED_ROLE,
-        GeneralConstants.EVERYONE_ROLE
-    ];
-
     /**
      * The command info object.
      * @type {ICommandInfo}
@@ -224,13 +210,12 @@ export abstract class BaseCommand {
         // See if custom permissions are defined.
         // If so, use it.
         const customPermData = guildDoc.properties.customCmdPermissions.find(x => x.key === this.commandInfo.cmdCode);
-        const useCustomRolePerms = Boolean(customPermData && !customPermData.value.useDefaultRolePerms);
-        const rolePermissions = useCustomRolePerms
+        const rolePermissions = Boolean(customPermData && !customPermData.value.useDefaultRolePerms)
             ? customPermData!.value.rolePermsNeeded
             : this.commandInfo.rolePermissions;
         // This represents the roles that are needed to ensure that the command can be executed. The user must have
         // at least one of these roles.
-        const allRoleIds = this.getNeededPermissionsBase(rolePermissions, guildDoc, useCustomRolePerms);
+        const allRoleIds = this.getNeededPermissionsBase(rolePermissions, guildDoc);
 
         const serverPermissions = customPermData && !customPermData.value.useDefaultServerPerms
             ? customPermData.value.serverPermsNeeded
@@ -288,53 +273,17 @@ export abstract class BaseCommand {
      * @param {string[]} rolePerms The role permissions. If role inclusion is enabled for the command, there must
      * only be one role.
      * @param {IGuildInfo} guildDoc The guild document.
-     * @param {boolean} usingCustomPermissions Whether we are using custom permissions.
      * @return {string[]} All role IDs that can be used to satisfy the requirement.
      * @private
      */
-    public getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo,
-                                     usingCustomPermissions: boolean): string[] {
-        const allHrl: string[] = [
-            guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
-        ];
-        const allVrl: string[] = [
-            guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
-            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionVetLeaderRoleId
-        ];
-        const allRl: string[] = [
-            guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionLeaderRoleId
-        ];
-        const allArl: string[] = [
-            guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionAlmostLeaderRoleId
-        ];
-        const allVerified: string[] = [guildDoc.roles.verifiedRoleId];
-        for (const section of guildDoc.guildSections) {
-            allRl.push(section.roles.leaders.sectionLeaderRoleId);
-            allVrl.push(section.roles.leaders.sectionVetLeaderRoleId);
-            allArl.push(section.roles.leaders.sectionAlmostLeaderRoleId);
-            allVerified.push(section.roles.verifiedRoleId);
-        }
-
-        const roleCollection = new Collection<RolePermissions, string[]>();
-        roleCollection.set(GeneralConstants.MODERATOR_ROLE, [guildDoc.roles.staffRoles.moderation.moderatorRoleId]);
-        roleCollection.set(GeneralConstants.HEAD_LEADER_ROLE, allHrl);
-        roleCollection.set(GeneralConstants.OFFICER_ROLE, [guildDoc.roles.staffRoles.moderation.officerRoleId]);
-        roleCollection.set(GeneralConstants.VETERAN_LEADER_ROLE, allVrl);
-        roleCollection.set(GeneralConstants.LEADER_ROLE, allRl);
-        roleCollection.set(GeneralConstants.SECURITY_ROLE, [guildDoc.roles.staffRoles.moderation.securityRoleId]);
-        roleCollection.set(GeneralConstants.ALMOST_LEADER_ROLE, allArl);
-        roleCollection.set(GeneralConstants.HELPER_ROLE, [guildDoc.roles.staffRoles.moderation.helperRoleId]);
-        roleCollection.set(GeneralConstants.TEAM_ROLE, [guildDoc.roles.staffRoles.teamRoleId]);
-        roleCollection.set(GeneralConstants.MEMBER_ROLE, allVerified);
-        roleCollection.set(GeneralConstants.SUSPENDED_ROLE, [guildDoc.roles.suspendedRoleId]);
+    public getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo): string[] {
+        const roleCollection = MongoManager.getAllConfiguredRoles(guildDoc);
 
         // Here, we need to assume that there are both role IDs along with concrete role names.
         // Best way to handle this is to simply delete any entries in roleCollection that isn't allowed
         // And then add the IDs later.
         // Begin by getting rid of any roles from the collection that aren't needed at all.
-        for (const r of BaseCommand.ROLE_ORDER) {
+        for (const r of GeneralConstants.ROLE_ORDER) {
             if (rolePerms.includes(r)) continue;
             roleCollection.delete(r);
         }
@@ -410,9 +359,9 @@ export interface ICommandInfo {
 
     /**
      * The roles that a user must have to run this command.
-     * @type {RolePermissions[]}
+     * @type {DefinedRole[]}
      */
-    rolePermissions: RolePermissions[];
+    rolePermissions: DefinedRole[];
 
     /**
      * Whether the command is for a server only.

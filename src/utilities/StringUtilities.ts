@@ -51,4 +51,20 @@ export namespace StringUtil {
 
         return returnStr;
     }
+
+    /**
+     * Breaks a string into substrings, each with size at most specified by `size`.
+     * @param {string} str The string.
+     * @param {number} size The size per substring.
+     * @return {string[]} The string array.
+     */
+    export function breakStringIntoChunks(str: string, size: number): string[] {
+        const numChunks = Math.ceil(str.length / size);
+        const chunks = new Array(numChunks);
+
+        for (let i = 0, o = 0; i < numChunks; ++i, o += size)
+            chunks[i] = str.substr(o, size);
+
+        return chunks;
+    }
 }

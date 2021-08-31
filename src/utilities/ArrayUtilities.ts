@@ -109,22 +109,6 @@ export namespace ArrayUtilities {
     }
 
     /**
-     * Breaks a string into substrings, each with size at most specified by `size`.
-     * @param {string} str The string.
-     * @param {number} size The size per substring.
-     * @return {string[]} The string array.
-     */
-    export function breakStringIntoChunks(str: string, size: number): string[] {
-        const numChunks = Math.ceil(str.length / size);
-        const chunks = new Array(numChunks);
-
-        for (let i = 0, o = 0; i < numChunks; ++i, o += size)
-            chunks[i] = str.substr(o, size);
-
-        return chunks;
-    }
-
-    /**
      * Generates a leaderboard array (a 2D array with the first element being the place and the second being the value).
      * @param {T[]} data The data.
      * @param {Function} func The function that decides what data will be sorted.
@@ -163,5 +147,29 @@ export namespace ArrayUtilities {
         }
 
         return returnData;
+    }
+
+    /**
+     * Breaks an array into subsets, each with size at most specified by `size`.
+     * @param {T[]} arr The array.
+     * @param {number} size The size of each array subset.
+     * @return {T[][]} The array of subsets of array.
+     */
+    export function breakArrayIntoSubsets<T>(arr: T[], size: number): T[][] {
+        const numSubset = Math.ceil(arr.length / size);
+        const subsets: T[][] = [];
+
+        let offset = 0;
+        for (let i = 0; i < numSubset; i++) {
+            const subset: T[] = [];
+            for (let j = 0; j < size && j + offset < arr.length; j++) {
+                subset.push(arr[offset + j]);
+            }
+
+            offset += size;
+            subsets.push(subset);
+        }
+
+        return subsets;
     }
 }

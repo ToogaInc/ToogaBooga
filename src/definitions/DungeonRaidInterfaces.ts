@@ -150,6 +150,14 @@ export interface ICustomDungeonInfo extends IDungeonInfo {
      * @type {boolean}
      */
     isBaseOrDerived: false;
+
+    /**
+     * Any role requirements for running this dungeon. The user only needs to have one of these roles to
+     * complete this dungeon.
+     *
+     * @type {object}
+     */
+    roleRequirement: string[];
 }
 
 /**
@@ -395,13 +403,6 @@ export interface IRaidInfo {
     controlPanelMessageId: string;
 
     /**
-     * The raid message.
-     *
-     * @type {string}
-     */
-    raidMessage: string;
-
-    /**
      * The raid status. This is either `1` (AFK Check) or `2` (In Run).
      *
      * @type {number}
@@ -456,16 +457,9 @@ export interface IRaidInfo {
  */
 export interface IRaidOptions {
     /**
-     * The VC limit for this raid.
-     *
-     * @type {number}
-     */
-    vcLimit: number;
-
-    /**
-     * The leader-set raid message.
+     * The location for this raid.
      *
      * @type {string}
      */
-    raidMessage: string;
+    location: string;
 }

@@ -89,7 +89,7 @@ export class Help extends BaseCommand {
                     const rPerms = useCustomPerms
                         ? customPermData!.value.rolePermsNeeded
                         : this.commandInfo.rolePermissions;
-                    const roles: Role[] = this.getNeededPermissionsBase(rPerms, ctx.guildDoc, useCustomPerms)
+                    const roles: Role[] = this.getNeededPermissionsBase(rPerms, ctx.guildDoc)
                         .map(x => GuildFgrUtilities.getCachedRole(ctx.guild!, x))
                         .filter(x => Boolean(x)) as Role[];
 

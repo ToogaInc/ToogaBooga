@@ -380,6 +380,14 @@ export interface IGuildInfo extends IBaseDocument {
              * @type {number}
              */
             pointCost: number;
+
+            /**
+             * Any role requirements for running this dungeon. The user only needs to have one of these roles to
+             * complete this dungeon.
+             *
+             * @type {object}
+             */
+            roleRequirement: string[];
         }[];
 
         /**
@@ -455,8 +463,7 @@ export interface IGuildInfo extends IBaseDocument {
         quotaInfo: IQuotaInfo[];
 
         /**
-         * The time when quotas should be reset. Times are based on
-         * [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time), or the Coordinated Universal Time zone.
+         * The time when quotas should be reset. Times are based on GMT.
          *
          * @type {object}
          */
@@ -472,7 +479,7 @@ export interface IGuildInfo extends IBaseDocument {
             /**
              * The time to reset quotas. This will be represented in military time, by
              * `Date#getHours * 100 + Date#getMinutes`.
-             * For example, to represent `1:15 PM UTC`, use `1315`.
+             * For example, to represent `1:15 PM GMT`, use `1315`.
              *
              * @type {number}
              */

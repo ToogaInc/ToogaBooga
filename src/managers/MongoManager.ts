@@ -2,7 +2,7 @@ import {Collection as MCollection, FilterQuery, MongoClient, ObjectID, UpdateQue
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {UserManager} from "./UserManager";
-import {Collection as DCollection, Guild, GuildMember, TextChannel} from "discord.js";
+import {Collection, Collection as DCollection, Guild, GuildMember, TextChannel} from "discord.js";
 import {DUNGEON_DATA} from "../constants/DungeonData";
 import {
     IBotInfo,
@@ -16,6 +16,7 @@ import {
     IUserInfo
 } from "../definitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import {DefinedRole} from "../definitions/Types";
 
 export namespace MongoManager {
     export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();
@@ -632,7 +633,7 @@ export namespace MongoManager {
     export async function updateAndFetchGuildDoc(filter: FilterQuery<IGuildInfo>,
                                                  update: UpdateQuery<IGuildInfo>): Promise<IGuildInfo | null> {
         const res = await getGuildCollection().findOneAndUpdate(filter, update, {
-           returnDocument: "after"
+            returnDocument: "after"
         });
 
         if (!res.value)
@@ -762,5 +763,107 @@ export namespace MongoManager {
         }
 
         return null;
+    }
+
+    /**
+     * Gets all configured role IDs. This returns a collection where the key is the role name and the value is all
+     * roles under that name.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @return {DCollection<DefinedRole, string[]>} The collection.
+     */
+    export function getAllConfiguredRoles(guildDoc: IGuildInfo): DCollection<DefinedRole, string[]> {
+        const allHrl: string[] = [];
+        if (guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId)
+            allHrl.push(guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId);
+
+        const allVrl: string[] = [];
+        if (guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId)
+            allVrl.push(guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId);
+        if (guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionVetLeaderRoleId)
+            allVrl.push(guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionVetLeaderRoleId);
+
+        const allRl: string[] = [];
+        if (guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId)
+            allRl.push(guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId);
+        if (guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionLeaderRoleId)
+            allRl.push(guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionLeaderRoleId);
+
+        const allArl: string[] = [];
+        if (guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId)
+            allArl.push(guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId);
+        if (guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionAlmostLeaderRoleId)
+            allArl.push(guildDoc.roles.staffRoles.sectionLeaderRoleIds.sectionAlmostLeaderRoleId);
+
+        const allVerified: string[] = [];
+        if (guildDoc.roles.verifiedRoleId)
+            allVerified.push(guildDoc.roles.verifiedRoleId);
+
+        for (const section of guildDoc.guildSections) {
+            if (section.roles.leaders.sectionLeaderRoleId)
+                allRl.push(section.roles.leaders.sectionLeaderRoleId);
+
+            if (section.roles.leaders.sectionVetLeaderRoleId)
+                allVrl.push(section.roles.leaders.sectionVetLeaderRoleId);
+
+            if (section.roles.leaders.sectionAlmostLeaderRoleId)
+                allArl.push(section.roles.leaders.sectionAlmostLeaderRoleId);
+
+            if (section.roles.verifiedRoleId)
+                allVerified.push(section.roles.verifiedRoleId);
+        }
+
+        const roleCollection = new Collection<DefinedRole, string[]>();
+        roleCollection.set(GeneralConstants.MODERATOR_ROLE, []);
+        if (guildDoc.roles.staffRoles.moderation.moderatorRoleId) {
+            roleCollection.get(GeneralConstants.MODERATOR_ROLE)!.push(
+                guildDoc.roles.staffRoles.moderation.moderatorRoleId
+            );
+        }
+
+        roleCollection.set(GeneralConstants.HEAD_LEADER_ROLE, allHrl);
+
+        roleCollection.set(GeneralConstants.OFFICER_ROLE, []);
+        if (guildDoc.roles.staffRoles.moderation.officerRoleId) {
+            roleCollection.get(GeneralConstants.OFFICER_ROLE)!.push(
+                guildDoc.roles.staffRoles.moderation.officerRoleId
+            );
+        }
+
+        roleCollection.set(GeneralConstants.VETERAN_LEADER_ROLE, allVrl);
+        roleCollection.set(GeneralConstants.LEADER_ROLE, allRl);
+
+        roleCollection.set(GeneralConstants.SECURITY_ROLE, []);
+        if (guildDoc.roles.staffRoles.moderation.securityRoleId) {
+            roleCollection.get(GeneralConstants.SECURITY_ROLE)!.push(
+                guildDoc.roles.staffRoles.moderation.securityRoleId
+            );
+        }
+
+        roleCollection.set(GeneralConstants.ALMOST_LEADER_ROLE, allArl);
+
+        roleCollection.set(GeneralConstants.HELPER_ROLE, []);
+        if (guildDoc.roles.staffRoles.moderation.helperRoleId) {
+            roleCollection.get(GeneralConstants.HELPER_ROLE)!.push(
+                guildDoc.roles.staffRoles.moderation.helperRoleId
+            );
+        }
+
+        roleCollection.set(GeneralConstants.TEAM_ROLE, []);
+        if (guildDoc.roles.staffRoles.teamRoleId) {
+            roleCollection.get(GeneralConstants.TEAM_ROLE)!.push(
+                guildDoc.roles.staffRoles.teamRoleId
+            );
+        }
+
+        roleCollection.set(GeneralConstants.MEMBER_ROLE, allVerified);
+
+        roleCollection.set(GeneralConstants.SUSPENDED_ROLE, []);
+        if (guildDoc.roles.suspendedRoleId) {
+            roleCollection.get(GeneralConstants.SUSPENDED_ROLE)!.push(
+                guildDoc.roles.suspendedRoleId
+            );
+        }
+
+        return roleCollection;
     }
 }
