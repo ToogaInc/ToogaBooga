@@ -1,4 +1,5 @@
 import {
+    ButtonInteraction,
     EmbedFieldData,
     GuildMember,
     Interaction,
@@ -183,7 +184,7 @@ export namespace VerifyManager {
             verifyFail: verifyFailChannel,
             verifyChannel: getVerifiedChannel,
             msg: dmMsg
-        }).catch();
+        }, i).catch();
     }
 
     /**
@@ -268,10 +269,11 @@ export namespace VerifyManager {
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section to verify in.
      * @param {IVerificationKit} verifKit The verification "kit."
+     * @param {ButtonInteraction} [interaction] The interaction, if any, that led to this function execution.
      * @private
      */
     async function verify(member: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
-                          verifKit: IVerificationKit): Promise<void> {
+                          verifKit: IVerificationKit, interaction?: ButtonInteraction): Promise<void> {
         if (!(await RealmSharperWrapper.isOnline())) {
             await GlobalFgrUtilities.sendMsg(member, {
                 embeds: [
@@ -304,7 +306,7 @@ export namespace VerifyManager {
             return;
         }
 
-        verifySection(member, section, verifKit).catch();
+        verifySection(member, section, verifKit, interaction!).catch();
     }
 
     /**
@@ -759,6 +761,11 @@ export namespace VerifyManager {
                 })
             ]);
         });
+    }
+
+    async function verifySection(member: GuildMember, section: ISectionInfo, verifKit: IVerificationKit,
+                                 interaction: ButtonInteraction): Promise<void> {
+        // TODO
     }
 
     /**
@@ -1283,10 +1290,6 @@ export namespace VerifyManager {
         }
 
         return sb.toString();
-    }
-
-    async function verifySection(member: GuildMember, section: ISectionInfo, channels: IVerificationKit): Promise<void> {
-        // TODO
     }
 
     interface IReqCheckResult {
