@@ -37,7 +37,7 @@ export namespace ModmailManager {
     export const MODMAIL_DELETE_ID: string = "modmail_delete";
     export const MODMAIL_BLACKLIST_ID: string = "modmail_blacklist";
     export const MODMAIL_CREATE_ID: string = "modmail_create";
-    
+
     const ReplyActionRow: MessageActionRow = new MessageActionRow()
         .addComponents(new MessageButton()
             .setLabel("Reply")
@@ -333,14 +333,9 @@ export namespace ModmailManager {
                 targetMember.guild,
                 modmailInfo.channel
             );
-            // If the channel exists:
+            // If the channel exists, ping them.
             if (channel) {
-                const channelExistsEmbed = MessageUtilities.generateBlankEmbed(targetMember, "RED")
-                    .setTitle("Modmail Thread Exists")
-                    .setDescription(`A modmail thread for ${targetMember} already exists. You can find the channel`
-                        + `here: ${channel}.`)
-                    .setFooter("Modmail Thread Already Exists.");
-                MessageUtilities.sendThenDelete({embeds: [channelExistsEmbed]}, initiatedBy, 30 * 1000);
+                MessageUtilities.sendThenDelete({content: initiatedBy.toString()}, channel, 1000);
                 return;
             }
 

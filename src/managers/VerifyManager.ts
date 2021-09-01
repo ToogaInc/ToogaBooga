@@ -28,6 +28,7 @@ import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {Emojis} from "../constants/Emojis";
 import {TimeUtilities} from "../utilities/TimeUtilities";
+import {ModmailManager} from "./ModmailManager";
 
 export namespace VerifyManager {
     const CANCEL_ID: string = "cancel";
@@ -284,8 +285,8 @@ export namespace VerifyManager {
         }
 
         // Check if this person is currently being manually verified.
-        const manualVerifyEntry = section.manualVerificationEntries
-            .find(x => x.userId === member.id);
+        const manualVerifyEntry = guildDoc.manualVerificationEntries
+            .find(x => x.userId === member.id && x.sectionId === section.uniqueIdentifier);
 
         // If this is true, then this person is being manually verified.
         if (manualVerifyEntry) {
@@ -505,7 +506,7 @@ export namespace VerifyManager {
                     MessageUtilities.generateBlankEmbed(member.guild, "RED")
                         .setTitle(`**${member.guild.name}**: Guild Verification Checking`)
                         .setDescription(
-                            "Your RealmEye profile is currently being checked. Please wait patiently. Once your"
+                            "Your RealmEye profile is currently being reviewed. Please wait patiently. Once your"
                             + " profile has been checked, I will edit this message (and send you a new message to"
                             + " notify you). This should take no more than one minute."
                         )
@@ -775,9 +776,14 @@ export namespace VerifyManager {
         const buttonsToUse: MessageButton[] = [NO_MANUAL_VERIFY_BUTTON, MANUAL_VERIFY_BUTTON];
 
         verifKit.verifyStep?.send({
-            content: `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but there were several `
+            content: section.isMainSection
+                ? `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but there were several `
                 + "minor issues with the person's profile. The user is currently being asked if he or she wants"
                 + " to get manually verified. The outstanding issues are listed below:\n"
+                + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                : `[${section.sectionName}] ${member} tried to verify, but there were several minor issues with the`
+                + " person's profile. The user is currently being asked if he or she wants to get manually"
+                + " verified. The outstanding issues are listed below:\n"
                 + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
         });
 
@@ -816,16 +822,6 @@ export namespace VerifyManager {
             .setFooter("Respond By:")
             .setTimestamp(Date.now() + 2 * 60 * 1000);
 
-        if (section.otherMajorConfig.verificationProperties.evidenceWithManualVerif.allowEvidenceWithManualVerif) {
-            failEmbed.addField(
-                "Allow Manual Verification and Attach Evidence",
-                "If you want to attach evidence before getting your profile manually verified, click the"
-                + " **Accept with Evidence** button. You will have the opportunity to attach any evidence"
-                + " that shows that you do, indeed, meet verification requirements."
-            );
-            buttonsToUse.push(MANUAL_EVIDENCE_BUTTON);
-        }
-
         const [, , dmChannel] = await Promise.all([
             verifKit.msg.edit({
                 embeds: [failEmbed],
@@ -857,8 +853,10 @@ export namespace VerifyManager {
 
         if (!selected || selected.customId === NO_MANUAL_VERIFY_ID) {
             verifKit.verifyFail?.send({
-                content: `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but did not want to get `
+                content: section.isMainSection
+                    ? `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but did not want to get `
                     + "manually verified."
+                    : `[${section.sectionName}] ${member} tried to verify, but did not want to get manually verified.`
             });
 
             await verifKit.msg.edit({
@@ -871,8 +869,11 @@ export namespace VerifyManager {
         }
 
         verifKit.verifyFail?.send({
-            content: `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but did not meet the `
-                + "requirements. He or she has opted for manual verification."
+            content: section.isMainSection
+                ? `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but did not meet the`
+                + " requirements. He or she has opted for manual verification."
+                : `[${section.sectionName}] ${member} tried to verify, but did not meet the requirements. He or she`
+                + " has opted for manual verification."
         });
 
         await verifKit.msg.edit({
@@ -929,12 +930,11 @@ export namespace VerifyManager {
 
         const embed = MessageUtilities.generateBlankEmbed(member, "RED")
             .setTitle(`[${section.sectionName}] Manual Verification: **${checkRes.name}**`)
-            .setDescription(descSb.toString());
-
-        embed.addField(
-            "Reason(s) for Manual Verification",
-            checkRes.manualIssues.join("\n")
-        );
+            .setDescription(descSb.toString())
+            .addField(
+                "Reason(s) for Manual Verification",
+                checkRes.manualIssues.join("\n")
+            );
 
         const manualVerifMsg = await verifKit.manualVerify.send({
             embeds: [embed],
@@ -953,19 +953,215 @@ export namespace VerifyManager {
                     .setStyle("PRIMARY")
             ])
         });
+
+        await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
+            $push: {
+                manualVerificationEntries: {
+                    userId: member.id,
+                    ign: checkRes.name,
+                    manualVerifyMsgId: manualVerifMsg.id,
+                    manualVerifyChannelId: verifKit.manualVerify.id,
+                    sectionId: section.uniqueIdentifier
+                }
+            }
+        });
     }
 
     /**
      * Acknowledges a manual verification message. This should be called when the person decides to accept, or
-     * reject, a manual verification application.
+     * reject, a manual verification application. This can either be called via the message that has the manual
+     * verification information, or via a command.
      * @param {IManualVerificationEntry} manualVerifyRes The manual verification object.
-     * @param {GuildMember} member The member that acknowledged this manual verification request.
+     * @param {GuildMember} moderator The member that acknowledged this manual verification request.
      * @param {string} responseId The response ID. This should be the custom ID from the interaction.
-     * @private
+     * @param {Message} [mVerifMsg] The message containing the manual verification message.
+     * @returns {boolean} Whether this acknowledgement was completed without error.
      */
-    async function acknowledgeManualVerifyRes(manualVerifyRes: IManualVerificationEntry, member: GuildMember,
-                                              responseId: string): Promise<void> {
-        // TODO
+    export async function acknowledgeManualVerifyRes(manualVerifyRes: IManualVerificationEntry, moderator: GuildMember,
+                                                     responseId: string, mVerifMsg?: Message): Promise<boolean> {
+        // Get the manual verification channel
+        // Needed so we can get the manual verification message and delete the message if needed
+        const manualVerifChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            moderator.guild,
+            manualVerifyRes.manualVerifyChannelId
+        )!;
+
+        const [manualVerifMsg, member, guildDoc] = await Promise.all([
+            mVerifMsg ?? await GuildFgrUtilities.fetchMessage(manualVerifChannel, manualVerifyRes.manualVerifyMsgId),
+            GuildFgrUtilities.fetchGuildMember(moderator.guild, manualVerifyRes.userId),
+            MongoManager.getOrCreateGuildDoc(moderator.guild, true)
+        ]);
+
+        // No member = no point in getting them verified.
+        // Remove all their messages.
+        // Note that this should've been accounted for when a member leaves
+        if (!member) {
+            // Remove all entries with this person's user ID
+            await MongoManager.updateAndFetchGuildDoc({guildId: moderator.guild.id}, {
+                $pull: {
+                    manualVerificationEntries: {
+                        userId: manualVerifyRes.userId
+                    }
+                }
+            });
+
+            // Delete all manual verify messages
+            await Promise.all(
+                guildDoc.manualVerificationEntries
+                    .filter(x => x.userId === manualVerifyRes.userId)
+                    .map(async x => {
+                        const channel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+                            moderator.guild,
+                            x.manualVerifyChannelId
+                        );
+
+                        if (!channel)
+                            return;
+
+                        const relevantMsg = await GuildFgrUtilities.fetchMessage(channel, x.manualVerifyMsgId);
+                        await relevantMsg?.delete().catch();
+                    })
+            );
+
+            return false;
+        }
+
+        const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === manualVerifyRes.sectionId);
+        // No section = remove all manual verification requests for that section
+        if (!section) {
+            await MongoManager.updateAndFetchGuildDoc({guildId: moderator.guild.id}, {
+                $pull: {
+                    manualVerificationEntries: {
+                        sectionId: manualVerifyRes.sectionId
+                    }
+                }
+            });
+
+            return false;
+        }
+
+        // No verified role = no point in manually verifying that person.
+        if (!GuildFgrUtilities.hasCachedRole(moderator.guild, section.roles.verifiedRoleId))
+            return false;
+
+        // Logging channels for logging success/failed manual verification reqs
+        const verifySuccessChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            moderator.guild,
+            guildDoc.channels.loggingChannels.find(x => x.key === "VerifySuccess")?.value ?? ""
+        );
+
+        const verifyFailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            moderator.guild,
+            guildDoc.channels.loggingChannels.find(x => x.key === "VerifyFail")?.value ?? ""
+        );
+
+        // Promises to resolve after evaluating the response ID
+        const promises: (Promise<any> | undefined)[] = [
+            manualVerifMsg?.delete().catch()
+        ];
+        switch (responseId) {
+            case (MANUAL_VERIFY_MODMAIL_ID): {
+                await ModmailManager.startThreadedModmailWithMember(member, moderator, guildDoc);
+                return true;
+            }
+            case (MANUAL_VERIFY_DENY_ID): {
+                const finishedEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
+                    .setTitle(
+                        section.isMainSection
+                            ? `**${member.guild.name}**: Guild Verification Denied`
+                            : `**${member.guild.name}**: ${section.sectionName} Section Verification Denied`
+                    )
+                    .setTimestamp()
+                    .setFooter("Manual Verification Request Denied.")
+                    .setDescription(
+                        "Your manual verification request was **denied**. If you have any questions regarding why"
+                        + " your request was denied, please message a staff member or send a modmail."
+                    );
+
+                promises.push(
+                    GlobalFgrUtilities.tryExecuteAsync(async () => {
+                        await member.send({embeds: [finishedEmbed]});
+                    }),
+                    section.isMainSection
+                        ? verifyFailChannel?.send({
+                            content: `[Main] ${member} has tried to verify as **\`${manualVerifyRes.ign}\`**, but his`
+                                + ` or her manual verification request was __denied__ by ${moderator}.`
+                        })
+                        : verifyFailChannel?.send({
+                            content: `[${section.sectionName}] ${member} has tried to get manually verified, but`
+                                + ` was __denied__ manual verification by ${moderator}.`
+                        })
+                );
+
+                break;
+            }
+            case (MANUAL_VERIFY_ACCEPT_ID): {
+                const finishedEmbed = MessageUtilities.generateBlankEmbed(member.guild, "GREEN")
+                    .setTitle(
+                        section.isMainSection
+                            ? `**${member.guild.name}**: Guild Verification Successful`
+                            : `**${member.guild.name}**: ${section.sectionName} Section Verification Successful`
+                    )
+                    .setTimestamp();
+                if (section.otherMajorConfig.verificationProperties.verificationSuccessMessage) {
+                    finishedEmbed.setDescription(
+                        section.otherMajorConfig.verificationProperties.verificationSuccessMessage
+                    );
+                }
+                else {
+                    finishedEmbed.setDescription(
+                        "You have successfully been verified in this server or section. Please make sure to read the"
+                        + " applicable rules/guidelines. If you have any questions, please message a staff member."
+                        + " Thanks!"
+                    );
+                }
+
+                promises.push(
+                    GlobalFgrUtilities.tryExecuteAsync(async () => {
+                        await member.send({embeds: [finishedEmbed]});
+                    }),
+                    member.roles.add(section.roles.verifiedRoleId).catch()
+                );
+
+                if (section.isMainSection) {
+                    promises.push(
+                        MongoManager.addIdNameToTheCollection(member, manualVerifyRes.ign),
+                        member.setNickname(manualVerifyRes.ign, "Manually verified successfully."),
+                        verifySuccessChannel?.send({
+                            content: `[Main] ${member} has been manually verified as **\`${manualVerifyRes.ign}\`** by`
+                                + ` ${moderator}.`
+                        }),
+                    );
+                }
+                else {
+                    promises.push(
+                        verifySuccessChannel?.send({
+                            content: `[${section.sectionName}] ${member} has been manually verified by ${moderator}.`
+                        })
+                    );
+                }
+
+                break;
+            }
+            default: {
+                // Unknown code given.
+                return false;
+            }
+        }
+
+        promises.push(
+            MongoManager.updateAndFetchGuildDoc({guildId: moderator.guild.id}, {
+                $pull: {
+                    manualVerificationEntries: {
+                        sectionId: manualVerifyRes.sectionId,
+                        userId: manualVerifyRes.userId
+                    }
+                }
+            })
+        );
+
+        await Promise.all(promises);
+        return true;
     }
 
     /**
