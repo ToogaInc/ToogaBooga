@@ -772,13 +772,6 @@ export interface ISectionInfo {
          */
         giveVerifiedRoleUponUnsuspend: boolean;
     };
-
-    /**
-     * Any manual verification requests.
-     *
-     * @type {IManualVerificationEntry[]}
-     */
-    manualVerificationEntries: IManualVerificationEntry[];
 }
 
 /**

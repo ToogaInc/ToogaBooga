@@ -113,6 +113,10 @@ export class OneLifeBot {
             new Cmds.SendAnnouncement()
         ]);
 
+        OneLifeBot.Commands.set("Raid Leaders", [
+            new Cmds.StartAfkCheck()
+        ]);
+
         OneLifeBot.JsonCommands = [];
         OneLifeBot.NameCommands = new Collection<string, Cmds.BaseCommand>();
         OneLifeBot.Rest = new REST({version: "9"}).setToken(config.tokens.botToken);

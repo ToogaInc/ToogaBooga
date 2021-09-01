@@ -687,8 +687,7 @@ export namespace MongoManager {
                 giveVerifiedRoleUponUnsuspend: true
             },
             sectionName: "Main",
-            uniqueIdentifier: "MAIN",
-            manualVerificationEntries: guildDoc.manualVerificationEntries
+            uniqueIdentifier: "MAIN"
         };
     }
 

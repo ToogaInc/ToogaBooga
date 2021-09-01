@@ -94,7 +94,7 @@ export class StartAfkCheck extends BaseCommand {
         const availableSections: {
             section: ISectionInfo;
             afkCheckChan: TextChannel;
-            controlPanelChan: TextChannel;
+            cpChan: TextChannel;
             raiderRole: Role;
             dungeons: IDungeonInfo[];
         }[] = [];
@@ -148,7 +148,7 @@ export class StartAfkCheck extends BaseCommand {
 
             availableSections.push({
                 section: section,
-                controlPanelChan: controlPanelChan,
+                cpChan: controlPanelChan,
                 afkCheckChan: afkCheckChan,
                 raiderRole: verifiedRole,
                 dungeons: dungeons
@@ -169,7 +169,7 @@ export class StartAfkCheck extends BaseCommand {
         const sectionToUse: {
             section: ISectionInfo;
             afkCheckChan: TextChannel;
-            controlPanelChan: TextChannel;
+            cpChan: TextChannel;
             raiderRole: Role;
             dungeons: IDungeonInfo[];
         } | null = await new Promise(async (resolve) => {
@@ -300,6 +300,22 @@ export class StartAfkCheck extends BaseCommand {
             location: location ?? ""
         });
 
+        if (!rm) {
+            await ctx.interaction.editReply({
+                components: [],
+                content: "An unknown error occurred when trying to create an AFK Check instance. Please try again"
+                    + " later or report this issue to a developer.",
+                embeds: []
+            });
+            return 0;
+        }
+
+        await ctx.interaction.editReply({
+            components: [],
+            content: `An AFK Check has been started. See ${sectionToUse.afkCheckChan} and ${sectionToUse.cpChan}`,
+            embeds: []
+        });
+        await rm.startPreAfkCheck();
         return 0;
     }
 }

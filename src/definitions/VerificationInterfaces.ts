@@ -421,11 +421,4 @@ export interface IManualVerificationEntry {
      * @type {string}
      */
     sectionId: string;
-
-    /**
-     * The ID corresponding to the person that is currently looking at this.
-     *
-     * @type {string}
-     */
-    currentHandler: string;
 }
