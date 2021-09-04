@@ -6,6 +6,7 @@ export * from "./bot/Help";
 
 export * from "./staff/FindPunishment";
 export * from "./staff/CheckBlacklist";
+export * from "./staff/FindPerson";
 
 export * from "./owner/SendAnnouncement";
 

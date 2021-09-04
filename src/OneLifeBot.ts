@@ -106,7 +106,8 @@ export class OneLifeBot {
 
         OneLifeBot.Commands.set("Staff", [
             new Cmds.FindPunishment(),
-            new Cmds.CheckBlacklist()
+            new Cmds.CheckBlacklist(),
+            new Cmds.FindPerson()
         ]);
 
         OneLifeBot.Commands.set("Bot Owner", [

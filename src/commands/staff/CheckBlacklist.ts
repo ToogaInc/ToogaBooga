@@ -13,6 +13,7 @@ export class CheckBlacklist extends BaseCommand {
             botCommandName: "checkblacklist",
             description: "Checks the blacklist status for a particular name.",
             rolePermissions: [
+                "Team",
                 "Helper",
                 "Security",
                 "Officer",

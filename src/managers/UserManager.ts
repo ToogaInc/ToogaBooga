@@ -4,11 +4,13 @@ export namespace UserManager {
 
     /**
      * Gets all names from a raw name. This will automatically remove any symbols.
+     * @param {string} rawName The raw name.
+     * @param {string} [allLower] Whether the result of this function should be an array of all names, in lowercase.
      * @returns {string[]} All names.
      */
-    export function getAllNames(rawName: string): string[] {
+    export function getAllNames(rawName: string, allLower: boolean = false): string[] {
         const parsedNames: string[] = [];
-        const allNames = rawName.split("|")
+        const allNames = (allLower ? rawName.toLowerCase() : rawName).split("|")
             .map(x => x.trim())
             .filter(x => x.length !== 0);
 
