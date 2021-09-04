@@ -1,5 +1,5 @@
 import {
-    ButtonInteraction,
+    ButtonInteraction, CommandInteraction,
     EmbedFieldData,
     GuildMember,
     Interaction,
@@ -24,12 +24,12 @@ import {
     IVerificationProperties,
     IVerificationRequirements
 } from "../definitions";
-import {MiscUtilities} from "../utilities/MiscUtilities";
 import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {Emojis} from "../constants/Emojis";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {ModmailManager} from "./ModmailManager";
+import {UserManager} from "./UserManager";
 
 export namespace VerifyManager {
     const CANCEL_ID: string = "cancel";
@@ -82,7 +82,7 @@ export namespace VerifyManager {
         verifyFail: TextChannel | null;
         verifyStep: TextChannel | null;
         verifyStart: TextChannel | null;
-        msg: Message;
+        msg: Message | null;
     }
 
     /**
@@ -124,7 +124,7 @@ export namespace VerifyManager {
         const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
 
         // No verified role = no go. Or, if the person is verified, no need for them to get verified.
-        if (!verifiedRole || member.roles.cache.has(verifiedRole.id))
+        if (!verifiedRole || GuildFgrUtilities.memberHasCachedRole(member, verifiedRole.id))
             return;
 
         // Get logging channels ready
@@ -146,17 +146,20 @@ export namespace VerifyManager {
             .catch();
 
         // If we can't open a DM, then don't bother.
-        const dmMsg = await getInitialMessage(member);
-        if (!dmMsg) {
-            await i.reply({
-                content: "I can't seem to message you directly. Please make sure your privacy settings are set so"
-                    + " anyone can send you direct messages.",
-                ephemeral: true
-            });
+        let dmMsg: Message | null = null;
+        if (section.isMainSection) {
+            dmMsg = await getInitialMessage(member);
+            if (!dmMsg) {
+                await i.reply({
+                    content: "I can't seem to message you directly. Please make sure your privacy settings are set so"
+                        + " anyone can send you direct messages.",
+                    ephemeral: true
+                });
 
-            verifyFailChannel?.send(`[${section.sectionName}] ${member} could not be directly messaged.`)
-                .catch();
-            return;
+                verifyFailChannel?.send(`[${section.sectionName}] ${member} could not be directly messaged.`)
+                    .catch();
+                return;
+            }
         }
 
         const verifyStepChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
@@ -190,11 +193,14 @@ export namespace VerifyManager {
     /**
      * An entry point for verification. This is called when the "verify" command is executed. Applies to the main
      * section only.
-     * @param {Message} msg The message that led to this function being executed.
+     * @param {CommandInteraction} i The interaction (slash command) that led to this function being executed.
      * @param {IGuildInfo} guildDoc The guild document.
      */
-    export async function verifyMainCommand(msg: Message, guildDoc: IGuildInfo): Promise<void> {
-        const member = msg.member;
+    export async function verifyMainCommand(i: CommandInteraction, guildDoc: IGuildInfo): Promise<void> {
+        if (!i.guild)
+            return;
+
+        const member = await GuildFgrUtilities.fetchGuildMember(i.guild, i.user.id);
         if (!member)
             return;
 
@@ -202,7 +208,7 @@ export namespace VerifyManager {
         const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, guildDoc.roles.verifiedRoleId);
 
         // No verified role = no go. Or, if the person is verified, no need for them to get verified.
-        if (!verifiedRole || member.roles.cache.has(verifiedRole.id))
+        if (!verifiedRole || GuildFgrUtilities.memberHasCachedRole(member, verifiedRole.id))
             return;
 
         const verifyStartChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
@@ -220,16 +226,14 @@ export namespace VerifyManager {
         // If we can't open a DM, then don't bother.
         const dmMsg = await getInitialMessage(member);
         if (!dmMsg) {
-            const m = await msg.channel.send({
+            await i.reply({
                 content: "I can't seem to message you directly. Please make sure your privacy settings are set so"
-                    + " anyone can send you direct messages."
+                    + " anyone can send you direct messages.",
+                ephemeral: true
             });
 
             verifyFailChannel?.send(`[Main] ${member} could not be directly messaged.`)
                 .catch();
-
-            await MiscUtilities.stopFor(5 * 1000);
-            m.delete().catch();
             return;
         }
 
@@ -317,6 +321,9 @@ export namespace VerifyManager {
      * @private
      */
     async function verifyMain(member: GuildMember, guildDoc: IGuildInfo, verifKit: IVerificationKit): Promise<void> {
+        if (!verifKit.msg)
+            return;
+
         const dmChannel = await member.createDM();
         const userDb = await MongoManager.findIdInIdNameCollection(member.id);
         let nameToVerify: string | null = null;
@@ -482,7 +489,7 @@ export namespace VerifyManager {
 
         collector.on("collect", async i => {
             if (i.customId === "cancel") {
-                await verifKit.msg.edit({
+                await verifKit.msg!.edit({
                     embeds: [
                         MessageUtilities.generateBlankEmbed(member.guild, "RED")
                             .setTitle(`**${member.guild.name}**: Guild Verification Canceled`)
@@ -503,7 +510,7 @@ export namespace VerifyManager {
                 return;
             }
 
-            await verifKit.msg.edit({
+            await verifKit.msg!.edit({
                 embeds: [
                     MessageUtilities.generateBlankEmbed(member.guild, "RED")
                         .setTitle(`**${member.guild.name}**: Guild Verification Checking`)
@@ -523,7 +530,7 @@ export namespace VerifyManager {
             });
 
             if (!requestData) {
-                await verifKit.msg.edit({
+                await verifKit.msg!.edit({
                     embeds: [
                         MessageUtilities.generateBlankEmbed(member.guild, "RED")
                             .setTitle(`**${member.guild.name}**: Guild Verification Error`)
@@ -574,7 +581,7 @@ export namespace VerifyManager {
             });
 
             if (!nameHistory) {
-                await verifKit.msg.edit({
+                await verifKit.msg!.edit({
                     embeds: [
                         getVerifEmbed(member, nameToVerify!, code, guildDoc.otherMajorConfig.verificationProperties)
                             .setFooter("Verification Process Expires")
@@ -609,7 +616,7 @@ export namespace VerifyManager {
                         continue;
 
                     // Person is blacklisted.
-                    await verifKit.msg.edit({
+                    await verifKit.msg!.edit({
                         embeds: [
                             MessageUtilities.generateBlankEmbed(member.guild, "RED")
                                 .setTitle(`**${member.guild.name}**: Guild Verification Error`)
@@ -655,7 +662,6 @@ export namespace VerifyManager {
                 const fields: EmbedFieldData[] = checkRes.fatalIssues.map(x => {
                     return {name: x.key, value: x.value};
                 });
-                const logStr = checkRes.fatalIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n");
 
                 const failEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
                     .setTitle(`**${member.guild.name}**: Guild Verification Failed`)
@@ -672,7 +678,7 @@ export namespace VerifyManager {
                     + " Message a staff member for more assistance."
                 );
 
-                await verifKit.msg.edit({
+                await verifKit.msg!.edit({
                     embeds: [failEmbed],
                     components: []
                 });
@@ -683,7 +689,7 @@ export namespace VerifyManager {
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but there were several `
                         + "fatal issues with the person's profile. These issues are listed below:\n"
-                        + logStr
+                        + checkRes.fatalIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
                 });
 
                 collector.stop();
@@ -691,7 +697,7 @@ export namespace VerifyManager {
             }
 
             if (checkRes.conclusion === "TRY_AGAIN") {
-                await verifKit.msg.edit({
+                await verifKit.msg!.edit({
                     embeds: [
                         getVerifEmbed(member, nameToVerify!, code, guildDoc.otherMajorConfig.verificationProperties)
                             .setFooter("Verification Process Expires")
@@ -752,7 +758,7 @@ export namespace VerifyManager {
             }
 
             await Promise.all([
-                verifKit.msg.edit({embeds: [finishedEmbed]}).catch(),
+                verifKit.msg!.edit({embeds: [finishedEmbed]}).catch(),
                 await member.send({
                     content: "Your verification was successful."
                 }).catch(),
@@ -763,16 +769,146 @@ export namespace VerifyManager {
         });
     }
 
+    /**
+     * Verifies in a section. This assumes a non-main section.
+     * @param {GuildMember} member The member to verify.
+     * @param {ISectionInfo} section The section.
+     * @param {IVerificationKit} verifKit The verification "kit."
+     * @param {ButtonInteraction} interaction The interaction that led to this.
+     * @private
+     */
     async function verifySection(member: GuildMember, section: ISectionInfo, verifKit: IVerificationKit,
                                  interaction: ButtonInteraction): Promise<void> {
-        // TODO
+        const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
+        if (!verifiedRole || GuildFgrUtilities.memberHasCachedRole(member, verifiedRole.id))
+            return;
+
+        if (!section.otherMajorConfig.verificationProperties.checkRequirements) {
+            await Promise.all([
+                member.roles.add(verifiedRole).catch(),
+                interaction.reply({
+                    content: "You have successfully been verified.",
+                    ephemeral: true
+                }),
+                verifKit.verifySuccess?.send({
+                    content: `[${section.sectionName}] ${member} has successfully been verified in this section.`
+                })
+            ]);
+            return;
+        }
+
+        const names = UserManager.getAllNames(member.displayName);
+        let nameToUse: string;
+        const uIdentifier = StringUtil.generateRandomString(30);
+        if (names.length === 0) {
+            // lookup database for name
+            const nameRes = await MongoManager.findIdInIdNameCollection(member.id);
+            // no name found = can't verify.
+            if (nameRes.length === 0) {
+                await interaction.reply({
+                    content: "Something went wrong when trying to verify you. You do not have a name registered with"
+                        + " the bot and your Discord nickname is not a valid RotMG name. Please contact a staff"
+                        + " member for assistance.",
+                    ephemeral: true
+                });
+                return;
+            }
+
+            nameToUse = nameRes[0].rotmgNames[0].ign;
+        }
+        else {
+            nameToUse = names[0];
+        }
+
+        const requestData = await GlobalFgrUtilities.tryExecuteAsync<PAD.IPlayerData>(async () => {
+            return await RealmSharperWrapper.getPlayerInfo(nameToUse);
+        });
+
+        if (!requestData) {
+            await interaction.reply({
+                content: `Your in-game name, **\`${nameToUse}\`**, could not be found on RealmEye. Make sure your`
+                    + " profile is **public** (anyone can see it).",
+                ephemeral: true
+            });
+
+            verifKit.verifyFail?.send({
+                content: `[${section.sectionName}] ${member} tried to verify as **\`${nameToUse}\`**, but an unknown`
+                    + " error occurred when trying to reach his or her RealmEye profile's basic data"
+                    + ` (https://www.realmeye.com/player/${nameToUse}). Is the profile private?`
+            });
+            return;
+        }
+
+        const checkRes = await checkRequirements(member, section, requestData);
+        if (checkRes.conclusion === "TRY_AGAIN") {
+            await interaction.reply({
+                content: `Your in-game name, **\`${nameToUse}\`**, was found on RealmEye. However, your RealmEye`
+                    + " profile has a few issues that need to be resolved. These issues are listed below:\n"
+                    + checkRes.taIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n"),
+                ephemeral: true
+            });
+
+            verifKit.verifyFail?.send({
+                content: `[${section.sectionName}] ${member} tried to verify as **\`${nameToUse}\`**, but there were`
+                    + " several minor issues with the person's profile. These issues are listed below:\n"
+                    + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+            });
+            return;
+        }
+
+        if (checkRes.conclusion === "FAIL") {
+            await interaction.reply({
+                content: `Your in-game name, **\`${nameToUse}\`**, was found on RealmEye. However, your RealmEye`
+                    + " profile has failed to meet one or more major issues. These issues are listed below:\n"
+                    + checkRes.fatalIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n"),
+                ephemeral: true
+            });
+
+            verifKit.verifyFail?.send({
+                content: `[${section.sectionName}] ${member} tried to verify as **\`${nameToUse}\`**, but there were`
+                    + " several fatal issues with the person's profile. These issues are listed below:\n"
+                    + checkRes.fatalIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+            });
+            return;
+        }
+
+        if (checkRes.conclusion === "MANUAL") {
+            handleManualVerificationCase(member, checkRes, verifKit, section)
+                .then();
+
+            await interaction.reply({
+                content: new StringBuilder()
+                    .append(`Your in-game name, **\`${nameToUse}\`**, was found on RealmEye. However, your RealmEye `)
+                    .append("profile does not meet one or more requirements. These issues are listed below:")
+                    .appendLine()
+                    .append(checkRes.manualIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n"))
+                    .appendLine(2)
+                    .append("Please check your direct messages. If you did not receive a message from the bot, you ")
+                    .append("may need to adjust your privacy settings so anyone can direct message you.")
+                    .toString(),
+                ephemeral: true
+            });
+            return;
+        }
+
+        // Passed requirements.
+        await Promise.all([
+            member.roles.add(verifiedRole).catch(),
+            interaction.reply({
+                content: "You have successfully been verified.",
+                ephemeral: true
+            }),
+            verifKit.verifySuccess?.send({
+                content: `[${section.sectionName}] ${member} has successfully been verified in this section.`
+            })
+        ]);
     }
 
     /**
      * Handles the case where we need to deal with manual verification.
      * @param {GuildMember} member The member to manually verify.
-     * @param {VerifyManager.IReqCheckResult} checkRes The original check results.
-     * @param {VerifyManager.IVerificationKit} verifKit The verification kit.
+     * @param {IReqCheckResult} checkRes The original check results.
+     * @param {IVerificationKit} verifKit The verification kit.
      * @param {ISectionInfo} section The section.
      * @private
      */
@@ -786,12 +922,10 @@ export namespace VerifyManager {
             content: section.isMainSection
                 ? `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but there were several `
                 + "minor issues with the person's profile. The user is currently being asked if he or she wants"
-                + " to get manually verified. The outstanding issues are listed below:\n"
-                + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                + " to get manually verified. The outstanding issues are listed below:\n" + logStr
                 : `[${section.sectionName}] ${member} tried to verify, but there were several minor issues with the`
                 + " person's profile. The user is currently being asked if he or she wants to get manually"
-                + " verified. The outstanding issues are listed below:\n"
-                + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                + " verified. The outstanding issues are listed below:\n" + logStr
         });
 
         const failEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
@@ -829,19 +963,46 @@ export namespace VerifyManager {
             .setFooter("Respond By:")
             .setTimestamp(Date.now() + 2 * 60 * 1000);
 
-        const [, , dmChannel] = await Promise.all([
-            verifKit.msg.edit({
-                embeds: [failEmbed],
-                components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
+        const [m, , dmChannel] = await Promise.all([
+            new Promise<Message | null>((resolve) => {
+                if (!verifKit.msg) {
+                    return resolve(
+                        GlobalFgrUtilities.tryExecuteAsync<Message>(() => {
+                            return member.send({
+                                embeds: [failEmbed],
+                                components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
+                            });
+                        })
+                    );
+                }
+
+                return resolve(verifKit.msg.edit({
+                    embeds: [failEmbed],
+                    components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
+                }));
             }),
-            member.send({
-                content: "You do not meet the requirements to verify in this server or section. Please review the above."
-            }).catch(),
+            new Promise<void>((resolve) => {
+                // no message available means this was done in section
+                // thus, there is no base message to refer back to.
+                if (!verifKit.msg)
+                    return resolve();
+
+                member.send({
+                    content: "You do not meet the requirements to verify in this server or section. Please review"
+                        + " the above."
+                }).catch();
+                resolve();
+            }),
             await member.createDM()
         ]);
 
+        if (!m) {
+            // Might be worth logging this
+            return;
+        }
+
         const selected = await AdvancedCollector.startInteractionCollector({
-            oldMsg: verifKit.msg,
+            oldMsg: m,
             acknowledgeImmediately: true,
             duration: 2 * 60 * 1000,
             clearInteractionsAfterComplete: true,
@@ -866,7 +1027,7 @@ export namespace VerifyManager {
                     : `[${section.sectionName}] ${member} tried to verify, but did not want to get manually verified.`
             });
 
-            await verifKit.msg.edit({
+            await m.edit({
                 embeds: [acknowledgementEmbed.setDescription("You have chosen not to get manually verified. If you"
                     + " want to try to verify again, please start the verification process again.")],
                 components: []
@@ -883,7 +1044,7 @@ export namespace VerifyManager {
                 + " has opted for manual verification."
         });
 
-        await verifKit.msg.edit({
+        await m.edit({
             embeds: [acknowledgementEmbed.setDescription("You have chosen to get manually verified. A staff"
                 + " member will look through your profile shortly. Please do **not** make your profile private.")],
             components: []
