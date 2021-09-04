@@ -197,7 +197,12 @@ export namespace PunishmentManager {
         if (!isAddingPunishment && !details.actionIdToResolve)
             return false;
 
-        const actionId = details.actionIdToUse ?? StringUtil.generateRandomString(40);
+        let actionId = details.actionIdToUse;
+        if (!actionId) {
+            const memberStr = "name" in member ? StringUtil.generateRandomString(16) : member.id;
+            actionId = `${punishmentType}_${Date.now()}_${memberStr}_${StringUtil.generateRandomString(10)}`;
+        }
+
         const mainSection = MongoManager.getMainSection(details.guildDoc);
 
         // Find the appropriate logging channel.
@@ -803,7 +808,7 @@ export namespace SuspensionManager {
         info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
     ): Promise<boolean> {
         // If the person was already suspended, then we don't need to re-suspend the person.
-        if (member.roles.cache.has(info.guildDoc.roles.suspendedRoleId)
+        if (GuildFgrUtilities.memberHasCachedRole(member, info.guildDoc.roles.suspendedRoleId)
             || info.guildDoc.moderation.suspendedUsers.some(x => x.affectedUser.id === member.id))
             return false;
 
@@ -823,7 +828,7 @@ export namespace SuspensionManager {
                 name: mod?.displayName ?? ""
             },
             reason: info.reason,
-            actionId: StringUtil.generateRandomString(40),
+            actionId: `Suspend_${timeStarted}_${member.id}_${StringUtil.generateRandomString(10)}`,
             evidence: info.evidence
         };
 
@@ -948,7 +953,7 @@ export namespace SuspensionManager {
                 name: mod?.displayName ?? ""
             },
             reason: info.reason,
-            actionId: StringUtil.generateRandomString(40),
+            actionId: `SecSuspend_${timeStarted}_${member.id}_${StringUtil.generateRandomString(10)}`,
             evidence: info.evidence
         };
 
@@ -1212,7 +1217,7 @@ export namespace MuteManager {
         }
 
         // If the person was already muted, then we don't need to mute the person again.
-        if (member.roles.cache.has(info.guildDoc.roles.mutedRoleId)
+        if (GuildFgrUtilities.memberHasCachedRole(member, info.guildDoc.roles.mutedRoleId)
             || info.guildDoc.moderation.mutedUsers.some(x => x.affectedUser.id === member.id))
             return false;
 
@@ -1231,7 +1236,7 @@ export namespace MuteManager {
                 name: mod?.displayName ?? ""
             },
             reason: info.reason,
-            actionId: StringUtil.generateRandomString(40),
+            actionId: `Mute_${timeStarted}_${member.id}_${StringUtil.generateRandomString(10)}`,
             evidence: info.evidence
         };
 

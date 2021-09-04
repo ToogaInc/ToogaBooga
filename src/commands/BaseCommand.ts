@@ -235,10 +235,10 @@ export abstract class BaseCommand {
         }
 
         const roleArr: Role[] = [];
-        let hasPermission = false;
+        let hasRolePerm = false;
         for (const roleId of allRoleIds) {
-            if (GuildFgrUtilities.hasCachedRole(userToTest.guild, roleId)) {
-                hasPermission = true;
+            if (GuildFgrUtilities.memberHasCachedRole(userToTest, roleId)) {
+                hasRolePerm = true;
                 break;
             }
 
@@ -247,7 +247,7 @@ export abstract class BaseCommand {
             roleArr.push(role);
         }
 
-        if (!hasPermission)
+        if (!hasRolePerm)
             results.missingUserRoles.push(...roleArr.map(x => x.name));
 
 

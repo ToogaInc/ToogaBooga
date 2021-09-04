@@ -26,7 +26,6 @@ import {
 import {StringBuilder} from "../utilities/StringBuilder";
 import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {StartAfkCheck} from "../commands/raid-leaders/StartAfkCheck";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {DUNGEON_DATA} from "../constants/DungeonData";
@@ -50,6 +49,7 @@ import {
     ISectionInfo
 } from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
+import {StartAfkCheck} from "../commands";
 
 type ReactionInfoMore = IReactionInfo & {
     earlyLocAmt: number;
@@ -1261,7 +1261,7 @@ export class RaidInstance {
             guildInfo.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
             guildInfo.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
-        ].some(x => GuildFgrUtilities.hasCachedRole(guild, x));
+        ].some(x => GuildFgrUtilities.memberHasCachedRole(member, x));
     }
 
     /**
@@ -1441,7 +1441,7 @@ export class RaidInstance {
             neededRoles.push(...customPermData.value.rolePermsNeeded);
 
         return member.voice.channel?.id === this._raidVc.id
-            && (neededRoles.some(x => GuildFgrUtilities.hasCachedRole(member.guild, x))
+            && (neededRoles.some(x => GuildFgrUtilities.memberHasCachedRole(member, x))
                 || member.permissions.has("ADMINISTRATOR"));
     }
 

@@ -333,7 +333,7 @@ export namespace QuotaManager {
             const role = GuildFgrUtilities.resolveMainCachedGuildRoles(guild, doc, x.roleId);
 
             return (x.pointValue.find(y => y.key === resolvedLogType)?.value ?? 0) > 0
-                && member.roles.cache.has(role?.id ?? "");
+                && GuildFgrUtilities.memberHasCachedRole(member, role?.id ?? "");
         });
 
         if (possibleChoices.length === 0)

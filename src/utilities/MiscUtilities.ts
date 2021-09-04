@@ -1,6 +1,4 @@
-import {StringBuilder} from "./StringBuilder";
 import {GeneralConstants} from "../constants/GeneralConstants";
-import {ArrayUtilities} from "./ArrayUtilities";
 import {Snowflake} from "discord.js";
 import {CommonRegex} from "../constants/CommonRegex";
 import {DefinedRole} from "../definitions/Types";
@@ -17,18 +15,6 @@ export namespace MiscUtilities {
                 return resolve();
             }, time);
         });
-    }
-
-    /**
-     * Generates a somewhat unique ID.
-     * @param {[number = 30]} num The length.
-     * @return {string} The ID.
-     */
-    export function generateUniqueId(num: number = 30): string {
-        const id = new StringBuilder(Date.now().toString());
-        for (let i = 0; i < num; i++)
-            id.append(ArrayUtilities.getRandomElement(GeneralConstants.ALL_CHARACTERS));
-        return id.toString();
     }
 
     /**

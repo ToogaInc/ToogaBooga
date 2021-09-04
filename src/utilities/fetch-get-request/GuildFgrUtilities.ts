@@ -15,8 +15,8 @@ import {IGuildInfo} from "../../definitions";
  */
 export namespace GuildFgrUtilities {
     /**
-     * Checks whether a member has a role.
-     * @param {Guild} guild The member or guild.
+     * Checks whether a guild has a role.
+     * @param {Guild | GuildMember} guild The guild.
      * @param {string} roleId The role ID. This assumes a valid ID.
      * @return {boolean} Whether this member has the role.
      */
@@ -26,14 +26,25 @@ export namespace GuildFgrUtilities {
     }
 
     /**
+     * Checks whether a member has a role.
+     * @param {GuildMember} member The member.
+     * @param {string} roleId The role ID. This assumes a valid ID.
+     * @return {boolean} Whether this member has the role.
+     */
+    export function memberHasCachedRole(member: GuildMember, roleId: string): boolean {
+        if (!MiscUtilities.isSnowflake(roleId)) return false;
+        return member.roles.cache.has(roleId);
+    }
+
+    /**
      * Gets a cached role.
-     * @param {Guild | GuildMember} guildOrMember The guild.
+     * @param {Guild} guild The guild.
      * @param {string} roleId The role ID. This assumes a valid ID. If an invalid ID is given, `null` will be returned.
      * @return {Role | null} The role, if at all. Otherwise, `null`.
      */
-    export function getCachedRole(guildOrMember: Guild | GuildMember, roleId: string): Role | null {
+    export function getCachedRole(guild: Guild, roleId: string): Role | null {
         if (!MiscUtilities.isSnowflake(roleId)) return null;
-        return guildOrMember.roles.cache.get(roleId) ?? null;
+        return guild.roles.cache.get(roleId) ?? null;
     }
 
     /**

@@ -14,11 +14,20 @@ export namespace UserManager {
 
         for (const n of allNames) {
             const nameSplit = n.split("");
+            // Trim left side of name
             while (nameSplit.length > 0) {
                 // is letter
                 if (nameSplit[0].toLowerCase() !== nameSplit[0].toUpperCase())
                     break;
                 nameSplit.shift();
+            }
+
+            // Trim right side of name
+            while (nameSplit.length > 0) {
+                // is letter
+                if (nameSplit[nameSplit.length - 1].toLowerCase() !== nameSplit[nameSplit.length - 1].toUpperCase())
+                    break;
+                nameSplit.pop();
             }
 
             const nameJoined = nameSplit.join("");
@@ -41,6 +50,6 @@ export namespace UserManager {
             return false;
 
         // only letters
-        return /^[a-zA-Z]*$/.test(name);
+        return CommonRegex.ONLY_LETTERS.test(name);
     }
 }

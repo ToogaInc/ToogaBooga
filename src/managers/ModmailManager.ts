@@ -9,7 +9,6 @@ import {
     MessageButton,
     MessageComponentInteraction,
     MessageEmbed,
-    Snowflake,
     TextChannel,
     User
 } from "discord.js";
@@ -1164,8 +1163,8 @@ export namespace ModmailManager {
             // Guild must have the verified role.
             // Guild must have the modmail channel.
             if (guild.members.cache.has(user.id)
-                && guild.roles.cache.has(allGuilds[idx].roles.verifiedRoleId as Snowflake)
-                && guild.channels.cache.has(allGuilds[idx].channels.modmailChannelId as Snowflake))
+                && GuildFgrUtilities.hasCachedRole(guild, allGuilds[idx].roles.verifiedRoleId)
+                && GuildFgrUtilities.hasCachedChannel(guild, allGuilds[idx].channels.modmailChannelId))
                 guildsToChoose.push([guild, allGuilds[idx]]);
         }
 

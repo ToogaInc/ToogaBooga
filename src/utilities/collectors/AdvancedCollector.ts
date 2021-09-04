@@ -16,9 +16,9 @@ import {
 import {MessageUtilities} from "../MessageUtilities";
 import {StringBuilder} from "../StringBuilder";
 import {GuildFgrUtilities} from "../fetch-get-request/GuildFgrUtilities";
-import {MiscUtilities} from "../MiscUtilities";
 import {Emojis} from "../../constants/Emojis";
 import {GlobalFgrUtilities} from "../fetch-get-request/GlobalFgrUtilities";
+import {StringUtil} from "../StringUtilities";
 
 /**
  * A series of helpful collector functions.
@@ -303,7 +303,7 @@ export namespace AdvancedCollector {
         const channel = i.channel;
 
         // Generate a random ID so we can associate this collector.
-        const id = MiscUtilities.generateUniqueId(30);
+        const id = StringUtil.generateRandomString(30);
 
         const yesButton = new MessageButton()
             .setCustomId(id + "yes")

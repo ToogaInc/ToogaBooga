@@ -65,7 +65,7 @@ export class StartAfkCheck extends BaseCommand {
             return true;
 
         for (const role of roleReqs) {
-            if (MiscUtilities.isSnowflake(role) && member.roles.cache.has(role))
+            if (GuildFgrUtilities.memberHasCachedRole(member, role))
                 return true;
 
             if (!MiscUtilities.isDefinedRole(role))
@@ -75,7 +75,7 @@ export class StartAfkCheck extends BaseCommand {
             if (!roleArr)
                 continue;
 
-            if (roleArr.some(x => member.roles.cache.has(x)))
+            if (roleArr.some(x => GuildFgrUtilities.memberHasCachedRole(member, x)))
                 return true;
         }
 
@@ -176,7 +176,7 @@ export class StartAfkCheck extends BaseCommand {
             if (availableSections.length === 1)
                 return resolve(availableSections[0]);
 
-            const identifier = MiscUtilities.generateUniqueId(20);
+            const identifier = StringUtil.generateRandomString(20);
             const selectMenu = new MessageSelectMenu()
                 .setCustomId(identifier)
                 .setMaxValues(1)
