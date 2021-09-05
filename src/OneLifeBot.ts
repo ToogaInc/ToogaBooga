@@ -110,6 +110,10 @@ export class OneLifeBot {
             new Cmds.FindPerson()
         ]);
 
+        OneLifeBot.Commands.set("Configuration", [
+            new Cmds.ConfigureChannels()
+        ]);
+
         OneLifeBot.Commands.set("Bot Owner", [
             new Cmds.SendAnnouncement()
         ]);

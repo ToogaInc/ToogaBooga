@@ -14,7 +14,7 @@ import {AdvancedCollector} from "./collectors/AdvancedCollector";
 import {Emojis} from "../constants/Emojis";
 import {MessageButtonStyles} from "discord.js/typings/enums";
 import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
-import {IGuildInfo, ISectionInfo} from "../definitions/MongoDocumentInterfaces";
+import {IGuildInfo, ISectionInfo} from "../definitions";
 
 export namespace InteractivityHelper {
 

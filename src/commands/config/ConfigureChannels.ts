@@ -16,9 +16,10 @@ import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {FilterQuery} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {IGuildInfo, ISectionInfo} from "../../definitions";
-import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 import {InteractivityHelper} from "../../utilities/InteractivityHelper";
 import {Emojis} from "../../constants/Emojis";
+import getCachedChannel = GuildFgrUtilities.getCachedChannel;
+import {MainLogType, SectionLogType} from "../../definitions/Types";
 
 enum ChannelCategoryType {
     Raiding,
@@ -40,7 +41,39 @@ interface IChannelMongo extends IBaseDatabaseEntryInfo {
     channelType: ChannelCategoryType;
 }
 
-export class ConfigureChannelsCommand extends BaseCommand implements IConfigCommand {
+export class ConfigureChannels extends BaseCommand implements IConfigCommand {
+    private static readonly SECTION_LOGGING_IDS: SectionLogType[] = [
+        "SectionSuspend",
+        "VerifyFail",
+        "VerifySuccess",
+        "VerifyStep",
+        "VerifyStart",
+        "SectionSuspend",
+        "ManualVerifyAccepted",
+        "ManualVerifyDenied",
+        "ManualVerifyRequest"
+    ];
+
+    private static readonly MAIN_LOGGING_IDS: MainLogType[] = [
+        "Suspend",
+        "Mute",
+        "Blacklist",
+        "ModmailBlacklist",
+        "Warn",
+        "VerifyFail",
+        "VerifySuccess",
+        "VerifyStep",
+        "VerifyStart",
+        "SectionSuspend",
+        "ManualVerifyAccepted",
+        "ManualVerifyDenied",
+        "ManualVerifyRequest",
+        "ModmailReceived",
+        "ModmailThreadCreated",
+        "ModmailThreadRemoved",
+        "ModmailSent"
+    ];
+
     private static readonly NA: string = "N/A";
     private static readonly CHANNEL_MONGO: IChannelMongo[] = [
         {
@@ -102,10 +135,11 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             }
         },
         {
-            name: "Rate Leader Channel",
-            description: "This is the channel where raiders can rate a leader's performance. You can either set this"
-                + " channel to a new channel or the AFK Check channel. If this is set to the AFK Check channel, the"
-                + " original AFK Check message will be edited with the poll.",
+            name: "Leader Feedback Channel",
+            description: "This is the *base* channel where raiders can rate a leader's performance. When a new AFK"
+                + " check starts, the bot will create a new feedback channel (in the same category as this"
+                + " channel) where raiders can leave feedback. Once the raid is over, this channel will be deleted"
+                + " removed in 1 minute.",
             guildDocPath: "channels.raids.leaderFeedbackChannelId",
             sectionPath: "guildSections.$.channels.raids.leaderFeedbackChannelId",
             channelType: ChannelCategoryType.Raiding,
@@ -155,6 +189,19 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 if (!section.isMainSection) throw new Error("bot updates is a main-only feature.");
                 return guildDoc.channels.loggingChannels;
             }
+        },
+        {
+            name: "Storage Channel",
+            description: "This channel is where any files will be stored. Files may include images, text files, and"
+                + " more. If this is not set, the bot will use a private server's storage channel.",
+            guildDocPath: "channels.storageChannelId",
+            sectionPath: "",
+            channelType: ChannelCategoryType.Other,
+            configTypeOrInstructions: ConfigType.Channel,
+            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+                if (!section.isMainSection) throw new Error("storage channel is main-only.");
+                return guildDoc.channels.storageChannelId;
+            }
         }
     ];
 
@@ -177,6 +224,10 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.reply({
+            content: "A new message should have popped up! Please refer to that message."
+        });
+
         if (!(ctx.channel instanceof TextChannel)) return -1;
         this.entry(ctx, null).then();
         return 0;
@@ -197,7 +248,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             );
 
             if (!queryResult) {
-                this.dispose(ctx).then();
+                this.dispose(ctx, botMsg).then();
                 return;
             }
 
@@ -245,11 +296,6 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 "Click on the `Edit Base Channels` button to configure modmail, raid, and verification channels."
             )
             .addField(
-                "Edit Expandable Channels",
-                "Click on the `Edit Expandable Channels` button to add or remove channels like the quota leaderboard"
-                + "  or logging channels."
-            )
-            .addField(
                 "Edit Other Channels",
                 "Click on the `Edit Other Channels` button to edit other channels that may not otherwise belong to"
                 + " the above categories."
@@ -265,27 +311,27 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageButton()
                     .setLabel("Go Back")
-                    .setStyle(MessageButtonStyles.PRIMARY)
+                    .setStyle("PRIMARY")
                     .setCustomId("go_back")
                     .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
                 new MessageButton()
                     .setLabel("Edit Base Channels")
-                    .setStyle(MessageButtonStyles.PRIMARY)
+                    .setStyle("PRIMARY")
                     .setCustomId("base")
                     .setEmoji(Emojis.HASH_EMOJI),
                 new MessageButton()
-                    .setLabel("Edit Expandable Channels")
-                    .setStyle(MessageButtonStyles.PRIMARY)
-                    .setCustomId("expandable")
-                    .setEmoji(Emojis.HASH_EMOJI),
+                    .setLabel("Edit Logging Channels")
+                    .setStyle("PRIMARY")
+                    .setCustomId("logging")
+                    .setEmoji(Emojis.CLIPBOARD_EMOJI),
                 new MessageButton()
                     .setLabel("Edit Other Channels")
-                    .setStyle(MessageButtonStyles.PRIMARY)
+                    .setStyle("PRIMARY")
                     .setCustomId("other")
                     .setEmoji(Emojis.HASH_EMOJI),
                 new MessageButton()
                     .setLabel("Exit")
-                    .setStyle(MessageButtonStyles.DANGER)
+                    .setStyle("DANGER")
                     .setCustomId("exit")
                     .setEmoji(Emojis.X_EMOJI)
             ])
@@ -302,30 +348,176 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
         });
 
         if (!selectedButton) {
-            this.dispose(ctx).then();
+            this.dispose(ctx, botMsg).then();
             return;
         }
 
         switch (selectedButton.customId) {
             case "go_back": {
                 this.entry(ctx, botMsg).then();
-                break;
+                return;
             }
             case "base": {
                 this.doBaseChannels(ctx, section, botMsg).then();
-                break;
+                return;
             }
-            case "expandable": {
-
-                break;
+            case "logging": {
+                this.doLoggingChannels(ctx, section, botMsg).then();
+                return;
             }
             case "other": {
-
-                break;
+                this.editDatabaseSettings(
+                    ctx,
+                    section,
+                    botMsg,
+                    ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Other),
+                    "Others"
+                ).then();
+                return;
             }
             case "exit": {
-                this.dispose(ctx).then();
+                this.dispose(ctx, botMsg).then();
                 return;
+            }
+        }
+    }
+
+    /**
+     * A function that lets the user choose to configure the various logging channels.
+     * @param {ICommandContext} ctx The command context.
+     * @param {ISectionInfo} section The section to edit.
+     * @param {Message} botMsg The bot message.
+     * @private
+     */
+    private async doLoggingChannels(ctx: ICommandContext, section: ISectionInfo, botMsg: Message): Promise<void> {
+        const logIds = section.isMainSection
+            ? ConfigureChannels.MAIN_LOGGING_IDS
+            : ConfigureChannels.SECTION_LOGGING_IDS;
+
+        let selectedIdx = 0;
+        while (true) {
+            const embedToDisplay = new MessageEmbed()
+                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                .setTitle(`[${section.sectionName}] **Logging** Configuration`)
+                .setDescription(DATABASE_CONFIG_DESCRIPTION)
+                .setFooter("Either mention the channel or provide a valid channel ID.");
+            for (let i = 0; i < logIds.length; i++) {
+                const channelId = (
+                    section.isMainSection
+                        ? ctx.guildDoc!.channels.loggingChannels
+                        : section.channels.loggingChannels
+                ).find(x => x.key === logIds[i]);
+                const currSet: TextChannel | null = channelId && channelId.value
+                    ? GuildFgrUtilities.getCachedChannel<TextChannel>(
+                        ctx.guild!,
+                        channelId.value
+                    )
+                    : null;
+                embedToDisplay.addField(
+                    i === selectedIdx ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${logIds[i]}` : logIds[i],
+                    `Current Value: ${currSet ?? "N/A"}`
+                );
+            }
+
+            await botMsg.edit({
+                embeds: [embedToDisplay],
+                components: DATABASE_CONFIG_BUTTONS
+            });
+
+            const result = await AdvancedCollector.startDoubleCollector<number | TextChannel>({
+                targetChannel: botMsg.channel as TextChannel,
+                targetAuthor: ctx.user,
+                duration: 30 * 1000,
+                deleteBaseMsgAfterComplete: false,
+                acknowledgeImmediately: true,
+                deleteResponseMessage: true,
+                oldMsg: botMsg,
+                clearInteractionsAfterComplete: false,
+                cancelFlag: "-cancel"
+            }, ConfigureChannels.msgOrNumberCollectorFunc);
+
+            // Case 0: Nothing
+            if (!result) {
+                this.dispose(ctx, botMsg).then();
+                return;
+            }
+
+            // Case 1: Number
+            if (typeof result === "number") {
+                selectedIdx += result;
+                selectedIdx %= logIds.length;
+                continue;
+            }
+
+            // Case 2: Channel
+            const query: FilterQuery<IGuildInfo> = section.isMainSection
+                ? {guildId: ctx.guild!.id}
+                : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
+            const newArr = section.isMainSection
+                ? ctx.guildDoc!.channels.loggingChannels
+                : section.channels.loggingChannels;
+
+            if (result instanceof TextChannel) {
+                const arrIdx = newArr.findIndex(x => x.key === logIds[selectedIdx]);
+                if (arrIdx === -1) {
+                    newArr.push({
+                        key: logIds[selectedIdx],
+                        value: result.id
+                    });
+                }
+                else {
+                    newArr[arrIdx].value = result.id;
+                }
+
+                ctx.guildDoc = (await MongoManager.getGuildCollection().findOneAndUpdate(query, {
+                    $set: {
+                        "channels.loggingChannels": newArr
+                    }
+                }, {returnDocument: "after"})).value!;
+                section = MongoManager.getAllSections(ctx.guildDoc!)
+                    .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
+                continue;
+            }
+
+            // Case 3: Button
+            switch (result.customId) {
+                case "back": {
+                    this.doBaseChannels(ctx, section, botMsg).then();
+                    return;
+                }
+                case "up": {
+                    selectedIdx--;
+                    selectedIdx %= logIds.length;
+                    break;
+                }
+                case "down": {
+                    selectedIdx++;
+                    selectedIdx %= logIds.length;
+                    break;
+                }
+                case "reset": {
+                    const arrIdx = newArr.findIndex(x => x.key === logIds[selectedIdx]);
+                    if (arrIdx === -1) {
+                        // Nothing to save
+                        break;
+                    }
+                    else {
+                        newArr.splice(arrIdx, 1);
+                    }
+
+                    ctx.guildDoc = (await MongoManager.updateAndFetchGuildDoc(query, {
+                        $set: {
+                            "channels.loggingChannels": newArr
+                        }
+                    }))!;
+                    section = MongoManager.getAllSections(ctx.guildDoc!)
+                        .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
+                    break;
+                }
+                case "quit": {
+                    this.dispose(ctx, botMsg).then();
+                    return;
+                }
             }
         }
     }
@@ -431,7 +623,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
         });
 
         if (!selectedButton) {
-            this.dispose(ctx).then();
+            this.dispose(ctx, botMsg).then();
             return;
         }
 
@@ -445,7 +637,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                     ctx,
                     section,
                     botMsg,
-                    ConfigureChannelsCommand.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Raiding),
+                    ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Raiding),
                     "Raids"
                 ).then();
                 break;
@@ -455,7 +647,7 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                     ctx,
                     section,
                     botMsg,
-                    ConfigureChannelsCommand.CHANNEL_MONGO
+                    ConfigureChannels.CHANNEL_MONGO
                         .filter(x => x.channelType === ChannelCategoryType.Verification),
                     "Verification"
                 ).then();
@@ -467,21 +659,21 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                     ctx,
                     section,
                     botMsg,
-                    ConfigureChannelsCommand.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Modmail),
+                    ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Modmail),
                     "Modmail"
                 ).then();
                 break;
             }
             case "exit": {
-                this.dispose(ctx).then();
+                this.dispose(ctx, botMsg).then();
                 return;
             }
         }
     }
 
     /** @inheritDoc */
-    public async dispose(ctx: ICommandContext, ...args: any[]): Promise<void> {
-        // nothing needs to be done here.
+    public async dispose(ctx: ICommandContext, botMsg: Message, ...args: any[]): Promise<void> {
+        await botMsg.delete().catch();
     }
 
 
@@ -531,22 +723,11 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 oldMsg: botMsg,
                 clearInteractionsAfterComplete: false,
                 cancelFlag: "-cancel"
-            }, msg => {
-                // Parse for channel first.
-                const channel = ParseUtilities.parseChannel<TextChannel>(msg);
-                if (channel) return channel;
-                // Parse for number.
-                const contentArr = msg.content.split(" ");
-                if (contentArr.length <= 1) return;
-                if (contentArr[0].toLowerCase() !== "j") return;
-                const num = Number.parseInt(contentArr[1], 10);
-                if (Number.isNaN(num) || num === 0) return;
-                return num;
-            });
+            }, ConfigureChannels.msgOrNumberCollectorFunc);
 
             // Case 0: Nothing
             if (!result) {
-                this.dispose(ctx).then();
+                this.dispose(ctx, botMsg).then();
                 return;
             }
 
@@ -603,11 +784,30 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                     break;
                 }
                 case "quit": {
-                    this.dispose(ctx).then();
+                    this.dispose(ctx, botMsg).then();
                     return;
                 }
             }
         }
+    }
+
+    /**
+     * A function that can be used for the collector.
+     * @param {Message} msg The message.
+     * @returns {number | TextChannel | undefined} Either an index difference, channel to use, or nothing.
+     * @private
+     */
+    private static msgOrNumberCollectorFunc(msg: Message): number | TextChannel | undefined {
+        // Parse for channel first.
+        const channel = ParseUtilities.parseChannel<TextChannel>(msg);
+        if (channel) return channel;
+        // Parse for number.
+        const contentArr = msg.content.split(" ");
+        if (contentArr.length <= 1) return;
+        if (contentArr[0].toLowerCase() !== "j") return;
+        const num = Number.parseInt(contentArr[1], 10);
+        if (Number.isNaN(num) || num === 0) return;
+        return num;
     }
 
     /** @inheritDoc */
@@ -621,9 +821,9 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             const rateLeaderChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.leaderFeedbackChannelId);
 
             currentConfiguration.append("__**Raid Channels**__").appendLine()
-                .append(`⇒ AFK Check Channel: ${afkCheckChannel ?? ConfigureChannelsCommand.NA}`).appendLine()
-                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigureChannelsCommand.NA}`).appendLine()
-                .append(`⇒ Rate Leader Channel: ${rateLeaderChannel ?? ConfigureChannelsCommand.NA}`).appendLine()
+                .append(`⇒ AFK Check Channel: ${afkCheckChannel ?? ConfigureChannels.NA}`).appendLine()
+                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigureChannels.NA}`).appendLine()
+                .append(`⇒ Rate Leader Channel: ${rateLeaderChannel ?? ConfigureChannels.NA}`).appendLine()
                 .appendLine();
         }
 
@@ -633,8 +833,8 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
             const manVerifChannel = getCachedChannel<TextChannel>(guild, verifChannelObj.manualVerificationChannelId);
 
             currentConfiguration.append("__**Verification Channels**__").appendLine()
-                .append(`⇒ Verification Channel: ${verifChannel ?? ConfigureChannelsCommand.NA}`).appendLine()
-                .append(`⇒ Manual Verification Channel: ${manVerifChannel ?? ConfigureChannelsCommand.NA}`).appendLine()
+                .append(`⇒ Verification Channel: ${verifChannel ?? ConfigureChannels.NA}`).appendLine()
+                .append(`⇒ Manual Verification Channel: ${manVerifChannel ?? ConfigureChannels.NA}`).appendLine()
                 .appendLine();
         }
 
@@ -644,14 +844,14 @@ export class ConfigureChannelsCommand extends BaseCommand implements IConfigComm
                 const mmChannel = getCachedChannel<TextChannel>(guild, guildDoc.channels.modmailChannelId);
 
                 currentConfiguration.append("__**Modmail Channels**__").appendLine()
-                    .append(`⇒ Modmail Channel: ${mmChannel ?? ConfigureChannelsCommand.NA}`).appendLine()
+                    .append(`⇒ Modmail Channel: ${mmChannel ?? ConfigureChannels.NA}`).appendLine()
                     .appendLine();
             }
 
             if (displayFilter & DisplayFilter.Other) {
                 const botUpdatesChan = getCachedChannel<TextChannel>(guild, guildDoc.channels.botUpdatesChannelId);
                 currentConfiguration.append("__**Other Channels**__").appendLine()
-                    .append(`⇒ Bot Updates Channel: ${botUpdatesChan ?? ConfigureChannelsCommand.NA}`).appendLine();
+                    .append(`⇒ Bot Updates Channel: ${botUpdatesChan ?? ConfigureChannels.NA}`).appendLine();
             }
         }
 
