@@ -1,7 +1,7 @@
 import {
     ConfigType,
     DATABASE_CONFIG_BUTTONS,
-    DATABASE_CONFIG_DESCRIPTION,
+    DATABASE_CONFIG_DESCRIPTION, entryFunction,
     getInstructions,
     IBaseDatabaseEntryInfo,
     IConfigCommand
@@ -16,7 +16,6 @@ import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {FilterQuery} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {IGuildInfo, ISectionInfo} from "../../definitions";
-import {InteractivityHelper} from "../../utilities/InteractivityHelper";
 import {Emojis} from "../../constants/Emojis";
 import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 import {MainLogType, SectionLogType} from "../../definitions/Types";
@@ -25,7 +24,6 @@ enum ChannelCategoryType {
     Raiding,
     Verification,
     Modmail,
-    Quota,
     Logging,
     Other
 }
@@ -85,7 +83,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             sectionPath: "guildSections.$.channels.verification.verificationChannelId",
             channelType: ChannelCategoryType.Verification,
             configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+            getCurrentValue: (guildDoc, section) => {
                 return section.isMainSection
                     ? guildDoc.channels.verification.verificationChannelId
                     : section.channels.verification.verificationChannelId;
@@ -99,7 +97,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             sectionPath: "guildSections.$.channels.verification.manualVerificationChannelId",
             channelType: ChannelCategoryType.Verification,
             configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+            getCurrentValue: (guildDoc, section) => {
                 return section.isMainSection
                     ? guildDoc.channels.verification.manualVerificationChannelId
                     : section.channels.verification.manualVerificationChannelId;
@@ -113,7 +111,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             sectionPath: "guildSections.$.channels.raids.afkCheckChannelId",
             channelType: ChannelCategoryType.Raiding,
             configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+            getCurrentValue: (guildDoc, section) => {
                 return section.isMainSection
                     ? guildDoc.channels.raids.afkCheckChannelId
                     : section.channels.raids.afkCheckChannelId;
@@ -128,7 +126,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             sectionPath: "guildSections.$.channels.raids.controlPanelChannelId",
             channelType: ChannelCategoryType.Raiding,
             configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+            getCurrentValue: (guildDoc, section) => {
                 return section.isMainSection
                     ? guildDoc.channels.raids.controlPanelChannelId
                     : section.channels.raids.controlPanelChannelId;
@@ -144,7 +142,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             sectionPath: "guildSections.$.channels.raids.leaderFeedbackChannelId",
             channelType: ChannelCategoryType.Raiding,
             configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+            getCurrentValue: (guildDoc, section) => {
                 return section.isMainSection
                     ? guildDoc.channels.raids.leaderFeedbackChannelId
                     : section.channels.raids.leaderFeedbackChannelId;
@@ -159,7 +157,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             sectionPath: "",
             channelType: ChannelCategoryType.Modmail,
             configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+            getCurrentValue: (guildDoc, section) => {
                 if (!section.isMainSection) throw new Error("modmail is a main-only feature.");
                 return guildDoc.channels.modmailChannelId;
             }
@@ -172,7 +170,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             sectionPath: "",
             channelType: ChannelCategoryType.Other,
             configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+            getCurrentValue: (guildDoc, section) => {
                 if (!section.isMainSection) throw new Error("bot updates is a main-only feature.");
                 return guildDoc.channels.botUpdatesChannelId;
             }
@@ -185,7 +183,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             sectionPath: "",
             channelType: ChannelCategoryType.Logging,
             configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+            getCurrentValue: (guildDoc, section) => {
                 if (!section.isMainSection) throw new Error("bot updates is a main-only feature.");
                 return guildDoc.channels.loggingChannels;
             }
@@ -198,7 +196,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             sectionPath: "",
             channelType: ChannelCategoryType.Other,
             configTypeOrInstructions: ConfigType.Channel,
-            getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => {
+            getCurrentValue: (guildDoc, section) => {
                 if (!section.isMainSection) throw new Error("storage channel is main-only.");
                 return guildDoc.channels.storageChannelId;
             }
@@ -235,39 +233,13 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async entry(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        const member = GuildFgrUtilities.getCachedMember(ctx.guild!, ctx.user.id);
-        if (!member) return;
-
-        let selectedSection: ISectionInfo;
-        let newBotMsg: Message;
-        if (botMsg) {
-            const queryResult = await InteractivityHelper.getSectionWithInitMsg(
-                ctx.guildDoc!,
-                member,
-                botMsg
-            );
-
-            if (!queryResult) {
-                this.dispose(ctx, botMsg).then();
-                return;
-            }
-
-            newBotMsg = botMsg;
-            selectedSection = queryResult;
-        }
-        else {
-            const queryResult = await InteractivityHelper.getSectionQuery(
-                ctx.guildDoc!,
-                ctx.member!,
-                ctx.channel as TextChannel,
-                "Please select the appropriate section that you want to change channel settings for.",
-                true
-            );
-            if (!queryResult || !queryResult[1]) return;
-            [selectedSection, newBotMsg] = queryResult;
+        const entryRes = await entryFunction(ctx, botMsg);
+        if (!entryRes) {
+            this.dispose(ctx, botMsg).catch();
+            return;
         }
 
-        this.mainMenu(ctx, selectedSection, newBotMsg).then();
+        this.mainMenu(ctx, entryRes[0], entryRes[1]).then();
     }
 
     /** @inheritDoc */
@@ -275,11 +247,29 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         const guild = ctx.guild!;
         // Both main section + individual section will have their own AFK check + verification channel config.
         const currentConfiguration = this.getCurrentConfiguration(
-            ctx.guild!,
+            guild,
             ctx.guildDoc!,
             section,
             DisplayFilter.Verification | DisplayFilter.Raids | DisplayFilter.Other | DisplayFilter.Modmail
         );
+
+        const buttons: MessageButton[] = [
+            new MessageButton()
+                .setLabel("Go Back")
+                .setStyle("PRIMARY")
+                .setCustomId("go_back")
+                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
+            new MessageButton()
+                .setLabel("Edit Base Channels")
+                .setStyle("PRIMARY")
+                .setCustomId("base")
+                .setEmoji(Emojis.HASH_EMOJI),
+            new MessageButton()
+                .setLabel("Edit Logging Channels")
+                .setStyle("PRIMARY")
+                .setCustomId("logging")
+                .setEmoji(Emojis.CLIPBOARD_EMOJI)
+        ];
 
         const displayEmbed = new MessageEmbed()
             .setAuthor(guild.name, guild.iconURL() ?? undefined)
@@ -290,51 +280,42 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 "Go Back",
                 "Click on the `Go Back` button to go back to the section selection embed. You can choose a new"
                 + " section to modify."
-            )
-            .addField(
+            ).addField(
                 "Edit Base Channels",
                 "Click on the `Edit Base Channels` button to configure modmail, raid, and verification channels."
-            )
-            .addField(
+            ).addField(
+                "Edit Logging Channels",
+                "Click on the `Edit Logging Channels` button to configure logging channels."
+            );
+
+        if (section.isMainSection) {
+            displayEmbed.addField(
                 "Edit Other Channels",
                 "Click on the `Edit Other Channels` button to edit other channels that may not otherwise belong to"
                 + " the above categories."
-            )
-            .addField(
-                "Exit",
-                "Click on the `Exit` button to exit this process."
             );
+            buttons.push(new MessageButton()
+                .setLabel("Edit Other Channels")
+                .setStyle("PRIMARY")
+                .setCustomId("other")
+                .setEmoji(Emojis.HASH_EMOJI));
+        }
+
+        displayEmbed.addField(
+            "Exit",
+            "Click on the `Exit` button to exit this process."
+        );
+
+        buttons.push(new MessageButton()
+            .setLabel("Exit")
+            .setStyle("DANGER")
+            .setCustomId("exit")
+            .setEmoji(Emojis.X_EMOJI));
 
         // Edit the bot message and then wait for button press.
         await botMsg.edit({
             embeds: [displayEmbed],
-            components: AdvancedCollector.getActionRowsFromComponents([
-                new MessageButton()
-                    .setLabel("Go Back")
-                    .setStyle("PRIMARY")
-                    .setCustomId("go_back")
-                    .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
-                new MessageButton()
-                    .setLabel("Edit Base Channels")
-                    .setStyle("PRIMARY")
-                    .setCustomId("base")
-                    .setEmoji(Emojis.HASH_EMOJI),
-                new MessageButton()
-                    .setLabel("Edit Logging Channels")
-                    .setStyle("PRIMARY")
-                    .setCustomId("logging")
-                    .setEmoji(Emojis.CLIPBOARD_EMOJI),
-                new MessageButton()
-                    .setLabel("Edit Other Channels")
-                    .setStyle("PRIMARY")
-                    .setCustomId("other")
-                    .setEmoji(Emojis.HASH_EMOJI),
-                new MessageButton()
-                    .setLabel("Exit")
-                    .setStyle("DANGER")
-                    .setCustomId("exit")
-                    .setEmoji(Emojis.X_EMOJI)
-            ])
+            components: AdvancedCollector.getActionRowsFromComponents(buttons)
         });
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
@@ -344,7 +325,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: true,
             deleteBaseMsgAfterComplete: false,
-            duration: 60 * 1000
+            duration: 30 * 1000
         });
 
         if (!selectedButton) {
@@ -395,12 +376,12 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             : ConfigureChannels.SECTION_LOGGING_IDS;
 
         let selectedIdx = 0;
+        const embedToDisplay = new MessageEmbed()
+            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setTitle(`[${section.sectionName}] **Logging** Configuration`)
+            .setDescription(DATABASE_CONFIG_DESCRIPTION);
         while (true) {
-            const embedToDisplay = new MessageEmbed()
-                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
-                .setTitle(`[${section.sectionName}] **Logging** Configuration`)
-                .setDescription(DATABASE_CONFIG_DESCRIPTION)
-                .setFooter("Either mention the channel or provide a valid channel ID.");
+            embedToDisplay.setFooter("Either mention the channel or provide a valid channel ID.");
             for (let i = 0; i < logIds.length; i++) {
                 const channelId = (
                     section.isMainSection
@@ -672,10 +653,9 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
     }
 
     /** @inheritDoc */
-    public async dispose(ctx: ICommandContext, botMsg: Message, ...args: any[]): Promise<void> {
-        await botMsg.delete().catch();
+    public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
+        await botMsg?.delete().catch();
     }
-
 
     /**
      * Edits the database entries. This is the function that is responsible for editing the database.
@@ -691,12 +671,13 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         const guild = ctx.guild!;
 
         let selected = 0;
+        const embedToDisplay = new MessageEmbed()
+            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setTitle(`[${section.sectionName}] **Channel** Configuration ⇒ Base Channels ⇒ ${group}`)
+            .setDescription(DATABASE_CONFIG_DESCRIPTION);
+
         while (true) {
-            const embedToDisplay = new MessageEmbed()
-                .setAuthor(guild.name, guild.iconURL() ?? undefined)
-                .setTitle(`[${section.sectionName}] **Channel** Configuration ⇒ Base Channels ⇒ ${group}`)
-                .setDescription(DATABASE_CONFIG_DESCRIPTION)
-                .setFooter(getInstructions(entries[selected].configTypeOrInstructions));
+            embedToDisplay.setFooter(getInstructions(entries[selected].configTypeOrInstructions));
             for (let i = 0; i < entries.length; i++) {
                 const currSet: TextChannel | null = GuildFgrUtilities.getCachedChannel<TextChannel>(
                     guild,
@@ -704,7 +685,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 );
                 embedToDisplay.addField(
                     i === selected ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${entries[i].name}` : entries[i].name,
-                    `Current Value: ${currSet ?? "N/A"}`
+                    `Current Value: ${currSet ?? ConfigureChannels.NA}`
                 );
             }
 
@@ -726,6 +707,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             }, ConfigureChannels.msgOrNumberCollectorFunc);
 
             // Case 0: Nothing
+            // noinspection DuplicatedCode
             if (!result) {
                 this.dispose(ctx, botMsg).then();
                 return;
@@ -747,11 +729,11 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 : entries[selected].sectionPath;
 
             if (result instanceof TextChannel) {
-                ctx.guildDoc = (await MongoManager.getGuildCollection().findOneAndUpdate(query, {
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(query, {
                     $set: {
                         [keySetter]: result.id
                     }
-                }, {returnDocument: "after"})).value!;
+                });
                 section = MongoManager.getAllSections(ctx.guildDoc!)
                     .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                 continue;
@@ -800,6 +782,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
     private static msgOrNumberCollectorFunc(msg: Message): number | TextChannel | undefined {
         // Parse for channel first.
         const channel = ParseUtilities.parseChannel<TextChannel>(msg);
+        // noinspection DuplicatedCode
         if (channel) return channel;
         // Parse for number.
         const contentArr = msg.content.split(" ");

@@ -1,10 +1,12 @@
-import {Guild, Message, MessageActionRow, MessageButton} from "discord.js";
+import {Guild, Message, MessageActionRow, MessageButton, TextChannel} from "discord.js";
 import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
 import {Emojis} from "../../../constants/Emojis";
 import {MessageButtonStyles} from "discord.js/typings/enums";
 import {StringBuilder} from "../../../utilities/StringBuilder";
 import {IGuildInfo, ISectionInfo} from "../../../definitions";
 import {ICommandContext} from "../../BaseCommand";
+import {GuildFgrUtilities} from "../../../utilities/fetch-get-request/GuildFgrUtilities";
+import {InteractivityHelper} from "../../../utilities/InteractivityHelper";
 
 export const DATABASE_CONFIG_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
     new MessageButton()
@@ -122,6 +124,11 @@ export enum ConfigType {
     Role
 }
 
+/**
+ * Gets the instructions for this configuration type.
+ * @param {ConfigType | string} type The configuration type.
+ * @returns {string} The instructions.
+ */
 export function getInstructions(type: ConfigType | string): string {
     if (typeof type === "string") return type;
     switch (type) {
@@ -135,4 +142,48 @@ export function getInstructions(type: ConfigType | string): string {
             return "Instructions are not available.";
         }
     }
+}
+
+/**
+ * A function that can be used for the `entry` method.
+ * @param {ICommandContext} ctx The command context.
+ * @param {Message | null} botMsg The original bot message.
+ * @returns {Promise<[ISectionInfo, Message] | null>} A tuple containing the section and message. If this isn't
+ * possible, `null` is returned.
+ */
+export async function entryFunction(ctx: ICommandContext,
+                                    botMsg: Message | null): Promise<[ISectionInfo, Message] | null> {
+    const member = GuildFgrUtilities.getCachedMember(ctx.guild!, ctx.user.id);
+    if (!member) return null;
+
+    let selectedSection: ISectionInfo;
+    let newBotMsg: Message;
+    if (botMsg) {
+        const queryResult = await InteractivityHelper.getSectionWithInitMsg(
+            ctx.guildDoc!,
+            member,
+            botMsg
+        );
+
+        if (!queryResult) {
+            return null;
+        }
+
+        newBotMsg = botMsg;
+        selectedSection = queryResult;
+    }
+    else {
+        const queryResult = await InteractivityHelper.getSectionQuery(
+            ctx.guildDoc!,
+            ctx.member!,
+            ctx.channel as TextChannel,
+            "Please select the appropriate section that you want to change channel settings for.",
+            true
+        );
+        if (!queryResult || !queryResult[1])
+            return null;
+        [selectedSection, newBotMsg] = queryResult;
+    }
+
+    return [selectedSection, newBotMsg];
 }

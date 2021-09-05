@@ -12,6 +12,13 @@ export namespace Emojis {
         "🔟",
     ];
 
+    export const FIRST_PLACE_EMOJI: string = "🥇";
+    export const SECOND_PLACE_EMOJI: string = "🥈";
+    export const THIRD_PLACE_EMOJI: string = "🥉";
+
+    export const CROSSED_SWORDS_EMOJI: string = "⚔️";
+    export const MULTIPLE_FLAGS_EMOJI: string = "🎏";
+
     export const TICKET_EMOJI: string = "🎟️";
     export const HASH_EMOJI: string = "#️⃣";
     export const X_EMOJI: string = "❌";
