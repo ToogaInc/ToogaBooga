@@ -22,7 +22,7 @@ import {StringUtil} from "../utilities/StringUtilities";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
-import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
+import {ChannelTypes} from "discord.js/typings/enums";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {IModmailThread, IModmailThreadMessage, IGuildInfo} from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
@@ -41,29 +41,29 @@ export namespace ModmailManager {
         .addComponents(new MessageButton()
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
-            .setStyle(MessageButtonStyles.PRIMARY)
+            .setStyle("PRIMARY")
             .setCustomId(MODMAIL_REPLY_ID));
 
     const ModmailGeneralActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
-            .setStyle(MessageButtonStyles.PRIMARY)
+            .setStyle("PRIMARY")
             .setCustomId(MODMAIL_REPLY_ID),
         new MessageButton()
             .setLabel("Delete")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
-            .setStyle(MessageButtonStyles.DANGER)
+            .setStyle("DANGER")
             .setCustomId(MODMAIL_DELETE_ID),
         new MessageButton()
             .setLabel("Blacklist")
             .setEmoji(Emojis.DENIED_EMOJI)
-            .setStyle(MessageButtonStyles.DANGER)
+            .setStyle("DANGER")
             .setCustomId(MODMAIL_BLACKLIST_ID),
         new MessageButton()
             .setLabel("Convert to Thread")
             .setEmoji(Emojis.REDIRECT_EMOJI)
-            .setStyle(MessageButtonStyles.PRIMARY)
+            .setStyle("PRIMARY")
             .setCustomId(MODMAIL_CREATE_ID)
     ]);
 
@@ -71,17 +71,17 @@ export namespace ModmailManager {
         new MessageButton()
             .setLabel("Reply")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
-            .setStyle(MessageButtonStyles.PRIMARY)
+            .setStyle("PRIMARY")
             .setCustomId(MODMAIL_REPLY_ID),
         new MessageButton()
             .setLabel("End Thread")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
-            .setStyle(MessageButtonStyles.DANGER)
+            .setStyle("DANGER")
             .setCustomId(MODMAIL_DELETE_ID),
         new MessageButton()
             .setLabel("Blacklist")
             .setEmoji(Emojis.DENIED_EMOJI)
-            .setStyle(MessageButtonStyles.DANGER)
+            .setStyle("DANGER")
             .setCustomId(MODMAIL_BLACKLIST_ID)
     ]);
 
@@ -89,17 +89,17 @@ export namespace ModmailManager {
         new MessageButton()
             .setLabel("Send")
             .setEmoji(Emojis.CLIPBOARD_EMOJI)
-            .setStyle(MessageButtonStyles.PRIMARY)
+            .setStyle("PRIMARY")
             .setCustomId("send"),
         new MessageButton()
             .setLabel("Cancel")
             .setEmoji(Emojis.X_EMOJI)
-            .setStyle(MessageButtonStyles.DANGER)
+            .setStyle("DANGER")
             .setCustomId("cancel"),
         new MessageButton()
             .setLabel("Set Anonymity")
             .setEmoji(Emojis.EYES_EMOJI)
-            .setStyle(MessageButtonStyles.PRIMARY)
+            .setStyle("PRIMARY")
             .setCustomId("anon")
     ]);
 
@@ -1193,7 +1193,7 @@ export namespace ModmailManager {
                 embeds: [askForGuildEmbed],
                 components: AdvancedCollector.getActionRowsFromComponents([
                     new MessageButton()
-                        .setStyle(MessageButtonStyles.DANGER)
+                        .setStyle("DANGER")
                         .setLabel("Cancel")
                         .setCustomId("cancel")
                 ])

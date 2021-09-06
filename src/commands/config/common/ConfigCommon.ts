@@ -1,40 +1,41 @@
-import {Guild, Message, MessageActionRow, MessageButton, TextChannel} from "discord.js";
+import {Guild, Message, MessageActionRow, MessageButton, MessageOptions, TextChannel} from "discord.js";
 import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
 import {Emojis} from "../../../constants/Emojis";
-import {MessageButtonStyles} from "discord.js/typings/enums";
 import {StringBuilder} from "../../../utilities/StringBuilder";
 import {IGuildInfo, ISectionInfo} from "../../../definitions";
 import {ICommandContext} from "../../BaseCommand";
 import {GuildFgrUtilities} from "../../../utilities/fetch-get-request/GuildFgrUtilities";
 import {InteractivityHelper} from "../../../utilities/InteractivityHelper";
 
-export const DATABASE_CONFIG_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
+export const DB_CONFIG_BUTTONS: MessageButton[] = [
     new MessageButton()
         .setLabel("Back")
         .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
         .setCustomId("back")
-        .setStyle(MessageButtonStyles.PRIMARY),
+        .setStyle("PRIMARY"),
     new MessageButton()
         .setLabel("Up")
         .setEmoji(Emojis.UP_TRIANGLE_EMOJI)
         .setCustomId("up")
-        .setStyle(MessageButtonStyles.PRIMARY),
+        .setStyle("PRIMARY"),
     new MessageButton()
         .setLabel("Down")
         .setEmoji(Emojis.DOWN_TRIANGLE_EMOJI)
         .setCustomId("down")
-        .setStyle(MessageButtonStyles.PRIMARY),
+        .setStyle("PRIMARY"),
     new MessageButton()
         .setLabel("Reset")
         .setEmoji(Emojis.WASTEBIN_EMOJI)
         .setCustomId("down")
-        .setStyle(MessageButtonStyles.PRIMARY),
+        .setStyle("PRIMARY"),
     new MessageButton()
         .setLabel("Quit")
         .setEmoji(Emojis.X_EMOJI)
         .setCustomId("quit")
-        .setStyle(MessageButtonStyles.PRIMARY)
-]);
+        .setStyle("PRIMARY")
+];
+
+export const DB_CONFIG_ACTION_ROW: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents(DB_CONFIG_BUTTONS);
 
 export const DATABASE_CONFIG_DESCRIPTION: string = new StringBuilder()
     .append("Here, you will be able to edit the following options. Keep the following in mind when you do so.")
@@ -148,11 +149,13 @@ export function getInstructions(type: ConfigType | string): string {
  * A function that can be used for the `entry` method.
  * @param {ICommandContext} ctx The command context.
  * @param {Message | null} botMsg The original bot message.
+ * @param {MessageOptions} [mOpt] The message options, if any. This should be specified, if you have the original
+ * `botMsg`.
  * @returns {Promise<[ISectionInfo, Message] | null>} A tuple containing the section and message. If this isn't
  * possible, `null` is returned.
  */
-export async function entryFunction(ctx: ICommandContext,
-                                    botMsg: Message | null): Promise<[ISectionInfo, Message] | null> {
+export async function entryFunction(ctx: ICommandContext, botMsg: Message | null,
+                                    mOpt?: MessageOptions): Promise<[ISectionInfo, Message] | null> {
     const member = GuildFgrUtilities.getCachedMember(ctx.guild!, ctx.user.id);
     if (!member) return null;
 
@@ -162,7 +165,8 @@ export async function entryFunction(ctx: ICommandContext,
         const queryResult = await InteractivityHelper.getSectionWithInitMsg(
             ctx.guildDoc!,
             member,
-            botMsg
+            botMsg,
+            mOpt
         );
 
         if (!queryResult) {
@@ -177,7 +181,7 @@ export async function entryFunction(ctx: ICommandContext,
             ctx.guildDoc!,
             ctx.member!,
             ctx.channel as TextChannel,
-            "Please select the appropriate section that you want to change channel settings for.",
+            "Please select the appropriate section.",
             true
         );
         if (!queryResult || !queryResult[1])

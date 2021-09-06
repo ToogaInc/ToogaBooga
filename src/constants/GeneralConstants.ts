@@ -223,7 +223,7 @@ export namespace GeneralConstants {
             .setLabel("Yes"),
         new MessageButton()
             .setCustomId("no")
-            .setStyle(MessageButtonStyles.DANGER)
+            .setStyle("DANGER")
             .setEmoji(Emojis.X_EMOJI)
             .setLabel("No")
     ]);

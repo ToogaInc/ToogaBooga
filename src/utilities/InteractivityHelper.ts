@@ -1,4 +1,3 @@
-
 import {
     GuildMember, Message,
     MessageButton,
@@ -12,7 +11,6 @@ import {StringBuilder} from "./StringBuilder";
 import {MongoManager} from "../managers/MongoManager";
 import {AdvancedCollector} from "./collectors/AdvancedCollector";
 import {Emojis} from "../constants/Emojis";
-import {MessageButtonStyles} from "discord.js/typings/enums";
 import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
 import {IGuildInfo, ISectionInfo} from "../definitions";
 
@@ -62,7 +60,7 @@ export namespace InteractivityHelper {
                     .setLabel("Cancel")
                     .setEmoji(Emojis.X_EMOJI)
                     .setCustomId("cancel_button")
-                    .setStyle(MessageButtonStyles.DANGER)
+                    .setStyle("DANGER")
             ])
         };
 
@@ -86,20 +84,27 @@ export namespace InteractivityHelper {
     }
 
     /**
-     * Asks a user for the section that he/she wants to perform an action on. This will use a previously sent message.
+     * Asks a user for the section that he/she wants to perform an action on. If no `msgOptions` is specified, then
+     * this will keep the original message content.
      * @param {IGuildInfo} guildDb The guild document.
      * @param {GuildMember} member The member asking.
      * @param {Message} message The message to use. This will edit the message, but not delete it.
+     * @param {MessageOptions} [msgOptions] The message options. If specified, the bot will edit the given message
+     * with whatever is contained here. Do not include any components.
      * @return {Promise<ISectionInfo | null>} The section, if any. Null otherwise.
      */
-    export async function getSectionWithInitMsg(guildDb: IGuildInfo, member: GuildMember,
-                                                message: Message): Promise<ISectionInfo | null> {
+    export async function getSectionWithInitMsg(
+        guildDb: IGuildInfo,
+        member: GuildMember,
+        message: Message,
+        msgOptions?: Omit<MessageOptions, "components">
+    ): Promise<ISectionInfo | null> {
         const allSections = MongoManager.getAllSections(guildDb);
         const selectOptions: MessageSelectOptionData[] = allSections
             .map(x => {
                 const role = GuildFgrUtilities.getCachedRole(member.guild, x.roles.verifiedRoleId);
                 return {
-                    default: x.uniqueIdentifier === "MAIN",
+                    default: x.isMainSection,
                     label: x.sectionName,
                     description: role?.name ?? "No Member Role.",
                     value: x.uniqueIdentifier
@@ -108,20 +113,28 @@ export namespace InteractivityHelper {
 
         const needToAddComponents = message.components.length === 0;
         if (needToAddComponents) {
-            const options = MessageUtilities.getMessageOptionsFromMessage(message,
-                AdvancedCollector.getActionRowsFromComponents([
-                    new MessageSelectMenu()
-                        .addOptions(...selectOptions)
-                        .setCustomId("section_selector")
-                        .setMinValues(1)
-                        .setMaxValues(1),
-                    new MessageButton()
-                        .setLabel("Cancel")
-                        .setEmoji(Emojis.X_EMOJI)
-                        .setCustomId("cancel_button")
-                        .setStyle(MessageButtonStyles.DANGER)
-                ]));
-            await message.edit(options).catch();
+            const components = AdvancedCollector.getActionRowsFromComponents([
+                new MessageSelectMenu()
+                    .addOptions(...selectOptions)
+                    .setCustomId("section_selector")
+                    .setMinValues(1)
+                    .setMaxValues(1),
+                new MessageButton()
+                    .setLabel("Cancel")
+                    .setEmoji(Emojis.X_EMOJI)
+                    .setCustomId("cancel_button")
+                    .setStyle("DANGER")
+            ]);
+            let o: MessageOptions;
+            if (msgOptions) {
+                o = msgOptions;
+                o.components = components;
+            }
+            else {
+                o = MessageUtilities.getMessageOptionsFromMessage(message, components);
+            }
+
+            await message.edit(o).catch();
         }
 
         const result = await AdvancedCollector.startInteractionCollector({

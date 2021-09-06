@@ -12,6 +12,8 @@ export namespace Emojis {
         "🔟",
     ];
 
+    export const PLUS_EMOJI: string = "➕";
+
     export const FIRST_PLACE_EMOJI: string = "🥇";
     export const SECOND_PLACE_EMOJI: string = "🥈";
     export const THIRD_PLACE_EMOJI: string = "🥉";

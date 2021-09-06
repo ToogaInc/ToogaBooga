@@ -112,7 +112,8 @@ export class OneLifeBot {
 
         OneLifeBot.Commands.set("Configuration", [
             new Cmds.ConfigureChannels(),
-            new Cmds.ConfigureRoles()
+            new Cmds.ConfigureRoles(),
+            new Cmds.ConfigureSections()
         ]);
 
         OneLifeBot.Commands.set("Bot Owner", [

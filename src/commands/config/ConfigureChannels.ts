@@ -1,6 +1,6 @@
 import {
     ConfigType,
-    DATABASE_CONFIG_BUTTONS,
+    DB_CONFIG_ACTION_ROW,
     DATABASE_CONFIG_DESCRIPTION, entryFunction,
     getInstructions,
     IBaseDatabaseEntryInfo,
@@ -11,7 +11,6 @@ import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {BaseCommand, ICommandContext} from "../BaseCommand";
-import {MessageButtonStyles} from "discord.js/typings/enums";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {FilterQuery} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
@@ -73,6 +72,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
     ];
 
     private static readonly NA: string = "N/A";
+
     private static readonly CHANNEL_MONGO: IChannelMongo[] = [
         {
             name: "Get Verified Channel",
@@ -323,7 +323,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             targetAuthor: botMsg.author,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
-            clearInteractionsAfterComplete: true,
+            clearInteractionsAfterComplete: false,
             deleteBaseMsgAfterComplete: false,
             duration: 30 * 1000
         });
@@ -381,6 +381,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             .setTitle(`[${section.sectionName}] **Logging** Configuration`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
         while (true) {
+            embedToDisplay.fields = [];
             embedToDisplay.setFooter("Either mention the channel or provide a valid channel ID.");
             for (let i = 0; i < logIds.length; i++) {
                 const channelId = (
@@ -402,7 +403,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
             await botMsg.edit({
                 embeds: [embedToDisplay],
-                components: DATABASE_CONFIG_BUTTONS
+                components: DB_CONFIG_ACTION_ROW
             });
 
             const result = await AdvancedCollector.startDoubleCollector<number | TextChannel>({
@@ -523,17 +524,17 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         const buttons: MessageButton[] = [
             new MessageButton()
                 .setLabel("Go Back")
-                .setStyle(MessageButtonStyles.PRIMARY)
+                .setStyle("PRIMARY")
                 .setCustomId("go_back")
                 .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
             new MessageButton()
                 .setLabel("Raids")
-                .setStyle(MessageButtonStyles.PRIMARY)
+                .setStyle("PRIMARY")
                 .setCustomId("raids")
                 .setEmoji(Emojis.HASH_EMOJI),
             new MessageButton()
                 .setLabel("Verification")
-                .setStyle(MessageButtonStyles.PRIMARY)
+                .setStyle("PRIMARY")
                 .setCustomId("verification")
                 .setEmoji(Emojis.HASH_EMOJI),
         ];
@@ -568,7 +569,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             buttons.push(
                 new MessageButton()
                     .setLabel("Modmail")
-                    .setStyle(MessageButtonStyles.PRIMARY)
+                    .setStyle("PRIMARY")
                     .setCustomId("modmail")
                     .setEmoji(Emojis.HASH_EMOJI)
             );
@@ -582,7 +583,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         buttons.push(
             new MessageButton()
                 .setLabel("Exit")
-                .setStyle(MessageButtonStyles.DANGER)
+                .setStyle("DANGER")
                 .setCustomId("exit")
                 .setEmoji(Emojis.X_EMOJI)
         );
@@ -594,11 +595,11 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         });
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
-            targetChannel: botMsg.channel as TextChannel,
+            targetChannel: botMsg.channel,
             targetAuthor: botMsg.author,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
-            clearInteractionsAfterComplete: true,
+            clearInteractionsAfterComplete: false,
             deleteBaseMsgAfterComplete: false,
             duration: 60 * 1000
         });
@@ -677,6 +678,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
 
         while (true) {
+            embedToDisplay.fields = [];
             embedToDisplay.setFooter(getInstructions(entries[selected].configTypeOrInstructions));
             for (let i = 0; i < entries.length; i++) {
                 const currSet: TextChannel | null = GuildFgrUtilities.getCachedChannel<TextChannel>(
@@ -691,7 +693,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
             await botMsg.edit({
                 embeds: [embedToDisplay],
-                components: DATABASE_CONFIG_BUTTONS
+                components: DB_CONFIG_ACTION_ROW
             });
 
             const result = await AdvancedCollector.startDoubleCollector<number | TextChannel>({

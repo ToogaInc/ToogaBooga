@@ -1,6 +1,6 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
-    ConfigType, DATABASE_CONFIG_BUTTONS,
+    ConfigType, DB_CONFIG_ACTION_ROW,
     DATABASE_CONFIG_DESCRIPTION,
     entryFunction, getInstructions,
     IBaseDatabaseEntryInfo,
@@ -19,7 +19,6 @@ import {ParseUtilities} from "../../utilities/ParseUtilities";
 import hasCachedRole = GuildFgrUtilities.hasCachedRole;
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
-import {MessageButtonStyles} from "discord.js/typings/enums";
 
 enum DisplayFilter {
     Moderation = (1 << 0),
@@ -406,7 +405,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             targetAuthor: botMsg.author,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
-            clearInteractionsAfterComplete: true,
+            clearInteractionsAfterComplete: false,
             deleteBaseMsgAfterComplete: false,
             duration: 45 * 1000
         });
@@ -616,6 +615,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             );
 
         while (true) {
+            embedToDisplay.fields = [];
             let validStaffRoles: Role[] = [];
             if (ctx.guildDoc!.roles.staffRoles.otherStaffRoleIds.length === 0) {
                 embedToDisplay.addField(GeneralConstants.ZERO_WIDTH_SPACE, "No Custom Staff Roles.");
@@ -660,12 +660,12 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                         .setLabel("Back")
                         .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
                         .setCustomId("back")
-                        .setStyle(MessageButtonStyles.PRIMARY),
+                        .setStyle("PRIMARY"),
                     new MessageButton()
                         .setLabel("Quit")
                         .setEmoji(Emojis.X_EMOJI)
                         .setCustomId("quit")
-                        .setStyle(MessageButtonStyles.PRIMARY)
+                        .setStyle("PRIMARY")
                 ])
             });
 
@@ -749,6 +749,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             .setTitle(`[${section.sectionName}] **Role** Configuration ⇒ ${group}`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
         while (true) {
+            embedToDisplay.fields = [];
             embedToDisplay.setFooter(getInstructions(entries[selected].configTypeOrInstructions));
             for (let i = 0; i < entries.length; i++) {
                 const currSet: Role | null = getCachedRole(
@@ -763,7 +764,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
             await botMsg.edit({
                 embeds: [embedToDisplay],
-                components: DATABASE_CONFIG_BUTTONS
+                components: DB_CONFIG_ACTION_ROW
             });
 
             const result = await AdvancedCollector.startDoubleCollector<number | Role>({

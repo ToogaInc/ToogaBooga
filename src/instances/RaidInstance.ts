@@ -200,12 +200,12 @@ export class RaidInstance {
             .setLabel("Start AFK Check")
             .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
             .setCustomId(RaidInstance.START_AFK_CHECK_ID)
-            .setStyle(MessageButtonStyles.PRIMARY),
+            .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Abort AFK Check")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
             .setCustomId(RaidInstance.ABORT_AFK_ID)
-            .setStyle(MessageButtonStyles.DANGER)
+            .setStyle("DANGER")
     ]);
 
     private static readonly CP_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
@@ -213,17 +213,17 @@ export class RaidInstance {
             .setLabel("Start Raid")
             .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
             .setCustomId(RaidInstance.START_RAID_ID)
-            .setStyle(MessageButtonStyles.PRIMARY),
+            .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Abort AFK Check")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
             .setCustomId(RaidInstance.ABORT_AFK_ID)
-            .setStyle(MessageButtonStyles.DANGER),
+            .setStyle("DANGER"),
         new MessageButton()
             .setLabel("Set Location")
             .setEmoji(Emojis.MAP_EMOJI)
             .setCustomId(RaidInstance.SET_LOCATION_ID)
-            .setStyle(MessageButtonStyles.PRIMARY)
+            .setStyle("PRIMARY")
     ]);
 
     private static readonly CP_RAID_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
@@ -231,27 +231,27 @@ export class RaidInstance {
             .setLabel("End Raid")
             .setEmoji(Emojis.RED_SQUARE_EMOJI)
             .setCustomId(RaidInstance.END_RAID_ID)
-            .setStyle(MessageButtonStyles.DANGER),
+            .setStyle("DANGER"),
         new MessageButton()
             .setLabel("Set Location")
             .setEmoji(Emojis.MAP_EMOJI)
             .setCustomId(RaidInstance.SET_LOCATION_ID)
-            .setStyle(MessageButtonStyles.PRIMARY),
+            .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Lock Raid VC")
             .setEmoji(Emojis.LOCK_EMOJI)
             .setCustomId(RaidInstance.LOCK_VC_ID)
-            .setStyle(MessageButtonStyles.PRIMARY),
+            .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Unlock Raid VC")
             .setEmoji(Emojis.UNLOCK_EMOJI)
             .setCustomId(RaidInstance.UNLOCK_VC_ID)
-            .setStyle(MessageButtonStyles.PRIMARY),
+            .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Parse Raid VC")
             .setEmoji(Emojis.PRINTER_EMOJI)
             .setCustomId(RaidInstance.PARSE_VC_ID)
-            .setStyle(MessageButtonStyles.PRIMARY)
+            .setStyle("PRIMARY")
     ]);
 
     // The guild that this AFK check is in.
@@ -490,7 +490,7 @@ export class RaidInstance {
             // Create the button which will be put on AFK check.
             const button = new MessageButton()
                 .setLabel(reactionInfo.name)
-                .setStyle(MessageButtonStyles.PRIMARY)
+                .setStyle("PRIMARY")
                 .setCustomId(key);
 
             const emoji = reactionInfo.emojiInfo.isCustom
@@ -1383,7 +1383,7 @@ export class RaidInstance {
                         .setLabel("Cancel")
                         .setEmoji(Emojis.X_EMOJI)
                         .setLabel("-cancel")
-                        .setStyle(MessageButtonStyles.DANGER)
+                        .setStyle("DANGER")
                 ])
             },
             deleteBaseMsgAfterComplete: true,

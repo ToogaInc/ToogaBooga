@@ -7,7 +7,7 @@ import {DUNGEON_DATA} from "../constants/DungeonData";
 import {
     IBotInfo,
     IGuildInfo,
-    IIdNameInfo,
+    IIdNameInfo, IOtherMajorConfig,
     IPermAllowDeny,
     IPropertyKeyValuePair,
     IPunishmentHistoryEntry,
@@ -17,6 +17,7 @@ import {
 } from "../definitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {DefinedRole} from "../definitions/Types";
+import {StringUtil} from "../utilities/StringUtilities";
 
 export namespace MongoManager {
     export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();
@@ -381,11 +382,11 @@ export namespace MongoManager {
     }
 
     /**
-     * Gets the default guild configuration object.
-     * @param {string} guildId The guild ID.
-     * @return {IGuildInfo} The guild configuration object.
+     * Gets the other major configuration object.
+     * @returns {IOtherMajorConfig} The other major configuration object.
+     * @private
      */
-    export function getDefaultGuildConfig(guildId: string): IGuildInfo {
+    function getOtherMajorConfigObj(): IOtherMajorConfig {
         const generalAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
         GeneralConstants.DEFAULT_AFK_CHECK_PERMISSIONS.forEach(permObj => {
             generalAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
@@ -399,6 +400,95 @@ export namespace MongoManager {
         tempPerms.forEach(permObj => {
             prePostAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
         });
+
+        return {
+            verificationProperties: {
+                checkRequirements: true,
+                additionalVerificationInfo: "",
+                verificationSuccessMessage: "",
+                verifReq: {
+                    aliveFame: {
+                        checkThis: false,
+                        minFame: 0
+                    },
+                    guild: {
+                        checkThis: false,
+                        guildName: {
+                            checkThis: false,
+                            name: ""
+                        },
+                        guildRank: {
+                            checkThis: false,
+                            minRank: "",
+                            exact: false
+                        },
+                    },
+                    lastSeen: {
+                        mustBeHidden: false
+                    },
+                    rank: {
+                        checkThis: false,
+                        minRank: 0
+                    },
+                    characters: {
+                        checkThis: false,
+                        statsNeeded: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        checkPastDeaths: true
+                    },
+                    exaltations: {
+                        onOneChar: false,
+                        checkThis: false,
+                        minimum: {
+                            hp: 0,
+                            mp: 0,
+                            def: 0,
+                            att: 0,
+                            dex: 0,
+                            spd: 0,
+                            vit: 0,
+                            wis: 0,
+                        }
+                    },
+                    graveyardSummary: {
+                        checkThis: false,
+                        minimum: []
+                    }
+                },
+                evidenceWithManualVerif: {
+                    allowEvidenceWithManualVerif: false,
+                    messageToShow: ""
+                },
+                manualVerifyWhenOffline: {
+                    allowManualVerifyWhenOffline: false,
+                    messageToShow: ""
+                }
+            },
+            afkCheckProperties: {
+                pointUserLimit: 5,
+                vcLimit: 60,
+                nitroEarlyLocationLimit: 5,
+                customMsg: {
+                    additionalAfkCheckInfo: "",
+                    earlyLocConfirmMsg: "You must bring the class/gear choice that you indicated you would bring."
+                        + " Failure to do so may result in consequences. Additionally, do not share this location"
+                        + " with anyone else.",
+                    postAfkCheckInfo: ""
+                },
+                afkCheckTimeout: 30 * 60 * 1000,
+                afkCheckPermissions: generalAfkCheckPerms,
+                prePostAfkCheckPermissions: prePostAfkCheckPerms,
+                allowedDungeons: DUNGEON_DATA.map(x => x.codeName)
+            }
+        };
+    }
+
+    /**
+     * Gets the default guild configuration object.
+     * @param {string} guildId The guild ID.
+     * @return {IGuildInfo} The guild configuration object.
+     */
+    export function getDefaultGuildConfig(guildId: string): IGuildInfo {
+
 
         return {
             _id: new ObjectID(),
@@ -422,85 +512,7 @@ export namespace MongoManager {
             guildId: guildId,
             guildSections: [],
             moderation: {blacklistedUsers: [], suspendedUsers: [], blacklistedModmailUsers: [], mutedUsers: []},
-            otherMajorConfig: {
-                verificationProperties: {
-                    checkRequirements: true,
-                    additionalVerificationInfo: "",
-                    verificationSuccessMessage: "",
-                    verifReq: {
-                        aliveFame: {
-                            checkThis: false,
-                            minFame: 0
-                        },
-                        guild: {
-                            checkThis: false,
-                            guildName: {
-                                checkThis: false,
-                                name: ""
-                            },
-                            guildRank: {
-                                checkThis: false,
-                                minRank: "",
-                                exact: false
-                            },
-                        },
-                        lastSeen: {
-                            mustBeHidden: false
-                        },
-                        rank: {
-                            checkThis: false,
-                            minRank: 0
-                        },
-                        characters: {
-                            checkThis: false,
-                            statsNeeded: [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                            checkPastDeaths: true
-                        },
-                        exaltations: {
-                            onOneChar: false,
-                            checkThis: false,
-                            minimum: {
-                                hp: 0,
-                                mp: 0,
-                                def: 0,
-                                att: 0,
-                                dex: 0,
-                                spd: 0,
-                                vit: 0,
-                                wis: 0,
-                            }
-                        },
-                        graveyardSummary: {
-                            checkThis: false,
-                            minimum: []
-                        }
-                    },
-                    evidenceWithManualVerif: {
-                        allowEvidenceWithManualVerif: false,
-                        messageToShow: ""
-                    },
-                    manualVerifyWhenOffline: {
-                        allowManualVerifyWhenOffline: false,
-                        messageToShow: ""
-                    }
-                },
-                afkCheckProperties: {
-                    pointUserLimit: 5,
-                    vcLimit: 60,
-                    nitroEarlyLocationLimit: 5,
-                    customMsg: {
-                        additionalAfkCheckInfo: "",
-                        earlyLocConfirmMsg: "You must bring the class/gear choice that you indicated you would bring."
-                            + " Failure to do so may result in consequences. Additionally, do not share this location"
-                            + " with anyone else.",
-                        postAfkCheckInfo: ""
-                    },
-                    afkCheckTimeout: 30 * 60 * 1000,
-                    afkCheckPermissions: generalAfkCheckPerms,
-                    prePostAfkCheckPermissions: prePostAfkCheckPerms,
-                    allowedDungeons: DUNGEON_DATA.map(x => x.codeName)
-                }
-            },
+            otherMajorConfig: getOtherMajorConfigObj(),
             properties: {
                 blockedCommands: [],
                 modmailThreads: [],
@@ -573,6 +585,43 @@ export namespace MongoManager {
             currentDiscordId: userId,
             pastDiscordIds: [],
             pastRealmNames: []
+        };
+    }
+
+    /**
+     * Gets the default section object.
+     * @param {string} secName The section name.
+     * @param {string} roleId The verified member role ID.
+     * @returns {ISectionInfo} The new section.
+     */
+    export function getDefaultSectionObj(secName: string, roleId: string): ISectionInfo {
+        return {
+            channels: {
+                loggingChannels: [],
+                raids: {
+                    afkCheckChannelId: "",
+                    controlPanelChannelId: "",
+                    leaderFeedbackChannelId: ""
+                },
+                verification: {
+                    verificationChannelId: "",
+                    manualVerificationChannelId: ""
+                },
+            },
+            isMainSection: false,
+            moderation: {sectionSuspended: []},
+            otherMajorConfig: getOtherMajorConfigObj(),
+            properties: {giveVerifiedRoleUponUnsuspend: false},
+            roles: {
+                leaders: {
+                    sectionAlmostLeaderRoleId: "",
+                    sectionLeaderRoleId: "",
+                    sectionVetLeaderRoleId: ""
+                },
+                verifiedRoleId: roleId
+            },
+            sectionName: secName,
+            uniqueIdentifier: `${StringUtil.generateRandomString(20)}_${Date.now()}`
         };
     }
 
