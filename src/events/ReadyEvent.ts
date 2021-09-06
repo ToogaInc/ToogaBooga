@@ -56,7 +56,7 @@ export async function onReadyEvent(): Promise<void> {
     const readyLog = new StringBuilder()
         .append(`${botUser.tag} has started successfully.`)
         .appendLine()
-        .append(`Time: ${TimeUtilities.getTime()}`);
+        .append(`Time: ${TimeUtilities.getDateTime()}`);
 
     console.info(readyLog.toString());
 }

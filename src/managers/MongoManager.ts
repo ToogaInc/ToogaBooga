@@ -488,8 +488,6 @@ export namespace MongoManager {
      * @return {IGuildInfo} The guild configuration object.
      */
     export function getDefaultGuildConfig(guildId: string): IGuildInfo {
-
-
         return {
             _id: new ObjectID(),
             activeRaids: [],
@@ -501,7 +499,8 @@ export namespace MongoManager {
                 raids: {
                     afkCheckChannelId: "",
                     controlPanelChannelId: "",
-                    leaderFeedbackChannelId: ""
+                    leaderFeedbackChannelId: "",
+                    raidHistChannelId: ""
                 },
                 verification: {
                     verificationChannelId: "",
@@ -600,8 +599,7 @@ export namespace MongoManager {
                 loggingChannels: [],
                 raids: {
                     afkCheckChannelId: "",
-                    controlPanelChannelId: "",
-                    leaderFeedbackChannelId: ""
+                    controlPanelChannelId: ""
                 },
                 verification: {
                     verificationChannelId: "",

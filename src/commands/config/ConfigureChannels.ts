@@ -139,13 +139,27 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 + " channel) where raiders can leave feedback. Once the raid is over, this channel will be deleted"
                 + " removed in 1 minute.",
             guildDocPath: "channels.raids.leaderFeedbackChannelId",
-            sectionPath: "guildSections.$.channels.raids.leaderFeedbackChannelId",
+            sectionPath: "",
             channelType: ChannelCategoryType.Raiding,
             configTypeOrInstructions: ConfigType.Channel,
             getCurrentValue: (guildDoc, section) => {
-                return section.isMainSection
-                    ? guildDoc.channels.raids.leaderFeedbackChannelId
-                    : section.channels.raids.leaderFeedbackChannelId;
+                if (!section.isMainSection)
+                    throw new Error("leader feedback is not section chan");
+                return guildDoc.channels.raids.leaderFeedbackChannelId;
+            }
+        },
+        {
+            name: "Raid History Storage Channel",
+            description: "This is the channel where raid history is stored. This channel should be made **private**"
+                + " (only staff members should see this channel).",
+            guildDocPath: "channels.raids.raidHistChannelId",
+            sectionPath: "",
+            channelType: ChannelCategoryType.Raiding,
+            configTypeOrInstructions: ConfigType.Channel,
+            getCurrentValue: (guildDoc, section) => {
+                if (!section.isMainSection)
+                    throw new Error("leader feedback is not section chan");
+                return guildDoc.channels.raids.raidHistChannelId;
             }
         },
         {
@@ -803,13 +817,29 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             const raidChannelObj = section.channels.raids;
             const afkCheckChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.afkCheckChannelId);
             const contPanelChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.controlPanelChannelId);
-            const rateLeaderChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.leaderFeedbackChannelId);
 
             currentConfiguration.append("__**Raid Channels**__").appendLine()
                 .append(`⇒ AFK Check Channel: ${afkCheckChannel ?? ConfigureChannels.NA}`).appendLine()
-                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigureChannels.NA}`).appendLine()
-                .append(`⇒ Rate Leader Channel: ${rateLeaderChannel ?? ConfigureChannels.NA}`).appendLine()
-                .appendLine();
+                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigureChannels.NA}`).appendLine();
+
+            if (section.isMainSection) {
+                const rateLeaderChannel = getCachedChannel<TextChannel>(
+                    guild,
+                    guildDoc.channels.raids.leaderFeedbackChannelId
+                );
+
+                const raidStorageChannel = getCachedChannel<TextChannel>(
+                    guild,
+                    guildDoc.channels.raids.raidHistChannelId
+                );
+
+
+                currentConfiguration
+                    .append(`⇒ Base Rate Leader Channel: ${rateLeaderChannel ?? ConfigureChannels.NA}`).appendLine()
+                    .append(`⇒ Raid Storage Channel: ${raidStorageChannel ?? ConfigureChannels.NA}`).appendLine();
+            }
+
+            currentConfiguration.appendLine();
         }
 
         if (displayFilter & DisplayFilter.Verification) {

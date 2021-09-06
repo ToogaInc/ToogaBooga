@@ -50,6 +50,7 @@ import {
 } from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {StartAfkCheck} from "../commands";
+import getFormattedTime = TimeUtilities.getFormattedTime;
 
 type ReactionInfoMore = IReactionInfo & {
     earlyLocAmt: number;
@@ -321,6 +322,10 @@ export class RaidInstance {
     private readonly _membersThatJoined: string[] = [];
     private readonly _raidLogs: string[] = [];
 
+    // Feedback channels
+    private readonly _feedbackBaseChannel: TextChannel | null;
+    private readonly _raidStorageChan: TextChannel | null;
+
     /**
      * Creates a new `RaidInstance` object.
      * @param {GuildMember} memberInit The member that initiated this raid.
@@ -357,10 +362,21 @@ export class RaidInstance {
             memberInit.guild,
             section.channels.raids.afkCheckChannelId
         )!;
+
         this._controlPanelChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             memberInit.guild,
             section.channels.raids.controlPanelChannelId
         )!;
+
+        this._feedbackBaseChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            memberInit.guild,
+            guildDoc.channels.raids.leaderFeedbackChannelId
+        );
+
+        this._raidStorageChan = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            memberInit.guild,
+            guildDoc.channels.raids.raidHistChannelId
+        );
 
         // Which essential reacts are we going to use.
         const reactions = RaidInstance.getReactions(dungeon, guildDoc);
@@ -785,10 +801,16 @@ export class RaidInstance {
 
     /**
      * Ends the AFK check. There will be no post-AFK check.
-     * @param {GuildMember | User | null} memberEnded The member that ended the AFK check, or `null` if it was ended
+     * @param {GuildMember | null} memberEnded The member that ended the AFK check, or `null` if it was ended
      * automatically.
      */
     public async endAfkCheck(memberEnded: GuildMember | User | null): Promise<void> {
+        let member: GuildMember | null;
+        if (memberEnded instanceof User)
+            member = await GuildFgrUtilities.fetchGuildMember(this._guild!, memberEnded.id);
+        else
+            member = memberEnded;
+
         // No raid VC means we haven't started AFK check.
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg || this._raidStatus !== RaidStatus.AFK_CHECK)
             return;
@@ -825,8 +847,8 @@ export class RaidInstance {
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Raid`)
             .setTimestamp()
             .setDescription(
-                memberEnded
-                    ? `The AFK check has been ended by ${memberEnded} and the raid is currently ongoing.`
+                member
+                    ? `The AFK check has been ended by ${member} and the raid is currently ongoing.`
                     : `The AFK check has ended automatically. The raid is currently ongoing.`
             );
 
@@ -858,6 +880,74 @@ export class RaidInstance {
                     .setStyle(MessageButtonStyles.SUCCESS)
             ])
         }).catch();
+
+        // Finally, create feedback channel if exists
+        if (!this._feedbackBaseChannel || !this._feedbackBaseChannel.parent || !this._raidStorageChan)
+            return;
+
+        const feedbackChannel = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            return await this._guild.channels.create(`${this._leaderName}-feedback`, {
+                parent: this._feedbackBaseChannel!.parent!,
+                type: "GUILD_TEXT",
+                rateLimitPerUser: 5 * 60 * 1000,
+                permissionOverwrites: [
+                    {
+                        id: this._raidSection.roles.verifiedRoleId,
+                        allow: ["VIEW_CHANNEL"]
+                    },
+                    {
+                        id: this._guild.roles.everyone,
+                        deny: ["VIEW_CHANNEL", "ADD_REACTIONS"]
+                    },
+                    {
+                        id: OneLifeBot.BotInstance.client.user!.id,
+                        allow: ["ADD_REACTIONS", "VIEW_CHANNEL"]
+                    },
+                    {
+                        id: this._guildDoc.roles.staffRoles.teamRoleId,
+                        allow: ["VIEW_CHANNEL"]
+                    }
+                ],
+                topic: `${this._raidVc!.id} - Do Not Edit This!`
+            });
+        });
+
+        if (!feedbackChannel)
+            return;
+
+        const feedbackMsg = await feedbackChannel.send({
+            embeds: [
+                MessageUtilities.generateBlankEmbed(member ?? this._memberInit)
+                    .setTitle(`Feedback Channel for **${member?.displayName ?? this._memberInit.displayName}**`)
+                    .setDescription(
+                        new StringBuilder()
+                            .append(`__This is for the ${this.raidVc} raid.__`)
+                            .appendLine()
+                            .append(`You can leave feedback for ${member ?? this._memberInit} here by doing the`)
+                            .append(" following:").appendLine()
+                            .append(`- React to **this** message with either a ${Emojis.LONG_UP_ARROW_EMOJI},`)
+                            .append(` ${Emojis.LONG_SIDEWAYS_ARROW_EMOJI}, or ${Emojis.LONG_DOWN_ARROW_EMOJI} to`)
+                            .append(" indicate this leader's performance.")
+                            .appendLine()
+                            .append("- You can also send feedback messages in this channel directly. Keep in mind that")
+                            .append(" all staff members can see this channel (including the raid leader). So, please")
+                            .append(" be civil. Provide either constructive positive or negative feedback. If you")
+                            .append(" want, you may also modmail your feedback by using the `modmail` command.")
+                            .appendLine(2)
+                            .append("**Keep in mind that there is a 5 minute slowmode in this channel.**")
+                            .toString()
+                    )
+                    .setTimestamp()
+            ]
+        });
+
+        AdvancedCollector.reactFaster(feedbackMsg, [
+            Emojis.LONG_DOWN_ARROW_EMOJI,
+            Emojis.LONG_SIDEWAYS_ARROW_EMOJI,
+            Emojis.LONG_UP_ARROW_EMOJI
+        ]);
+
+        await feedbackMsg.pin().catch();
     }
 
     /**
@@ -868,6 +958,8 @@ export class RaidInstance {
         // No raid VC means we haven't started AFK check.
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg)
             return;
+
+        const raidVcId = this._raidVc.id;
 
         const memberThatEnded = memberEnded instanceof User
             ? GuildFgrUtilities.getCachedMember(this._guild, memberEnded.id) ?? this._memberInit
@@ -902,6 +994,123 @@ export class RaidInstance {
             .setTimestamp()
             .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
         await this._afkCheckMsg.edit({embeds: [endAfkEmbed]}).catch();
+
+        // Check feedback channel
+        if (!this._feedbackBaseChannel || !this._feedbackBaseChannel.parent)
+            return;
+
+        const feedbackChannel: TextChannel | undefined = this._feedbackBaseChannel.parent.children
+            .find(x => x.isText() && (x.topic?.startsWith(raidVcId) ?? false)) as TextChannel | undefined;
+
+        if (!feedbackChannel)
+            return;
+
+        if (!this._raidStorageChan) {
+            await feedbackChannel.delete().catch();
+            return;
+        }
+
+        await feedbackChannel.send({
+            content: "You have **one** minute remaining to submit your feedback. If you can't submit your feedback"
+                + " in time, you can still submit your feedback via modmail."
+        });
+
+        setTimeout(async () => {
+            if (!feedbackChannel)
+                return;
+
+            if (!this._raidStorageChan) {
+                await feedbackChannel.delete().catch();
+                return;
+            }
+
+            const [pinnedMsgs, allMsgs] = await Promise.all([
+                feedbackChannel.messages.fetchPinned(),
+                feedbackChannel.messages.fetch()
+            ]);
+
+            const sb = new StringBuilder()
+                .append("================= LEADER FEEDBACK INFORMATION =================")
+                .appendLine();
+
+            const botMsg = pinnedMsgs.filter(x => x.author.bot).first();
+            if (botMsg) {
+                const [upvotes, noPref, downvotes] = await Promise.all([
+                    botMsg.reactions.cache.get(Emojis.LONG_UP_ARROW_EMOJI)?.fetch(),
+                    botMsg.reactions.cache.get(Emojis.LONG_SIDEWAYS_ARROW_EMOJI)?.fetch(),
+                    botMsg.reactions.cache.get(Emojis.LONG_DOWN_ARROW_EMOJI)?.fetch()
+                ]);
+
+                if (upvotes) sb.append(`- Upvotes      : ${upvotes.count - 1}`).appendLine();
+                if (noPref) sb.append(`- No Preference: ${noPref.count - 1}`).appendLine();
+                if (downvotes) sb.append(`- Downvotes    : ${downvotes.count - 1}`).appendLine();
+            }
+
+            const otherFeedbackMsgs = allMsgs.filter(x => !x.author.bot);
+            for (const [, feedbackMsg] of otherFeedbackMsgs) {
+                sb.append(`Feedback by ${feedbackMsg.author.tag} (${feedbackMsg.id})`).appendLine()
+                    .append("=== BEGIN ===").appendLine()
+                    .append(feedbackMsg.content).appendLine()
+                    .append("=== END ===").appendLine(2);
+            }
+
+            await Promise.all([
+                this.compileHistory(this._raidStorageChan, sb.toString()),
+                feedbackChannel.delete()
+            ]);
+        }, 60 * 1000);
+    }
+
+    /**
+     * Compiles this raid's history.
+     * @param {TextChannel} storageChannel The storage channel.
+     * @param {string[]} otherInfo Any other inforamtion to include.
+     * @private
+     */
+    private async compileHistory(storageChannel: TextChannel, ...otherInfo: string[]): Promise<void> {
+        const sb = new StringBuilder()
+            .append("RAID INFORMATION")
+            .appendLine()
+            .append(`- Section: ${this._raidSection.sectionName} (${this._raidSection.uniqueIdentifier})`)
+            .appendLine()
+            .append(`- Dungeon: ${this._dungeon.dungeonName} (${this._dungeon.codeName})`)
+            .appendLine()
+            .append(`- Raid Leader: ${this._leaderName} (${this._memberInit.id})`)
+            .appendLine(3);
+
+        sb.append("================= LOG INFORMATION =================")
+            .appendLine();
+        for (const log of this._raidLogs) {
+            sb.append(log).appendLine();
+        }
+
+        sb.appendLine(3)
+            .append("================= PRIORITY REACTIONS =================")
+            .appendLine();
+        for (const [reaction, members] of this._pplWithEarlyLoc) {
+            const reactionInfo = this._allEssentialOptions.get(reaction);
+            if (!reactionInfo)
+                continue;
+            sb.append(`- ${reactionInfo.name} (${reactionInfo.type})`).appendLine();
+            for (const member of members) {
+                sb.append(`\t> ${member.displayName} (${member.user.tag}, ${member.id})`)
+                    .appendLine();
+            }
+        }
+
+        sb.appendLine(3);
+        for (const info of otherInfo) {
+            sb.append(info)
+                .appendLine(3);
+        }
+
+        await storageChannel.send({
+            files: [
+                new MessageAttachment(Buffer.from(sb.toString(), "utf8"),
+                    `raidHistory_${this._memberInit.id}.txt`)
+            ],
+            content: `__**Report Generated: ${TimeUtilities.getDateTime()} GMT**__`
+        });
     }
 
 
@@ -1603,7 +1812,7 @@ export class RaidInstance {
                 : "Raid";
 
         const generalStatus = new StringBuilder()
-            .append(`⇨ AFK Check Started At: ${TimeUtilities.getTime(this._raidVc.createdTimestamp)} GMT`)
+            .append(`⇨ AFK Check Started At: ${TimeUtilities.getDateTime(this._raidVc.createdTimestamp)} GMT`)
             .appendLine()
             .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
             .appendLine()
@@ -1895,6 +2104,11 @@ export class RaidInstance {
                 content: confirmationContent.toString(),
                 components: []
             });
+
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${memberThatResponded.displayName} (${memberThatResponded.id}) reacted and`
+                    + ` confirmed (with the bot) that he or she has: ${reactInfo.name} (${reactInfo.type}).`
+            );
         });
 
         // If time expires, then end AFK check immediately.
@@ -1920,48 +2134,99 @@ export class RaidInstance {
         if (oldState.channelId !== this._raidVc.id && newState.channelId !== this._raidVc.id)
             return;
 
+        const member = oldState.member ?? newState.member;
+        if (!member)
+            return;
+
         if (oldState.channelId !== newState.channelId) {
             if (oldState.channelId && !newState.channelId) {
                 // person left the VC
+                this._raidLogs.push(
+                    `[${getFormattedTime()}] ${member.displayName} (${member.id}) has left the raid VC.`
+                );
+                return;
             }
 
             if (!oldState.channelId && newState.channelId) {
                 // person joined the VC
+                this._raidLogs.push(
+                    `[${getFormattedTime()}] ${member.displayName} (${member.id}) has joined the raid VC.`
+                );
+                return;
             }
 
             // otherwise, changed VC
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has switched voice channels.\n`
+                    + `\tFrom: ${oldState.channel!.name} (${oldState.channelId})\n`
+                    + `\tTo: ${newState.channel!.name} (${newState.channelId})`
+            );
+            return;
         }
 
-        if (oldState.mute && !newState.mute) {
-            // person no longer server/local muted
+        // Don't care about local mute, only server
+        if (oldState.serverMute && !newState.serverMute) {
+            // person no longer server muted
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${member.displayName} (${member.id}) is no longer server muted.`
+            );
+            return;
         }
 
-        if (!oldState.mute && newState.mute) {
+        if (!oldState.serverMute && newState.serverMute) {
             // person server/local muted
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${member.displayName} (${member.id}) is now server muted.`
+            );
+            return;
         }
 
         if (oldState.deaf && !newState.deaf) {
             // person no longer server/local deaf
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${member.displayName} (${member.id}) is no longer deafened.`
+            );
+            return;
         }
 
         if (!oldState.deaf && newState.deaf) {
             // person server/local deaf
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${member.displayName} (${member.id}) is now deafened.`
+            );
+            return;
         }
 
         if (oldState.selfVideo && !newState.selfVideo) {
             // person video off
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has turned off video.`
+            );
+            return;
         }
 
         if (!oldState.selfVideo && newState.selfVideo) {
             // person video on
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has turned on video.`
+            );
+            return;
         }
 
         if (oldState.streaming && !newState.streaming) {
             // person stream off
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has stopped streaming.`
+            );
+            return;
         }
 
         if (!oldState.streaming && newState.streaming) {
             // person stream on
+            this._raidLogs.push(
+                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has started streaming.`
+            );
+            return;
         }
     }
 
@@ -1971,7 +2236,7 @@ export class RaidInstance {
      * @private
      */
     public async interactionEventFunction(interaction: Interaction): Promise<void> {
-        if (!interaction.isButton() || !this._afkCheckMsg)
+        if (!interaction.isButton() || !this._afkCheckMsg || this._raidStatus !== RaidStatus.IN_RUN)
             return;
 
         if (!this.membersThatJoinedVc.includes(interaction.user.id)) {
@@ -1997,6 +2262,9 @@ export class RaidInstance {
         }
 
         await member.voice.setChannel(this._raidVc).catch();
+        this._raidLogs.push(
+            `[${getFormattedTime()}] ${member.displayName} (${member.id}) has reconnected to the raid VC.`
+        );
     }
 
     /**

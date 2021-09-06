@@ -175,8 +175,8 @@ export namespace QuotaManager {
             }
 
             const descSb = new StringBuilder()
-                .append(`- Start Time: ${TimeUtilities.getTime(oldQuotas.lastReset)} GMT`).appendLine()
-                .append(`- End Time: ${TimeUtilities.getTime(Date.now())} GMT`).appendLine()
+                .append(`- Start Time: ${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT`).appendLine()
+                .append(`- End Time: ${TimeUtilities.getDateTime(Date.now())} GMT`).appendLine()
                 .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine();
             if (!role) {
                 descSb.append("- Warning: This role was not found; it might have been deleted. This role has been ")
@@ -474,8 +474,8 @@ export namespace QuotaManager {
             .setTitle(`Active Quota: ${role.name}`)
             .setDescription(
                 new StringBuilder()
-                    .append(`- Start Time: ${TimeUtilities.getTime(startTime)} GMT`).appendLine()
-                    .append(`- End Time: ${TimeUtilities.getTime(endTime)} GMT`).appendLine()
+                    .append(`- Start Time: ${TimeUtilities.getDateTime(startTime)} GMT`).appendLine()
+                    .append(`- End Time: ${TimeUtilities.getDateTime(endTime)} GMT`).appendLine()
                     .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine().appendLine()
                     .append("__**Time Left**__")
                     .append(StringUtil.codifyString(timeLeft))

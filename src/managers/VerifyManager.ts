@@ -1073,7 +1073,7 @@ export namespace VerifyManager {
             .append("__**Discord Account**__").appendLine()
             .append(`- Discord Mention: ${member} (${member.id})`).appendLine()
             .append(`- Discord Tag: ${member.user.tag}`).appendLine()
-            .append(`- Discord Created: ${TimeUtilities.getTime(member.user.createdAt)} GMT`).appendLine()
+            .append(`- Discord Created: ${TimeUtilities.getDateTime(member.user.createdAt)} GMT`).appendLine()
             .appendLine()
             .append("__**RotMG Account**__").appendLine()
             .append(`- Account IGN: **\`${checkRes.orig.name}\`**`).appendLine()

@@ -361,6 +361,13 @@ export interface IRaidChannels {
      * @type {string}
      */
     leaderFeedbackChannelId: string;
+
+    /**
+     * The raid history storage channel.
+     *
+     * @type {string}
+     */
+    raidHistChannelId: string;
 }
 
 /**
@@ -384,9 +391,9 @@ export interface IRaidInfo {
     /**
      * The raid channels. We use this in case the channels were changed.
      *
-     * @type {string}
+     * @type {IRaidChannels}
      */
-    channels: IRaidChannels;
+    channels: Omit<IRaidChannels, "leaderFeedbackChannelId" | "raidHistChannelId">;
 
     /**
      * The AFK check message.

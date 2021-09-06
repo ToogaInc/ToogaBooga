@@ -163,12 +163,12 @@ export class FindPerson extends BaseCommand {
                 "Joined Server",
                 StringUtil.codifyString(
                     targetMember.joinedTimestamp
-                        ? `${TimeUtilities.getTime(targetMember.joinedTimestamp)} GMT`
+                        ? `${TimeUtilities.getDateTime(targetMember.joinedTimestamp)} GMT`
                         : "N/A"
                 )
             ).addField(
                 "Joined Discord",
-                StringUtil.codifyString(TimeUtilities.getTime(targetMember.user.createdTimestamp))
+                StringUtil.codifyString(TimeUtilities.getDateTime(targetMember.user.createdTimestamp))
             );
 
         if (userDoc) {

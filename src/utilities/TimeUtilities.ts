@@ -1,11 +1,36 @@
 export namespace TimeUtilities {
     /**
      * Gets the current time in a nice string format.
+     * @param {string} [timezone] The timezone, if applicable. Otherwise, GMT is used.
+     * @param {boolean} [removeAmPm] Whether to remove the AM/PM ending.
+     * @returns {string} The current formatter date & time.
+     */
+    export function getFormattedTime(timezone: string = "Atlantic/Reykjavik", removeAmPm: boolean = true): string {
+        if (!isValidTimeZone(timezone)) {
+            return new Intl.DateTimeFormat([], {
+                hour: "numeric",
+                minute: "numeric",
+                second: "numeric",
+            }).format(new Date());
+        }
+        const options: Intl.DateTimeFormatOptions = {
+            timeZone: timezone,
+            hour: "numeric",
+            minute: "numeric",
+            second: "numeric",
+        };
+
+        const str = new Intl.DateTimeFormat([], options).format(new Date());
+        return removeAmPm ? str.replace(" AM", "").replace(" PM", "") : str;
+    }
+
+    /**
+     * Gets the current time in a nice string format.
      * @param {Date | number} [date = new Date()] The date to choose, if any.
      * @param {string} [timezone] The timezone, if applicable. Otherwise, GMT is used.
      * @returns {string} The current formatter date & time.
      */
-    export function getTime(date: Date | number = new Date(), timezone: string = "Atlantic/Reykjavik"): string {
+    export function getDateTime(date: Date | number = new Date(), timezone: string = "Atlantic/Reykjavik"): string {
         if (!isValidTimeZone(timezone)) {
             return new Intl.DateTimeFormat([], {
                 year: "numeric",

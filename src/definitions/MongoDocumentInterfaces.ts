@@ -704,7 +704,7 @@ export interface ISectionInfo {
          *
          * @type {IRaidChannels}
          */
-        raids: IRaidChannels;
+        raids: Omit<IRaidChannels, "leaderFeedbackChannelId" | "raidHistChannelId">;
 
         /**
          * Any applicable logging channels. The key is the logging type (for example, suspensions, blacklists, mutes,

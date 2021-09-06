@@ -114,7 +114,7 @@ export class FindPunishment extends BaseCommand {
             StringUtil.codifyString(punishmentObj.actionId)
         ).addField(
             "Issued At",
-            StringUtil.codifyString(`${TimeUtilities.getTime(punishmentObj.issuedAt)} GMT`),
+            StringUtil.codifyString(`${TimeUtilities.getDateTime(punishmentObj.issuedAt)} GMT`),
             true
         );
 
@@ -130,7 +130,7 @@ export class FindPunishment extends BaseCommand {
             if (typeof pInfo.expiresAt !== "undefined") {
                 embed.addField(
                     "Expires At",
-                    StringUtil.codifyString(`${TimeUtilities.getTime(pInfo.expiresAt)} GMT`)
+                    StringUtil.codifyString(`${TimeUtilities.getDateTime(pInfo.expiresAt)} GMT`)
                 );
             }
         }
