@@ -4,6 +4,7 @@ import {StringBuilder} from "../utilities/StringBuilder";
 import {IBotInfo} from "../definitions";
 import {MuteManager, SuspensionManager} from "../managers/PunishmentManager";
 import {TimeUtilities} from "../utilities/TimeUtilities";
+import {RaidInstance} from "../instances/RaidInstance";
 
 export async function onReadyEvent(): Promise<void> {
     const botUser = OneLifeBot.BotInstance.client.user;
@@ -35,7 +36,6 @@ export async function onReadyEvent(): Promise<void> {
     }
 
     // Now, we want to add any guild docs to the database <=> the guild isn't in the database.
-    const botGuilds = OneLifeBot.BotInstance.client.guilds.cache;
     await Promise.all(OneLifeBot.BotInstance.client.guilds.cache.map(async x => {
         if (OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(x.id))
             return null;
@@ -43,7 +43,15 @@ export async function onReadyEvent(): Promise<void> {
     }));
 
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
-    await Promise.all([MuteManager.startChecker(guildDocs), SuspensionManager.startChecker(guildDocs)]);
+    await Promise.all([
+        MuteManager.startChecker(guildDocs),
+        SuspensionManager.startChecker(guildDocs),
+        ...guildDocs.filter(x => OneLifeBot.BotInstance.client.guilds.cache.has(x.guildId)).map(guildDoc => {
+            return guildDoc.activeRaids.forEach(async raid => {
+                await RaidInstance.createNewLivingInstance(guildDoc, raid);
+            });
+        })
+    ]);
 
     const readyLog = new StringBuilder()
         .append(`${botUser.tag} has started successfully.`)
