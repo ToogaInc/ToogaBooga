@@ -335,6 +335,13 @@ export interface IAfkCheckProperties {
      * @type {string[]}
      */
     allowedDungeons: string[];
+
+    /**
+     * Whether to create a log channel with every AFK check.
+     *
+     * @type {boolean}
+     */
+    createLogChannel: boolean;
 }
 
 /**
@@ -393,7 +400,28 @@ export interface IRaidInfo {
      *
      * @type {IRaidChannels}
      */
-    channels: Omit<IRaidChannels, "leaderFeedbackChannelId" | "raidHistChannelId">;
+    raidChannels: Omit<IRaidChannels, "leaderFeedbackChannelId" | "raidHistChannelId">;
+
+    /**
+     * Any other channels associated with this raid.
+     *
+     * @type {object}
+     */
+    otherChannels: {
+        /**
+         * The feedback channel ID.
+         *
+         * @type {string}
+         */
+        feedbackChannelId: string;
+
+        /**
+         * The logging channel ID.
+         *
+         * @type {string}
+         */
+        logChannelId: string;
+    };
 
     /**
      * The AFK check message.

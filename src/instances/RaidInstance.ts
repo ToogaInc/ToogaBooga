@@ -3,22 +3,27 @@
 
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {
-    Collection, EmojiIdentifierResolvable,
+    Collection,
+    EmojiIdentifierResolvable,
     Guild,
-    GuildMember, Interaction,
+    GuildMember,
+    Interaction,
     InteractionCollector,
     Message,
-    MessageActionRow, MessageAttachment,
+    MessageActionRow,
+    MessageAttachment,
     MessageButton,
     MessageComponentInteraction,
     MessageEmbed,
-    MessageOptions, MessageSelectMenu,
+    MessageOptions,
+    MessageSelectMenu,
     OverwriteResolvable,
     Role,
     Snowflake,
     TextChannel,
     User,
-    VoiceChannel, VoiceState
+    VoiceChannel,
+    VoiceState
 } from "discord.js";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
@@ -37,9 +42,11 @@ import {Emojis} from "../constants/Emojis";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {UserManager} from "../managers/UserManager";
 import {
-    IAfkCheckReaction, ICustomDungeonInfo,
+    IAfkCheckReaction,
+    ICustomDungeonInfo,
     IDungeonInfo,
-    IGuildInfo, IMappedAfkCheckReactions,
+    IGuildInfo,
+    IMappedAfkCheckReactions,
     IRaidInfo,
     IRaidOptions,
     IReactionInfo,
@@ -319,9 +326,17 @@ export class RaidInstance {
     private readonly _membersThatJoined: string[] = [];
     private readonly _raidLogs: string[] = [];
 
-    // Feedback channels
+    // Base feedback channel; for initial use only (this channel's parent is where other feedback channels should be
+    // created)
     private readonly _feedbackBaseChannel: TextChannel | null;
     private readonly _raidStorageChan: TextChannel | null;
+
+    // Channels created specifically for this raid; these will be deleted once the raid is over
+    private _thisFeedbackChan: TextChannel | null;
+    private _logChan: TextChannel | null;
+
+    // Whether this has already been added to the database
+    private _addedToDb: boolean = false;
 
     /**
      * Creates a new `RaidInstance` object.
@@ -346,6 +361,9 @@ export class RaidInstance {
         this._guildDoc = guildDoc;
         this._raidSection = section;
         this._membersThatJoined = [];
+
+        this._logChan = null;
+        this._thisFeedbackChan = null;
 
         this._afkCheckButtonCollector = null;
         this._controlPanelReactionCollector = null;
@@ -666,11 +684,11 @@ export class RaidInstance {
         const raidVc = GuildFgrUtilities.getCachedChannel<VoiceChannel>(guild, raidInfo.vcId);
         const afkCheckChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
-            raidInfo.channels.afkCheckChannelId
+            raidInfo.raidChannels.afkCheckChannelId
         );
         const controlPanelChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
-            raidInfo.channels.controlPanelChannelId
+            raidInfo.raidChannels.controlPanelChannelId
         );
 
         if (!afkCheckChannel
@@ -695,6 +713,15 @@ export class RaidInstance {
         rm._afkCheckMsg = afkCheckMsg;
         rm._controlPanelMsg = controlPanelMsg;
         rm._raidStatus = raidInfo.status;
+        rm._addedToDb = true;
+        rm._thisFeedbackChan = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            guild,
+            raidInfo.otherChannels.feedbackChannelId
+        );
+        rm._logChan = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            guild,
+            raidInfo.otherChannels.logChannelId
+        );
 
         // Add early location entries.
         for await (const entry of raidInfo.earlyLocationReactions) {
@@ -729,15 +756,44 @@ export class RaidInstance {
         // Don't use setRaidStatus since we didn't save the afk check info yet
         this._raidStatus = RaidStatus.PRE_AFK_CHECK;
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
-        const vc = await this._guild.channels.create(`${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
-            type: ChannelTypes.GUILD_VOICE,
-            userLimit: this._vcLimit,
-            permissionOverwrites: this.getPermissionsForRaidVc(false),
-            parent: this._afkCheckChannel!.parent!
-        });
+        const [vc, logChannel] = await Promise.all([
+            this._guild.channels.create(`${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
+                type: ChannelTypes.GUILD_VOICE,
+                userLimit: this._vcLimit,
+                permissionOverwrites: this.getPermissionsForRaidVc(false),
+                parent: this._afkCheckChannel!.parent!
+            }),
+            new Promise<TextChannel | null>(async (resolve) => {
+                if (!this._raidSection.otherMajorConfig.afkCheckProperties.createLogChannel)
+                    return resolve(null);
+
+                const logChan = await this._guild.channels.create(`${this._leaderName}-raid-logs`, {
+                    type: ChannelTypes.GUILD_TEXT,
+                    parent: this._afkCheckChannel!.parent!,
+                    permissionOverwrites: [
+                        {
+                            id: this._guild.roles.everyone,
+                            deny: ["VIEW_CHANNEL"]
+                        },
+                        {
+                            id: OneLifeBot.BotInstance.client.user!.id,
+                            allow: ["ADD_REACTIONS", "VIEW_CHANNEL"]
+                        },
+                        {
+                            id: this._guildDoc.roles.staffRoles.teamRoleId,
+                            allow: ["VIEW_CHANNEL"]
+                        }
+                    ]
+                });
+
+                return resolve(logChannel as TextChannel);
+            })
+        ]);
+
 
         if (!vc) return;
         this._raidVc = vc as VoiceChannel;
+        this._logChan = logChannel;
 
         // Create our initial control panel message.
         this._controlPanelMsg = await this._controlPanelChannel.send({
@@ -769,6 +825,7 @@ export class RaidInstance {
         if (!this._afkCheckMsg || !this._controlPanelMsg || !this._raidVc || !this._afkCheckChannel)
             return;
 
+        this.logEvent("AFK check has been started.", true).catch();
         const tempMsg = await this._afkCheckChannel.send({
             content: `${this._raidVc.toString()} will be unlocked in 5 seconds. Prepare to join!`
         });
@@ -812,6 +869,13 @@ export class RaidInstance {
             member = await GuildFgrUtilities.fetchGuildMember(this._guild!, memberEnded.id);
         else
             member = memberEnded;
+
+        this.logEvent(
+            member
+                ? `${member.displayName} (${member.id}) has ended the AFK check.`
+                : "The AFK check has been ended automatically.",
+            true
+        ).catch();
 
         // Update the database so it is clear that we are in raid mode.
         await this.setRaidStatus(RaidStatus.IN_RUN);
@@ -956,6 +1020,10 @@ export class RaidInstance {
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg)
             return;
 
+        const resolvedMember = memberEnded instanceof GuildMember
+            ? memberEnded
+            : GuildFgrUtilities.getCachedMember(this._guild, memberEnded.id);
+
         const raidVcId = this._raidVc.id;
 
         const memberThatEnded = memberEnded instanceof User
@@ -979,6 +1047,14 @@ export class RaidInstance {
                 .setTimestamp()
                 .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
             await this._afkCheckMsg.edit({embeds: [abortAfkEmbed]}).catch();
+
+            this.logEvent(
+                resolvedMember
+                    ? `${resolvedMember.displayName} (${resolvedMember.id}) has aborted the AFK check.`
+                    : "The AFK check has been aborted automatically.",
+                false
+            ).catch();
+
             return;
         }
 
@@ -991,40 +1067,35 @@ export class RaidInstance {
             .setTimestamp()
             .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
         await this._afkCheckMsg.edit({embeds: [endAfkEmbed]}).catch();
+        this.logEvent(
+            resolvedMember
+                ? `${resolvedMember.displayName} (${resolvedMember.id}) has ended the raid.`
+                : "The raid has been ended automatically.",
+            false
+        ).catch();
 
         // Check feedback channel
-        if (!this._feedbackBaseChannel || !this._feedbackBaseChannel.parent)
+        if (!this._thisFeedbackChan)
             return;
 
-        const feedbackChannel: TextChannel | undefined = this._feedbackBaseChannel.parent.children
-            .find(x => x.isText() && (x.topic?.startsWith(raidVcId) ?? false)) as TextChannel | undefined;
-
-        if (!feedbackChannel)
-            return;
-
-        if (!this._raidStorageChan) {
-            await feedbackChannel.delete().catch();
-            return;
-        }
-
-        await feedbackChannel.send({
+        await this._thisFeedbackChan.send({
             content: "You have **one** minute remaining to submit your feedback. If you can't submit your feedback"
                 + " in time, you can still submit your feedback via modmail."
         });
 
         setTimeout(async () => {
-            if (!feedbackChannel)
+            if (!this._thisFeedbackChan)
                 return;
 
             if (!this._raidStorageChan) {
-                await feedbackChannel.delete().catch();
+                await this._thisFeedbackChan.delete().catch();
                 return;
             }
 
             const [pinnedMsgs, allMsgs] = await Promise.all([
-                feedbackChannel.messages.fetchPinned(),
+                this._thisFeedbackChan.messages.fetchPinned(),
                 // Assuming that a lot of people won't submit feedback
-                feedbackChannel.messages.fetch({limit: 100})
+                this._thisFeedbackChan.messages.fetch({limit: 100})
             ]);
 
             const sb = new StringBuilder()
@@ -1054,7 +1125,7 @@ export class RaidInstance {
 
             await Promise.all([
                 this.compileHistory(this._raidStorageChan, sb.toString()),
-                feedbackChannel.delete()
+                this._thisFeedbackChan.delete()
             ]);
         }, 60 * 1000);
     }
@@ -1137,6 +1208,29 @@ export class RaidInstance {
     }
 
     /**
+     * Sets the leader's feedback channel and updates it in the database.
+     * @param {TextChannel} channel The channel.
+     * @returns {Promise<boolean>} Whether this was added.
+     * @private
+     */
+    private async setThisFeedbackChannel(channel: TextChannel): Promise<boolean> {
+        if (!this._addedToDb || !this._raidVc) return false;
+
+        this._thisFeedbackChan = channel;
+        const res = await MongoManager.updateAndFetchGuildDoc({
+            guildId: this._guild.id,
+            "activeRaids.vcId": this._raidVc.id
+        }, {
+            $set: {
+                "activeRaids.$.otherChannels.feedbackChannelId": channel.id
+            }
+        });
+        if (!res) return false;
+        this._guildDoc = res;
+        return true;
+    }
+
+    /**
      * Adds an early location entry to the early location map, optionally also saving it to the database.
      * @param {GuildMember} member The guild member that is getting early location.
      * @param {string} reactionCodeName The reaction code name corresponding to the reaction that the person chose.
@@ -1158,7 +1252,7 @@ export class RaidInstance {
             return false;
         prop.push({member: member, modifiers: modifiers});
 
-        if (!addToDb || !this._raidVc)
+        if (!addToDb || !this._raidVc || !this._addedToDb)
             return true;
 
         const res = await MongoManager.updateAndFetchGuildDoc({
@@ -1184,9 +1278,12 @@ export class RaidInstance {
      * @private
      */
     private async updateLocation(newLoc: string): Promise<boolean> {
-        this._location = newLoc;
-        if (!this._raidVc)
+        if (!this._raidVc || !this._addedToDb)
             return false;
+
+        this._location = newLoc;
+        this.logEvent(`Location changed to **\`${newLoc}\`**`, true).catch();
+
         // Update the location in the database.
         const res = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
@@ -1209,6 +1306,9 @@ export class RaidInstance {
      * @private
      */
     private async addRaidToDatabase(): Promise<boolean> {
+        if (this._addedToDb)
+            return false;
+
         const obj = this.getRaidInfoObject();
         if (!obj) return false;
         const res = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
@@ -1219,6 +1319,7 @@ export class RaidInstance {
 
         if (!res) return false;
         this._guildDoc = res;
+        this._addedToDb = true;
         return true;
     }
 
@@ -1228,7 +1329,9 @@ export class RaidInstance {
      * @private
      */
     private async removeRaidFromDatabase(): Promise<boolean> {
-        if (!this._raidVc) return false;
+        if (!this._raidVc || !this._addedToDb)
+            return false;
+
         const res = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
             $pull: {
                 activeRaids: {
@@ -1248,7 +1351,9 @@ export class RaidInstance {
      * @private
      */
     private async setRaidStatus(status: RaidStatus): Promise<boolean> {
-        if (!this._raidVc) return false;
+        if (!this._raidVc || !this._addedToDb)
+            return false;
+
         this._raidStatus = status;
         // Update the location in the database.
         const res = await MongoManager.updateAndFetchGuildDoc({
@@ -1298,14 +1403,18 @@ export class RaidInstance {
         const raidObj: IRaidInfo = {
             dungeonCodeName: this._dungeon.codeName,
             memberInit: this._memberInit.id,
-            channels: this._raidSection.channels.raids,
+            raidChannels: this._raidSection.channels.raids,
             afkCheckMessageId: this._afkCheckMsg.id,
             controlPanelMessageId: this._controlPanelMsg.id,
             status: this._raidStatus,
             vcId: this._raidVc.id,
             location: this._location,
             sectionIdentifier: this._raidSection.uniqueIdentifier,
-            earlyLocationReactions: []
+            earlyLocationReactions: [],
+            otherChannels: {
+                logChannelId: this._logChan?.id ?? "",
+                feedbackChannelId: this._thisFeedbackChan?.id ?? ""
+            }
         };
 
         for (const [key, val] of this._pplWithEarlyLoc) {
@@ -1379,21 +1488,22 @@ export class RaidInstance {
      * the raid from the database.
      */
     public async cleanUpRaid(): Promise<void> {
-        // Step 0: Remove the raid object. We don't need it anymore.
-        // Also stop all collectors.
-        await this.removeRaidFromDatabase();
-        await this.stopAllIntervalsAndCollectors();
+        this.stopAllIntervalsAndCollectors();
+        await Promise.all([
+            // Step 0: Remove the raid object. We don't need it anymore.
+            // Also stop all collectors.
+            this.removeRaidFromDatabase(),
+            // Step 1: Remove the control panel message.
+            this._controlPanelMsg?.delete().catch(),
+            // Step 2: Unpin the AFK check message.
+            this._afkCheckMsg?.unpin().catch(),
+            // Step 3: Delete the raid VC
+            this._raidVc?.delete().catch(),
+            // Step 4: Delete the logging channel
+            this._logChan?.delete().catch()
+        ]);
 
-        // Step 1: Remove the control panel message.
-        await this._controlPanelMsg?.delete().catch();
-
-        // Step 2: Unpin the AFK check message.
-        await this._afkCheckMsg?.unpin().catch();
-
-        // Step 3: Delete the raid VC
-        await this._raidVc?.delete().catch();
-
-        // Step 4: Remove from ActiveRaids collection
+        // Step 5: Remove from ActiveRaids collection
         RaidInstance.ActiveRaids.delete(this._afkCheckMsg!.id);
     }
 
@@ -2107,10 +2217,11 @@ export class RaidInstance {
                 components: []
             });
 
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${memberThatResponded.displayName} (${memberThatResponded.id}) reacted and`
-                + ` confirmed (with the bot) that he or she has: ${reactInfo.name} (${reactInfo.type}).`
-            );
+            this.logEvent(
+                `${memberThatResponded.displayName} (${memberThatResponded.id}) confirmed that he or she has`
+                + ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.modifiers.join(", ")}]\``,
+                true
+            ).catch();
         });
 
         // If time expires, then end AFK check immediately.
@@ -2143,91 +2254,82 @@ export class RaidInstance {
         if (oldState.channelId !== newState.channelId) {
             if (oldState.channelId && !newState.channelId) {
                 // person left the VC
-                this._raidLogs.push(
-                    `[${getFormattedTime()}] ${member.displayName} (${member.id}) has left the raid VC.`
-                );
+                this.logEvent(`${member.displayName} (${member.id}) has left the raid VC.`, true)
+                    .catch();
                 return;
             }
 
             if (!oldState.channelId && newState.channelId) {
                 // person joined the VC
-                this._raidLogs.push(
-                    `[${getFormattedTime()}] ${member.displayName} (${member.id}) has joined the raid VC.`
-                );
+                this.logEvent(`${member.displayName} (${member.id}) has joined the raid VC.`, true)
+                    .catch();
                 return;
             }
 
             // otherwise, changed VC
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has switched voice channels.\n`
+            this.logEvent(
+                `${member.displayName} (${member.id}) has switched voice channels.\n`
                 + `\tFrom: ${oldState.channel!.name} (${oldState.channelId})\n`
-                + `\tTo: ${newState.channel!.name} (${newState.channelId})`
-            );
+                + `\tTo: ${newState.channel!.name} (${newState.channelId})`,
+                true
+            ).catch();
             return;
         }
 
         // Don't care about local mute, only server
         if (oldState.serverMute && !newState.serverMute) {
             // person no longer server muted
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${member.displayName} (${member.id}) is no longer server muted.`
-            );
+            this.logEvent(`${member.displayName} (${member.id}) is no longer server muted.`, true)
+                .catch();
             return;
         }
 
         if (!oldState.serverMute && newState.serverMute) {
             // person server/local muted
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${member.displayName} (${member.id}) is now server muted.`
-            );
+            this.logEvent(`${member.displayName} (${member.id}) is now server muted.`, true)
+                .catch();
             return;
         }
 
         if (oldState.deaf && !newState.deaf) {
             // person no longer server/local deaf
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${member.displayName} (${member.id}) is no longer deafened.`
-            );
+            this.logEvent(`${member.displayName} (${member.id}) is no longer deafened.`, true)
+                .catch();
             return;
         }
 
         if (!oldState.deaf && newState.deaf) {
             // person server/local deaf
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${member.displayName} (${member.id}) is now deafened.`
-            );
+            this.logEvent(`${member.displayName} (${member.id}) is now deafened.`, true)
+                .catch();
             return;
         }
 
         if (oldState.selfVideo && !newState.selfVideo) {
             // person video off
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has turned off video.`
-            );
+            this.logEvent(`${member.displayName} (${member.id}) has turned off video.`, true)
+                .catch();
             return;
         }
 
         if (!oldState.selfVideo && newState.selfVideo) {
             // person video on
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has turned on video.`
-            );
+            this.logEvent(`${member.displayName} (${member.id}) has turned on video.`, true)
+                .catch();
             return;
         }
 
         if (oldState.streaming && !newState.streaming) {
             // person stream off
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has stopped streaming.`
-            );
+            this.logEvent(`${member.displayName} (${member.id}) has stopped streaming.`, true)
+                .catch();
             return;
         }
 
         if (!oldState.streaming && newState.streaming) {
             // person stream on
-            this._raidLogs.push(
-                `[${getFormattedTime()}] ${member.displayName} (${member.id}) has started streaming.`
-            );
+            this.logEvent(`${member.displayName} (${member.id}) has started streaming.`, true)
+                .catch();
             return;
         }
     }
@@ -2264,9 +2366,7 @@ export class RaidInstance {
         }
 
         await member.voice.setChannel(this._raidVc).catch();
-        this._raidLogs.push(
-            `[${getFormattedTime()}] ${member.displayName} (${member.id}) has reconnected to the raid VC.`
-        );
+        this.logEvent(`${member.displayName} (${member.id}) has reconnected to the raid VC.`, true).catch();
     }
 
     /**
@@ -2335,24 +2435,30 @@ export class RaidInstance {
             }
 
             if (i.customId === RaidInstance.LOCK_VC_ID) {
-                await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
-                    "CONNECT": false
-                }).catch();
-                await i.reply({
-                    content: "Locked Raid VC.",
-                    ephemeral: true
-                }).catch();
+                await Promise.all([
+                    this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
+                        "CONNECT": false
+                    }),
+                    i.reply({
+                        content: "Locked Raid VC.",
+                        ephemeral: true
+                    }),
+                    this.logEvent("Raid VC locked.", true)
+                ]);
                 return;
             }
 
             if (i.customId === RaidInstance.UNLOCK_VC_ID) {
-                await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
-                    "CONNECT": null
-                }).catch();
-                await i.reply({
-                    content: "Unlocked Raid VC.",
-                    ephemeral: true
-                }).catch();
+                await Promise.all([
+                    await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
+                        "CONNECT": null
+                    }),
+                    await i.reply({
+                        content: "Unlocked Raid VC.",
+                        ephemeral: true
+                    }),
+                    this.logEvent("Raid VC unlocked.", true).catch()
+                ]);
                 return;
             }
 
@@ -2383,6 +2489,10 @@ export class RaidInstance {
 
                 if (!res) return;
                 const parseSummary = await this.parseScreenshot(res.url);
+                this.logEvent(
+                    `Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``,
+                    true
+                ).catch();
 
                 const inVcNotInRaidFields = parseSummary.isValid
                     ?
@@ -2533,9 +2643,8 @@ export class RaidInstance {
                 targetChannel: interaction.channel!,
                 duration: 2 * 60 * 1000,
                 targetAuthor: interaction.user,
-                acknowledgeImmediately: false
+                acknowledgeImmediately: true
             }, uniqueIdentifier);
-            // TODO might need to edit buttons so no interaction failed
 
             if (!modifierRes) {
                 await interaction.editReply({
@@ -2599,7 +2708,7 @@ export class RaidInstance {
                     targetChannel: interaction.channel!,
                     duration: 2 * 60 * 1000,
                     targetAuthor: interaction.user,
-                    acknowledgeImmediately: false
+                    acknowledgeImmediately: true
                 }, uniqueIdentifier);
 
                 if (!levelRes) return null;
@@ -2612,7 +2721,6 @@ export class RaidInstance {
                 if (levelRes.customId === cancelModId)
                     return null;
 
-                // TODO might need to edit buttons so no interaction failed
                 returnObj.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
             }
 
@@ -2650,6 +2758,22 @@ export class RaidInstance {
             return null;
 
         return {mapKey: mapKey, modifiers: [], accidentCt: 0};
+    }
+
+    /**
+     * Logs an event. This will store the event in an array containing all events and optionally send the event to
+     * the logging channel.
+     * @param {string} event The event.
+     * @param {boolean} logToChannel Whether to log this event to the logging channel.
+     */
+    public async logEvent(event: string, logToChannel: boolean): Promise<void> {
+        const time = getFormattedTime();
+
+        if (logToChannel && this._logChan) {
+            this._logChan.send(`**\`[${time}]\`** ${event}`).catch();
+        }
+
+        this._raidLogs.push(`[${time}] ${event}`);
     }
 }
 

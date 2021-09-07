@@ -21,8 +21,6 @@ export interface IBaseDocument<T = ObjectID> {
     _id: T;
 }
 
-// TODO blacklist collection for easier storage of blacklists?
-
 export interface IBotInfo {
     activeEvents: {
         issuedTime: number;
