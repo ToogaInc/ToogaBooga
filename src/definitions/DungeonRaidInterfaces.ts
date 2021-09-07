@@ -456,6 +456,13 @@ export interface IRaidInfo {
          * @type {string}
          */
         reactCodeName: string;
+
+        /**
+         * Modifiers, if any, for this reaction.
+         *
+         * @type {string[]}
+         */
+        modifiers: string[];
     }[];
 }
 
