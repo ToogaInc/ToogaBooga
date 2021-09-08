@@ -947,7 +947,7 @@ export class RaidInstance {
             return;
 
         const feedbackChannel = await GlobalFgrUtilities.tryExecuteAsync(async () => {
-            return await this._guild.channels.create(`${this._leaderName}-feedback`, {
+            return this._guild.channels.create(`${this._leaderName}-feedback`, {
                 parent: this._feedbackBaseChannel!.parent!,
                 type: "GUILD_TEXT",
                 rateLimitPerUser: 5 * 60 * 1000,

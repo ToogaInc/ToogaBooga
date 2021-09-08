@@ -1,6 +1,6 @@
 import {
     Channel,
-    DMChannel, EmojiIdentifierResolvable,
+    DMChannel,
     Guild,
     GuildEmoji,
     Message,
@@ -25,7 +25,7 @@ export namespace GlobalFgrUtilities {
      */
     export async function openDirectMessage(targetUser: User): Promise<DMChannel | null> {
         try {
-            return await targetUser.createDM();
+            return targetUser.createDM();
         } catch (e) {
             return null;
         }
@@ -64,7 +64,7 @@ export namespace GlobalFgrUtilities {
     export async function fetchGuild(guildId: string): Promise<Guild | null> {
         if (!MiscUtilities.isSnowflake(guildId)) return null;
         try {
-            return await OneLifeBot.BotInstance.client.guilds.fetch(guildId);
+            return OneLifeBot.BotInstance.client.guilds.fetch(guildId);
         } catch (e) {
             return null;
         }
@@ -110,7 +110,7 @@ export namespace GlobalFgrUtilities {
     export async function fetchUser(targetId: string): Promise<User | null> {
         if (!MiscUtilities.isSnowflake(targetId)) return null;
         try {
-            return await OneLifeBot.BotInstance.client.users.fetch(targetId);
+            return OneLifeBot.BotInstance.client.users.fetch(targetId);
         } catch (e) {
             return null;
         }
@@ -128,7 +128,7 @@ export namespace GlobalFgrUtilities {
     export async function sendMsg(channel: PartialTextBasedChannelFields,
                                   msgOptions: MessageOptions): Promise<Message | null> {
         try {
-            return await channel.send({
+            return channel.send({
                 content: msgOptions.content,
                 embeds: msgOptions.embeds,
                 files: msgOptions.files,
@@ -161,7 +161,7 @@ export namespace GlobalFgrUtilities {
      */
     export async function tryExecuteAsync<T = void>(func: () => Promise<T | null>): Promise<T | null> {
         try {
-            return await func();
+            return func();
         } catch (e) {
             return null;
         }

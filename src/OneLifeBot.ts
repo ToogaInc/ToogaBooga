@@ -116,6 +116,10 @@ export class OneLifeBot {
             new Cmds.ConfigureSections()
         ]);
 
+        OneLifeBot.Commands.set("Punishments", [
+            new Cmds.SuspendMember()
+        ]);
+
         OneLifeBot.Commands.set("Bot Owner", [
             new Cmds.SendAnnouncement()
         ]);

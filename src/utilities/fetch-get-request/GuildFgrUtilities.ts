@@ -232,7 +232,7 @@ export namespace GuildFgrUtilities {
     export async function fetchGuildMember(guild: Guild, targetId: string): Promise<GuildMember | null> {
         if (!MiscUtilities.isSnowflake(targetId)) return null;
         try {
-            return await guild.members.fetch(targetId);
+            return guild.members.fetch(targetId);
         } catch (e) {
             return null;
         }
@@ -250,7 +250,7 @@ export namespace GuildFgrUtilities {
         if (!MiscUtilities.isSnowflake(msgId)) return null;
         if (!channel.isText()) return null;
         try {
-            return await channel.messages.fetch(msgId);
+            return channel.messages.fetch(msgId);
         } catch (e) {
             return null;
         }
@@ -266,7 +266,7 @@ export namespace GuildFgrUtilities {
     export async function fetchRole(guild: Guild, roleId: string): Promise<Role | null> {
         if (!MiscUtilities.isSnowflake(roleId)) return null;
         try {
-            return await guild.roles.fetch(roleId as Snowflake);
+            return guild.roles.fetch(roleId as Snowflake);
         } catch (e) {
             return null;
         }

@@ -12,6 +12,8 @@ export * from "./staff/FindPunishment";
 export * from "./staff/CheckBlacklist";
 export * from "./staff/FindPerson";
 
+export * from "./punishments/SuspendMember";
+
 export * from "./owner/SendAnnouncement";
 
 export * from "./raid-leaders/StartAfkCheck";

@@ -1,4 +1,67 @@
+import {CommonRegex} from "../constants/CommonRegex";
+
 export namespace TimeUtilities {
+    type TimeUnitType = { ms: number; formatted: string; };
+
+    /**
+     * Parses a time + unit string (for example, `3m`) into the corresponding duration in milliseconds.
+     * @param {string} timeUnit The time and unit. There can be multiple.
+     * @returns {TimeUtilities | null} The parsed time, if any.
+     */
+    export function parseTimeUnit(timeUnit: string): TimeUnitType | null {
+        // Break up the time + units into individual strings
+        // For example, 3d5m = [3d, 5m]
+        const timeStrArr: string[] = [];
+
+        let validStr = false;
+        let lastIdx = 0;
+        let duration = 0;
+        for (let i = 0; i < timeUnit.length; i++) {
+            // Not a letter or space = skip
+            if (timeUnit[i] === " " || !CommonRegex.ONLY_LETTERS.test(timeUnit[i]))
+                continue;
+
+            //     --- substring(lastIdx, i)
+            //     | |
+            // ... 230m ...
+            //     ^  ^
+            //     |  i
+            //     |
+            //     lastIdx
+            const parsedNum = Number.parseInt(timeUnit.substring(lastIdx, i).replaceAll(" ", ""), 10);
+            lastIdx = i + 1;
+
+            if (Number.isNaN(parsedNum))
+                continue;
+
+            switch (timeUnit[i]) {
+                case "m": {
+                    duration += parsedNum * 60000;
+                    break;
+                }
+                case "h": {
+                    duration += parsedNum * 3.6e+6;
+                    break;
+                }
+                case "d": {
+                    duration += parsedNum * 8.64e+7;
+                    break;
+                }
+                case "w": {
+                    duration += parsedNum * 6.048e+8;
+                    break;
+                }
+                default: {
+                    duration += parsedNum * 8.64e+7;
+                    break;
+                }
+            }
+            validStr = true;
+        }
+
+        return validStr ? {ms: duration, formatted: formatDuration(duration, false)} : null;
+    }
+
     /**
      * Gets the current time in a nice string format.
      * @param {string} [timezone] The timezone, if applicable. Otherwise, GMT is used.

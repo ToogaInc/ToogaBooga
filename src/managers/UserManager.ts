@@ -1,6 +1,59 @@
 import {CommonRegex} from "../constants/CommonRegex";
+import {Guild, GuildMember} from "discord.js";
+import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
+import {MongoManager} from "./MongoManager";
 
 export namespace UserManager {
+
+    /**
+     * Attempts to resolve an IGN, Discord ID, or mention.
+     * @param {Guild} guild The guild.
+     * @param {string} memberResolvable The member resolvable.
+     * @returns {Promise<GuildMember | null>} The member, if any. `null` if no such member was found.
+     */
+    export async function resolveMember(guild: Guild, memberResolvable: string): Promise<GuildMember | null> {
+        async function getMemberFromId(idToUse: string): Promise<GuildMember | null> {
+            // If cached, then use that
+            const cachedMember = GuildFgrUtilities.getCachedMember(guild, idToUse);
+            if (cachedMember)
+                return cachedMember;
+
+            return GuildFgrUtilities.fetchGuildMember(guild, idToUse);
+        }
+
+        // Snowflake = Discord ID
+        if (CommonRegex.ONLY_NUMBERS.test(memberResolvable)) {
+            return getMemberFromId(memberResolvable);
+        }
+
+        // All letters = name
+        if (CommonRegex.ONLY_LETTERS.test(memberResolvable)) {
+            const searchRes = await guild.members.search({
+                query: memberResolvable,
+                limit: 10
+            });
+
+            const memberRes = searchRes
+                .find(x => UserManager.getAllNames(x.displayName, true)
+                    .some(y => y === memberResolvable.toLowerCase()));
+            if (memberRes)
+                return memberRes;
+
+            // Find via db so we can get the associated ID
+            const idNameDocs = await MongoManager.findNameInIdNameCollection(memberResolvable);
+            if (idNameDocs.length === 0)
+                return null;
+
+            return getMemberFromId(idNameDocs[0].currentDiscordId);
+        }
+
+        // Otherwise, it's a mention
+        const parsedMention = memberResolvable.match(CommonRegex.USER_MENTION);
+        if (!parsedMention)
+            return null;
+
+        return getMemberFromId(parsedMention[1]);
+    }
 
     /**
      * Gets all names from a raw name. This will automatically remove any symbols.

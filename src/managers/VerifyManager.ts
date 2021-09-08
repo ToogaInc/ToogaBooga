@@ -93,8 +93,8 @@ export namespace VerifyManager {
      * @private
      */
     async function getInitialMessage(member: GuildMember): Promise<Message | null> {
-        return await GlobalFgrUtilities.tryExecuteAsync<Message>(async () => {
-            return await member.send({
+        return GlobalFgrUtilities.tryExecuteAsync<Message>(async () => {
+            return member.send({
                 embeds: [
                     new MessageEmbed()
                         .setColor("YELLOW")
@@ -526,7 +526,7 @@ export namespace VerifyManager {
 
             // Grab normal data.
             const requestData = await GlobalFgrUtilities.tryExecuteAsync<PAD.IPlayerData>(async () => {
-                return await RealmSharperWrapper.getPlayerInfo(nameToVerify!);
+                return RealmSharperWrapper.getPlayerInfo(nameToVerify!);
             });
 
             if (!requestData) {
@@ -577,7 +577,7 @@ export namespace VerifyManager {
 
             // Grab name history.
             const nameHistory = await GlobalFgrUtilities.tryExecuteAsync<PAD.INameHistory>(async () => {
-                return await RealmSharperWrapper.getNameHistory(nameToVerify!);
+                return RealmSharperWrapper.getNameHistory(nameToVerify!);
             });
 
             if (!nameHistory) {
@@ -821,7 +821,7 @@ export namespace VerifyManager {
         }
 
         const requestData = await GlobalFgrUtilities.tryExecuteAsync<PAD.IPlayerData>(async () => {
-            return await RealmSharperWrapper.getPlayerInfo(nameToUse);
+            return RealmSharperWrapper.getPlayerInfo(nameToUse);
         });
 
         if (!requestData) {

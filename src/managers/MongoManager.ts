@@ -172,7 +172,7 @@ export namespace MongoManager {
         if (!UserManager.isValidRealmName(name))
             return [];
 
-        return await UserCollection.find({
+        return UserCollection.find({
             "rotmgNames.lowercaseIgn": name.toLowerCase()
         }).toArray();
     }
@@ -189,7 +189,7 @@ export namespace MongoManager {
         if (IdNameCollection === null)
             throw new ReferenceError("IDNameCollection null. Use connect method first.");
 
-        return await IdNameCollection.find({
+        return IdNameCollection.find({
             currentDiscordId: discordId
         }).toArray();
     }
@@ -204,7 +204,7 @@ export namespace MongoManager {
         if (IdNameCollection === null)
             throw new ReferenceError("IDNameCollection null. Use connect method first.");
 
-        return await IdNameCollection.find({
+        return IdNameCollection.find({
             "rotmgNames.lowercaseIgn": name.toLowerCase()
         }).toArray();
     }
