@@ -8,7 +8,7 @@ import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 
 export class SuspendMember extends BaseCommand {
-    private static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
+    public static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
         .append("Something went wrong when trying to suspend this person.").appendLine()
         .append("- The person already has the suspended role. In this case, manually remove the Suspended role and")
         .append(" then try running the command again.").appendLine()
@@ -90,6 +90,8 @@ export class SuspendMember extends BaseCommand {
                 content: SuspendMember.ERROR_NO_SUSPEND_STR,
                 ephemeral: true
             });
+
+            return 0;
         }
 
         await ctx.interaction.reply({

@@ -13,6 +13,7 @@ export * from "./staff/CheckBlacklist";
 export * from "./staff/FindPerson";
 
 export * from "./punishments/SuspendMember";
+export * from "./punishments/SectionSuspendMember";
 
 export * from "./owner/SendAnnouncement";
 
