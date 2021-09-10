@@ -609,6 +609,7 @@ export namespace VerifyManager {
                 return;
             }
 
+            // TODO might want to check this person's old names as well (search user db for name, check past names)
             // Check blacklist info
             for (const blacklistEntry of guildDoc.moderation.blacklistedUsers) {
                 for (const nameEntry of [requestData.name, ...nameHistory.nameHistory.map(x => x.name)]) {

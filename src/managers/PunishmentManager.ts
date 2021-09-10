@@ -192,7 +192,7 @@ export namespace PunishmentManager {
         let logChannel: TextChannel | null;
         let resolvedModType: MainOnlyModLogType | SectionModLogType | null;
 
-        const isAddingPunishment = punishmentType.includes("Un");
+        const isAddingPunishment = !punishmentType.includes("Un");
         // If we're resolving a punishment AND the action ID to resolve is not specified, then we can't do anything.
         if (!isAddingPunishment && !details.actionIdToResolve)
             return null;

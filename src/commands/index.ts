@@ -14,6 +14,7 @@ export * from "./staff/FindPerson";
 
 export * from "./punishments/SuspendMember";
 export * from "./punishments/SectionSuspendMember";
+export * from "./punishments/BlacklistMember";
 
 export * from "./owner/SendAnnouncement";
 

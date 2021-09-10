@@ -8,7 +8,6 @@ import generateRandomString = StringUtil.generateRandomString;
 import {MongoManager} from "../../managers/MongoManager";
 import {IBlacklistedUser} from "../../definitions";
 import {PunishmentManager} from "../../managers/PunishmentManager";
-import {StringBuilder} from "../../utilities/StringBuilder";
 
 export class BlacklistMember extends BaseCommand {
     public constructor() {
@@ -69,6 +68,13 @@ export class BlacklistMember extends BaseCommand {
         const blacklistId = `Blacklist_${Date.now()}_${resMember?.member.id ?? mStr}}_${generateRandomString(10)}`;
         const currTime = Date.now();
 
+        const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
+            .setTitle("Blacklisted.")
+            .addField("Reason", StringUtil.codifyString(reason))
+            .addField("Moderation ID", StringUtil.codifyString(reason))
+            .setTimestamp();
+
+        // No member = we need to assume that mStr is an IGN
         if (!resMember) {
             // If this was an ID or a mention, then we can't resolve it
             // We can blacklist names though
@@ -111,123 +117,98 @@ export class BlacklistMember extends BaseCommand {
                 sendNoticeToAffectedUser: false
             });
 
+            finalEmbed.setDescription(`\`${mStr}\` has been blacklisted successfully.`);
             if (!res) {
+                finalEmbed.addField(
+                    "Warning",
+                    "An error occurred when trying to log this punishment. While the blacklist was successful, it's"
+                    + " possible that this punishment could not be logged in the user's database."
+                );
+            }
+
+            await ctx.interaction.reply({
+                embeds: [finalEmbed]
+            });
+
+            return 0;
+        }
+
+        // mStr can still either be one of
+        // - Discord ID
+        // - Mention
+        // - IGN
+        // Figure out what we're working with and then get the *IGN*
+
+        let finalIgnToBl: string;
+        // IGN = use it
+        if (CommonRegex.ONLY_LETTERS.test(mStr))
+            finalIgnToBl = mStr;
+        // Not IGN, must be either mention or ID
+        else if (resMember.idNameDoc)
+            finalIgnToBl = resMember.idNameDoc.rotmgNames[0].ign;
+        // Otherwise, check nickname
+        else {
+            const possNames = UserManager.getAllNames(resMember.member.displayName);
+            if (possNames.length === 0) {
                 await ctx.interaction.reply({
-                    content: "Something went wrong when trying to blacklist this person.",
+                    content: "This member could not be resolved. Please try again.",
                     ephemeral: true
                 });
 
                 return 0;
             }
 
-            await ctx.interaction.reply({
-                embeds: [
-                    MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-                        .setTitle("Blacklisted.")
-                        .setDescription(`\`${mStr}\` has been blacklisted successfully.`)
-                        .addField("Reason", StringUtil.codifyString(reason))
-                        .addField("Moderation ID", StringUtil.codifyString(reason))
-                        .setTimestamp()
-                ]
-            });
-
-            return 0;
+            finalIgnToBl = possNames[0];
         }
 
-        const namesToBlacklist: IBlacklistedUser[] = [
-            {
-                actionId: blacklistId,
-                evidence: [],
-                issuedAt: currTime,
-                moderator: {id: ctx.user.id, name: ctx.member!.displayName, tag: ctx.user.tag},
-                realmName: {lowercaseIgn: mStr.toLowerCase(), ign: mStr},
-                reason: reason,
-                discordId: resMember.member.id
-            }
-        ];
 
-        const blIds: string[] = [
-            blacklistId
-        ];
+        const rBlInfo: IBlacklistedUser = {
+            actionId: blacklistId,
+            evidence: [],
+            issuedAt: currTime,
+            moderator: {id: ctx.user.id, name: ctx.member!.displayName, tag: ctx.user.tag},
+            realmName: {lowercaseIgn: finalIgnToBl.toLowerCase(), ign: finalIgnToBl},
+            reason: reason,
+            discordId: resMember.member.id
+        };
 
-        const lowercaseNameSet = new Set<string>();
-        lowercaseNameSet.add(mStr.toLowerCase());
-        if (resMember.idNameDoc?.rotmgNames) {
-            let num = 1;
-            for (const name of resMember.idNameDoc.rotmgNames) {
-                if (lowercaseNameSet.has(name.lowercaseIgn))
-                    continue;
+        const [newDoc,] = await Promise.all([
+            MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                $push: {
+                    "moderation.blacklistedUsers": rBlInfo
+                }
+            }),
+            resMember.member.ban({
+                reason: `Blacklisted. Reason: ${reason}`
+            })
+        ]);
 
-                if (ctx.guildDoc!.moderation.blacklistedUsers.some(x => x.realmName.lowercaseIgn === name.lowercaseIgn))
-                    continue;
-
-                lowercaseNameSet.add(name.lowercaseIgn);
-
-                const thisBlId = blacklistId + "_" + (num++);
-                namesToBlacklist.push({
-                    actionId: thisBlId,
-                    evidence: [],
-                    issuedAt: currTime,
-                    moderator: {id: ctx.user.id, name: ctx.member!.displayName, tag: ctx.user.tag},
-                    realmName: {lowercaseIgn: name.lowercaseIgn, ign: name.ign},
-                    reason: reason,
-                    discordId: resMember.member.id
-                });
-
-                blIds.push(thisBlId);
-            }
-        }
-
-        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
-            $push: {
-                "moderation.blacklistedUsers": namesToBlacklist
-            }
+        ctx.guildDoc = newDoc;
+        const logInfo = await PunishmentManager.logPunishment({name: finalIgnToBl}, "Blacklist", {
+            actionIdToUse: blacklistId,
+            evidence: [],
+            guild: ctx.guild!,
+            guildDoc: ctx.guildDoc!,
+            issuedTime: currTime,
+            moderator: ctx.member!,
+            nickname: mStr,
+            reason: reason,
+            section: MongoManager.getMainSection(ctx.guildDoc!),
+            sendLogInfo: true,
+            sendNoticeToAffectedUser: false
         });
 
-        const logInfoStrBuilder = new StringBuilder();
-
-        const mainSec = MongoManager.getMainSection(ctx.guildDoc!);
-        for (let i = 0; i < namesToBlacklist.length; i++) {
-            const name = namesToBlacklist[i];
-            const blId = blIds[i];
-
-            const res = await PunishmentManager.logPunishment({name: mStr}, "Blacklist", {
-                actionIdToUse: blId,
-                evidence: [],
-                guild: ctx.guild!,
-                guildDoc: ctx.guildDoc!,
-                issuedTime: currTime,
-                moderator: ctx.member!,
-                nickname: name.realmName.ign,
-                reason: reason,
-                section: mainSec,
-                sendLogInfo: true,
-                sendNoticeToAffectedUser: false
-            });
-
-            if (!res)
-                continue;
-
-            logInfoStrBuilder.append(`- ${name.realmName.ign}: ${blId}`)
-                .appendLine();
+        finalEmbed.setDescription(`\`${resMember.member}\` has been blacklisted successfully.`);
+        if (!logInfo) {
+            finalEmbed.addField(
+                "Warning",
+                "An error occurred when trying to log this punishment. While the blacklist was successful, it's"
+                + " possible that this punishment could not be logged in the user's database."
+            );
         }
-
-        await resMember.member.ban({
-            reason: `Blacklisted. Reason: ${reason}`
-        });
 
         await ctx.interaction.reply({
-            embeds: [
-                MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-                    .setTitle("Blacklisted.")
-                    .setDescription(`\`${resMember.member}\` has been blacklisted successfully.`)
-                    .addField("Reason", StringUtil.codifyString(reason))
-                    .addField("Moderation ID", StringUtil.codifyString(reason))
-                    .addField("Blacklisted Accounts", logInfoStrBuilder.length() === 0
-                        ? "N/A"
-                        : logInfoStrBuilder.toString())
-                    .setTimestamp()
-            ]
+            embeds: [finalEmbed]
         });
 
         return 0;
