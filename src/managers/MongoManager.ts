@@ -165,7 +165,7 @@ export namespace MongoManager {
      * @returns {Array<IUserInfo[]>} The search results.
      * @throws {ReferenceError} If the Mongo instance isn't connected.
      */
-    export async function getUserDb(name: string): Promise<IUserInfo[]> {
+    export async function getUserDoc(name: string): Promise<IUserInfo[]> {
         if (UserCollection === null)
             throw new ReferenceError("UserCollection null. Use connect method first.");
 
@@ -178,7 +178,7 @@ export namespace MongoManager {
     }
 
     /**
-     * Finds any user documents that contains the given ID. This should be preferred over `getUserDb` as anyone
+     * Finds any user documents that contains the given ID. This should be preferred over `getUserDoc` as anyone
      * that verifies through the bot will have an entry.
      *
      * @param {string} discordId The Discord ID to search up.

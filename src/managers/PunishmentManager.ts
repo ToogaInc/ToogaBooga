@@ -795,14 +795,14 @@ export namespace SuspensionManager {
     }
 
     /**
-     * Adds a server suspension. This will suspend the specified `member` from the server and log the event in the
-     * guild database.
+     * Attempts to add a server suspension. This will suspend the specified `member` from the server and log the event
+     * in the guild database. This will fail if the member is already suspended.
      * @param {GuildMember} member The member to suspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
      * @param {IAdditionalPunishmentParams} info Any additional suspension information.
      * @returns {Promise<string>} The moderation ID, if the suspension was successful. `null` otherwise.
      */
-    export async function addSuspension(
+    export async function tryAddSuspension(
         member: GuildMember,
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
@@ -923,14 +923,14 @@ export namespace SuspensionManager {
     }
 
     /**
-     * Adds a server section suspension. This will suspend the specified `member` from the section and log the event
-     * in the database.
+     * Tries to add a server section suspension. This will suspend the specified `member` from the section and log the
+     * event in the database. This will fail if the member is already suspended.
      * @param {GuildMember} member The member to suspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
      * @param {IAdditionalPunishmentParams} info The additional information for this section suspension.
      * @returns {Promise<string | null>} The moderation ID associated with this section suspension.
      */
-    export async function addSectionSuspension(
+    export async function tryAddSectionSuspension(
         member: GuildMember,
         mod: GuildMember | null,
         info: IAdditionalPunishmentParams

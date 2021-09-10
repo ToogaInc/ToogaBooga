@@ -62,9 +62,9 @@ export class SuspendMember extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const memberStr = ctx.interaction.options.getString("member", true);
-        const member = await UserManager.resolveMember(ctx.guild!, memberStr);
+        const resMember = await UserManager.resolveMember(ctx.guild!, memberStr);
 
-        if (!member) {
+        if (!resMember) {
             await ctx.interaction.reply({
                 content: "This member could not be resolved. Please try again.",
                 ephemeral: true
@@ -78,7 +78,7 @@ export class SuspendMember extends BaseCommand {
 
         const reason = ctx.interaction.options.getString("reason", true);
 
-        const susRes = await SuspensionManager.addSuspension(member, ctx.member!, {
+        const susRes = await SuspensionManager.tryAddSuspension(resMember.member, ctx.member!, {
             duration: parsedDuration?.ms ?? -1,
             evidence: [],
             guildDoc: ctx.guildDoc!,
@@ -98,7 +98,7 @@ export class SuspendMember extends BaseCommand {
             embeds: [
                 MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
                     .setTitle("Suspended.")
-                    .setDescription(`${member} has been suspended successfully.`)
+                    .setDescription(`${resMember.member} has been suspended successfully.`)
                     .addField("Reason", StringUtil.codifyString(reason))
                     .addField("Duration", StringUtil.codifyString(parsedDuration?.formatted ?? "Indefinite"))
                     .addField("Moderation ID", StringUtil.codifyString(susRes))

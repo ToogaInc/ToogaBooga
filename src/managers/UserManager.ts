@@ -2,6 +2,13 @@ import {CommonRegex} from "../constants/CommonRegex";
 import {Guild, GuildMember} from "discord.js";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "./MongoManager";
+import {IIdNameInfo, IUserInfo} from "../definitions";
+
+interface IResolvedMember {
+    member: GuildMember;
+    idNameDoc: IIdNameInfo | null;
+    userDoc: IUserInfo | null;
+}
 
 export namespace UserManager {
 
@@ -9,9 +16,10 @@ export namespace UserManager {
      * Attempts to resolve an IGN, Discord ID, or mention.
      * @param {Guild} guild The guild.
      * @param {string} memberResolvable The member resolvable.
-     * @returns {Promise<GuildMember | null>} The member, if any. `null` if no such member was found.
+     * @returns {Promise<IResolvedMember | null>} The member + other relevant information, if any. `null` if no such
+     * member was found.
      */
-    export async function resolveMember(guild: Guild, memberResolvable: string): Promise<GuildMember | null> {
+    export async function resolveMember(guild: Guild, memberResolvable: string): Promise<IResolvedMember | null> {
         async function getMemberFromId(idToUse: string): Promise<GuildMember | null> {
             // If cached, then use that
             const cachedMember = GuildFgrUtilities.getCachedMember(guild, idToUse);
@@ -21,13 +29,27 @@ export namespace UserManager {
             return GuildFgrUtilities.fetchGuildMember(guild, idToUse);
         }
 
-        // Snowflake = Discord ID
-        if (CommonRegex.ONLY_NUMBERS.test(memberResolvable)) {
-            return getMemberFromId(memberResolvable);
+        // m can be of type GuildMember or a member ID.
+        function getDocs(m: GuildMember | string): Promise<[IIdNameInfo[], IUserInfo[]]> {
+            return Promise.all([
+                MongoManager.findIdInIdNameCollection(typeof m === "string" ? m : m.id),
+                MongoManager.getUserDoc(typeof m === "string" ? m : m.id)
+            ]);
         }
 
+        let member: GuildMember | null = null;
+        let idUserDoc: IIdNameInfo | null = null;
+
+        // Snowflake = Discord ID
+        if (CommonRegex.ONLY_NUMBERS.test(memberResolvable)) {
+            member = await getMemberFromId(memberResolvable);
+            if (!member) {
+                const doc = await MongoManager.findIdInIdNameCollection(memberResolvable);
+                if (doc.length > 0) idUserDoc = doc[0];
+            }
+        }
         // All letters = name
-        if (CommonRegex.ONLY_LETTERS.test(memberResolvable)) {
+        else if (CommonRegex.ONLY_LETTERS.test(memberResolvable)) {
             const searchRes = await guild.members.search({
                 query: memberResolvable,
                 limit: 10
@@ -36,23 +58,45 @@ export namespace UserManager {
             const memberRes = searchRes
                 .find(x => UserManager.getAllNames(x.displayName, true)
                     .some(y => y === memberResolvable.toLowerCase()));
-            if (memberRes)
-                return memberRes;
 
-            // Find via db so we can get the associated ID
-            const idNameDocs = await MongoManager.findNameInIdNameCollection(memberResolvable);
-            if (idNameDocs.length === 0)
+            if (memberRes) {
+                member = memberRes;
+            }
+            else {
+                const doc = await MongoManager.findNameInIdNameCollection(memberResolvable);
+                if (doc.length > 0) idUserDoc = doc[0];
+            }
+        }
+        // Otherwise, it's a mention
+        else {
+            const parsedMention = memberResolvable.match(CommonRegex.USER_MENTION);
+            if (!parsedMention)
                 return null;
-
-            return getMemberFromId(idNameDocs[0].currentDiscordId);
+            member = await getMemberFromId(parsedMention[1]);
         }
 
-        // Otherwise, it's a mention
-        const parsedMention = memberResolvable.match(CommonRegex.USER_MENTION);
-        if (!parsedMention)
+        if (member) {
+            const [idNameDocs, userDocs] = await getDocs(member.id);
+            return {
+                member: member,
+                userDoc: userDocs.length === 0 ? null : userDocs[0],
+                idNameDoc: idNameDocs.length === 0 ? null : idNameDocs[0]
+            };
+        }
+
+        if (!idUserDoc)
             return null;
 
-        return getMemberFromId(parsedMention[1]);
+        member = await getMemberFromId(idUserDoc.currentDiscordId);
+        if (!member)
+            return null;
+
+        const [pIdNameDocs, pUserDocs] = await getDocs(member.id);
+        return {
+            member: member,
+            userDoc: pUserDocs.length === 0 ? null : pUserDocs[0],
+            idNameDoc: pIdNameDocs.length === 0 ? null : pIdNameDocs[0]
+        };
     }
 
     /**
