@@ -18,7 +18,7 @@ import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {PrivateApiDefinitions as PAD} from "../private-api/PrivateApiDefinitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {
-    IGuildInfo, IManualVerificationEntry,
+    IGuildInfo, IIdNameInfo, IManualVerificationEntry,
     IPropertyKeyValuePair,
     ISectionInfo,
     IVerificationProperties,
@@ -324,10 +324,12 @@ export namespace VerifyManager {
         if (!verifKit.msg)
             return;
 
+        let userDocToUse: IIdNameInfo | null = null;
+
         const dmChannel = await member.createDM();
-        const userDb = await MongoManager.findIdInIdNameCollection(member.id);
+        const userDocs = await MongoManager.findIdInIdNameCollection(member.id);
         let nameToVerify: string | null = null;
-        if (userDb.length > 0) {
+        if (userDocs.length > 0) {
             await verifKit.msg.edit({
                 embeds: [
                     MessageUtilities.generateBlankEmbed(member.user, "RED")
@@ -344,7 +346,7 @@ export namespace VerifyManager {
                     new MessageSelectMenu()
                         .setMaxValues(1)
                         .setMinValues(1)
-                        .addOptions(userDb[0].rotmgNames.map(x => {
+                        .addOptions(userDocs[0].rotmgNames.map(x => {
                             return {label: x.ign, value: x.ign};
                         }))
                         .setCustomId("select"),
@@ -379,8 +381,10 @@ export namespace VerifyManager {
                 return;
             }
 
-            if (selectedOption.isSelectMenu() && selectedOption.values.length > 0)
+            if (selectedOption.isSelectMenu() && selectedOption.values.length > 0) {
                 nameToVerify = selectedOption.values[0];
+                userDocToUse = userDocs[0];
+            }
 
             if (selectedOption.isButton() && selectedOption.customId === "cancel") {
                 verifKit.verifyFail?.send({
@@ -433,10 +437,21 @@ export namespace VerifyManager {
             }
 
             // Check if the name is being used in database or in guild
-            const matchedNameUserDb = await MongoManager.findNameInIdNameCollection(nameToUse);
+            const matchedNameUserDocs = await MongoManager.findNameInIdNameCollection(nameToUse);
+            let userDoc: IIdNameInfo | null = null;
+            let invalidDocs = 0;
+            for (const doc of matchedNameUserDocs) {
+                if (doc.currentDiscordId === member.id) {
+                    userDoc = doc;
+                    break;
+                }
+
+                invalidDocs++;
+            }
+
             // Make sure this isn't already registered to this user.
-            if (matchedNameUserDb.length > 0 && matchedNameUserDb.every(x => x.currentDiscordId !== member.id)) {
-                const idsRegistered = matchedNameUserDb.map(x => x.pastDiscordIds).join(", ");
+            if (!userDoc && invalidDocs > 0) {
+                const idsRegistered = matchedNameUserDocs.map(x => x.currentDiscordId).join(", ");
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify with the name, **\`${nameToUse}\`**, but this name `
                         + `has already been registered by the following Discord ID(s): ${idsRegistered}`
@@ -458,6 +473,15 @@ export namespace VerifyManager {
             }
 
             nameToVerify = nameToUse;
+            userDocToUse = userDoc ?? null;
+        }
+
+        const allAssociatedNames: string[] = [];
+        if (userDocToUse) {
+            allAssociatedNames.push(
+                ...userDocToUse.rotmgNames.map(x => x.ign),
+                ...userDocToUse.pastRealmNames.map(x => x.ign)
+            );
         }
 
         const code = StringUtil.generateRandomString(15);
@@ -609,10 +633,13 @@ export namespace VerifyManager {
                 return;
             }
 
-            // TODO might want to check this person's old names as well (search user db for name, check past names)
             // Check blacklist info
             for (const blacklistEntry of guildDoc.moderation.blacklistedUsers) {
-                for (const nameEntry of [requestData.name, ...nameHistory.nameHistory.map(x => x.name)]) {
+                for (const nameEntry of [
+                    requestData.name,
+                    ...nameHistory.nameHistory.map(x => x.name),
+                    ...allAssociatedNames
+                ]) {
                     if (blacklistEntry.realmName.lowercaseIgn !== nameEntry.toLowerCase())
                         continue;
 
