@@ -1,31 +1,42 @@
 import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {UserManager} from "../../managers/UserManager";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {SuspensionManager} from "../../managers/PunishmentManager";
-import {StringBuilder} from "../../utilities/StringBuilder";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
+import generateRandomString = StringUtil.generateRandomString;
+import {MuteManager} from "../../managers/PunishmentManager";
+import {TimeUtilities} from "../../utilities/TimeUtilities";
+import {StringBuilder} from "../../utilities/StringBuilder";
 
-export class SuspendMember extends BaseCommand {
-    public static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
-        .append("Something went wrong when trying to suspend this person.").appendLine()
-        .append("- The person already has the suspended role. In this case, manually remove the Suspended role and")
+export class MuteMember extends BaseCommand {
+    public static readonly ERROR_NO_MUTE_STR: string = new StringBuilder()
+        .append("Something went wrong when trying to mute this person.").appendLine()
+        .append("- The person already has the muted role. In this case, manually remove the Muted role and")
         .append(" then try running the command again.").appendLine()
         .toString();
 
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "SUSPEND_MEMBER",
-            formalCommandName: "Suspend Member",
-            botCommandName: "suspend",
-            description: "Suspends a user from the server.",
-            rolePermissions: ["Security", "Officer", "Moderator", "RaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
+            cmdCode: "MUTE_MEMBER",
+            formalCommandName: "Mute Member",
+            botCommandName: "mute",
+            description: "Mutes a member. He or she will not be able to talk in public voice channels or any text"
+                + " channels unless permission is explicitly granted to that person.",
+            rolePermissions: [
+                "Helper",
+                "Security",
+                "Officer",
+                "Moderator",
+                "AlmostRaidLeader",
+                "RaidLeader",
+                "HeadRaidLeader",
+                "VeteranRaidLeader"
+            ],
             generalPermissions: [],
-            botPermissions: ["MANAGE_ROLES"],
+            botPermissions: [],
             commandCooldown: 3 * 1000,
-            usageGuide: ["suspend [Member] {Duration} [Reason]"],
-            exampleGuide: ["suspend @Console#8939 For being bad", "suspend @Console#8939 3d For being bad"],
+            usageGuide: ["mute [Member] {Duration} [Reason]"],
+            exampleGuide: ["mute @Console#8939 10m For being bad", "mute Darkmattr For being bad"],
             guildOnly: true,
             botOwnerOnly: false
         };
@@ -36,7 +47,7 @@ export class SuspendMember extends BaseCommand {
         scb.addStringOption(o => {
             return o
                 .setName("member")
-                .setDescription("The member to suspend. This can either be an ID, IGN, or mention.")
+                .setDescription("The member to mute. This can either be an ID, IGN, or mention.")
                 .setRequired(true);
         }).addStringOption(o => {
             return o
@@ -44,13 +55,13 @@ export class SuspendMember extends BaseCommand {
                 .setDescription(
                     "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
                     + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
-                    + " implies an indefinite suspension. Not specifying the time unit for the suspension implies days."
+                    + " implies an indefinite mute. Not specifying the time unit for the mute implies days."
                 )
                 .setRequired(false);
         }).addStringOption(o => {
             return o
                 .setName("reason")
-                .setDescription("The reason for this suspension.")
+                .setDescription("The reason for this mute.")
                 .setRequired(true);
         });
 
@@ -61,9 +72,8 @@ export class SuspendMember extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
-        const memberStr = ctx.interaction.options.getString("member", true);
-        const resMember = await UserManager.resolveMember(ctx.guild!, memberStr);
-
+        const mStr = ctx.interaction.options.getString("member", true);
+        const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
         if (!resMember) {
             await ctx.interaction.reply({
                 content: "This member could not be resolved. Please try again.",
@@ -73,46 +83,50 @@ export class SuspendMember extends BaseCommand {
             return 0;
         }
 
+        const warningId = `Mute_${Date.now()}_${resMember?.member.id ?? mStr}}_${generateRandomString(10)}`;
+
         const durationStr = ctx.interaction.options.getString("duration", false);
         const parsedDuration = durationStr ? TimeUtilities.parseTimeUnit(durationStr) : null;
 
         const reason = ctx.interaction.options.getString("reason", true);
+        const currTime = Date.now();
 
-        const susRes = await SuspensionManager.tryAddSuspension(resMember.member, ctx.member!, {
+        const muteRes = await MuteManager.addMute(resMember.member, ctx.member!, {
             duration: parsedDuration?.ms ?? -1,
             evidence: [],
             guildDoc: ctx.guildDoc!,
             reason: reason
         });
 
-        if (!susRes.punishmentResolved) {
+        if (!muteRes.punishmentResolved) {
             await ctx.interaction.reply({
-                content: SuspendMember.ERROR_NO_SUSPEND_STR,
+                content: MuteMember.ERROR_NO_MUTE_STR,
                 ephemeral: true
             });
 
             return 0;
         }
 
-        const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-            .setTitle("Suspension Issued.")
-            .setDescription(`${resMember.member} has been suspended successfully.`)
+        const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
+            .setTitle("Mute Issued.")
+            .setDescription(`You have issued a mute to ${resMember.member} (${resMember.member.displayName}).`)
             .addField("Reason", StringUtil.codifyString(reason))
             .addField("Duration", StringUtil.codifyString(parsedDuration?.formatted ?? "Indefinite"))
             .setTimestamp();
 
-        if (susRes.punishmentLogged)
-            embed.addField("Moderation ID", StringUtil.codifyString(susRes.moderationId!));
+        if (muteRes.punishmentLogged)
+            finalEmbed.addField("Moderation ID", StringUtil.codifyString(muteRes.moderationId!));
         else {
-            embed.addField(
+            finalEmbed.addField(
                 "Warning",
                 "Something went wrong when trying to save this punishment into the user's punishment history. The"
-                + " user is still suspended, though."
+                + " user is still muted, though."
             );
         }
 
+
         await ctx.interaction.reply({
-            embeds: [embed]
+            embeds: [finalEmbed]
         });
 
         return 0;

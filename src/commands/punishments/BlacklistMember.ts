@@ -69,7 +69,7 @@ export class BlacklistMember extends BaseCommand {
         const currTime = Date.now();
 
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-            .setTitle("Blacklisted.")
+            .setTitle("Blacklist Issued.")
             .addField("Reason", StringUtil.codifyString(reason))
             .addField("Moderation ID", StringUtil.codifyString(reason))
             .setTimestamp();

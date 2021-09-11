@@ -165,7 +165,7 @@ export class SectionSuspendMember extends BaseCommand {
         }
 
         const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-            .setTitle("Section Suspended.")
+            .setTitle("Section Suspension Issued.")
             .setDescription(`${resMember.member} has been suspended from \`${sectionPicked.sectionName}\`.`)
             .addField("Reason", StringUtil.codifyString(reason))
             .addField("Duration", StringUtil.codifyString(parsedDuration?.formatted ?? "Indefinite"))

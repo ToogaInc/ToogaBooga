@@ -16,6 +16,7 @@ export class WarnMember extends BaseCommand {
             description: "Warns a member. He or she will receive a message from the bot with the warning, and the"
                 + " warning will be logged in the database.",
             rolePermissions: [
+                "Helper",
                 "Security",
                 "Officer",
                 "Moderator",
@@ -71,7 +72,7 @@ export class WarnMember extends BaseCommand {
         const currTime = Date.now();
 
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-            .setTitle("Warning.")
+            .setTitle("Warning Issued.")
             .setDescription(`You have issued a warning to ${resMember.member} (${resMember.member.displayName}).`)
             .addField("Reason", StringUtil.codifyString(reason))
             .addField("Moderation ID", StringUtil.codifyString(reason))

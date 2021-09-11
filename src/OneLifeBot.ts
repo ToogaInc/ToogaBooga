@@ -120,7 +120,8 @@ export class OneLifeBot {
             new Cmds.SuspendMember(),
             new Cmds.SectionSuspendMember(),
             new Cmds.BlacklistMember(),
-            new Cmds.WarnMember()
+            new Cmds.WarnMember(),
+            new Cmds.MuteMember()
         ]);
 
         OneLifeBot.Commands.set("Bot Owner", [
