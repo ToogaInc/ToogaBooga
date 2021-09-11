@@ -36,13 +36,6 @@ interface IPunishmentCommandResult {
 
 interface IPunishmentDetails {
     /**
-     * The nickname of the person that will receive this punishment (or have the punishment removed).
-     *
-     * @type {string}
-     */
-    nickname: string;
-
-    /**
      * The reason for the punishment (or removal of said punishment).
      *
      * @type {string}
@@ -513,14 +506,16 @@ export namespace PunishmentManager {
             }
         }
 
-        // These must have a description or else the default arm was reached.
-        if (details.sendNoticeToAffectedUser && toSendToUserEmbed.description && member instanceof GuildMember) {
-            await GlobalFgrUtilities.sendMsg(member, {embeds: [toSendToUserEmbed]}).catch();
-        }
+        async function sendLoggingAndNoticeMsg(): Promise<void> {
+            // Do we really need to check if there is a description here specifically?
+            if (details.sendLogInfo && logChannel && logToChanEmbed.description) {
+                await logChannel.send({embeds: [logToChanEmbed]}).catch();
+            }
 
-        // Do we really need to check if there is a description here specifically?
-        if (details.sendLogInfo && logChannel && logToChanEmbed.description) {
-            await logChannel.send({embeds: [logToChanEmbed]}).catch();
+            // These must have a description or else the default arm was reached.
+            if (details.sendNoticeToAffectedUser && toSendToUserEmbed.description && member instanceof GuildMember) {
+                await GlobalFgrUtilities.sendMsg(member, {embeds: [toSendToUserEmbed]}).catch();
+            }
         }
 
         // Update the user database if possible.
@@ -563,8 +558,10 @@ export namespace PunishmentManager {
                 }
             });
 
-            if (queryResult.modifiedCount > 0)
+            if (queryResult.modifiedCount > 0) {
+                await sendLoggingAndNoticeMsg();
                 return entry.actionId;
+            }
 
             // If no modifications were made, then we assume that this person has never verified w/ bot.
             // This should only hit when the person has NEVER verified with this bot.
@@ -572,7 +569,12 @@ export namespace PunishmentManager {
                 return null;
 
             const addRes = await MongoManager.getUnclaimedBlacklistCollection().insertOne(entry);
-            return addRes.insertedCount > 0 ? entry.actionId : null;
+            if (addRes.insertedCount > 0) {
+                await sendLoggingAndNoticeMsg();
+                return entry.actionId;
+            }
+
+            return null;
         }
         else {
             delete entry.expiresAt;
@@ -585,8 +587,10 @@ export namespace PunishmentManager {
                 }
             });
 
-            if (queryResult.modifiedCount > 0)
+            if (queryResult.modifiedCount > 0) {
+                await sendLoggingAndNoticeMsg();
                 return entry.actionId;
+            }
 
             if (punishmentType !== "Unblacklist")
                 return null;
@@ -599,7 +603,13 @@ export namespace PunishmentManager {
                     resolved: entry
                 }
             });
-            return res.modifiedCount > 0 ? entry.actionId : null;
+
+            if (res.modifiedCount > 0) {
+                await sendLoggingAndNoticeMsg();
+                return entry.actionId;
+            }
+
+            return null;
         }
     }
 
@@ -878,7 +888,6 @@ export namespace SuspensionManager {
         ).catch();
 
         const r = await PunishmentManager.logPunishment(member, "Suspend", {
-            nickname: member.displayName,
             reason: info.reason,
             duration: info.duration === -1 ? undefined : info.duration,
             issuedTime: Date.now(),
@@ -934,7 +943,6 @@ export namespace SuspensionManager {
 
         await member.roles.set(memberLookup.oldRoles).catch();
         const r = await PunishmentManager.logPunishment(member, "Unsuspend", {
-            nickname: member.displayName,
             reason: info.reason,
             issuedTime: Date.now(),
             moderator: mod,
@@ -1007,7 +1015,6 @@ export namespace SuspensionManager {
         // Remove roles and log it
         await member.roles.remove(info.section.roles.verifiedRoleId).catch();
         const r = await PunishmentManager.logPunishment(member, "SectionSuspend", {
-            nickname: member.displayName,
             reason: info.reason,
             duration: info.duration === -1 ? undefined : info.duration,
             issuedTime: Date.now(),
@@ -1076,7 +1083,6 @@ export namespace SuspensionManager {
         }
 
         const r = await PunishmentManager.logPunishment(member, "SectionUnsuspend", {
-            nickname: member.displayName,
             reason: info.reason,
             issuedTime: Date.now(),
             moderator: mod,
@@ -1292,7 +1298,6 @@ export namespace MuteManager {
         await member.roles.add(mutedRole).catch();
 
         const r = await PunishmentManager.logPunishment(member, "Mute", {
-            nickname: member.displayName,
             reason: info.reason,
             duration: info.duration === -1 ? undefined : info.duration,
             issuedTime: Date.now(),
@@ -1351,7 +1356,6 @@ export namespace MuteManager {
 
         await member.roles.remove(info.guildDoc.roles.mutedRoleId).catch();
         const r = await PunishmentManager.logPunishment(member, "Unmute", {
-            nickname: member.displayName,
             reason: info.reason,
             issuedTime: Date.now(),
             moderator: mod,
@@ -1388,7 +1392,6 @@ export namespace MuteManager {
                 return;
 
             return PunishmentManager.logPunishment(memberToUnmute, "Unmute", {
-                nickname: memberToUnmute.displayName,
                 reason: reason ?? "The Muted role was deleted while the person was muted.",
                 issuedTime: Date.now(),
                 moderator: mod,
