@@ -156,7 +156,7 @@ export class SectionSuspendMember extends BaseCommand {
             section: sectionPicked
         });
 
-        if (!susRes) {
+        if (!susRes.punishmentResolved) {
             await ctx.interaction.editReply({
                 content: SuspendMember.ERROR_NO_SUSPEND_STR
             });
@@ -164,16 +164,25 @@ export class SectionSuspendMember extends BaseCommand {
             return 0;
         }
 
+        const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
+            .setTitle("Section Suspended.")
+            .setDescription(`${resMember.member} has been suspended from \`${sectionPicked.sectionName}\`.`)
+            .addField("Reason", StringUtil.codifyString(reason))
+            .addField("Duration", StringUtil.codifyString(parsedDuration?.formatted ?? "Indefinite"))
+            .setTimestamp();
+
+        if (susRes.punishmentResolved)
+            embed.addField("Moderation ID", StringUtil.codifyString(susRes.moderationId!));
+        else {
+            embed.addField(
+                "Warning",
+                "Something went wrong when trying to save this punishment into the user's punishment history. The"
+                + " user is still suspended, though."
+            );
+        }
+
         await ctx.interaction.reply({
-            embeds: [
-                MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-                    .setTitle("Section Suspended.")
-                    .setDescription(`${resMember.member} has been suspended from \`${sectionPicked.sectionName}\`.`)
-                    .addField("Reason", StringUtil.codifyString(reason))
-                    .addField("Duration", StringUtil.codifyString(parsedDuration?.formatted ?? "Indefinite"))
-                    .addField("Moderation ID", StringUtil.codifyString(susRes))
-                    .setTimestamp()
-            ]
+            embeds: [embed]
         });
 
         return 0;

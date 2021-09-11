@@ -10,6 +10,30 @@ import {FilterQuery} from "mongodb";
 import {Queue} from "../utilities/Queue";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 
+interface IPunishmentCommandResult {
+    /**
+     * Whether the punishment was either added (for example, suspended role added + logged in guild database) or removed
+     * (for example, suspended role removed + removed from guild database).
+     *
+     * @type {boolean}
+     */
+    punishmentResolved: boolean;
+
+    /**
+     * Whether the punishment was logged successfully in the user's database document.
+     *
+     * @type {boolean}
+     */
+    punishmentLogged: boolean;
+
+    /**
+     * The moderation ID associated with this action. This will be `null` if `punishmentLogged` is `null`.
+     *
+     * @type {string | null}
+     */
+    moderationId: string | null;
+}
+
 interface IPunishmentDetails {
     /**
      * The nickname of the person that will receive this punishment (or have the punishment removed).
@@ -800,17 +824,18 @@ export namespace SuspensionManager {
      * @param {GuildMember} member The member to suspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
      * @param {IAdditionalPunishmentParams} info Any additional suspension information.
-     * @returns {Promise<string>} The moderation ID, if the suspension was successful. `null` otherwise.
+     * @returns {IPunishmentCommandResult} Information regarding the result of the execution of this function
+     * (whether it succeeded or failed).
      */
     export async function tryAddSuspension(
         member: GuildMember,
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
-    ): Promise<string | null> {
+    ): Promise<IPunishmentCommandResult> {
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (GuildFgrUtilities.memberHasCachedRole(member, info.guildDoc.roles.suspendedRoleId)
             || info.guildDoc.moderation.suspendedUsers.some(x => x.affectedUser.id === member.id))
-            return null;
+            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
 
         const timeStarted = Date.now();
         const suspendedUserObj: ISuspendedUser = {
@@ -852,7 +877,7 @@ export namespace SuspensionManager {
                 : []
         ).catch();
 
-        await PunishmentManager.logPunishment(member, "Suspend", {
+        const r = await PunishmentManager.logPunishment(member, "Suspend", {
             nickname: member.displayName,
             reason: info.reason,
             duration: info.duration === -1 ? undefined : info.duration,
@@ -868,7 +893,7 @@ export namespace SuspensionManager {
             evidence: info.evidence
         });
 
-        return suspendedUserObj.actionId;
+        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
     }
 
     /**
@@ -876,20 +901,21 @@ export namespace SuspensionManager {
      * @param {GuildMember} member The member to unsuspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
      * @param {IAdditionalPunishmentParams} info Any additional information for this removal of suspension.
-     * @returns {Promise<string | null>} The moderation ID for this unsuspension, if successful.
+     * @returns {IPunishmentCommandResult} Information regarding the result of the execution of this function
+     * (whether it succeeded or failed).
      */
     export async function removeSuspension(
         member: GuildMember,
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "section" | "duration">
-    ): Promise<string | null> {
+    ): Promise<IPunishmentCommandResult> {
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
             ? lookupSuspension(info.guildDoc, null, {actionId: info.actionId})
             : lookupSuspension(info.guildDoc, null, {memberId: member.id});
 
         if (!memberLookup)
-            return null;
+            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
 
         // And remove it from guild suspension list.
         await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
@@ -907,7 +933,7 @@ export namespace SuspensionManager {
         }
 
         await member.roles.set(memberLookup.oldRoles).catch();
-        return PunishmentManager.logPunishment(member, "Unsuspend", {
+        const r = await PunishmentManager.logPunishment(member, "Unsuspend", {
             nickname: member.displayName,
             reason: info.reason,
             issuedTime: Date.now(),
@@ -920,6 +946,8 @@ export namespace SuspensionManager {
             actionIdToResolve: memberLookup.actionId,
             evidence: info.evidence
         });
+
+        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
     }
 
     /**
@@ -928,16 +956,17 @@ export namespace SuspensionManager {
      * @param {GuildMember} member The member to suspend.
      * @param {GuildMember | null} mod The moderator responsible for this suspension.
      * @param {IAdditionalPunishmentParams} info The additional information for this section suspension.
-     * @returns {Promise<string | null>} The moderation ID associated with this section suspension.
+     * @returns {IPunishmentCommandResult} Information regarding the result of the execution of this function
+     * (whether it succeeded or failed).
      */
     export async function tryAddSectionSuspension(
         member: GuildMember,
         mod: GuildMember | null,
         info: IAdditionalPunishmentParams
-    ): Promise<string | null> {
+    ): Promise<IPunishmentCommandResult> {
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (info.section.moderation.sectionSuspended.some(x => x.affectedUser.id === member.id))
-            return null;
+            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
 
         const timeStarted = Date.now();
         const suspendedUserObj: ISuspendedUser = {
@@ -977,7 +1006,7 @@ export namespace SuspensionManager {
 
         // Remove roles and log it
         await member.roles.remove(info.section.roles.verifiedRoleId).catch();
-        return PunishmentManager.logPunishment(member, "SectionSuspend", {
+        const r = await PunishmentManager.logPunishment(member, "SectionSuspend", {
             nickname: member.displayName,
             reason: info.reason,
             duration: info.duration === -1 ? undefined : info.duration,
@@ -992,6 +1021,8 @@ export namespace SuspensionManager {
             actionIdToUse: suspendedUserObj.actionId,
             evidence: info.evidence
         });
+
+        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
     }
 
     /**
@@ -1000,20 +1031,21 @@ export namespace SuspensionManager {
      * @param {GuildMember} member The member to unsuspend.
      * @param {GuildMember | null} mod The moderator responsible for this unsuspension.
      * @param {IAdditionalPunishmentParams} info Information regarding this unsuspension.
-     * @returns {Promise<string | null>} The moderation ID associated with this unsuspension.
+     * @returns {IPunishmentCommandResult} Information regarding the result of the execution of this function
+     * (whether it succeeded or failed).
      */
     export async function removeSectionSuspension(
         member: GuildMember,
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "duration">
-    ): Promise<string | null> {
+    ): Promise<IPunishmentCommandResult> {
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
             ? lookupSuspension(info.guildDoc, info.section, {actionId: info.actionId})
             : lookupSuspension(info.guildDoc, info.section, {memberId: member.id});
 
         if (!memberLookup)
-            return null;
+            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
 
         // And remove it from guild suspension list.
         await MongoManager.updateAndFetchGuildDoc({
@@ -1043,7 +1075,7 @@ export namespace SuspensionManager {
             await member.roles.add(info.section.roles.verifiedRoleId).catch();
         }
 
-        return PunishmentManager.logPunishment(member, "SectionUnsuspend", {
+        const r = await PunishmentManager.logPunishment(member, "SectionUnsuspend", {
             nickname: member.displayName,
             reason: info.reason,
             issuedTime: Date.now(),
@@ -1056,6 +1088,8 @@ export namespace SuspensionManager {
             actionIdToResolve: memberLookup.actionId,
             evidence: info.evidence
         });
+
+        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
     }
 
     /**
@@ -1181,13 +1215,14 @@ export namespace MuteManager {
      * @param {GuildMember} member The member to suspend.
      * @param {GuildMember | null} mod The moderator responsible for this mute.
      * @param {IAdditionalPunishmentParams} info Any additional mute information.
-     * @returns {Promise<string | null>} The moderation ID associated with this mute.
+     * @returns {IPunishmentCommandResult} Information regarding the result of the execution of this function
+     * (whether it succeeded or failed).
      */
     export async function addMute(
         member: GuildMember,
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
-    ): Promise<string | null> {
+    ): Promise<IPunishmentCommandResult> {
         // Create the role if it doesn't already exist.
         let mutedRole = await GuildFgrUtilities.fetchRole(member.guild, info.guildDoc.roles.mutedRoleId);
         if (!mutedRole) {
@@ -1221,7 +1256,7 @@ export namespace MuteManager {
         // If the person was already muted, then we don't need to mute the person again.
         if (GuildFgrUtilities.memberHasCachedRole(member, info.guildDoc.roles.mutedRoleId)
             || info.guildDoc.moderation.mutedUsers.some(x => x.affectedUser.id === member.id))
-            return null;
+            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
 
         const timeStarted = Date.now();
         const mutedUserObj: IMutedUser = {
@@ -1256,7 +1291,7 @@ export namespace MuteManager {
         MutedMembers.get(member.guild.id)!.push(mutedUserObj);
         await member.roles.add(mutedRole).catch();
 
-        return PunishmentManager.logPunishment(member, "Mute", {
+        const r = await PunishmentManager.logPunishment(member, "Mute", {
             nickname: member.displayName,
             reason: info.reason,
             duration: info.duration === -1 ? undefined : info.duration,
@@ -1271,6 +1306,8 @@ export namespace MuteManager {
             actionIdToUse: mutedUserObj.actionId,
             evidence: info.evidence
         });
+
+        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
     }
 
     /**
@@ -1278,15 +1315,16 @@ export namespace MuteManager {
      * @param {GuildMember} member The member to unmute.
      * @param {GuildMember | null} mod The moderator responsible for this unmute.
      * @param {IAdditionalPunishmentParams} info Any additional information for this unmute.
-     * @returns {Promise<string | null>} The moderation ID associated with this unmute.
+     * @returns {IPunishmentCommandResult} Information regarding the result of the execution of this function
+     * (whether it succeeded or failed).
      */
     export async function removeMute(
         member: GuildMember,
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "section" | "duration">
-    ): Promise<string | null> {
+    ): Promise<IPunishmentCommandResult> {
         if (!GuildFgrUtilities.hasCachedRole(member.guild, info.guildDoc.roles.mutedRoleId))
-            return null;
+            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
 
         // Find mute info.
         const memberLookup: IMutedUser | null = info.actionId
@@ -1294,7 +1332,7 @@ export namespace MuteManager {
             : lookupMute(info.guildDoc, {memberId: member.id});
 
         if (!memberLookup)
-            return null;
+            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
 
         // And remove it from guild suspension list.
         await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
@@ -1312,7 +1350,7 @@ export namespace MuteManager {
         }
 
         await member.roles.remove(info.guildDoc.roles.mutedRoleId).catch();
-        return PunishmentManager.logPunishment(member, "Unmute", {
+        const r = await PunishmentManager.logPunishment(member, "Unmute", {
             nickname: member.displayName,
             reason: info.reason,
             issuedTime: Date.now(),
@@ -1325,6 +1363,8 @@ export namespace MuteManager {
             actionIdToResolve: memberLookup.actionId,
             evidence: info.evidence
         });
+
+        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
     }
 
     /**
