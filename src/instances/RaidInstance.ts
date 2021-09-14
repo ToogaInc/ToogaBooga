@@ -469,7 +469,7 @@ export class RaidInstance {
         // If no roles can be associated, remove the reaction from the collection.
         this._earlyLocToRole = new Collection();
         Array.from(reactions.filter(x => x.type === "EARLY_LOCATION").entries()).forEach(x => {
-            const [mapKey,] = x;
+            const [mapKey, info] = x;
             if (mapKey === "NITRO" && this._guild.roles.premiumSubscriberRole) {
                 this._earlyLocToRole.set(mapKey, [this._guild.roles.premiumSubscriberRole]);
                 return;
@@ -480,10 +480,11 @@ export class RaidInstance {
                 .filter(role => GuildFgrUtilities.hasCachedRole(this._guild, role))
                 .map(role => GuildFgrUtilities.getCachedRole(this._guild, role)) ?? []) as Role[];
 
-            if (rolesForEarlyLoc.length === 0) {
+            if (rolesForEarlyLoc.length === 0 || info.earlyLocAmt === 0) {
                 reactions.delete(mapKey);
                 return;
             }
+
             this._earlyLocToRole.set(mapKey, rolesForEarlyLoc);
         });
 

@@ -1,6 +1,15 @@
 import {ColorResolvable} from "discord.js";
 import {IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
 
+export type DungeonType = "Uncategorized"
+    | "Basic Dungeons"
+    | "Godland Dungeons"
+    | "Endgame Dungeons"
+    | "Event Dungeons"
+    | "Mini Dungeons"
+    | "Heroic Dungeons"
+    | "Epic Dungeons";
+
 /**
  * An interface representing a dungeon that can be used for AFK checks and headcounts.
  */
@@ -81,14 +90,7 @@ export interface IDungeonInfo {
      *
      * @type {string}
      */
-    dungeonCategory: ""
-        | "Basic Dungeons"
-        | "Godland Dungeons"
-        | "Endgame Dungeons"
-        | "Event Dungeons"
-        | "Mini Dungeons"
-        | "Heroic Dungeons"
-        | "Epic Dungeons";
+    dungeonCategory: DungeonType;
 
     /**
      * Whether this dungeon is either a base (i.e. constant) dungeon or derived from a base dungeon. We define a

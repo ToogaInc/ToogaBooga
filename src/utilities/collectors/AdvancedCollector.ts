@@ -67,8 +67,11 @@ export namespace AdvancedCollector {
     interface IMessageCollectorArgument extends ICollectorBaseArgument {
         /**
          * The cancel flag. Any message with the cancel flag as its content will force the method to return "CANCEL_CMD"
+         *
+         * It should be noted that if this is `null`, then the `cancelFlag` won't be checked at all -- in that case,
+         * you will have to provide your own way to cancel the process.
          */
-        cancelFlag: string;
+        cancelFlag: string | null;
 
         /**
          * Whether to delete any messages the author sends (for the collector) after it has been sent or not.
@@ -113,7 +116,7 @@ export namespace AdvancedCollector {
         func: (collectedMsg: Message, ...otherArgs: any[]) => (T | undefined) | (Promise<T | undefined>)
     ): Promise<T | null> {
         return new Promise(async (resolve) => {
-            const cancelFlag = options.cancelFlag ?? "cancel";
+            const cancelFlag = options.cancelFlag;
             const botMsg = await initSendCollectorMessage(options);
 
             const msgCollector = new MessageCollector(options.targetChannel, {
@@ -126,7 +129,7 @@ export namespace AdvancedCollector {
                 if (options.deleteResponseMessage)
                     await c.delete().catch();
 
-                if (cancelFlag.toLowerCase() === c.content.toLowerCase())
+                if (cancelFlag && cancelFlag.toLowerCase() === c.content.toLowerCase())
                     return resolve(null);
 
                 const info: T | null = await new Promise(async res => {
@@ -225,7 +228,7 @@ export namespace AdvancedCollector {
         options: IInteractionBase & IMessageCollectorArgument,
         func: (collectedMsg: Message, ...otherArgs: any[]) => (T | undefined) | (Promise<T | undefined>)
     ): Promise<T | MessageComponentInteraction | null> {
-        const cancelFlag = options.cancelFlag ?? "cancel";
+        const cancelFlag = options.cancelFlag;
         const botMsg = await initSendCollectorMessage(options);
         if (!botMsg) return null;
 
@@ -245,7 +248,7 @@ export namespace AdvancedCollector {
                 if (options.deleteResponseMessage)
                     await GlobalFgrUtilities.tryExecuteAsync(() => c.delete());
 
-                if (cancelFlag.toLowerCase() === c.content.toLowerCase()) {
+                if (cancelFlag && cancelFlag.toLowerCase() === c.content.toLowerCase()) {
                     interactionCollector.stop();
                     return resolve(null);
                 }

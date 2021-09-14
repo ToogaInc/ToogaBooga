@@ -426,11 +426,8 @@ export interface IGuildInfo extends IBaseDocument {
          * that emoji.
          *
          * In terms of how this works:
-         * - If `includeEarlyLoc` is true (for either the overridden dungeon or the base dungeon), then all reactions
-         * here will be displayed.
-         * - If the user wishes to override the early location reactions for a certain dungeon, he or she can do so
-         * by overriding what shows up (note that every emoji has an associated `type` which denotes what it is used
-         * for).
+         * - For each dungeon, the user can specify the whether this reaction will show up.
+         * - If so, then the user can specify how many of this reaction can show up.
          *
          * Nitro is automatically included.
          *
