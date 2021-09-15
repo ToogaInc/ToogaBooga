@@ -1,9 +1,8 @@
 import {ObjectID} from "mongodb";
 import {
-    IAfkCheckReaction,
     IAfkCheckProperties,
     IRaidChannels,
-    IRaidInfo, IReactionInfo, ICustomDungeonInfo, ImageInfo
+    IRaidInfo, IReactionInfo, ICustomDungeonInfo, ImageInfo, IDungeonOverrideInfo
 } from "./DungeonRaidInterfaces";
 import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
 import {IModmailThread} from "./ModmailInterfaces";
@@ -308,85 +307,9 @@ export interface IGuildInfo extends IBaseDocument {
          * Any dungeon overrides. This will be made available to all sections. Guilds can use this to edit existing
          * dungeons only.
          *
-         * @type {object}
+         * @type {IDungeonOverrideInfo[]}
          */
-        dungeonOverride: {
-            /**
-             * The code name. This is essentially the dungeon identifier name and should never change (even if
-             * anything else relating to this dungeon changes).
-             *
-             * If this is a custom dungeon, then this will be a string of random numbers and letters. If this is a
-             * derived base dungeon, then this will be the same as the base dungeon's `codeName`.
-             *
-             * @type {string}
-             */
-            codeName: string;
-
-            /**
-             * The keys that are needed for this dungeon. For example, for Oryx 3, you would have the three runes
-             * and the Wine Cellar Incantation.
-             *
-             * If `maxEarlyLocation` is greater than 0, this will be rendered as a button on the AFK check.
-             * Otherwise, this will be rendered as a normal reaction.
-             *
-             * Whatever is defined here will completely override what was originally defined (if this is a derived
-             * base dungeon).
-             *
-             * @type {IAfkCheckReaction[]}
-             */
-            keyReactions: IAfkCheckReaction[];
-
-            /**
-             * Any other "reactions" needed for this dungeon. For example, for Oryx 3, you might have various class
-             * reacts and other things.
-             *
-             * If `maxEarlyLocation` is greater than 0, this will be rendered as a button on the AFK check.
-             * Otherwise, this will be rendered as a normal reaction.
-             *
-             * Whatever is defined here will completely override what was originally defined (if this is a derived
-             * base dungeon).
-             *
-             * @type {IAfkCheckReaction[]}
-             */
-            otherReactions: IAfkCheckReaction[];
-
-            /**
-             * The default number of people that can get early location by reacting to the Nitro button.
-             *
-             * Use `-1` to default to whatever the section default is.
-             *
-             * This does not apply to priority reactions (key, class, etc.).
-             *
-             * @type {number}
-             */
-            nitroEarlyLocationLimit: number;
-
-            /**
-             * The VC limit. This will override the section-defined VC limit.
-             *
-             * Use `-1` to default to whatever the section default is.
-             *
-             * Use `100` for infinite.
-             *
-             * @type {number}
-             */
-            vcLimit: number;
-
-            /**
-             * The cost, in points, to get early location and get moved into this raid.
-             *
-             * @type {number}
-             */
-            pointCost: number;
-
-            /**
-             * Any role requirements for running this dungeon. The user only needs to have one of these roles to
-             * complete this dungeon.
-             *
-             * @type {object}
-             */
-            roleRequirement: string[];
-        }[];
+        dungeonOverride: IDungeonOverrideInfo[];
 
         /**
          * All custom reactions. The key is the map key (the reaction code name) and the value is the reaction

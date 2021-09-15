@@ -80,6 +80,8 @@ export namespace InteractivityHelper {
             if (returnMsg) await askMsg.delete().catch();
             return null;
         }
+
+        if (returnMsg) await askMsg.delete().catch();
         return [allSections.find(x => x.uniqueIdentifier === result.values[0])!, askMsg.deleted ? null : askMsg];
     }
 

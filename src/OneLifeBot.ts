@@ -113,7 +113,8 @@ export class OneLifeBot {
         OneLifeBot.Commands.set("Configuration", [
             new Cmds.ConfigureChannels(),
             new Cmds.ConfigureRoles(),
-            new Cmds.ConfigureSections()
+            new Cmds.ConfigureSections(),
+            new Cmds.ConfigureDungeons()
         ]);
 
         OneLifeBot.Commands.set("Punishments", [
