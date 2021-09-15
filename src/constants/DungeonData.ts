@@ -12,8 +12,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248354173190176/Snake_Pit_Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Stheno%20the%20Snake%20Queen.png"],
+        portalLink: {
+            url: "https://cdn.discordapp.com/attachments/561245975767941120/561248354173190176/Snake_Pit_Portal.png",
+            name: "Snake Pit Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Stheno%20the%20Snake%20Queen.png",
+                name: "Stheno the Snake Queen"
+            }
+        ],
         dungeonColors: [
             0x29c71e
         ],
@@ -31,8 +39,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/mvUTUNo.png",
-        bossLinks: ["https://i.imgur.com/jVimXOv.png"],
+        portalLink: {
+            url: "https://i.imgur.com/mvUTUNo.png",
+            name: "Magic Woods Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/jVimXOv.png",
+                name: "Magic Woods Boss"
+            }
+        ],
         dungeonColors: [
             0x1fcfcc
         ],
@@ -50,8 +66,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Glowing%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Limon%20the%20Sprite%20God.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Glowing%20Portal.png",
+            name: "Sprite World Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Limon%20the%20Sprite%20God.png",
+                name: "Sprite World Boss"
+            }
+        ],
         dungeonColors: [
             0xffffff,
             0x9f22b3,
@@ -72,10 +96,19 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/d7MSK2x.png",
+        portalLink: {
+            url: "https://i.imgur.com/d7MSK2x.png",
+            name: "Ancient Ruins Portal"
+        },
         bossLinks: [
-            "https://i.imgur.com/z01EB30.png",
-            "https://i.imgur.com/jXZrNGl.png"
+            {
+                url: "https://i.imgur.com/z01EB30.png",
+                name: "Ancient Ruins Boss"
+            },
+            {
+                url: "https://i.imgur.com/jXZrNGl.png",
+                name: "Ancient Ruins Genie"
+            }
         ],
         dungeonColors: [
             0xe6d485,
@@ -97,13 +130,31 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Candyland%20Portal.png",
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Candyland%20Portal.png",
+            name: "Candyland Portal"
+        },
         bossLinks: [
-            "https://static.drips.pw/rotmg/wiki/Enemies/Gigacorn.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Desire%20Troll.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Spoiled%20Creampuff.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/MegaRototo.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Swoll%20Fairy.png"
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Gigacorn.png",
+                name: "Gigacorn"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Desire%20Troll.png",
+                name: "Desire Troll"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Spoiled%20Creampuff.png",
+                name: "Spoiled Creampuff"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/MegaRototo.png",
+                name: "MegaRototo"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Swoll%20Fairy.png",
+                name: "Swoll Fairy"
+            }
         ],
         dungeonColors: [
             0xde1dc1,
@@ -123,8 +174,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Treasure%20Cave%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Golden%20Oryx%20Effigy.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Treasure%20Cave%20Portal.png",
+            name: "Cave of a Thousand Treasures Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Golden%20Oryx%20Effigy.png",
+                name: "Golden Oryx Effigy"
+            }
+        ],
         dungeonColors: [
             0xd1c819,
             0x8a1d1d,
@@ -144,8 +203,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248252310061066/Undead_Lair_Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Septavius%20the%20Ghost%20God.png"],
+        portalLink: {
+            url: "https://cdn.discordapp.com/attachments/561245975767941120/561248252310061066/Undead_Lair_Portal.png",
+            name: "Undead Lair Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Septavius%20the%20Ghost%20God.png",
+                name: "Undead Lair Boss"
+            }
+        ],
         dungeonColors: [
             0x3d3434,
             0x2b1e1e,
@@ -165,8 +232,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/YgiGjh7.gif",
-        bossLinks: ["https://i.imgur.com/WmL1qda.png"],
+        portalLink: {
+            url: "https://i.imgur.com/YgiGjh7.gif",
+            name: "Heroic Undead Lair Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/WmL1qda.png",
+                name: "Heroic UDL Boss"
+            }
+        ],
         dungeonColors: [
             0x4d19d1,
             0xf5d311,
@@ -187,8 +262,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Abyss%20of%20Demons%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Archdemon%20Malphas.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Abyss%20of%20Demons%20Portal.png",
+            name: "Abyss of Demons Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Archdemon%20Malphas.png",
+                name: "Archdemon Malphas"
+            }
+        ],
         dungeonColors: [
             0xe30707,
             0xe09a19
@@ -207,8 +290,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/zz6D2lz.png",
-        bossLinks: ["https://i.imgur.com/LCALe5V.png"],
+        portalLink: {
+            url: "Heroic Abyss of Demons Portal",
+            name: "https://i.imgur.com/zz6D2lz.png"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/LCALe5V.png",
+                name: "Heroic Abyss Boss"
+            }
+        ],
         dungeonColors: [
             0xe30707,
             0xe09a19,
@@ -228,8 +319,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Manor%20of%20the%20Immortals%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Lord%20Ruthven.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Manor%20of%20the%20Immortals%20Portal.png",
+            name: "Manor of the Immortals Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Lord%20Ruthven.png",
+                name: "Lord Ruthven"
+            }
+        ],
         dungeonColors: [
             0,
             0x4b2078,
@@ -250,8 +349,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Puppet%20Theatre%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/The%20Puppet%20Master.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Puppet%20Theatre%20Portal.png",
+            name: "Puppet Master's Theatre Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/The%20Puppet%20Master.png",
+                name: "Puppet Master's Theatre Boss"
+            }
+        ],
         dungeonColors: [
             0xe31b1f,
             0xad3638
@@ -270,8 +377,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Toxic%20Sewers%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/DS%20Gulpord%20the%20Slime%20God.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Toxic%20Sewers%20Portal.png",
+            name: "Toxic Sewers Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/DS%20Gulpord%20the%20Slime%20God.png",
+                name: "Gulpord the Slime God"
+            }
+        ],
         dungeonColors: [
             0x074f2a,
             0x228753
@@ -290,12 +405,27 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248253836787717/Haunted_Cemetery_Portal.png",
+        portalLink: {
+            url: "https://cdn.discordapp.com/attachments/561245975767941120/561248253836787717/Haunted_Cemetery_Portal.png",
+            name: "Haunted Cemetery Boss"
+        },
         bossLinks: [
-            "https://static.drips.pw/rotmg/wiki/Enemies/Troll%203.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Arena%20Ghost%20Bride.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Arena%20Grave%20Caretaker.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Ghost%20of%20Skuld.png"
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Troll%203.png",
+                name: "Cemetery Troll"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Arena%20Ghost%20Bride.png",
+                name: "Cemetery Bride"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Arena%20Grave%20Caretaker.png",
+                name: "Cemetery Caretaker"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Ghost%20of%20Skuld.png",
+                name: "Cemetery Skuld"
+            }
         ],
         dungeonColors: [
             0x0e9c53
@@ -314,10 +444,19 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248331695915018/Mad_Lab_Portal.png",
+        portalLink: {
+            url: "https://cdn.discordapp.com/attachments/561245975767941120/561248331695915018/Mad_Lab_Portal.png",
+            name: "Mad Lab Portal"
+        },
         bossLinks: [
-            "https://static.drips.pw/rotmg/wiki/Enemies/Dr%20Terrible.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Horrific%20Creation.png"
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Dr%20Terrible.png",
+                name: "Dr. Terrible"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Horrific%20Creation.png",
+                name: "Horrific Creation"
+            }
         ],
         dungeonColors: [
             0x06bd5f,
@@ -337,8 +476,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/561248332635439136/Parasite.png",
-        bossLinks: ["https://i.imgur.com/zodPEFO.png"],
+        portalLink: {
+            url: "https://cdn.discordapp.com/attachments/561245975767941120/561248332635439136/Parasite.png",
+            name: "Parasite Chambers Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/zodPEFO.png",
+                name: "Nightmare Colony"
+            }
+        ],
         dungeonColors: [
             0xbf1d4b,
             0x7d1935,
@@ -358,8 +505,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Davy%20Jones's%20Locker%20Portal.png",
-        bossLinks: ["https://i.imgur.com/Jc4FERS.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Davy%20Jones's%20Locker%20Portal.png",
+            name: "Davy Jones' Locker Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/Jc4FERS.png",
+                name: "Davy Jones"
+            }
+        ],
         dungeonColors: [
             0x2376a6
         ],
@@ -377,8 +532,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/SY0Jtnp.png",
-        bossLinks: ["https://i.imgur.com/TIektVi.png"],
+        portalLink: {
+            url: "https://i.imgur.com/SY0Jtnp.png",
+            name: "Mountain Temple Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/TIektVi.png",
+                name: "Daichi"
+            }
+        ],
         dungeonColors: [
             0x12634e
         ],
@@ -396,13 +559,31 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Consolation%20of%20Draconis%20Portal.png",
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Consolation%20of%20Draconis%20Portal.png",
+            name: "Lair of Draconis Portal"
+        },
         bossLinks: [
-            "https://i.imgur.com/vT7wdjb.png",
-            "https://i.imgur.com/jQ6IYmy.png",
-            "https://i.imgur.com/RLw3xNe.png",
-            "https://i.imgur.com/YdDzmMk.png",
-            "https://i.imgur.com/beABgum.png"
+            {
+                url: "https://i.imgur.com/vT7wdjb.png",
+                name: "Black Dragon"
+            },
+            {
+                url: "https://i.imgur.com/jQ6IYmy.png",
+                name: "Red Dragon"
+            },
+            {
+                url: "https://i.imgur.com/RLw3xNe.png",
+                name: "Blue Dragon"
+            },
+            {
+                url: "https://i.imgur.com/YdDzmMk.png",
+                name: "Green Dragon"
+            },
+            {
+                url: "https://i.imgur.com/beABgum.png",
+                name: "Ivory Dragon"
+            }
         ],
         dungeonColors: [
             0x1ec7b6,
@@ -425,8 +606,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Deadwater%20Docks.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Jon%20Bilgewater%20the%20Pirate%20King.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Deadwater%20Docks.png",
+            name: "Deadwater Docks Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Jon%20Bilgewater%20the%20Pirate%20King.png",
+                name: "Jon Bilgewater the Pirate"
+            }
+        ],
         dungeonColors: [
             0xe4e4f5,
             0xded799
@@ -440,11 +629,23 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
         portalEmojiId: "561248701440589824",
         keyReactions: [],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Woodland%20Labyrinth.png",
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Woodland%20Labyrinth.png",
+            name: "Woodland Labyrinth"
+        },
         bossLinks: [
-            "https://static.drips.pw/rotmg/wiki/Enemies/Epic%20Larva.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Epic%20Mama%20Megamoth.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Murderous%20Megamoth.png"
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Epic%20Larva.png",
+                name: "Epic Larva"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Epic%20Mama%20Megamoth.png",
+                name: "Epic Mama Megamoth"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Murderous%20Megamoth.png",
+                name: "Murderous Megamoth"
+            }
         ],
         dungeonColors: [
             0x31d43c,
@@ -464,8 +665,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/The%20Crawling%20Depths.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Son%20of%20Arachna.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/The%20Crawling%20Depths.png",
+            name: "Crawling Depths Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Son%20of%20Arachna.png",
+                name: "Son of Arachna"
+            }
+        ],
         dungeonColors: [
             0x3eb847,
             0x1dcf2a
@@ -484,8 +693,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ocean%20Trench%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Thessal%20the%20Mermaid%20Goddess.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ocean%20Trench%20Portal.png",
+            name: "Ocean Trench Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Thessal%20the%20Mermaid%20Goddess.png",
+                name: "Thessal the Mermaid Goddess"
+            }
+        ],
         dungeonColors: [
             0x25c1cc,
             0x188ec4,
@@ -505,8 +722,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ice%20Cave%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/ic%20Esben%20the%20Unwilling.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ice%20Cave%20Portal.png",
+            name: "Ice Cave"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/ic%20Esben%20the%20Unwilling.png",
+                name: "Esben the Unwilling"
+            }
+        ],
         dungeonColors: [
             0x2491b3,
             0xe1f0f5,
@@ -526,11 +751,23 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Tomb%20of%20the%20Ancients%20Portal.png",
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Tomb%20of%20the%20Ancients%20Portal.png",
+            name: "Tomb of the Ancients"
+        },
         bossLinks: [
-            "https://i.imgur.com/phgo7.png",
-            "https://i.imgur.com/UQ033.png",
-            "https://i.imgur.com/aAhbT.png"
+            {
+                url: "https://i.imgur.com/phgo7.png",
+                name: "Bes"
+            },
+            {
+                url: "https://i.imgur.com/UQ033.png",
+                name: "Nut"
+            },
+            {
+                url: "https://i.imgur.com/aAhbT.png",
+                name: "Geb"
+            }
         ],
         dungeonColors: [
             0xebed55,
@@ -552,8 +789,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Lair%20of%20Shaitan%20Portal.png",
-        bossLinks: ["https://i.imgur.com/azzD6jD.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Lair%20of%20Shaitan%20Portal.png",
+            name: "Lair of Shaitan Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/azzD6jD.png",
+                name: "Shaitan"
+            }
+        ],
         dungeonColors: [
             0xd92130,
             0xe0912f
@@ -572,8 +817,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Puppet%20Encore%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Puppet%20Master%20v2.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Puppet%20Encore%20Portal.png",
+            name: "Puppet Master's Encore Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Puppet%20Master%20v2.png",
+                name: "The Puppet Master"
+            }
+        ],
         dungeonColors: [
             0x912121
         ],
@@ -591,8 +844,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/qjd04By.png",
-        bossLinks: ["https://i.imgur.com/BF2DclQ.png"],
+        portalLink: {
+            url: "https://i.imgur.com/qjd04By.png",
+            name: "Cnidarian Reef Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/BF2DclQ.png",
+                name: "Cnidarian Reef Boss"
+            }
+        ],
         dungeonColors: [
             0xf5b120,
             0x1980a6
@@ -611,11 +872,23 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/8vEAT8t.png",
+        portalLink: {
+            url: "https://i.imgur.com/8vEAT8t.png",
+            name: "Secluded Thicket Portal"
+        },
         bossLinks: [
-            "https://i.imgur.com/2zBZOj0.png",
-            "https://i.imgur.com/5quZEAa.png",
-            "https://i.imgur.com/xFWvgyV.png"
+            {
+                url: "https://i.imgur.com/2zBZOj0.png",
+                name: "Thicket First Boss"
+            },
+            {
+                url: "https://i.imgur.com/5quZEAa.png",
+                name: "Thicket Second Boss"
+            },
+            {
+                url: "https://i.imgur.com/xFWvgyV.png",
+                name: "Thicket Third Boss"
+            }
         ],
         dungeonColors: [
             0x289e67,
@@ -635,9 +908,15 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Enemies/F.E.R.A.L..png",
+        portalLink: {
+            url: "https://i.imgur.com/93SyT24.gif",
+            name: "High Tech Terror Portal"
+        },
         bossLinks: [
-            "https://static.drips.pw/rotmg/wiki/Enemies/F.E.R.A.L..png"
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/F.E.R.A.L..png",
+                name: "F.E.R.A.L."
+            }
         ],
         dungeonColors: [
             0x06bd5f,
@@ -657,14 +936,36 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Battle%20Nexus%20Portal.png",
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Battle%20Nexus%20Portal.png",
+            name: "Battle of the Nexus Portal"
+        },
         bossLinks: [
-            "https://static.drips.pw/rotmg/wiki/Enemies/Lord%20Ruthven.png",
-            "https://i.imgur.com/e4u7pT5.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Archdemon%20Malphas%20Deux.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Stheno%20the%20Snake%20Queen%20Deux.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/NM%20Green%20Dragon%20God.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Oryx%20the%20Mad%20God%202.png"],
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Lord%20Ruthven.png",
+                name: "Lord Ruthven"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Murderous%20Megamoth.png",
+                name: "Murderous Megamoth"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Archdemon%20Malphas%20Deux.png",
+                name: "Archdemon Malphas"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Stheno%20the%20Snake%20Queen%20Deux.png",
+                name: "Stheno the Snake Queen"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/NM%20Green%20Dragon%20God.png",
+                name: "Old LoD Green Dragon"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Oryx%20the%20Mad%20God%202.png",
+                name: "Oryx the Mad God 2"
+            }
+        ],
         dungeonColors: [
             0xdfe30e,
         ],
@@ -682,8 +983,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/VTXGPSy.png",
-        bossLinks: ["https://i.imgur.com/d7xzYLG.png"],
+        portalLink: {
+            url: "https://i.imgur.com/VTXGPSy.png",
+            name: "Belladonna's Garden"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/d7xzYLG.png",
+                name: "Belladonna"
+            }
+        ],
         dungeonColors: [
             0xd42c56,
             0x08d41d
@@ -702,11 +1011,23 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ice%20Tomb%20Portal.png",
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Ice%20Tomb%20Portal.png",
+            name: "Ice Tomb Portal"
+        },
         bossLinks: [
-            "https://static.drips.pw/rotmg/wiki/Enemies/Ice%20Tomb%20Defender.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Ice%20Tomb%20Support.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Ice%20Tomb%20Attacker.png"
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Ice%20Tomb%20Defender.png",
+                name: "Frimar"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Ice%20Tomb%20Support.png",
+                name: "Polaris"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Ice%20Tomb%20Attacker.png",
+                name: "Glacius"
+            }
         ],
         dungeonColors: [
             0x1ab8b5,
@@ -726,15 +1047,39 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/jnHUonE.gif",
+        portalLink: {
+            url: "https://i.imgur.com/jnHUonE.gif",
+            name: "Mad God Mayhem Portal"
+        },
         bossLinks: [
-            "https://static.drips.pw/rotmg/wiki/Enemies/DS%20Gulpord%20the%20Slime%20God.png",
-            "https://i.imgur.com/kk4AcxG.png",
-            "https://i.imgur.com/prGMIfR.png",
-            "https://i.imgur.com/zodPEFO.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Puppet%20Master%20v2.png",
-            "https://i.imgur.com/Hn5Ugix.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/Pentaract%20Tower%20Ultra.png"
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/DS%20Gulpord%20the%20Slime%20God.png",
+                name: "Gulpord the Slime God"
+            },
+            {
+                url: "https://i.imgur.com/kk4AcxG.png",
+                name: "Permafrost Lord"
+            },
+            {
+                url: "https://i.imgur.com/prGMIfR.png",
+                name: "Biff the Buffed Bunny"
+            },
+            {
+                url: "https://i.imgur.com/zodPEFO.png",
+                name: "Nightmare Colony"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Puppet%20Master%20v2.png",
+                name: "The Puppet Master"
+            },
+            {
+                url: "https://i.imgur.com/Hn5Ugix.png",
+                name: "The Beekeeper"
+            },
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Pentaract%20Tower%20Ultra.png",
+                name: "Decaract"
+            }
         ],
         dungeonColors: [
             0x13a813,
@@ -754,17 +1099,29 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/The%20Shatters.png",
+        portalLink: {
+            url: "https://i.imgur.com/KtOxGpW.png",
+            name: "Shatters Portal"
+        },
         bossLinks: [
-            "https://static.drips.pw/rotmg/wiki/Enemies/shtrs%20Bridge%20Sentinel.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/shtrs%20Twilight%20Archmage.png",
-            "https://static.drips.pw/rotmg/wiki/Enemies/shtrs%20The%20Forgotten%20King.png"
+            {
+                url: "https://i.imgur.com/vatlKfa.png",
+                name: "The Bridge Sentinel"
+            },
+            {
+                url: "https://i.imgur.com/bnKFZjt.png",
+                name: "Twilight Archmage"
+            },
+            {
+                url: "https://i.imgur.com/qL3BVpR.png",
+                name: "The Forgotten King"
+            }
         ],
         dungeonColors: [
             0x137d13,
             0x054205
         ],
-        dungeonCategory: "Endgame Dungeons",
+        dungeonCategory: "Exaltation Dungeons",
         isBaseOrDerived: true
     },
     {
@@ -778,8 +1135,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/0PyfYHr.png",
-        bossLinks: ["https://i.imgur.com/DXIpAWm.png"],
+        portalLink: {
+            url: "https://i.imgur.com/0PyfYHr.png",
+            name: "Machine Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/DXIpAWm.png",
+                name: "Null"
+            }
+        ],
         dungeonColors: [
             0x2ade2a,
             0x0ffc0f
@@ -798,10 +1163,19 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/WQ95Y0j.png",
+        portalLink: {
+            url: "https://i.imgur.com/WQ95Y0j.png",
+            name: "Nest Portal"
+        },
         bossLinks: [
-            "https://i.imgur.com/hUWc3IV.png",
-            "https://i.imgur.com/Hn5Ugix.png"
+            {
+                url: "https://i.imgur.com/hUWc3IV.png",
+                name: "Killer Queen Bee"
+            },
+            {
+                url: "https://i.imgur.com/Hn5Ugix.png",
+                name: "The Beekeeper"
+            }
         ],
         dungeonColors: [
             0xed9121,
@@ -809,7 +1183,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xe3e019,
             0xbd0d30
         ],
-        dungeonCategory: "Endgame Dungeons",
+        dungeonCategory: "Exaltation Dungeons",
         isBaseOrDerived: true
     },
     {
@@ -823,10 +1197,19 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://cdn.discordapp.com/attachments/561245975767941120/576610932126515211/LibCursed.gif",
+        portalLink: {
+            url: "https://cdn.discordapp.com/attachments/561245975767941120/576610932126515211/LibCursed.gif",
+            name: "Cursed Library Portal"
+        },
         bossLinks: [
-            "https://i.imgur.com/DfhWagx.png",
-            "https://i.imgur.com/62cghXt.png"
+            {
+                url: "https://i.imgur.com/DfhWagx.png",
+                name: "Avalon the Archivist"
+            },
+            {
+                url: "https://i.imgur.com/62cghXt.png",
+                name: "Corruption Phantom"
+            }
         ],
         dungeonColors: [
             0x1b8094
@@ -845,16 +1228,39 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/on1ykYB.png",
+        portalLink: {
+            url: "https://i.imgur.com/on1ykYB.png",
+            name: "Cultist Hideout Portal"
+        },
         bossLinks: [
-            "https://i.imgur.com/MgFBfJp.png",
-            "https://i.imgur.com/eaW9gou.png",
-            "https://i.imgur.com/f3SgbCI.png",
-            "https://i.imgur.com/oY8zTM2.png",
-            "https://i.imgur.com/VpVMTbl.png",
-            "https://i.imgur.com/SYTQc3B.png",
-            "https://i.imgur.com/bWCxTDu.png",
-            "https://i.imgur.com/28HkqUS.png"
+            {
+                url: "https://i.imgur.com/oY8zTM2.png",
+                name: "Malus"
+            },
+            {
+                url: "https://i.imgur.com/VpVMTbl.png",
+                name: "Argus"
+            },
+            {
+                url: "https://i.imgur.com/SYTQc3B.png",
+                name: "Gaius"
+            },
+            {
+                url: "https://i.imgur.com/bWCxTDu.png",
+                name: "Basaran"
+            },
+            {
+                url: "https://i.imgur.com/28HkqUS.png",
+                name: "Dirge"
+            },
+            {
+                url: "https://i.imgur.com/eaW9gou.png",
+                name: "Molek"
+            },
+            {
+                url: "https://i.imgur.com/f3SgbCI.png",
+                name: "Balaam"
+            }
         ],
         dungeonColors: [
             0xcf0c16,
@@ -863,7 +1269,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x18adb5,
             0xebf2f2
         ],
-        dungeonCategory: "Endgame Dungeons",
+        dungeonCategory: "Exaltation Dungeons",
         isBaseOrDerived: true
     },
     {
@@ -881,12 +1287,20 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/uhDj0M5.png",
-        bossLinks: ["https://i.imgur.com/kbzthE4.png"],
+        portalLink: {
+            url: "https://i.imgur.com/uhDj0M5.png",
+            name: "Lost Halls Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/kbzthE4.png",
+                name: "Void Entity"
+            }
+        ],
         dungeonColors: [
             0x0810ff
         ],
-        dungeonCategory: "Endgame Dungeons",
+        dungeonCategory: "Exaltation Dungeons",
         isBaseOrDerived: true
     },
     {
@@ -900,15 +1314,39 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://i.imgur.com/fHNesPK.png",
+        portalLink: {
+            url: "https://i.imgur.com/CLzxdEM.png",
+            name: "Fungal Caverns Portal"
+        },
         bossLinks: [
-            "https://i.imgur.com/5fsTTjQ.png",
-            "https://i.imgur.com/ipkXOvt.png",
-            "https://i.imgur.com/KNo6oqA.png",
-            "https://i.imgur.com/0aRxp9Q.png",
-            "https://i.imgur.com/CdoztOb.png",
-            "https://i.imgur.com/qc1soWS.png",
-            "https://i.imgur.com/kC1mFqy.png"
+            {
+                url: "https://i.imgur.com/5fsTTjQ.png",
+                name: "Mushroom Chieftain"
+            },
+            {
+                url: "https://i.imgur.com/ipkXOvt.png",
+                name: "Mushroom Keeper"
+            },
+            {
+                url: "https://i.imgur.com/KNo6oqA.png",
+                name: "Mushroom Guardian"
+            },
+            {
+                url: "https://i.imgur.com/0aRxp9Q.png",
+                name: "Mushroom Sorcerer"
+            },
+            {
+                url: "https://i.imgur.com/CdoztOb.png",
+                name: "Mushroom Berserker"
+            },
+            {
+                url: "https://i.imgur.com/qc1soWS.png",
+                name: "Mushroom Shaman"
+            },
+            {
+                url: "https://i.imgur.com/kC1mFqy.png",
+                name: "Crystal Worm Mother"
+            }
         ],
         dungeonColors: [
             0xd9360d,
@@ -916,7 +1354,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x24a353,
             0xc71c91
         ],
-        dungeonCategory: "Endgame Dungeons",
+        dungeonCategory: "Exaltation Dungeons",
         isBaseOrDerived: true
     },
     {
@@ -930,8 +1368,16 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             }
         ],
         otherReactions: [],
-        portalLink: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Pirate%20Cave%20Portal.png",
-        bossLinks: ["https://static.drips.pw/rotmg/wiki/Enemies/Dreadstump%20the%20Pirate%20King.png"],
+        portalLink: {
+            url: "https://static.drips.pw/rotmg/wiki/Environment/Portals/Pirate%20Cave%20Portal.png",
+            name: "Pirate Cave Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://static.drips.pw/rotmg/wiki/Enemies/Dreadstump%20the%20Pirate%20King.png",
+                name: "Dreadstump the Pirate King"
+            }
+        ],
         dungeonColors: [
             0x1dbfaa
         ],
@@ -966,18 +1412,25 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
                 maxEarlyLocation: 0
             }
         ],
-        portalLink: "https://i.imgur.com/nKKvJsv.png",
+        portalLink: {
+            url: "https://i.imgur.com/JGnMCv2.gif",
+            name: "Oryx's Sanctuary Portal"
+        },
         bossLinks: [
-            "https://media.discordapp.net/attachments/561246036870430770/708192230468485150/oryx_3_w.png",
-            "https://media.discordapp.net/attachments/561246036870430770/708192231449690172/oryx_3_b.png",
-            "https://media.discordapp.net/attachments/561246036870430770/708192325842763836/OryxUnknownAnim.gif",
-            "https://media.discordapp.net/attachments/561246036870430770/708192326320783410/oryxSanctuaryObjects16x16_5gif.gif"
+            {
+                url: "https://i.imgur.com/3Biywi7.png",
+                name: "Oryx the Mad God 3"
+            },
+            {
+                url: "https://i.imgur.com/DSVqdZo.png",
+                name: "Oryx the Mad God 3 (Exalted)"
+            }
         ],
         dungeonColors: [
             0xb5471b,
             0x000000
         ],
-        dungeonCategory: "Endgame Dungeons",
+        dungeonCategory: "Exaltation Dungeons",
         isBaseOrDerived: true
     }
 ];

@@ -1,14 +1,18 @@
-import {ColorResolvable} from "discord.js";
 import {IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
 
 export type DungeonType = "Uncategorized"
     | "Basic Dungeons"
     | "Godland Dungeons"
-    | "Endgame Dungeons"
+    | "Exaltation Dungeons"
     | "Event Dungeons"
     | "Mini Dungeons"
     | "Heroic Dungeons"
     | "Epic Dungeons";
+
+export type ImageInfo = {
+    url: string;
+    name: string;
+};
 
 /**
  * An interface representing a dungeon that can be used for AFK checks and headcounts.
@@ -65,17 +69,17 @@ export interface IDungeonInfo {
     /**
      * The link to the image of the dungeon's portal. This image will be displayed on the AFK check.
      *
-     * @type {string}
+     * @type {ImageInfo}
      */
-    portalLink: string;
+    portalLink: ImageInfo;
 
     /**
      * An array of images of the dungeon's bosses, monsters, or others. A random image will be displayed on the AFK
      * check.
      *
-     * @type {string[]}
+     * @type {ImageInfo[]}
      */
-    bossLinks: string[];
+    bossLinks: ImageInfo[];
 
     /**
      * The colors that best reflect the dungeon's overall color scheme. A random color will be used for the AFK
