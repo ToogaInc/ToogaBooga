@@ -67,4 +67,15 @@ export namespace StringUtil {
 
         return chunks;
     }
+
+    /**
+     * Parses a string containing numbers separated by a comma or space.
+     * @param {string} str The string.
+     * @returns {number[]} The numbers.
+     */
+    export function parseNumbers(str: string): number[] {
+        return str.split(/, |,| /)
+            .map(x => Number.parseInt(x.trim(), 10))
+            .filter(x => !Number.isNaN(x));
+    }
 }

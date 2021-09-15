@@ -1803,7 +1803,7 @@ export class RaidInstance {
             .setThumbnail(
                 this._afkCheckMsg
                     ? this._afkCheckMsg.embeds[0].thumbnail!.url
-                    : ArrayUtilities.getRandomElement(this._dungeon.bossLinks.concat(this._dungeon.portalEmojiId))
+                    : ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url
             );
 
         if (prioritySb.length() > 0) {
@@ -1886,7 +1886,7 @@ export class RaidInstance {
             .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
             .setThumbnail(this._controlPanelMsg
                 ? this._controlPanelMsg.embeds[0].thumbnail!.url
-                : ArrayUtilities.getRandomElement(this._dungeon.bossLinks.concat(this._dungeon.portalEmojiId)))
+                : ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url)
             .addField("General Status", generalStatus.toString());
 
         if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
