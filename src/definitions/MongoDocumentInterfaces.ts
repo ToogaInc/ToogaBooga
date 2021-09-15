@@ -3,7 +3,7 @@ import {
     IAfkCheckReaction,
     IAfkCheckProperties,
     IRaidChannels,
-    IRaidInfo, IReactionInfo, ICustomDungeonInfo
+    IRaidInfo, IReactionInfo, ICustomDungeonInfo, ImageInfo
 } from "./DungeonRaidInterfaces";
 import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
 import {IModmailThread} from "./ModmailInterfaces";
@@ -417,7 +417,7 @@ export interface IGuildInfo extends IBaseDocument {
          *
          * @type {string[]}
          */
-        approvedCustomImages: string[];
+        approvedCustomImages: ImageInfo[];
 
         /**
          * Any reactions that give early location.

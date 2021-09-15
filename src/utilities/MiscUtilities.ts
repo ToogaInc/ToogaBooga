@@ -41,9 +41,21 @@ export namespace MiscUtilities {
      * @param {number} g Green value.
      * @param {number} b Blue value.
      * @returns {string} The hex string. This will start with `#`.
-     * @see https://stackoverflow.com/a/5624139
+     * @see https://stackoverflow.com/a/5623914
      */
     export function rgbToHex(r: number, g: number, b: number): string {
+        // rgb          xx xx xx
+        //              r  g  b
+        // binary       xxxxxxxx xxxxxxxx xxxxxxxx
+        //                  r        g        b
+        //
+        // hex string   # xx xx xx
+        // binary       xxxxxxxx xxxxxxxx xxxxxxxx
+        // r -> shift 24 bits to left
+        // g -> shift 8 bits to left
+        // b -> keep as normal
+        //
+        // shift 1 24 bits to the left so we know we're working with 24 bits
         return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
     }
 
@@ -51,12 +63,18 @@ export namespace MiscUtilities {
      * Converts a hex string to the corresponding RGB value.
      * @param {string} hex The hex string.
      * @returns {[number, number, number]} A tuple containing the [R, G, B] values.
-     * @see https://stackoverflow.com/a/11508164
      */
     export function hexToRgb(hex: string): [number, number, number] {
         if (hex.startsWith("#"))
             hex = hex.slice(1);
-        const bigint = Number.parseInt(hex, 16);
-        return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+        const num = Number.parseInt(hex, 16);
+        // hex string: # xx xx xx
+        //             24      16        8
+        // binary str: xxxxxxxx xxxxxxxx xxxxxxxx
+        //                 r        g        b
+        // r -> shift 16 right                      num >> 16
+        // g -> shift 8 right, keep bits 0-8        (num >> 8) & 0b1111_1111
+        // b -> no need to shift, keep bits 0-8     num & 0b1111_1111
+        return [(num >> 16) & 0b1111_1111, (num >> 8) & 0b1111_1111, num & 0b1111_1111];
     }
 }
