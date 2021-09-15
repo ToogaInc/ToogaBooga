@@ -81,9 +81,9 @@ export interface IDungeonInfo {
      * The colors that best reflect the dungeon's overall color scheme. A random color will be used for the AFK
      * check embed's color.
      *
-     * @type {ColorResolvable[]}
+     * @type {number[]}
      */
-    dungeonColors: ColorResolvable[];
+    dungeonColors: number[];
 
     /**
      * The category that this dungeon best fits in. An empty string signifies an uncategorized dungeon.
