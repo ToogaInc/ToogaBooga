@@ -221,7 +221,7 @@ export class ConfigureDungeons extends BaseCommand {
             targetAuthor: botMsg.author,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
-            clearInteractionsAfterComplete: true,
+            clearInteractionsAfterComplete: false,
             deleteBaseMsgAfterComplete: false,
             duration: 2 * 60 * 1000
         });
@@ -793,7 +793,7 @@ export class ConfigureDungeons extends BaseCommand {
                 targetAuthor: botMsg.author,
                 oldMsg: botMsg,
                 acknowledgeImmediately: true,
-                clearInteractionsAfterComplete: true,
+                clearInteractionsAfterComplete: false,
                 deleteBaseMsgAfterComplete: false,
                 duration: 60 * 1000
             });
@@ -855,7 +855,7 @@ export class ConfigureDungeons extends BaseCommand {
 
                     if (typeof res === "string") {
                         cDungeon.dungeonName = res;
-                        continue;
+                        break;
                     }
 
                     if (res === ValidatorResult.Failed) {
@@ -887,14 +887,15 @@ export class ConfigureDungeons extends BaseCommand {
 
                     if (typeof res === "string") {
                         cDungeon.dungeonName = res;
-                        continue;
+                        break;
                     }
 
                     if (res === ValidatorResult.Failed) {
                         this.dispose(ctx, botMsg).catch();
                         return;
                     }
-                    return;
+
+                    break;
                 }
                 case "config_reactions": {
                     const newReactions = await this.configReactions(
@@ -1055,7 +1056,7 @@ export class ConfigureDungeons extends BaseCommand {
                         targetAuthor: botMsg.author,
                         oldMsg: botMsg,
                         acknowledgeImmediately: true,
-                        clearInteractionsAfterComplete: true,
+                        clearInteractionsAfterComplete: false,
                         deleteBaseMsgAfterComplete: false,
                         duration: 45 * 1000
                     });
@@ -1653,7 +1654,11 @@ export class ConfigureDungeons extends BaseCommand {
                 }
                 case removeButton.customId!: {
                     selected.splice(currentIdx, 1);
-                    currentIdx %= selected.length;
+                    if (selected.length > 0)
+                        currentIdx %= selected.length;
+                    else
+                        currentIdx = 0;
+
                     break;
                 }
                 case upButton.customId!: {
@@ -1690,6 +1695,14 @@ export class ConfigureDungeons extends BaseCommand {
             return x.mapKey in MAPPED_AFK_CHECK_REACTIONS
                 ? true
                 : ctx.guildDoc!.properties.customReactions.some(y => y.key === x.mapKey);
+        }).filter(y => {
+            const reactionInfo = y.mapKey in MAPPED_AFK_CHECK_REACTIONS
+                ? MAPPED_AFK_CHECK_REACTIONS[y.mapKey]
+                : ctx.guildDoc!.properties.customReactions.find(x => x.key === y.mapKey)!.value;
+
+            return !!(reactionInfo.emojiInfo.isCustom
+                ? GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiInfo.identifier)
+                : reactionInfo.emojiInfo.identifier);
         });
 
         const saveButton = new MessageButton()

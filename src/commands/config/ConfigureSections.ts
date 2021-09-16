@@ -252,7 +252,7 @@ export class ConfigureSections extends BaseCommand {
             targetAuthor: botMsg.author,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
-            clearInteractionsAfterComplete: true,
+            clearInteractionsAfterComplete: false,
             deleteBaseMsgAfterComplete: false,
             duration: 30 * 1000
         });

@@ -8,6 +8,7 @@ export * from "./config/ConfigureChannels";
 export * from "./config/ConfigureRoles";
 export * from "./config/ConfigureSections";
 export * from "./config/ConfigureDungeons";
+export * from "./config/ConfigureReactionsImages";
 
 export * from "./staff/FindPunishment";
 export * from "./staff/CheckBlacklist";

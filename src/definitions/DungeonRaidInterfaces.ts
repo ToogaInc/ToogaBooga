@@ -276,6 +276,8 @@ export interface IMappedAfkCheckReactions {
     [key: string]: IReactionInfo;
 }
 
+export type ReactionType = "KEY" | "NM_KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "EARLY_LOCATION" | "UTILITY";
+
 /**
  * An interface that represents a reaction.
  */
@@ -291,7 +293,7 @@ export interface IReactionInfo {
      * - `UTILITY`: A utility reaction.
      * @type {string}
      */
-    type: "KEY" | "NM_KEY" | "STATUS_EFFECT" | "CLASS" | "ITEM" | "EARLY_LOCATION" | "UTILITY";
+    type: ReactionType;
 
     /**
      * Information about this emoji.

@@ -521,7 +521,6 @@ export namespace MongoManager {
                 dungeonOverride: [],
                 customReactions: [],
                 approvedCustomImages: [],
-                approvedCustomEmojiIds: [],
                 genEarlyLocReactions: [],
                 reactionPoints: []
             },

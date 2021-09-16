@@ -329,13 +329,6 @@ export interface IGuildInfo extends IBaseDocument {
         customReactions: IPropertyKeyValuePair<string, IReactionInfo>[];
 
         /**
-         * Any approved custom emojis. This will simply be an array of emoji IDs.
-         *
-         * @type {string[]}
-         */
-        approvedCustomEmojiIds: string[];
-
-        /**
          * Any approved images. This will be an array of image URLs. The image will be stored on a private server.
          *
          * @type {string[]}

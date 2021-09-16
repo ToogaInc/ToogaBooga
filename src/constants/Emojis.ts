@@ -12,6 +12,7 @@ export namespace Emojis {
         "🔟",
     ];
 
+    export const MINUS_EMOJI: string = "➖";
     export const PLUS_EMOJI: string = "➕";
 
     export const FIRST_PLACE_EMOJI: string = "🥇";
