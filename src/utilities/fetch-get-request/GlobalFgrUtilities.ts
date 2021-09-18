@@ -10,6 +10,7 @@ import {
 } from "discord.js";
 import {MiscUtilities} from "../MiscUtilities";
 import {OneLifeBot} from "../../OneLifeBot";
+import {IReactionInfo} from "../../definitions";
 
 /**
  * A set of functions that essentially "abstract" away the client methods. This was created so that if discord.js
@@ -78,6 +79,18 @@ export namespace GlobalFgrUtilities {
     export function getCachedEmoji(emojiId: string): GuildEmoji | null {
         if (!MiscUtilities.isSnowflake(emojiId)) return null;
         return OneLifeBot.BotInstance.client.emojis.cache.get(emojiId) ?? null;
+    }
+
+    /**
+     * Attempts to get a cached emoji; if such emoji doesn't exist, it will return the string (assuming it's a
+     * built-in emoji).
+     * @param {IReactionInfo} reactionInfo The reaction information.
+     * @return {string | GuildEmoji | null} The emoji.
+     */
+    export function getNormalOrCustomEmoji(reactionInfo: IReactionInfo): string | GuildEmoji | null {
+        return reactionInfo.emojiInfo.isCustom
+            ? getCachedEmoji(reactionInfo.emojiInfo.identifier)
+            : reactionInfo.emojiInfo.identifier;
     }
 
     /**

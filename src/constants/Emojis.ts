@@ -12,6 +12,8 @@ export namespace Emojis {
         "🔟",
     ];
 
+    export const CLOCK_EMOJI: string = "🕰️";
+
     export const MINUS_EMOJI: string = "➖";
     export const PLUS_EMOJI: string = "➕";
 

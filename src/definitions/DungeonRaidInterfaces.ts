@@ -100,6 +100,8 @@ export interface IDungeonInfo {
      * The code name. This is essentially the dungeon identifier name and should never change (even if anything else
      * relating to this dungeon changes).
      *
+     * For custom dungeons, `codeName` should always start with `[[` and end with `]]`.
+     *
      * @type {string}
      */
     codeName: string;

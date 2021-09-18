@@ -569,7 +569,7 @@ export class ConfigureDungeons extends BaseCommand {
                                              dungeon?: ICustomDungeonInfo | IDungeonOverrideInfo): Promise<void> {
         const cDungeon: ICustomDungeonInfo | IDungeonOverrideInfo = dungeon ?? {
             bossLinks: [],
-            codeName: "",
+            codeName: `[[${Date.now()}_${StringUtil.generateRandomString(10)}]]`,
             dungeonCategory: "Uncategorized",
             dungeonColors: [],
             dungeonName: "",
