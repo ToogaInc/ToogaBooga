@@ -257,6 +257,55 @@ export namespace QuotaManager {
         await Promise.all(doc.quotas.quotaInfo.map(async x => resetQuota(guild, x.roleId)));
     }
 
+    type QuotaMemberInfo = {
+        roleId: string;
+        pointsNeeded: number;
+        currentPoints: number;
+        percentComplete: number;
+    };
+
+    /**
+     * Finds the best possible quota for this person to log data in.
+     * @param {GuildMember} member The member.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {string} logType The log type.
+     * @param {string} [dungeonId] The dungeon ID, if any. This is required if `logType` pertains to a dungeon type.
+     * @return {string | null} The best role ID corresponding to the quota to log, if any. `null` otherwise.
+     */
+    export function findBestQuotaToAdd(member: GuildMember, guildDoc: IGuildInfo, logType: QuotaLogType,
+                                       dungeonId?: string): string | null {
+        let resolvedLogType: string = logType;
+        if (logType === "RunAssist" || logType === "RunComplete" || logType === "RunFailed") {
+            if (!dungeonId) return null;
+            resolvedLogType = `${logType}:${dungeonId}`;
+        }
+
+        const availableQuotas = guildDoc.quotas.quotaInfo.filter(x => {
+            return GuildFgrUtilities.memberHasCachedRole(member, x.roleId)
+                && x.pointsNeeded > 0
+                // RunAssist, RunComplete, and RunFailed will either be one of:
+                // - Run_____:DUNGEON_ID            For specific dungeon(s)
+                // - Run_____                       For all dungeons (i.e. no ID specifier).
+                && (x.pointValue.find(y => y.key === resolvedLogType || y.key === logType)?.value ?? 0) > 0;
+        });
+
+        if (availableQuotas.length === 0)
+            return null;
+
+        const quotaData: QuotaMemberInfo[] = availableQuotas.map(x => {
+            const curPts = calcTotalQuotaPtsForMember(member.id, x.roleId, guildDoc);
+            return {
+                roleId: x.roleId,
+                currentPoints: curPts,
+                pointsNeeded: x.pointsNeeded,
+                percentComplete: curPts / x.pointsNeeded
+            };
+        });
+
+        quotaData.sort((a, b) => a.percentComplete - b.percentComplete);
+        return quotaData[0].roleId;
+    }
+
     /**
      * Logs a quota event for a person.
      * @param {GuildMember} member The member to log for.
@@ -332,7 +381,7 @@ export namespace QuotaManager {
         let possibleChoices = doc.quotas.quotaInfo.filter(x => {
             const role = GuildFgrUtilities.resolveMainCachedGuildRoles(guild, doc, x.roleId);
 
-            return (x.pointValue.find(y => y.key === resolvedLogType)?.value ?? 0) > 0
+            return (x.pointValue.find(y => y.key === resolvedLogType || y.key === logType)?.value ?? 0) > 0
                 && GuildFgrUtilities.memberHasCachedRole(member, role?.id ?? "");
         });
 
@@ -457,7 +506,7 @@ export namespace QuotaManager {
      * could not be found.
      */
     export async function getQuotaLeaderboardEmbed(guild: Guild, guildDoc: IGuildInfo,
-                                             quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
+                                                   quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
         const role = GuildFgrUtilities.getCachedRole(guild, quotaInfo.roleId);
         if (!role)
             return null;
