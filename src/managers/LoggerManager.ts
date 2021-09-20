@@ -5,6 +5,7 @@ import {IUserInfo} from "../definitions";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
 import {DUNGEON_DATA} from "../constants/DungeonData";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import {DungeonUtilities} from "../utilities/DungeonUtilities";
 
 export namespace LoggerManager {
     enum RunResult {
@@ -277,9 +278,9 @@ export namespace LoggerManager {
                 }
                 case "R": {
                     // Dungeon raid flag
-                    const dgnName = guildDoc?.properties.customDungeons.find(x => x.codeName === vId)?.dungeonName
-                        ?? DUNGEON_DATA.find(x => x.codeName === vId)?.dungeonName
-                        ?? null;
+                    const dgnName = DungeonUtilities.isCustomDungeon(vId)
+                        ? guildDoc?.properties.customDungeons.find(x => x.codeName === vId)?.dungeonName
+                        : DUNGEON_DATA.find(x => x.codeName === vId)?.dungeonName;
 
                     if (!dgnName)
                         break;

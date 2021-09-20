@@ -651,14 +651,12 @@ export class ConfigureReactionsImages extends BaseCommand {
             const fields = ArrayUtilities.arrayToStringFields(
                 currentReactions,
                 (i, elem) => {
-                    const emoji = elem.value.emojiInfo.isCustom
-                        ? GlobalFgrUtilities.getCachedEmoji(elem.value.emojiInfo.identifier)
-                        : elem.value.emojiInfo.identifier;
-
                     const sb = new StringBuilder();
                     if (i === selectedIdx)
                         sb.append(Emojis.RIGHT_TRIANGLE_EMOJI).append(" ");
-                    sb.append(elem.value.name).append(" ").append(emoji ?? "(No Emoji)");
+                    sb.append(elem.value.name)
+                        .append(" ")
+                        .append(GlobalFgrUtilities.getNormalOrCustomEmoji(elem.value) ?? "(No Emoji)");
 
                     return sb.toString();
                 }

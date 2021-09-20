@@ -24,6 +24,7 @@ import {DUNGEON_DATA} from "../constants/DungeonData";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
+import {DungeonUtilities} from "../utilities/DungeonUtilities";
 
 export namespace QuotaManager {
     /**
@@ -130,18 +131,10 @@ export namespace QuotaManager {
                     if (logArr.length === 2) {
                         // We assume the second element is the dungeon ID.
                         // Get the dungeon name
-                        let dungeonName: string = logArr[1];
-                        // Begin by looking for any custom dungeons.
-                        const overrideDgn = guildDoc.properties.customDungeons.find(x => x.codeName === logArr[1]);
-                        if (overrideDgn)
-                            dungeonName = overrideDgn.dungeonName;
-                        else {
-                            // Next, look for the general dungeon
-                            const dgnData = DUNGEON_DATA.find(x => x.codeName === logArr[1]);
-                            if (dgnData)
-                                dungeonName = dgnData.dungeonName;
-                        }
-
+                        const dungeonName = (DungeonUtilities.isCustomDungeon(logArr[1])
+                            ? guildDoc.properties.customDungeons.find(x => x.codeName === logArr[1])?.dungeonName
+                            : DUNGEON_DATA.find(x => x.codeName === logArr[1])?.dungeonName) ?? logArr[1];
+                        
                         sb.append(`\t\t- ${logArr[0]} (${dungeonName}): ${num}`)
                             .appendLine();
                         continue;

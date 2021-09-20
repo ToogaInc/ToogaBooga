@@ -20,6 +20,7 @@ import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {Emojis} from "../../constants/Emojis";
 import {SlashCommandBuilder} from "@discordjs/builders";
+import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
@@ -107,6 +108,19 @@ export class StartAfkCheck extends BaseCommand {
 
             const dungeons: IDungeonInfo[] = [];
             section.otherMajorConfig.afkCheckProperties.allowedDungeons.forEach(id => {
+                if (DungeonUtilities.isCustomDungeon(id)) {
+                    const customDgn = ctx.guildDoc!.properties.customDungeons.find(x => x.codeName === id);
+                    if (customDgn) {
+                        if (!StartAfkCheck.hasPermsToRaid(customDgn?.roleRequirement, ctx.member!, allRolePerms)) {
+                            return;
+                        }
+
+                        dungeons.push(customDgn);
+                    }
+
+                    return;
+                }
+
                 const dgn = DUNGEON_DATA.find(x => x.codeName === id);
                 if (dgn) {
                     const overrideInfo = ctx.guildDoc!.properties.dungeonOverride.find(x => x.codeName === id);
@@ -116,15 +130,6 @@ export class StartAfkCheck extends BaseCommand {
 
                     dungeons.push(dgn);
                     return;
-                }
-
-                const customDgn = ctx.guildDoc!.properties.customDungeons.find(x => x.codeName === id);
-                if (customDgn) {
-                    if (!StartAfkCheck.hasPermsToRaid(customDgn?.roleRequirement, ctx.member!, allRolePerms)) {
-                        return;
-                    }
-
-                    dungeons.push(customDgn);
                 }
             });
 

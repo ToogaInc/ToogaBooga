@@ -31,6 +31,7 @@ import {MongoManager} from "../../managers/MongoManager";
 import {DUNGEON_DATA} from "../../constants/DungeonData";
 import {entryFunction} from "./common/ConfigCommon";
 import {FilterQuery, UpdateQuery} from "mongodb";
+import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 
 enum ValidatorResult {
     // Success = ValidationReturnType#res is not null
@@ -912,10 +913,7 @@ export class ConfigureDungeons extends BaseCommand {
                     cDungeon.keyReactions = [];
                     cDungeon.otherReactions = [];
                     for (const r of newReactions) {
-                        const reactionInfo = r.mapKey in MAPPED_AFK_CHECK_REACTIONS
-                            ? MAPPED_AFK_CHECK_REACTIONS[r.mapKey]
-                            : ctx.guildDoc!.properties.customReactions.find(x => x.key === r.mapKey)!.value;
-
+                        const reactionInfo = DungeonUtilities.getReaction(ctx.guildDoc!, r.mapKey)!;
                         if (reactionInfo.type === "KEY" || reactionInfo.type === "NM_KEY") {
                             cDungeon.keyReactions.push(r);
                             continue;
@@ -1692,14 +1690,9 @@ export class ConfigureDungeons extends BaseCommand {
     private async configReactions(ctx: ICommandContext, botMsg: Message,
                                   cReactions: IAfkCheckReaction[]): Promise<IAfkCheckReaction[] | null> {
         const currentReactions = cReactions.slice().filter(x => {
-            return x.mapKey in MAPPED_AFK_CHECK_REACTIONS
-                ? true
-                : ctx.guildDoc!.properties.customReactions.some(y => y.key === x.mapKey);
+            return !!DungeonUtilities.getReaction(ctx.guildDoc!, x.mapKey)!;
         }).filter(y => {
-            const reactionInfo = y.mapKey in MAPPED_AFK_CHECK_REACTIONS
-                ? MAPPED_AFK_CHECK_REACTIONS[y.mapKey]
-                : ctx.guildDoc!.properties.customReactions.find(x => x.key === y.mapKey)!.value;
-
+            const reactionInfo = DungeonUtilities.getReaction(ctx.guildDoc!, y.mapKey)!;
             return !!(reactionInfo.emojiInfo.isCustom
                 ? GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiInfo.identifier)
                 : reactionInfo.emojiInfo.identifier);
@@ -1802,9 +1795,7 @@ export class ConfigureDungeons extends BaseCommand {
 
             const rawFields: string[] = [];
             for (let i = 0; i < currentReactions.length; i++) {
-                const reactionInfo = currentReactions[i].mapKey in MAPPED_AFK_CHECK_REACTIONS
-                    ? MAPPED_AFK_CHECK_REACTIONS[currentReactions[i].mapKey]
-                    : ctx.guildDoc!.properties.customReactions.find(x => x.key === currentReactions[i].mapKey)!.value;
+                const reactionInfo = DungeonUtilities.getReaction(ctx.guildDoc!, currentReactions[i].mapKey)!;
                 const emoji = reactionInfo.emojiInfo.isCustom
                     ? GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiInfo.identifier)
                     : reactionInfo.emojiInfo.identifier;
