@@ -87,7 +87,7 @@ export class ConfigureQuotas extends BaseCommand {
             commandCooldown: 3 * 1000,
             usageGuide: ["configquotas"],
             exampleGuide: ["configquotas"],
-            guildOnly: false,
+            guildOnly: true,
             botOwnerOnly: false
         });
     }
