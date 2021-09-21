@@ -403,7 +403,7 @@ export class RaidInstance {
         // And this is the point cost.
         let costForEarlyLoc: number = 0;
         // Process dungeon based on whether it is custom or not.
-        if (dungeon.isBaseOrDerived) {
+        if (dungeon.isBuiltIn) {
             const dgnOverride = guildDoc.properties.dungeonOverride
                 .find(x => x.codeName === dungeon.codeName);
 
@@ -581,7 +581,7 @@ export class RaidInstance {
         }
 
         // If the dungeon is base or derived base, we need to check for dungeon overrides. 
-        if (dungeon.isBaseOrDerived) {
+        if (dungeon.isBuiltIn) {
             // Check if we need to deal with any dungeon overrides. 
             const overrideIdx = guildDoc.properties.dungeonOverride.findIndex(x => x.codeName === dungeon.codeName);
 

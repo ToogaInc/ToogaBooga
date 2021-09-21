@@ -424,7 +424,7 @@ export class ConfigureDungeons extends BaseCommand {
                     const emojiToUse = selectedDungeons.some(x => elem.codeName === x)
                         ? `${Emojis.GREEN_CHECK_EMOJI} `
                         : "";
-                    const customTxt = elem.isBaseOrDerived ? "" : "(Custom)";
+                    const customTxt = elem.isBuiltIn ? "" : "(Custom)";
                     return `\`[${i + 1}]\` ${emojiToUse}${elem.dungeonName}) ${customTxt}`;
                 }
             );
@@ -574,7 +574,7 @@ export class ConfigureDungeons extends BaseCommand {
             dungeonCategory: "Uncategorized",
             dungeonColors: [],
             dungeonName: "",
-            isBaseOrDerived: false,
+            isBuiltIn: false,
             keyReactions: [],
             nitroEarlyLocationLimit: 0,
             otherReactions: [],
@@ -1194,7 +1194,7 @@ export class ConfigureDungeons extends BaseCommand {
             dungeonCategory: dgn.dungeonCategory,
             dungeonColors: dgn.dungeonColors.slice(),
             dungeonName: dgn.dungeonName,
-            isBaseOrDerived: false,
+            isBuiltIn: false,
             keyReactions: dgn.keyReactions.slice(),
             otherReactions: dgn.otherReactions.slice(),
             portalEmojiId: dgn.portalEmojiId,
@@ -1244,7 +1244,7 @@ export class ConfigureDungeons extends BaseCommand {
                 return {
                     label: x.dungeonName,
                     value: x.codeName,
-                    description: `Custom Dungeon? ${x.isBaseOrDerived ? "No" : "Yes"}`,
+                    description: `Custom Dungeon? ${x.isBuiltIn ? "No" : "Yes"}`,
                     emoji: x.portalEmojiId
                 };
             }),

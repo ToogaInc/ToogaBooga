@@ -26,7 +26,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x29c71e
         ],
         dungeonCategory: "Godland Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "MAGIC_WOODS",
@@ -53,7 +53,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x1fcfcc
         ],
         dungeonCategory: "Godland Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "SPRITE_WORLD",
@@ -83,7 +83,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xe6df15
         ],
         dungeonCategory: "Godland Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "ANCIENT_RUINS",
@@ -117,7 +117,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x94643a
         ],
         dungeonCategory: "Basic Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "CANDYLAND_HUNTING_GROUNDS",
@@ -161,7 +161,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xbdf7fc
         ],
         dungeonCategory: "Basic Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "CAVE_THOUSAND_TREASURES",
@@ -190,7 +190,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x3d3434
         ],
         dungeonCategory: "Godland Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "UNDEAD_LAIR",
@@ -219,7 +219,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0
         ],
         dungeonCategory: "Godland Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "HEROIC_UNDEAD_LAIR",
@@ -249,7 +249,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x2b1e1e
         ],
         dungeonCategory: "Heroic Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "ABYSS_OF_DEMONS",
@@ -277,7 +277,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xe09a19
         ],
         dungeonCategory: "Godland Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "HEROIC_ABYSS_OF_DEMONS",
@@ -306,7 +306,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xf5d311
         ],
         dungeonCategory: "Heroic Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "MANOR_OF_THE_IMMORTALS",
@@ -336,7 +336,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x3f2e52
         ],
         dungeonCategory: "Godland Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "PUPPET_MASTERS_THEATRE",
@@ -364,7 +364,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xad3638
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "TOXIC_SEWERS",
@@ -392,7 +392,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x228753
         ],
         dungeonCategory: "Event Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "HAUNTED_CEMETERY",
@@ -431,7 +431,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x0e9c53
         ],
         dungeonCategory: "Event Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "MAD_LAB",
@@ -463,7 +463,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x0db4ba
         ],
         dungeonCategory: "Godland Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "PARASITE_CHAMBERS",
@@ -492,7 +492,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xeb1551
         ],
         dungeonCategory: "Event Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "DAVY_JONES_LOCKER",
@@ -519,7 +519,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x2376a6
         ],
         dungeonCategory: "Event Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "MOUNTAIN_TEMPLE",
@@ -546,7 +546,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x12634e
         ],
         dungeonCategory: "Event Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "LAIR_OF_DRACONIS",
@@ -593,7 +593,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x1e1adb
         ],
         dungeonCategory: "Event Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "DEADWATER_DOCKS",
@@ -621,7 +621,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xded799
         ],
         dungeonCategory: "Epic Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "WOODLAND_LABYRINTH",
@@ -652,7 +652,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x3eb847
         ],
         dungeonCategory: "Epic Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "CRAWLING_DEPTHS",
@@ -680,7 +680,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x1dcf2a
         ],
         dungeonCategory: "Epic Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "OCEAN_TRENCH",
@@ -709,7 +709,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xd41c78
         ],
         dungeonCategory: "Event Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "ICE_CAVE",
@@ -738,7 +738,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x79c7e0
         ],
         dungeonCategory: "Event Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "TOMB_OF_THE_ANCIENTS",
@@ -776,7 +776,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x17adab
         ],
         dungeonCategory: "Event Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "LAIR_OF_SHAITAN",
@@ -804,7 +804,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xe0912f
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "PUPPET_MASTERS_ENCORE",
@@ -831,7 +831,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x912121
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "CNIDARIAN_REEF",
@@ -859,7 +859,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x1980a6
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "SECLUDED_THICKET",
@@ -895,7 +895,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x14a341
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "HIGH_TECH_TERROR",
@@ -923,7 +923,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x0db4ba
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "BATTLE_FOR_THE_NEXUS",
@@ -970,7 +970,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xdfe30e,
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "BELLADONNAS_GARDEN",
@@ -998,7 +998,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x08d41d
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "ICE_TOMB",
@@ -1034,7 +1034,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x23deda
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "MAD_GOD_MAYHEM",
@@ -1086,7 +1086,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x2a852a
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "SHATTERS",
@@ -1122,7 +1122,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x054205
         ],
         dungeonCategory: "Exaltation Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "MACHINE",
@@ -1150,7 +1150,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x0ffc0f
         ],
         dungeonCategory: "Mini Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "NEST",
@@ -1184,7 +1184,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xbd0d30
         ],
         dungeonCategory: "Exaltation Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "CURSED_LIBRARY",
@@ -1215,7 +1215,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x1b8094
         ],
         dungeonCategory: "Godland Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "CULTIST_HIDEOUT",
@@ -1270,7 +1270,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xebf2f2
         ],
         dungeonCategory: "Exaltation Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "THE_VOID",
@@ -1301,7 +1301,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x0810ff
         ],
         dungeonCategory: "Exaltation Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "FUNGAL_CAVERN",
@@ -1355,7 +1355,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0xc71c91
         ],
         dungeonCategory: "Exaltation Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "MISCELLANEOUS_DUNGEON",
@@ -1382,7 +1382,7 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x1dbfaa
         ],
         dungeonCategory: "Basic Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     },
     {
         codeName: "ORYX_3",
@@ -1431,6 +1431,6 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
             0x000000
         ],
         dungeonCategory: "Exaltation Dungeons",
-        isBaseOrDerived: true
+        isBuiltIn: true
     }
 ];

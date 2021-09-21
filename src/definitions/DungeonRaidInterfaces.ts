@@ -177,21 +177,12 @@ export interface IDungeonInfo {
     dungeonCategory: DungeonType;
 
     /**
-     * Whether this dungeon is either a base (i.e. constant) dungeon or derived from a base dungeon. We define a
-     * base dungeon as one that is defined in `DungeonData.ts`.
-     *
-     * We define a derived base dungeon as a dungeon object whose base comes from one that is defined in
-     * `DungeonData.ts`. In other words, if a user "copied" a base dungeon and then made changes to it (this will
-     * retain the original dungeon code), then this is a derived base dungeon.
-     *
-     * In particular, if this is `true` (i.e. this is a base dungeon or a derived base dungeon), then the user is
-     * able to edit `keyReactions` and `otherReactions` in the `dungeonOverrides`. If this is `false` (i.e. this is
-     * 100% a custom dungeon), then the user is NOT able to edit `keyReactions` and `otherReactions` since they can
-     * already edit it elsewhere.
+     * Whether this dungeon is a built-in (already included) dungeon or an overridden dungeon. We define a built-in
+     * dungeon as one that is defined in `DungeonData.ts`.
      *
      * @type {boolean}
      */
-    isBaseOrDerived: boolean;
+    isBuiltIn: boolean;
 }
 
 /**
@@ -235,7 +226,7 @@ export interface ICustomDungeonInfo extends IDungeonInfo {
      *
      * @type {boolean}
      */
-    isBaseOrDerived: false;
+    isBuiltIn: false;
 
     /**
      * Any role requirements for running this dungeon. The user only needs to have one of these roles to

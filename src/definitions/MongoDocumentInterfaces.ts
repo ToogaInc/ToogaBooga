@@ -14,7 +14,7 @@ import {
     ISuspendedUser
 } from "./PunishmentInterfaces";
 import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
-import {MainLogType, MainOnlyModLogType, SectionLogType, SectionModLogType} from "./Types";
+import {MainLogType, MainOnlyModLogType, QuotaLogType, SectionLogType, SectionModLogType} from "./Types";
 
 export interface IBaseDocument<T = ObjectID> {
     _id: T;
@@ -509,7 +509,7 @@ export interface IQuotaInfo {
      *
      * @type {IPropertyKeyValuePair<string, number>[]}
      */
-    pointValue: IPropertyKeyValuePair<string, number>[];
+    pointValue: IPropertyKeyValuePair<QuotaLogType, number>[];
 }
 
 /**

@@ -2,12 +2,28 @@
 //          TYPINGS FOR BOT OPERATIONS             //
 // =============================================== //
 
-export type QuotaLogType = "RunComplete"
-    | "RunFailed"
-    | "RunAssist"
+export enum Status {
+    SUCCESS,
+    CANCELED,
+    TIMED_OUT
+}
+
+export type Result<R> = {
+    status: Status;
+    value: R;
+};
+
+export type QuotaLogType = QuotaRunLogType
     | "Parse"
     | "ManualVerify"
     | "PunishmentIssued";
+
+export type QuotaRunLogType = "RunComplete"
+    | "RunFailed"
+    | "RunAssist"
+    | `RunComplete:${string}`
+    | `RunFailed:${string}`
+    | `RunAssist:${string}`;
 
 /**
  * The different role permissions.

@@ -27,6 +27,32 @@ import {GeneralConstants} from "../constants/GeneralConstants";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
 
 export namespace QuotaManager {
+    const ALL_QUOTA_LOG_TYPES: QuotaLogType[] = [
+        "RunAssist",
+        "RunComplete",
+        "RunFailed",
+        "Parse",
+        "PunishmentIssued",
+        "ManualVerify"
+    ];
+
+    /**
+     * Checks if the string is of some quota type.
+     * @param {string} str The string to test.
+     * @return {boolean} Whether the string is a quota type.
+     */
+    export function isQuotaLog(str: string): str is QuotaLogType {
+        if ((ALL_QUOTA_LOG_TYPES as string[]).includes(str))
+            return true;
+
+        if (!str.startsWith("RunAssist")
+            && !str.startsWith("RunComplete")
+            && !str.startsWith("RunFailed"))
+            return false;
+
+        return str.split(":").length === 2;
+    }
+
     /**
      * Resets the quota for a particular role ID. This will
      * - Send a message containing a summary of quotas.
