@@ -402,7 +402,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
             targetChannel: botMsg.channel as TextChannel,
-            targetAuthor: botMsg.author,
+            targetAuthor: ctx.user,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: false,

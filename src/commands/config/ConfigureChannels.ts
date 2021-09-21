@@ -334,7 +334,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
             targetChannel: botMsg.channel as TextChannel,
-            targetAuthor: botMsg.author,
+            targetAuthor: ctx.user,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: false,
@@ -610,7 +610,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
             targetChannel: botMsg.channel,
-            targetAuthor: botMsg.author,
+            targetAuthor: ctx.user,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: false,

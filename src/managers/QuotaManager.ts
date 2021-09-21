@@ -86,7 +86,7 @@ export namespace QuotaManager {
         const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, oldQuotas.messageId);
         // Only care about quota actions worth points
         const quotaLogMap = new Collection<string, number>();
-        for (const {key, value} of oldQuotas.pointValue) {
+        for (const {key, value} of oldQuotas.pointValues) {
             if (value === 0) continue;
             quotaLogMap.set(key, value);
         }
@@ -305,7 +305,7 @@ export namespace QuotaManager {
                 // RunAssist, RunComplete, and RunFailed will either be one of:
                 // - Run_____:DUNGEON_ID            For specific dungeon(s)
                 // - Run_____                       For all dungeons (i.e. no ID specifier).
-                && (x.pointValue.find(y => y.key === resolvedLogType || y.key === logType)?.value ?? 0) > 0;
+                && (x.pointValues.find(y => y.key === resolvedLogType || y.key === logType)?.value ?? 0) > 0;
         });
 
         if (availableQuotas.length === 0)
@@ -363,7 +363,7 @@ export namespace QuotaManager {
         let ptsEarned = 0;
         for (const l of quotaInfo.quotaLog) {
             // Inefficient, might need to find better way to do this
-            ptsEarned += quotaInfo.pointValue.find(x => x.key === l.logType)?.value ?? 0;
+            ptsEarned += quotaInfo.pointValues.find(x => x.key === l.logType)?.value ?? 0;
         }
 
         return ptsEarned;
@@ -400,7 +400,7 @@ export namespace QuotaManager {
         let possibleChoices = doc.quotas.quotaInfo.filter(x => {
             const role = GuildFgrUtilities.resolveMainCachedGuildRoles(guild, doc, x.roleId);
 
-            return (x.pointValue.find(y => y.key === resolvedLogType || y.key === logType)?.value ?? 0) > 0
+            return (x.pointValues.find(y => y.key === resolvedLogType || y.key === logType)?.value ?? 0) > 0
                 && GuildFgrUtilities.memberHasCachedRole(member, role?.id ?? "");
         });
 
@@ -458,7 +458,7 @@ export namespace QuotaManager {
                     continue;
 
                 // If this particular log type doesn't give you points, then don't show it.
-                const ptsCanEarn = choice.pointValue.find(x => x.key === resolvedLogType);
+                const ptsCanEarn = choice.pointValues.find(x => x.key === resolvedLogType);
                 if (!ptsCanEarn)
                     continue;
 
@@ -466,7 +466,7 @@ export namespace QuotaManager {
 
                 selectMenu.addOptions({
                     label: role.name,
-                    description: `${ptsEarned}/${choice.pointValue} PTS. Possible PTS: ${ptsCanEarn.value * amt}.`,
+                    description: `${ptsEarned}/${choice.pointsNeeded} PTS. Possible PTS: ${ptsCanEarn.value * amt}.`,
                     value: choice.roleId
                 });
             }

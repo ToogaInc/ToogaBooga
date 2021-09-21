@@ -1,4 +1,12 @@
-import {Guild, Message, MessageActionRow, MessageButton, MessageOptions, TextChannel} from "discord.js";
+import {
+    Guild,
+    Message,
+    MessageActionRow,
+    MessageButton,
+    MessageOptions,
+    TextBasedChannels,
+    TextChannel
+} from "discord.js";
 import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
 import {Emojis} from "../../../constants/Emojis";
 import {StringBuilder} from "../../../utilities/StringBuilder";
@@ -190,4 +198,23 @@ export async function entryFunction(ctx: ICommandContext, botMsg: Message | null
     }
 
     return [selectedSection, newBotMsg];
+}
+
+/**
+ * Sends, or edits, the bot message.
+ * @param {TextBasedChannels} channel The channel.
+ * @param {Message | null} botMsg The bot message object, if any.
+ * @param {MessageOptions} opt The message options.
+ * @return {Promise<Message>} The now-existing bot message object.
+ */
+export async function sendOrEditBotMsg(
+    channel: TextBasedChannels,
+    botMsg: Message | null,
+    opt: MessageOptions
+): Promise<Message> {
+    if (botMsg)
+        await botMsg.edit(opt);
+    else
+        botMsg = await channel.send(opt);
+    return botMsg;
 }

@@ -21,6 +21,8 @@ import {OneLifeBot} from "../../OneLifeBot";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
 import * as Stream from "stream";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
+import {TimedResult, TimedStatus} from "../../definitions/Types";
+import {sendOrEditBotMsg} from "./common/ConfigCommon";
 
 type ReactionDetailedType = {
     type: ReactionType;
@@ -142,22 +144,14 @@ export class ConfigureReactionsImages extends BaseCommand {
                 .setStyle("PRIMARY")
         ];
 
-        if (botMsg) {
-            await botMsg.edit({
-                embeds: [embed],
-                components: AdvancedCollector.getActionRowsFromComponents(buttons)
-            });
-        }
-        else {
-            botMsg = await ctx.channel!.send({
-                embeds: [embed],
-                components: AdvancedCollector.getActionRowsFromComponents(buttons)
-            });
-        }
+        botMsg = await sendOrEditBotMsg(ctx.channel!, botMsg, {
+            embeds: [embed],
+            components: AdvancedCollector.getActionRowsFromComponents(buttons)
+        });
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
             targetChannel: botMsg.channel as TextChannel,
-            targetAuthor: botMsg.author,
+            targetAuthor: ctx.user,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: false,
@@ -400,15 +394,17 @@ export class ConfigureReactionsImages extends BaseCommand {
                     });
 
                     const newName = await this.getNameFunction(ctx, botMsg, "IMAGE")();
-                    if (!newName)
-                        break;
-                    if (typeof newName === "number") {
+
+                    if (newName.status === TimedStatus.TIMED_OUT) {
                         this.dispose(ctx, botMsg).catch();
                         return;
                     }
 
+                    if (newName.status === TimedStatus.CANCELED)
+                        break;
+
                     selectedImages.push({
-                        name: newName,
+                        name: newName.value!,
                         url: storedMsg.attachments.first()!.url
                     });
                     break;
@@ -423,15 +419,16 @@ export class ConfigureReactionsImages extends BaseCommand {
                 }
                 case "change_name": {
                     const r = await this.getNameFunction(ctx, botMsg, "IMAGE")();
-                    if (!r)
-                        break;
 
-                    if (typeof r === "number") {
+                    if (r.status === TimedStatus.TIMED_OUT) {
                         this.dispose(ctx, botMsg).catch();
                         return;
                     }
 
-                    selectedImages[currentIdx].name = r;
+                    if (r.status === TimedStatus.CANCELED)
+                        break;
+
+                    selectedImages[currentIdx].name = r.value!;
                     break;
                 }
                 case "save": {
@@ -459,9 +456,12 @@ export class ConfigureReactionsImages extends BaseCommand {
      * @return {Function} The function that can be used to ask for the name.
      * @private
      */
-    private getNameFunction(ctx: ICommandContext, botMsg: Message,
-                            embedType: "REACTION" | "IMAGE"): () => Promise<string | null | -1> {
-        return async function getNameForReaction(): Promise<string | null | -1> {
+    private getNameFunction(
+        ctx: ICommandContext,
+        botMsg: Message,
+        embedType: "REACTION" | "IMAGE"
+    ): () => Promise<TimedResult<string>> {
+        return async function getNameForReaction(): Promise<TimedResult<string>> {
             const embed = embedType === "REACTION"
                 ? new MessageEmbed()
                     .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
@@ -496,12 +496,12 @@ export class ConfigureReactionsImages extends BaseCommand {
             }, AdvancedCollector.getStringPrompt(ctx.channel, {min: 1, max: 50}));
 
             if (!res)
-                return -1;
+                return {value: null, status: TimedStatus.TIMED_OUT};
 
             if (res instanceof MessageComponentInteraction)
-                return null;
+                return {value: null, status: TimedStatus.CANCELED};
 
-            return res;
+            return {value: res, status: TimedStatus.SUCCESS};
         };
     }
 
@@ -589,7 +589,7 @@ export class ConfigureReactionsImages extends BaseCommand {
             );
 
         // Asks the user for an emoji for this reaction
-        async function getEmojiForReaction(): Promise<{ identifier: string; isCustom: boolean; } | null | -1> {
+        async function getEmojiForReaction(): Promise<TimedResult<{ identifier: string; isCustom: boolean; }>> {
             const emojiEmbed = new MessageEmbed()
                 .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
                 .setTitle("Select New Emoji")
@@ -618,21 +618,30 @@ export class ConfigureReactionsImages extends BaseCommand {
                 iCollector.on("collect", async i => {
                     iCollector.stop();
                     rCollector.stop();
-                    return resolve(null);
+                    return resolve({
+                        value: null,
+                        status: TimedStatus.CANCELED
+                    });
                 });
 
                 rCollector.on("collect", async r => {
                     rCollector.stop();
                     iCollector.stop();
                     return resolve({
-                        identifier: r.emoji.id ?? r.emoji.name ?? "",
-                        isCustom: !!r.emoji.id
+                        status: TimedStatus.SUCCESS,
+                        value: {
+                            identifier: r.emoji.id ?? r.emoji.name ?? "",
+                            isCustom: !!r.emoji.id
+                        }
                     });
                 });
 
                 rCollector.on("end", async (c, r) => {
                     if (r === "time")
-                        return resolve(-1);
+                        return resolve({
+                            status: TimedStatus.TIMED_OUT,
+                            value: null
+                        });
                 });
             });
         }
@@ -694,20 +703,22 @@ export class ConfigureReactionsImages extends BaseCommand {
                 case "add_reaction": {
                     const newEmoji = await getEmojiForReaction();
 
-                    if (!newEmoji)
-                        break;
-                    if (typeof newEmoji === "number") {
+                    if (newEmoji.status === TimedStatus.TIMED_OUT) {
                         this.dispose(ctx, botMsg).catch();
                         return;
                     }
 
-                    const newName = await this.getNameFunction(ctx, botMsg, "REACTION")();
-                    if (!newName)
+                    if (newEmoji.status === TimedStatus.CANCELED)
                         break;
-                    if (typeof newName === "number") {
+
+                    const newName = await this.getNameFunction(ctx, botMsg, "REACTION")();
+                    if (newName.status === TimedStatus.TIMED_OUT) {
                         this.dispose(ctx, botMsg).catch();
                         return;
                     }
+
+                    if (newName.status === TimedStatus.CANCELED)
+                        break;
 
                     const selectMenu = new MessageSelectMenu()
                         .setCustomId("select")
@@ -755,47 +766,45 @@ export class ConfigureReactionsImages extends BaseCommand {
                         break;
 
                     currentReactions.push({
-                        key: `${newName.toUpperCase()}_${Date.now()}_${StringUtil.generateRandomString(10)}`,
+                        key: `${newName.value!.toUpperCase()}_${Date.now()}_${StringUtil.generateRandomString(10)}`,
                         value: {
                             type: reactionType.values[0] as ReactionType,
-                            name: newName,
-                            emojiInfo: newEmoji
+                            name: newName.value!,
+                            emojiInfo: newEmoji.value!
                         }
                     });
                     break;
                 }
                 case "remove_reaction": {
                     currentReactions.splice(selectedIdx, 1);
-                    if (currentReactions.length === 0)
-                        selectedIdx = 0;
-                    else
-                        selectedIdx %= currentReactions.length;
+                    selectedIdx %= currentReactions.length;
                     break;
                 }
                 case "change_emoji": {
                     const r = await getEmojiForReaction();
-                    if (!r)
-                        break;
 
-                    if (typeof r === "number") {
+                    if (r.status === TimedStatus.TIMED_OUT) {
                         this.dispose(ctx, botMsg).catch();
                         return;
                     }
 
-                    currentReactions[selectedIdx].value.emojiInfo = r;
+                    if (r.status === TimedStatus.CANCELED)
+                        break;
+
+                    currentReactions[selectedIdx].value.emojiInfo = r.value!;
                     break;
                 }
                 case "change_name": {
                     const r = await this.getNameFunction(ctx, botMsg, "REACTION")();
-                    if (!r)
-                        break;
-
-                    if (typeof r === "number") {
+                    if (r.status === TimedStatus.TIMED_OUT) {
                         this.dispose(ctx, botMsg).catch();
                         return;
                     }
 
-                    currentReactions[selectedIdx].value.name = r;
+                    if (r.status === TimedStatus.CANCELED)
+                        break;
+
+                    currentReactions[selectedIdx].value.name = r.value!;
                     break;
                 }
                 case "save": {

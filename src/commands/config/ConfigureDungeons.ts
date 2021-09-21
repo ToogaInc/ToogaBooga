@@ -29,7 +29,7 @@ import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {OneLifeBot} from "../../OneLifeBot";
 import {MongoManager} from "../../managers/MongoManager";
 import {DUNGEON_DATA} from "../../constants/DungeonData";
-import {entryFunction} from "./common/ConfigCommon";
+import {entryFunction, sendOrEditBotMsg} from "./common/ConfigCommon";
 import {FilterQuery, UpdateQuery} from "mongodb";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 
@@ -203,23 +203,14 @@ export class ConfigureDungeons extends BaseCommand {
             );
         }
 
-
-        if (botMsg) {
-            await botMsg.edit({
-                embeds: [embed],
-                components: AdvancedCollector.getActionRowsFromComponents(buttons)
-            });
-        }
-        else {
-            botMsg = await ctx.channel!.send({
-                embeds: [embed],
-                components: AdvancedCollector.getActionRowsFromComponents(buttons)
-            });
-        }
+        botMsg = await sendOrEditBotMsg(ctx.channel!, botMsg, {
+            embeds: [embed],
+            components: AdvancedCollector.getActionRowsFromComponents(buttons)
+        });
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
             targetChannel: botMsg.channel as TextChannel,
-            targetAuthor: botMsg.author,
+            targetAuthor: ctx.user,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: false,
@@ -462,7 +453,7 @@ export class ConfigureDungeons extends BaseCommand {
                 acknowledgeImmediately: true,
                 clearInteractionsAfterComplete: false,
                 deleteBaseMsgAfterComplete: false,
-                duration:  60 * 1000,
+                duration: 60 * 1000,
                 targetAuthor: ctx.user,
                 oldMsg: botMsg
             }, m => StringUtil.parseNumbers(m.content));
@@ -791,7 +782,7 @@ export class ConfigureDungeons extends BaseCommand {
 
             const selectedButton = await AdvancedCollector.startInteractionCollector({
                 targetChannel: botMsg.channel as TextChannel,
-                targetAuthor: botMsg.author,
+                targetAuthor: ctx.user,
                 oldMsg: botMsg,
                 acknowledgeImmediately: true,
                 clearInteractionsAfterComplete: false,
@@ -1051,7 +1042,7 @@ export class ConfigureDungeons extends BaseCommand {
 
                     const resInteraction = await AdvancedCollector.startInteractionCollector({
                         targetChannel: botMsg.channel as TextChannel,
-                        targetAuthor: botMsg.author,
+                        targetAuthor: ctx.user,
                         oldMsg: botMsg,
                         acknowledgeImmediately: true,
                         clearInteractionsAfterComplete: false,
@@ -1215,7 +1206,7 @@ export class ConfigureDungeons extends BaseCommand {
      * @param {Message} botMsg The bot message.
      * @param {(IDungeonInfo | ICustomDungeonInfo)[]} dungeons The possible dungeons to list.
      * @param {EmbedInfo} embedInfo The information to display on the embed.
-     * @returns {Promise<IDungeonInfo | ICustomDungeonInfo | -1 | null>} The dungeon information if the select
+     * @returns {Promise<IDungeonInfo | ICustomDungeonInfo | null>} The dungeon information if the select
      * process successfully completed. `null` if the user did not respond in time.
      * @private
      */
@@ -1473,8 +1464,12 @@ export class ConfigureDungeons extends BaseCommand {
      * @returns {Promise<T[] | null>} The new selected options, or `null` if this was canceled.
      * @private
      */
-    private async configSetting<T>(ctx: ICommandContext, botMsg: Message,
-                                   cOptions: T[], addOptions: GenericConfigOptions<T>): Promise<T[] | null> {
+    private async configSetting<T>(
+        ctx: ICommandContext,
+        botMsg: Message,
+        cOptions: T[],
+        addOptions: GenericConfigOptions<T>
+    ): Promise<T[] | null> {
         const selected = cOptions.slice();
         const itemName = addOptions.itemName.toLowerCase();
         const embed = new MessageEmbed()

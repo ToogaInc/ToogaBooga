@@ -13,7 +13,7 @@ import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {StringUtil} from "../../utilities/StringUtilities";
-import {DB_CONFIG_BUTTONS} from "./common/ConfigCommon";
+import {DB_CONFIG_BUTTONS, sendOrEditBotMsg} from "./common/ConfigCommon";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {MongoManager} from "../../managers/MongoManager";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
@@ -234,22 +234,14 @@ export class ConfigureSections extends BaseCommand {
             "To configure these, please use the associated configuration commands."
         );
 
-        if (botMsg) {
-            await botMsg.edit({
-                embeds: [embed],
-                components: AdvancedCollector.getActionRowsFromComponents(buttons)
-            });
-        }
-        else {
-            botMsg = await ctx.channel!.send({
-                embeds: [embed],
-                components: AdvancedCollector.getActionRowsFromComponents(buttons)
-            });
-        }
+        botMsg = await sendOrEditBotMsg(ctx.channel!, botMsg, {
+            embeds: [embed],
+            components: AdvancedCollector.getActionRowsFromComponents(buttons)
+        });
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
             targetChannel: botMsg.channel as TextChannel,
-            targetAuthor: botMsg.author,
+            targetAuthor: ctx.user,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: false,
@@ -428,7 +420,7 @@ export class ConfigureSections extends BaseCommand {
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
             targetChannel: botMsg.channel,
-            targetAuthor: botMsg.author,
+            targetAuthor: ctx.user,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: false,
@@ -487,7 +479,7 @@ export class ConfigureSections extends BaseCommand {
             cancelFlag: "-cancel",
             deleteResponseMessage: true,
             targetChannel: botMsg.channel,
-            targetAuthor: botMsg.author,
+            targetAuthor: ctx.user,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: false,
@@ -544,7 +536,7 @@ export class ConfigureSections extends BaseCommand {
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
             targetChannel: botMsg.channel,
-            targetAuthor: botMsg.author,
+            targetAuthor: ctx.user,
             oldMsg: botMsg,
             acknowledgeImmediately: true,
             clearInteractionsAfterComplete: false,

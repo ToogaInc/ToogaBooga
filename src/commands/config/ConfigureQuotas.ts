@@ -4,7 +4,9 @@ import {
     MessageButton,
     MessageComponentInteraction,
     MessageEmbed,
-    MessageOptions, Role,
+    MessageOptions,
+    MessageSelectMenu,
+    Role,
     TextChannel
 } from "discord.js";
 import {Emojis} from "../../constants/Emojis";
@@ -12,15 +14,27 @@ import {IPropertyKeyValuePair, IQuotaInfo} from "../../definitions";
 import {DUNGEON_DATA} from "../../constants/DungeonData";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {DB_CONFIG_ACTION_ROW} from "./common/ConfigCommon";
+import {DB_CONFIG_ACTION_ROW, sendOrEditBotMsg} from "./common/ConfigCommon";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {MongoManager} from "../../managers/MongoManager";
-import {QuotaLogType} from "../../definitions/Types";
+import {QuotaLogType, QuotaRunLogType, TimedResult, TimedStatus} from "../../definitions/Types";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
+import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import {QuotaManager} from "../../managers/QuotaManager";
+
+type QuotaAddResult = {
+    quotaType: QuotaLogType;
+    points: number;
+};
+
+type QuotaName = {
+    key: QuotaLogType;
+    name: string;
+};
 
 export class ConfigureQuotas extends BaseCommand {
     public static MAX_QUOTAS_ALLOWED: number = 10;
@@ -34,8 +48,19 @@ export class ConfigureQuotas extends BaseCommand {
         "RunFailed": "Run Failed"
     };
 
-    // Update this when `pointValue` is updated.
-    public static ALL_QUOTA_RECOGNIZED: { key: QuotaLogType; name: string; }[] = [
+    public static DAYS_OF_WEEK: [string, number][] = [
+        ["Sunday", 0],
+        ["Monday", 1],
+        ["Tuesday", 2],
+        ["Wednesday", 3],
+        ["Thursday", 4],
+        ["Friday", 5],
+        ["Saturday", 6]
+    ];
+
+    // Update this when `pointValues` is updated.
+    // Does NOT include any dungeons
+    public static BASE_QUOTA_RECOGNIZED: QuotaName[] = [
         {
             name: "Parse Run",
             key: "Parse"
@@ -47,18 +72,6 @@ export class ConfigureQuotas extends BaseCommand {
         {
             name: "Punishment Issued",
             key: "PunishmentIssued"
-        },
-        {
-            name: "Run Completed",
-            key: "RunComplete"
-        },
-        {
-            name: "Run Assist",
-            key: "RunAssist"
-        },
-        {
-            name: "Run Failed",
-            key: "RunFailed"
         }
     ];
 
@@ -168,13 +181,286 @@ export class ConfigureQuotas extends BaseCommand {
             );
         }
 
+        botMsg = await sendOrEditBotMsg(ctx.channel!, botMsg, {
+            embeds: [embed],
+            components: AdvancedCollector.getActionRowsFromComponents(buttons)
+        });
 
+        const selectedButton = await AdvancedCollector.startInteractionCollector({
+            targetChannel: botMsg.channel,
+            targetAuthor: ctx.user,
+            oldMsg: botMsg,
+            acknowledgeImmediately: true,
+            clearInteractionsAfterComplete: false,
+            deleteBaseMsgAfterComplete: false,
+            duration: 60 * 1000
+        });
+
+        if (!selectedButton) {
+            this.dispose(ctx, botMsg).catch();
+            return;
+        }
+
+        // Asks the user to select a specific quota
+        // Returns a role ID
+        // Use in switch/case only
+        async function selectQuota(instructions: string, max: number): Promise<TimedResult<string[]>> {
+            await botMsg!.edit({
+                embeds: [
+                    new MessageEmbed()
+                        .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                        .setTitle("Select Quota")
+                        .setDescription(
+                            new StringBuilder()
+                                .append("__**Specific Directions**__").appendLine()
+                                .append(instructions).appendLine(2)
+                                .append("__**General Directions**__").appendLine()
+                                .append("Please select a quota via the select menu below. If you decide that you do")
+                                .append(" not want to select one at this time, press the **Back** button.")
+                                .toString()
+                        )
+                ],
+                components: AdvancedCollector.getActionRowsFromComponents([
+                    new MessageButton()
+                        .setLabel("Back")
+                        .setCustomId("back")
+                        .setStyle("DANGER"),
+                    new MessageSelectMenu()
+                        .setCustomId("select")
+                        .setMinValues(1)
+                        .setMaxValues(Math.max(max, 1))
+                        .addOptions(ctx.guildDoc!.quotas.quotaInfo.map(x => {
+                            const role = GuildFgrUtilities.getCachedRole(ctx.guild!, x.roleId);
+                            const channel = GuildFgrUtilities.getCachedChannel(ctx.guild!, x.channel);
+                            return {
+                                value: x.roleId,
+                                label: `Quota: ${role?.name ?? `ID ${x.roleId}`}`,
+                                description: `Leaderboard: ${channel?.name ?? `ID ${x.channel}`}`
+                            };
+                        }))
+                ])
+            });
+
+            const selected = await AdvancedCollector.startInteractionCollector({
+                targetChannel: botMsg!.channel,
+                targetAuthor: ctx.user,
+                oldMsg: botMsg!,
+                acknowledgeImmediately: true,
+                clearInteractionsAfterComplete: false,
+                deleteBaseMsgAfterComplete: false,
+                duration: 60 * 1000
+            });
+
+            if (!selected)
+                return {value: null, status: TimedStatus.TIMED_OUT};
+
+            if (!selected.isSelectMenu())
+                return {value: null, status: TimedStatus.CANCELED};
+
+            return {
+                value: selected.values,
+                status: TimedStatus.SUCCESS
+            };
+        }
+
+        switch (selectedButton.customId) {
+            case "exit": {
+                this.dispose(ctx, botMsg).catch();
+                return;
+            }
+            case "reset_time": {
+                await botMsg!.edit({
+                    embeds: [
+                        new MessageEmbed()
+                            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                            .setTitle("Specify Day of Week for Reset")
+                            .setDescription(
+                                "Select the day of the week that you want all quotas to reset at via the"
+                                + " dropdown menu."
+                            )
+                    ],
+                    components: AdvancedCollector.getActionRowsFromComponents([
+                        new MessageSelectMenu()
+                            .setMaxValues(1)
+                            .setMinValues(1)
+                            .setCustomId("day_of_week")
+                            .addOptions(ConfigureQuotas.DAYS_OF_WEEK.map(x => {
+                                const [dayOfWeekStr, dayOfWeekNum] = x;
+                                return {
+                                    label: `${dayOfWeekStr} (${dayOfWeekNum})`,
+                                    value: dayOfWeekNum.toString()
+                                };
+                            })),
+                        new MessageButton()
+                            .setStyle("DANGER")
+                            .setLabel("Cancel")
+                            .setCustomId("cancel")
+                    ])
+                });
+                const resetDoWPrompt = await AdvancedCollector.startInteractionCollector({
+                    targetChannel: botMsg!.channel,
+                    targetAuthor: ctx.user,
+                    oldMsg: botMsg!,
+                    acknowledgeImmediately: true,
+                    clearInteractionsAfterComplete: false,
+                    deleteBaseMsgAfterComplete: false,
+                    duration: 45 * 1000
+                });
+
+                if (!resetDoWPrompt) {
+                    this.dispose(ctx, botMsg).catch();
+                    return;
+                }
+
+                if (!resetDoWPrompt.isSelectMenu())
+                    break;
+
+                await botMsg!.edit({
+                    embeds: [
+                        new MessageEmbed()
+                            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                            .setTitle("Specify Time for Reset")
+                            .setDescription(
+                                new StringBuilder()
+                                    .append("Specify the time that all quotas should reset. To do this, send a message")
+                                    .append(" with the time, formatted like `hh:mm`, where:").appendLine()
+                                    .append("- `hh` is the hour component and is between `0` and `23`").appendLine()
+                                    .append("- `mm` is the minute component and is between `0` and `59`").appendLine(2)
+                                    .append("For example, to represent 5:30 PM, you would type `17:30`. To represent")
+                                    .append(" 12:00 AM, you would type `0:00`.")
+                                    .toString()
+                            )
+                    ],
+                    components: AdvancedCollector.getActionRowsFromComponents([
+                        new MessageButton()
+                            .setStyle("DANGER")
+                            .setLabel("Cancel")
+                            .setCustomId("cancel")
+                    ])
+                });
+
+                const resetTimePrompt = await AdvancedCollector.startDoubleCollector<number>({
+                    cancelFlag: null,
+                    deleteResponseMessage: true,
+                    targetChannel: botMsg!.channel,
+                    targetAuthor: ctx.user,
+                    oldMsg: botMsg!,
+                    acknowledgeImmediately: true,
+                    clearInteractionsAfterComplete: false,
+                    deleteBaseMsgAfterComplete: false,
+                    duration: 45 * 1000
+                }, m => {
+                    if (!m.content.includes(":") || m.content.substring(m.content.indexOf(":") + 1).length === 0)
+                        return;
+
+                    const [hr, min] = m.content.split(":").map(Number.parseInt);
+                    if (Number.isNaN(hr) || hr < 0 || hr > 23)
+                        return;
+
+                    if (Number.isNaN(min) || min < 0 || min > 59)
+                        return;
+
+                    return hr * 100 + min;
+                });
+
+                if (!resetTimePrompt) {
+                    this.dispose(ctx, botMsg).catch();
+                    return;
+                }
+
+                if (resetTimePrompt instanceof MessageComponentInteraction)
+                    break;
+
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                    $set: {
+                        "quotas.resetTime.dayOfWeek": Number.parseInt(resetDoWPrompt.values[0], 10),
+                        "quotas.resetTime.time": resetTimePrompt
+                    }
+                });
+
+                break;
+            }
+            case "add": {
+                this.addOrEditQuota(ctx, botMsg).then();
+                break;
+            }
+            case "edit": {
+                const quotaToEdit = await selectQuota(
+                    "Please select **one** quota that you want to modify.",
+                    1
+                );
+
+                if (quotaToEdit.status === TimedStatus.CANCELED)
+                    break;
+
+                if (quotaToEdit.status === TimedStatus.TIMED_OUT) {
+                    this.dispose(ctx, botMsg).catch();
+                    return;
+                }
+
+                this.addOrEditQuota(
+                    ctx,
+                    botMsg,
+                    ctx.guildDoc!.quotas.quotaInfo.find(x => x.roleId === quotaToEdit.value![0])!
+                ).then();
+                break;
+            }
+            case "remove": {
+                const quotaToRemove = await selectQuota(
+                    "Please select **one** quota that you want to remove.",
+                    1
+                );
+
+                if (quotaToRemove.status === TimedStatus.CANCELED)
+                    break;
+
+                if (quotaToRemove.status === TimedStatus.TIMED_OUT) {
+                    this.dispose(ctx, botMsg).catch();
+                    return;
+                }
+
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                    $pull: {
+                        "quotas.quotaInfo": {
+                            roleId: quotaToRemove.value![0]
+                        }
+                    }
+                });
+                break;
+            }
+            case "reset": {
+                const quotasToReset = await selectQuota(
+                    "Please select the quota(s) that you want to reset.",
+                    ctx.guildDoc!.quotas.quotaInfo.length
+                );
+
+                if (quotasToReset.status === TimedStatus.CANCELED)
+                    break;
+
+                if (quotasToReset.status === TimedStatus.TIMED_OUT) {
+                    this.dispose(ctx, botMsg).catch();
+                    return;
+                }
+
+                await Promise.all(quotasToReset.value!.map(roleId => QuotaManager.resetQuota(ctx.guild!, roleId)));
+                break;
+            }
+        }
+
+        this.mainMenu(ctx, botMsg).catch();
     }
 
-
+    /**
+     * Adds or edits a quota.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     * @param {IQuotaInfo} [quotaInfo] The quota, if any. If no quota is specified, a new one will be created.
+     * @return {Promise<void>}
+     * @private
+     */
     private async addOrEditQuota(ctx: ICommandContext, botMsg: Message, quotaInfo?: IQuotaInfo): Promise<void> {
         const allActiveDungeonIds = new Set<string>(
-            DUNGEON_DATA.map(x => x.codeName).concat(ctx.guildDoc!.properties.customDungeons.map(x => x.codeName))
+            DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons).map(x => x.codeName)
         );
 
         const quotaToEdit: IQuotaInfo = quotaInfo ?? {
@@ -184,10 +470,10 @@ export class ConfigureQuotas extends BaseCommand {
             channel: "",
             messageId: "",
             pointsNeeded: 10,
-            pointValue: []
+            pointValues: []
         };
 
-        quotaToEdit.pointValue = quotaToEdit.pointValue.filter(x => {
+        quotaToEdit.pointValues = quotaToEdit.pointValues.filter(x => {
             if (!x.key.includes(":"))
                 return true;
             return allActiveDungeonIds.has(x.key.split(":")[1]);
@@ -263,7 +549,7 @@ export class ConfigureQuotas extends BaseCommand {
                 true
             ).addField(
                 "Point Rules Set",
-                `${quotaToEdit.pointValue.length} Values Set`
+                `${quotaToEdit.pointValues.length} Values Set`
             );
 
             await botMsg.edit({
@@ -273,7 +559,7 @@ export class ConfigureQuotas extends BaseCommand {
 
             const selectedButton = await AdvancedCollector.startInteractionCollector({
                 targetChannel: botMsg.channel as TextChannel,
-                targetAuthor: botMsg.author,
+                targetAuthor: ctx.user,
                 oldMsg: botMsg,
                 acknowledgeImmediately: true,
                 clearInteractionsAfterComplete: false,
@@ -382,7 +668,7 @@ export class ConfigureQuotas extends BaseCommand {
                                     .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
                                     .setTitle("Set Minimum Points Needed for Quota")
                                     .setDescription(
-                                        `Current Minimum Points: ${quotaToEdit.pointValue}\n\nType a positive number`
+                                        `Current Minimum Points: ${quotaToEdit.pointValues}\n\nType a positive number`
                                         + " that you want to make the minimum number of points needed to pass the"
                                         + " weekly quota. If you don't want to set this up, press the **Back** button."
                                     )
@@ -407,7 +693,17 @@ export class ConfigureQuotas extends BaseCommand {
                     break;
                 }
                 case "config_pts": {
+                    const r = await this.editQuotaPointConfig(ctx, botMsg, quotaToEdit.pointValues);
+                    if (r.status === TimedStatus.CANCELED)
+                        break;
 
+                    if (r.status === TimedStatus.TIMED_OUT) {
+                        this.dispose(ctx, botMsg).catch();
+                        return;
+                    }
+
+                    quotaToEdit.pointValues = r.value!;
+                    break;
                 }
                 case "save": {
                     if (quotaInfo) {
@@ -433,11 +729,23 @@ export class ConfigureQuotas extends BaseCommand {
         } // end while
     }
 
+    /**
+     * Allows the user to edit the current quota system. The user will be able to:
+     * - Add a quota rule.
+     * - Remove a quota rule.
+     * - Edit the quota rule's points.
+     *
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     * @param {IPropertyKeyValuePair<QuotaLogType, number>[]} pts The current quotas.
+     * @return {Promise<TimedResult<IPropertyKeyValuePair<QuotaLogType, number>[]>>} The result, if any.
+     * @private
+     */
     private async editQuotaPointConfig(
         ctx: ICommandContext,
         botMsg: Message,
-        pts: IPropertyKeyValuePair<string, number>[]
-    ): Promise<IPropertyKeyValuePair<string, number>[] | null> {
+        pts: IPropertyKeyValuePair<QuotaLogType, number>[]
+    ): Promise<TimedResult<IPropertyKeyValuePair<QuotaLogType, number>[]>> {
         const ptsToUse = pts.slice().filter(x => {
             if (!x.key.startsWith("Run"))
                 return true;
@@ -449,14 +757,14 @@ export class ConfigureQuotas extends BaseCommand {
                 ? ctx.guildDoc!.properties.customDungeons.some(dgn => dgn.codeName === logAndId[1])
                 : DUNGEON_DATA.some(dgn => dgn.codeName === logAndId[1]);
         });
-
-
         const embed = new MessageEmbed()
             .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
             .setTitle("Modify Point Values")
             .setDescription(
                 new StringBuilder()
-                    .append("Here, you can configure how many points specific actions are worth.")
+                    .append("Here, you can configure how many points specific actions are worth. **Keep in mind**")
+                    .append(" that editing the quota system when people have already logged quotas may result in")
+                    .append(" earned points being lost forever.")
                     .appendLine(2)
                     .append(`The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected`)
                     .append(" point rule.")
@@ -526,6 +834,10 @@ export class ConfigureQuotas extends BaseCommand {
 
         let currIdx = 0;
         while (true) {
+            addButton.setDisabled(ptsToUse.length + 1 > ConfigureQuotas.MAX_QUOTAS_ALLOWED);
+            removeButton.setDisabled(ptsToUse.length === 0);
+            upButton.setDisabled(ptsToUse.length <= 1);
+            downButton.setDisabled(ptsToUse.length <= 1);
             embed.fields = [];
             const fields = ArrayUtilities.arrayToStringFields(ptsToUse, (i, elem) => {
                 if (elem.key.startsWith("Run")) {
@@ -552,7 +864,332 @@ export class ConfigureQuotas extends BaseCommand {
                 embeds: [embed],
                 components: AdvancedCollector.getActionRowsFromComponents(buttons)
             });
+
+            const selectedRes = await AdvancedCollector.startDoubleCollector<string>({
+                targetChannel: botMsg.channel as TextChannel,
+                targetAuthor: ctx.user,
+                oldMsg: botMsg,
+                acknowledgeImmediately: true,
+                clearInteractionsAfterComplete: false,
+                deleteBaseMsgAfterComplete: false,
+                duration: 60 * 1000,
+                cancelFlag: null,
+                deleteResponseMessage: true
+            }, AdvancedCollector.getStringPrompt(ctx.channel));
+
+            if (!selectedRes) {
+                this.dispose(ctx, botMsg).catch();
+                continue;
+            }
+
+            if (typeof selectedRes === "string") {
+                const splitRes = selectedRes.split(" ");
+                if (splitRes.length === 0)
+                    continue;
+
+                const num = Number.parseInt(splitRes.at(-1)!, 10);
+                if (Number.isNaN(num))
+                    continue;
+
+                // len == 1 means new value
+                if (splitRes.length === 1) {
+                    if (num > 0)
+                        ptsToUse[currIdx].value = num;
+                    continue;
+                }
+
+                if (ptsToUse.length === 0)
+                    continue;
+                currIdx += num;
+                currIdx %= ptsToUse.length;
+                continue;
+            }
+
+            switch (selectedRes.customId) {
+                case "up": {
+                    currIdx--;
+                    currIdx %= ptsToUse.length;
+                    break;
+                }
+                case "down": {
+                    currIdx++;
+                    currIdx %= ptsToUse.length;
+                    break;
+                }
+                case "add": {
+                    const r = await this.addNewQuota(ctx, botMsg, ptsToUse);
+                    if (r.status === TimedStatus.TIMED_OUT)
+                        return {status: TimedStatus.TIMED_OUT, value: null};
+                    if (r.status === TimedStatus.CANCELED)
+                        return {status: TimedStatus.CANCELED, value: null};
+
+                    if (r.value!.quotaType.startsWith("Run")) {
+                        // If the new quota log type has a specific dungeon, remove dungeon run general quota log types
+                        if (r.value!.quotaType.includes(":")) {
+                            for (let i = ptsToUse.length - 1; i >= 0; i--) {
+                                if (ptsToUse[i].key.startsWith("Run") && !ptsToUse[i].key.includes(":")) {
+                                    ptsToUse.splice(i, 1);
+                                }
+                            }
+                        }
+                        // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
+                        // types that does have a specific dungeon
+                        else {
+                            for (let i = ptsToUse.length - 1; i >= 0; i--) {
+                                if (ptsToUse[i].key.startsWith("Run") && ptsToUse[i].key.includes(":")) {
+                                    ptsToUse.splice(i, 1);
+                                }
+                            }
+                        }
+                    }
+
+                    ptsToUse.push({
+                        key: r.value!.quotaType,
+                        value: r.value!.points
+                    });
+                    break;
+                }
+                case "remove": {
+                    ptsToUse.splice(currIdx, 1);
+                    break;
+                }
+                case "back": {
+                    return {value: pts, status: TimedStatus.SUCCESS};
+                }
+                case "save": {
+                    return {value: ptsToUse, status: TimedStatus.SUCCESS};
+                }
+                case "quit": {
+                    return {value: null, status: TimedStatus.CANCELED};
+                }
+            }
         }
+    }
+
+    /**
+     * Gets all quotas that can be added to this quota collection.
+     * @param {IPropertyKeyValuePair<QuotaLogType, number>[]} currentSet The current quotas.
+     * @return {QuotaName[]} The quota log types, along with the associated name, that can be added.
+     * @private
+     */
+    private getQuotasToAdd(currentSet: IPropertyKeyValuePair<QuotaLogType, number>[]): QuotaName[] {
+        const res: QuotaName[] = [];
+
+        const runCompleteIdx = currentSet.findIndex(x => x.key.startsWith("RunComplete"));
+        // If no RunComplete config exists, then we offer to add this config for one or all dungeons.
+        // Likewise, if RunConfig config does exist but it's for a specific option, then we offer to add this config
+        // for one (i.e. add a config for a different dungeon) or all dungeons (removing the dungeon-specific config).
+        // Same idea for the next few branches.
+        if (runCompleteIdx === -1 || currentSet[runCompleteIdx].key.includes(":")) {
+            res.push(
+                {
+                    name: "Run Complete (Specific Dungeon)",
+                    key: "RunComplete:*"
+                },
+                {
+                    name: "Run Complete (All Dungeons)",
+                    key: "RunComplete"
+                }
+            );
+        }
+
+        const runFailedIdx = currentSet.findIndex(x => x.key.startsWith("RunFailed"));
+        if (runFailedIdx === -1 || currentSet[runFailedIdx].key.includes(":")) {
+            res.push(
+                {
+                    name: "Run Failed (Specific Dungeon)",
+                    key: "RunFailed:*"
+                },
+                {
+                    name: "Run Failed (All Dungeons)",
+                    key: "RunFailed"
+                }
+            );
+        }
+
+        const runAssistIdx = currentSet.findIndex(x => x.key.startsWith("RunAssist"));
+        if (runAssistIdx === -1 || currentSet[runAssistIdx].key.startsWith(":")) {
+            res.push(
+                {
+                    name: "Run Assist (Specific Dungeon)",
+                    key: "RunAssist:*"
+                },
+                {
+                    name: "Run Assist (All Dungeons)",
+                    key: "RunAssist"
+                }
+            );
+        }
+
+        for (const q of ConfigureQuotas.BASE_QUOTA_RECOGNIZED) {
+            if (res.some(x => x.key === q.key))
+                continue;
+            res.push(q);
+        }
+
+        return res;
+    }
+
+    /**
+     * Runs a wizard that lets the user add a new quota to the collection.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     * @param {IPropertyKeyValuePair<QuotaLogType, number>[]} currentSet The current quotas.
+     * @return {Promise<QuotaAddResult>} The quota to add.
+     * @private
+     */
+    private async addNewQuota(
+        ctx: ICommandContext,
+        botMsg: Message,
+        currentSet: IPropertyKeyValuePair<QuotaLogType, number>[]
+    ): Promise<TimedResult<QuotaAddResult>> {
+        await botMsg.edit({
+            embeds: [
+                new MessageEmbed()
+                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setTitle("Add New Quota Rule")
+                    .setDescription(
+                        "Please select, from the select menu, the quota rule that you want to add to this quota. If"
+                        + " you don't want to add one at this time, press the **Back** button."
+                    )
+            ],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                new MessageSelectMenu()
+                    .setMaxValues(1)
+                    .setMinValues(1)
+                    .setCustomId("select")
+                    .addOptions(this.getQuotasToAdd(currentSet).map(x => {
+                        return {
+                            label: x.name,
+                            value: x.key
+                        };
+                    })),
+                new MessageButton()
+                    .setStyle("DANGER")
+                    .setLabel("Cancel")
+                    .setCustomId("cancel")
+            ])
+        });
+        const selectedInt = await AdvancedCollector.startInteractionCollector({
+            targetChannel: botMsg.channel as TextChannel,
+            targetAuthor: ctx.user,
+            oldMsg: botMsg,
+            acknowledgeImmediately: true,
+            clearInteractionsAfterComplete: false,
+            deleteBaseMsgAfterComplete: false,
+            duration: 30 * 1000
+        });
+
+        if (!selectedInt)
+            return {value: null, status: TimedStatus.TIMED_OUT};
+        if (!selectedInt.isSelectMenu())
+            return {value: null, status: TimedStatus.CANCELED};
+
+        const selectedQuotaType = selectedInt.values[0] as QuotaLogType;
+        let finalQuotaType: QuotaLogType = selectedQuotaType;
+        // Case if this is a specific dungeon
+        if (selectedQuotaType.startsWith("Run") && selectedQuotaType.includes(":")) {
+            const logType: QuotaRunLogType = selectedQuotaType.split(":")[0] as QuotaRunLogType;
+            const currentDungeons = currentSet.filter(x => x.key.startsWith(`${logType}:`))
+                .map(x => x.key.split(":")[1]);
+            const allDungeons = DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons)
+                .filter(x => !currentDungeons.includes(x.codeName));
+
+            const fields = ArrayUtilities.arrayToStringFields(
+                allDungeons,
+                (i, d) => {
+                    const emoji = GlobalFgrUtilities.getCachedEmoji(d.portalEmojiId);
+                    let finalStr = `\`[${i + 1}]\` `;
+                    if (emoji)
+                        finalStr += `${emoji} `;
+                    finalStr += `${d.dungeonName} ${d.isBuiltIn ? "" : "(Custom)"}`;
+                    return finalStr;
+                }
+            );
+
+            await botMsg.edit({
+                embeds: [
+                    new MessageEmbed()
+                        .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                        .setTitle("Select Dungeon")
+                        .setDescription(
+                            "Please select **one** dungeon from the list of dungeons below. Afterwards, you will"
+                            + " be asked to assign a point value to this dungeon, which then can be used for"
+                            + " quota logging. If you don't want to add a dungeon, press the **Cancel** button."
+                        ).setFields(fields.map(x => {
+                        return {name: GeneralConstants.ZERO_WIDTH_SPACE, value: x};
+                    }))
+                ],
+                components: AdvancedCollector.getActionRowsFromComponents([
+                    new MessageButton()
+                        .setStyle("DANGER")
+                        .setLabel("Cancel")
+                        .setCustomId("cancel")
+                ])
+            });
+
+            const resNum = await AdvancedCollector.startDoubleCollector<number>({
+                cancelFlag: null,
+                acknowledgeImmediately: true,
+                clearInteractionsAfterComplete: false,
+                deleteBaseMsgAfterComplete: false,
+                deleteResponseMessage: true,
+                duration: 2 * 60 * 1000,
+                oldMsg: botMsg,
+                targetAuthor: ctx.user,
+                targetChannel: ctx.channel
+            }, AdvancedCollector.getNumberPrompt(ctx.channel, {min: 1, max: allDungeons.length}));
+
+            if (!resNum)
+                return {value: null, status: TimedStatus.TIMED_OUT};
+            if (resNum instanceof MessageComponentInteraction)
+                return {value: null, status: TimedStatus.CANCELED};
+            finalQuotaType = `${logType}:${allDungeons[resNum]}`;
+        }
+
+        // Now we need a value
+        await botMsg.edit({
+            embeds: [
+                new MessageEmbed()
+                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setTitle("Select Value")
+                    .setDescription(
+                        "Please type a  __positive whole number__ between 1 and 500 (inclusive). This will represent"
+                        + " the number of points that this particular log type will contribute to the person's"
+                        + " overall quota score. If you don't want to specify one, press the **Cancel** button."
+                    )
+            ],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                new MessageButton()
+                    .setStyle("DANGER")
+                    .setLabel("Cancel")
+                    .setCustomId("cancel")
+            ])
+        });
+
+        const resPts = await AdvancedCollector.startDoubleCollector<number>({
+            cancelFlag: null,
+            acknowledgeImmediately: true,
+            clearInteractionsAfterComplete: false,
+            deleteBaseMsgAfterComplete: false,
+            deleteResponseMessage: true,
+            duration: 2 * 60 * 1000,
+            oldMsg: botMsg,
+            targetAuthor: ctx.user,
+            targetChannel: ctx.channel
+        }, AdvancedCollector.getNumberPrompt(ctx.channel, {min: 1, max: 500}));
+
+        if (!resPts)
+            return {value: null, status: TimedStatus.TIMED_OUT};
+        if (resPts instanceof MessageComponentInteraction)
+            return {value: null, status: TimedStatus.CANCELED};
+        return {
+            status: TimedStatus.SUCCESS,
+            value: {
+                quotaType: finalQuotaType,
+                points: resPts
+            }
+        };
     }
 
     /**

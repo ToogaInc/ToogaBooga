@@ -452,7 +452,7 @@ export interface IQuotaInfo {
         userId: string;
 
         /**
-         * The log type. This value should be defined as a key in `pointValue`.
+         * The log type. This value should be defined as a key in `pointValues`.
          *
          * @type {string}
          */
@@ -509,7 +509,7 @@ export interface IQuotaInfo {
      *
      * @type {IPropertyKeyValuePair<string, number>[]}
      */
-    pointValue: IPropertyKeyValuePair<QuotaLogType, number>[];
+    pointValues: IPropertyKeyValuePair<QuotaLogType, number>[];
 }
 
 /**

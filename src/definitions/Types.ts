@@ -2,15 +2,15 @@
 //          TYPINGS FOR BOT OPERATIONS             //
 // =============================================== //
 
-export enum Status {
+export enum TimedStatus {
     SUCCESS,
     CANCELED,
     TIMED_OUT
 }
 
-export type Result<R> = {
-    status: Status;
-    value: R;
+export type TimedResult<R> = {
+    status: TimedStatus;
+    value: R | null;
 };
 
 export type QuotaLogType = QuotaRunLogType

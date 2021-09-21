@@ -9,6 +9,7 @@ export * from "./config/ConfigureRoles";
 export * from "./config/ConfigureSections";
 export * from "./config/ConfigureDungeons";
 export * from "./config/ConfigureReactionsImages";
+export * from "./config/ConfigureQuotas";
 
 export * from "./staff/FindPunishment";
 export * from "./staff/CheckBlacklist";
