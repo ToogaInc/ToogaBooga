@@ -1466,7 +1466,7 @@ export namespace VerifyManager {
 
         if (verifProps.verifReq.graveyardSummary.checkThis) {
             let added = false;
-            for (const entry of verifProps.verifReq.graveyardSummary.minimum) {
+            for (const entry of verifProps.verifReq.graveyardSummary.realmEyeCompletions) {
                 if (entry.value === 0) continue;
                 // Put here so this shows up first on list
                 if (!added) {
@@ -1667,7 +1667,7 @@ export namespace VerifyManager {
             else {
                 const issues: string[] = [];
                 const logIssues: string[] = [];
-                for (const gyStat of verifReq.graveyardSummary.minimum) {
+                for (const gyStat of verifReq.graveyardSummary.realmEyeCompletions) {
                     if (!(gyStat.key in GeneralConstants.DISPLAY_TO_GY_HIST)) continue;
                     const gyHistKey = GeneralConstants.DISPLAY_TO_GY_HIST[gyStat.key];
                     const data = gyHist.properties.find(x => x.achievement === gyHistKey);
@@ -1863,7 +1863,7 @@ export namespace VerifyManager {
 
         // Graveyard summary.
         if (verifyReqs.graveyardSummary.checkThis) {
-            for (const gyStat of verifyReqs.graveyardSummary.minimum) {
+            for (const gyStat of verifyReqs.graveyardSummary.realmEyeCompletions) {
                 if (gyStat.value <= 0) continue;
                 if (!(gyStat.key in GeneralConstants.DISPLAY_TO_GY_HIST)) continue;
                 requirementInfo.append(`• ${gyStat.value} ${gyStat.key} Completed`)

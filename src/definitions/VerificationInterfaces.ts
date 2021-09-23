@@ -377,7 +377,24 @@ export interface IVerificationRequirements {
          *
          * @type {IPropertyKeyValuePair<string, number>[]}
          */
-        minimum: IPropertyKeyValuePair<string, number>[];
+        realmEyeCompletions: IPropertyKeyValuePair<string, number>[];
+
+
+        /**
+         * The specified number of some dungeon(s) logged by the bot needed to pass verification.
+         *
+         * The key is the dungeon ID, the value is the amount.
+         *
+         * @type {IPropertyKeyValuePair<string, number>[]}
+         */
+        botCompletions: IPropertyKeyValuePair<string, number>[];
+
+        /**
+         * Whether to only use `botCompletions`. If `false`, this will check `minimum`.
+         *
+         * @type {boolean}
+         */
+        useBotCompletions: boolean;
     };
 }
 

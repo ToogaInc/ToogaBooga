@@ -451,7 +451,9 @@ export namespace MongoManager {
                     },
                     graveyardSummary: {
                         checkThis: false,
-                        minimum: []
+                        realmEyeCompletions: [],
+                        botCompletions: [],
+                        useBotCompletions: true
                     }
                 },
                 evidenceWithManualVerif: {
