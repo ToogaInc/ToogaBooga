@@ -222,123 +222,18 @@ export interface IVerificationRequirements {
     };
 
     /**
-     * The character requirement.
+     * The character requirements.
      *
-     * @type {object}
+     * @type {ICharacterReq}
      */
-    characters: {
-        /**
-         * Whether to check this requirement.
-         *
-         * @type {boolean}
-         */
-        checkThis: boolean;
-
-        /**
-         * The number of maxed classes needed to pass this requirement. This is listed by:
-         * ```
-         * [0/8, 1/8, 2/8, 3/8, 4/8, 5/8, 6/8, 7/8, 8/8]
-         * ```
-         *
-         * For example, if we have [0, 0, 2, 1, 0, 0, 0, 0], then this means that:
-         * - You need 2 2/8s
-         * - And 1 3/8
-         *
-         * @type {number[]}
-         */
-        statsNeeded: [number, number, number, number, number, number, number, number, number];
-
-        /**
-         * Whether to check past deaths (via graveyard summary).
-         *
-         * @type {boolean}
-         */
-        checkPastDeaths: boolean;
-    };
+    characters: ICharacterReq;
 
     /**
      * The exaltation requirements.
      *
-     * @type {object}
+     * @type {IExaltationReq}
      */
-    exaltations: {
-        /**
-         * Whether the exaltation requirements must be met on one character.
-         *
-         * @type {boolean}
-         */
-        onOneChar: boolean;
-
-        /**
-         * Whether to check this requirement.
-         *
-         * @type {boolean}
-         */
-        checkThis: boolean;
-
-        /**
-         * The minimum number of exaltations (for the particular stat) needed.
-         */
-        minimum: {
-            [stat: string]: number;
-
-            /**
-             * Health exaltations (0 <= x <= 5).
-             *
-             * @type {number}
-             */
-            hp: number;
-
-            /**
-             * Magic exaltations (0 <= x <= 5).
-             *
-             * @type {number}
-             */
-            mp: number;
-
-            /**
-             * Defense exaltations (0 <= x <= 5).
-             *
-             * @type {number}
-             */
-            def: number;
-
-            /**
-             * Attack exaltations (0 <= x <= 5).
-             *
-             * @type {number}
-             */
-            att: number;
-
-            /**
-             * Dexterity exaltations (0 <= x <= 5).
-             *
-             * @type {number}
-             */
-            dex: number;
-
-            /**
-             * Speed exaltations (0 <= x <= 5).
-             *
-             * @type {number}
-             */
-            spd: number;
-
-            /**
-             * Vitality exaltations (0 <= x <= 5).
-             *
-             * @type {number}
-             */
-            vit: number;
-
-            /**
-             * Wisdom exaltations (0 <= x <= 5).
-             *
-             * @type {number}
-             */
-            wis: number;
-        };
-    };
+    exaltations: IExaltationReq;
 
     /**
      * The graveyard summary requirements.
@@ -438,4 +333,126 @@ export interface IManualVerificationEntry {
      * @type {string}
      */
     sectionId: string;
+}
+
+/**
+ * The exaltation interface, which designates how many of each exaltation is needed.
+ */
+export interface IExaltationReq {
+    /**
+     * Whether the exaltation requirements must be met on one character.
+     *
+     * @type {boolean}
+     */
+    onOneChar: boolean;
+
+    /**
+     * Whether to check this requirement.
+     *
+     * @type {boolean}
+     */
+    checkThis: boolean;
+
+    /**
+     * The minimum number of exaltations (for the particular stat) needed.
+     *
+     * @type {IExaltationCounterInterface}
+     */
+    minimum: IExaltationCounterInterface;
+}
+
+/**
+ * An interface for representing all exaltations and the number needed for it.
+ */
+export interface IExaltationCounterInterface {
+    [stat: string]: number;
+
+    /**
+     * Health exaltations (0 <= x <= 5).
+     *
+     * @type {number}
+     */
+    hp: number;
+
+    /**
+     * Magic exaltations (0 <= x <= 5).
+     *
+     * @type {number}
+     */
+    mp: number;
+
+    /**
+     * Defense exaltations (0 <= x <= 5).
+     *
+     * @type {number}
+     */
+    def: number;
+
+    /**
+     * Attack exaltations (0 <= x <= 5).
+     *
+     * @type {number}
+     */
+    att: number;
+
+    /**
+     * Dexterity exaltations (0 <= x <= 5).
+     *
+     * @type {number}
+     */
+    dex: number;
+
+    /**
+     * Speed exaltations (0 <= x <= 5).
+     *
+     * @type {number}
+     */
+    spd: number;
+
+    /**
+     * Vitality exaltations (0 <= x <= 5).
+     *
+     * @type {number}
+     */
+    vit: number;
+
+    /**
+     * Wisdom exaltations (0 <= x <= 5).
+     *
+     * @type {number}
+     */
+    wis: number;
+}
+
+/**
+ * An interface that denotes the character requirement.
+ */
+export interface ICharacterReq {
+    /**
+     * Whether to check this requirement.
+     *
+     * @type {boolean}
+     */
+    checkThis: boolean;
+
+    /**
+     * The number of maxed classes needed to pass this requirement. This is listed by:
+     * ```
+     * [0/8, 1/8, 2/8, 3/8, 4/8, 5/8, 6/8, 7/8, 8/8]
+     * ```
+     *
+     * For example, if we have [0, 0, 2, 1, 0, 0, 0, 0], then this means that:
+     * - You need 2 2/8s
+     * - And 1 3/8
+     *
+     * @type {number[]}
+     */
+    statsNeeded: [number, number, number, number, number, number, number, number, number];
+
+    /**
+     * Whether to check past deaths (via graveyard summary).
+     *
+     * @type {boolean}
+     */
+    checkPastDeaths: boolean;
 }
