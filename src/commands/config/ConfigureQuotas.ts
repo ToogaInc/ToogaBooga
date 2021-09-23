@@ -4,7 +4,6 @@ import {
     MessageButton,
     MessageComponentInteraction,
     MessageEmbed,
-    MessageOptions,
     MessageSelectMenu,
     Role,
     TextChannel
@@ -14,9 +13,8 @@ import {IPropertyKeyValuePair, IQuotaInfo} from "../../definitions";
 import {DUNGEON_DATA} from "../../constants/DungeonData";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {DB_CONFIG_ACTION_ROW, sendOrEditBotMsg} from "./common/ConfigCommon";
+import {askInput, DB_CONFIG_ACTION_ROW, sendOrEditBotMsg} from "./common/ConfigCommon";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {MiscUtilities} from "../../utilities/MiscUtilities";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {MongoManager} from "../../managers/MongoManager";
 import {QuotaLogType, QuotaRunLogType, TimedResult, TimedStatus} from "../../definitions/Types";
@@ -582,7 +580,7 @@ export class ConfigureQuotas extends BaseCommand {
                     return;
                 }
                 case "set_role": {
-                    const r = await this.askInput<Role>(
+                    const r = await askInput<Role>(
                         ctx,
                         botMsg,
                         {
@@ -622,7 +620,7 @@ export class ConfigureQuotas extends BaseCommand {
                     break;
                 }
                 case "set_channel": {
-                    const c = await this.askInput<TextChannel>(
+                    const c = await askInput<TextChannel>(
                         ctx,
                         botMsg,
                         {
@@ -659,7 +657,7 @@ export class ConfigureQuotas extends BaseCommand {
                     break;
                 }
                 case "set_min_pts": {
-                    const n = await this.askInput<number>(
+                    const n = await askInput<number>(
                         ctx,
                         botMsg,
                         {
@@ -1190,67 +1188,6 @@ export class ConfigureQuotas extends BaseCommand {
                 points: resPts
             }
         };
-    }
-
-    /**
-     * Asks for the user's input.
-     * @param {ICommandContext} ctx The command context.
-     * @param {Message} botMsg The bot message.
-     * @param {MessageOptions} msgOptions The message options. This should display the directions.
-     * @param {Function} validator The validation function.
-     * @returns {Promise<T | null | undefined>} The parsed result, if any. `null` if the user specifically chose not
-     * to provide any information (for example, by pressing the Back button) and `undefined` if timed out.
-     * @private
-     */
-    private async askInput<T>(ctx: ICommandContext, botMsg: Message, msgOptions: Omit<MessageOptions, "components">,
-                              validator: (m: Message) => T | null | Promise<T | null>): Promise<T | null | undefined> {
-        await botMsg.edit({
-            ...msgOptions,
-            components: AdvancedCollector.getActionRowsFromComponents([
-                new MessageButton()
-                    .setLabel("Back")
-                    .setStyle("DANGER")
-                    .setCustomId("back")
-                    .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
-            ])
-        });
-
-        while (true) {
-            const selectedValue = await AdvancedCollector.startDoubleCollector<T>({
-                acknowledgeImmediately: true,
-                cancelFlag: null,
-                clearInteractionsAfterComplete: false,
-                deleteBaseMsgAfterComplete: false,
-                deleteResponseMessage: true,
-                duration: 60 * 1000,
-                targetAuthor: ctx.user,
-                targetChannel: botMsg.channel,
-                oldMsg: botMsg
-            }, async m => {
-                const v = await validator(m);
-                return v ? v : undefined;
-            });
-
-            if (!selectedValue) {
-                return;
-            }
-
-            if (selectedValue instanceof MessageComponentInteraction) {
-                return null;
-            }
-
-            // Is of type T
-            if (selectedValue)
-                return selectedValue;
-
-            // Failed = loop back to beginning and ask again
-            ctx.channel.send({
-                content: "Your input was invalid. Please refer to the directions above and try again."
-            }).then(async m => {
-                await MiscUtilities.stopFor(5 * 1000);
-                m.delete().catch();
-            });
-        }
     }
 
     /**

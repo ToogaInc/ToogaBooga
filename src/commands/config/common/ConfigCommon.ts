@@ -2,7 +2,7 @@ import {
     Guild,
     Message,
     MessageActionRow,
-    MessageButton,
+    MessageButton, MessageComponentInteraction,
     MessageOptions,
     TextBasedChannels,
     TextChannel
@@ -14,6 +14,7 @@ import {IGuildInfo, ISectionInfo} from "../../../definitions";
 import {ICommandContext} from "../../BaseCommand";
 import {GuildFgrUtilities} from "../../../utilities/fetch-get-request/GuildFgrUtilities";
 import {InteractivityHelper} from "../../../utilities/InteractivityHelper";
+import {MiscUtilities} from "../../../utilities/MiscUtilities";
 
 export const DB_CONFIG_BUTTONS: MessageButton[] = [
     new MessageButton()
@@ -217,4 +218,65 @@ export async function sendOrEditBotMsg(
     else
         botMsg = await channel.send(opt);
     return botMsg;
+}
+
+
+/**
+ * Asks for the user's input.
+ * @param {ICommandContext} ctx The command context.
+ * @param {Message} botMsg The bot message.
+ * @param {MessageOptions} msgOptions The message options. This should display the directions.
+ * @param {Function} validator The validation function.
+ * @returns {Promise<T | null | undefined>} The parsed result, if any. `null` if the user specifically chose not
+ * to provide any information (for example, by pressing the Back button) and `undefined` if timed out.
+ */
+export async function askInput<T>(ctx: ICommandContext, botMsg: Message, msgOptions: Omit<MessageOptions, "components">,
+    validator: (m: Message) => T | null | Promise<T | null>): Promise<T | null | undefined> {
+    await botMsg.edit({
+        ...msgOptions,
+        components: AdvancedCollector.getActionRowsFromComponents([
+            new MessageButton()
+                .setLabel("Back")
+                .setStyle("DANGER")
+                .setCustomId("back")
+                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
+        ])
+    });
+
+    while (true) {
+    const selectedValue = await AdvancedCollector.startDoubleCollector<T>({
+        acknowledgeImmediately: true,
+        cancelFlag: null,
+        clearInteractionsAfterComplete: false,
+        deleteBaseMsgAfterComplete: false,
+        deleteResponseMessage: true,
+        duration: 60 * 1000,
+        targetAuthor: ctx.user,
+        targetChannel: botMsg.channel,
+        oldMsg: botMsg
+    }, async m => {
+        const v = await validator(m);
+        return v ? v : undefined;
+    });
+
+    if (!selectedValue) {
+        return;
+    }
+
+    if (selectedValue instanceof MessageComponentInteraction) {
+        return null;
+    }
+
+    // Is of type T
+    if (selectedValue)
+        return selectedValue;
+
+    // Failed = loop back to beginning and ask again
+    ctx.channel.send({
+        content: "Your input was invalid. Please refer to the directions above and try again."
+    }).then(async m => {
+        await MiscUtilities.stopFor(5 * 1000);
+        m.delete().catch();
+    });
+}
 }
