@@ -174,6 +174,27 @@ export namespace LoggerManager {
     }
 
     /**
+     * Gets all completed dungeons.
+     * @param {IUserInfo} memberDoc The member document.
+     * @param {string} guildId The guild ID.
+     * @return {Collection<string, number>} The collection containing the completed dungeons (the IDs, specifically)
+     * as the key and the number of completions as the value.
+     */
+    export function getCompletedDungeons(memberDoc: IUserInfo, guildId: string): Collection<string, number> {
+        const res = new Collection<string, number>();
+        const data = memberDoc.loggedInfo.filter(x => x.key.startsWith(`R:${guildId}`) && x.key.endsWith("1"));
+        if (!data)
+            return res;
+
+        for (const dgn of data) {
+            const [, , dgnId,] = dgn.key.split(":");
+            res.set(dgnId, dgn.value);
+        }
+
+        return res;
+    }
+
+    /**
      * Gets this person's stats.
      * @param {GuildMember} member The member.
      * @param {string} [guildId] The guild ID. If specified, this will only grab the stats associated with this guild.
@@ -277,7 +298,7 @@ export namespace LoggerManager {
                     break;
                 }
                 case "R": {
-                    // Dungeon raid flag
+                    // Dungeon completion/failed flag
                     const dgnName = DungeonUtilities.isCustomDungeon(vId)
                         ? guildDoc?.properties.customDungeons.find(x => x.codeName === vId)?.dungeonName
                         : DUNGEON_DATA.find(x => x.codeName === vId)?.dungeonName;

@@ -238,59 +238,9 @@ export interface IVerificationRequirements {
     /**
      * The graveyard summary requirements.
      *
-     * @type {object}
+     * @type {IDungeonReq}
      */
-    graveyardSummary: {
-        /**
-         * Whether to check this requirement.
-         *
-         * @type {boolean}
-         */
-        checkThis: boolean;
-
-        /**
-         * The specified summary type and the minimum number of that needed to pass the requirement. For example,
-         * you might have something like:
-         * ```
-         *  [
-         *      {
-         *          key: "Tiles uncovered",
-         *          value: 200_000_000
-         *      },
-         *      {
-         *          key: "Secluded Thickets completed",
-         *          value: 30
-         *      },
-         *      {
-         *          key: "Nests completed2",
-         *          value: 15
-         *      }
-         *  ]
-         * ```
-         *
-         * In this example, all the above requirements must be passed.
-         *
-         * @type {IPropertyKeyValuePair<string, number>[]}
-         */
-        realmEyeCompletions: IPropertyKeyValuePair<string, number>[];
-
-
-        /**
-         * The specified number of some dungeon(s) logged by the bot needed to pass verification.
-         *
-         * The key is the dungeon ID, the value is the amount.
-         *
-         * @type {IPropertyKeyValuePair<string, number>[]}
-         */
-        botCompletions: IPropertyKeyValuePair<string, number>[];
-
-        /**
-         * Whether to only use `botCompletions`. If `false`, this will check `minimum`.
-         *
-         * @type {boolean}
-         */
-        useBotCompletions: boolean;
-    };
+    graveyardSummary: IDungeonReq;
 }
 
 /**
@@ -455,4 +405,59 @@ export interface ICharacterReq {
      * @type {boolean}
      */
     checkPastDeaths: boolean;
+}
+
+/**
+ * The interface representing the dungeon requirements for this section.
+ */
+export interface IDungeonReq {
+    /**
+     * Whether to check this requirement.
+     *
+     * @type {boolean}
+     */
+    checkThis: boolean;
+
+    /**
+     * The specified summary type and the minimum number of that needed to pass the requirement. For example,
+     * you might have something like:
+     * ```
+     *  [
+     *      {
+     *          key: "Tiles uncovered",
+     *          value: 200_000_000
+     *      },
+     *      {
+     *          key: "Secluded Thickets completed",
+     *          value: 30
+     *      },
+     *      {
+     *          key: "Nests completed2",
+     *          value: 15
+     *      }
+     *  ]
+     * ```
+     *
+     * In this example, all the above requirements must be passed.
+     *
+     * @type {IPropertyKeyValuePair<string, number>[]}
+     */
+    realmEyeCompletions: IPropertyKeyValuePair<string, number>[];
+
+
+    /**
+     * The specified number of some dungeon(s) logged by the bot needed to pass verification.
+     *
+     * The key is the dungeon ID, the value is the amount.
+     *
+     * @type {IPropertyKeyValuePair<string, number>[]}
+     */
+    botCompletions: IPropertyKeyValuePair<string, number>[];
+
+    /**
+     * Whether to only use `botCompletions`. If `false`, this will check `minimum`.
+     *
+     * @type {boolean}
+     */
+    useBotCompletions: boolean;
 }
