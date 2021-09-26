@@ -6,7 +6,7 @@ import {IPermAllowDeny} from "../definitions";
 import {DefinedRole} from "../definitions/Types";
 
 export namespace GeneralConstants {
-    export const ROLE_ORDER: DefinedRole[] = [
+    export const ROLE_ORDER: readonly DefinedRole[] = Object.freeze([
         GeneralConstants.MODERATOR_ROLE,
         GeneralConstants.HEAD_LEADER_ROLE,
         GeneralConstants.OFFICER_ROLE,
@@ -19,7 +19,7 @@ export namespace GeneralConstants {
         GeneralConstants.MEMBER_ROLE,
         GeneralConstants.SUSPENDED_ROLE,
         GeneralConstants.EVERYONE_ROLE
-    ];
+    ]);
 
     export const ZERO_WIDTH_SPACE: string = "\u200b";
 
@@ -162,7 +162,7 @@ export namespace GeneralConstants {
     export const TEAM_ROLE: DefinedRole = "Team";
 
     // Keep in mind that section RLs have the same power as regular RLs, just in their own sections.
-    export const DEFAULT_AFK_CHECK_PERMISSIONS: (IPermAllowDeny & { id: string; })[] = [
+    export const DEFAULT_AFK_CHECK_PERMISSIONS: readonly (IPermAllowDeny & { id: string; })[] = Object.freeze([
         {
             id: EVERYONE_ROLE,
             allow: [],
@@ -213,7 +213,7 @@ export namespace GeneralConstants {
             allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"],
             deny: []
         }
-    ];
+    ]);
 
     export const YES_NO_ACTION_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()

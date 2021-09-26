@@ -1243,7 +1243,7 @@ export class ConfigureDungeons extends BaseCommand {
     private async selectDungeon(
         ctx: ICommandContext,
         botMsg: Message,
-        dungeons: (IDungeonInfo | ICustomDungeonInfo)[],
+        dungeons: readonly (IDungeonInfo | ICustomDungeonInfo)[],
         embedInfo: EmbedInfo
     ): Promise<IDungeonInfo | ICustomDungeonInfo | null> {
         const embed = new MessageEmbed()

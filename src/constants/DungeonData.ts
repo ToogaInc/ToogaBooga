@@ -1,6 +1,6 @@
 import {IDungeonInfo} from "../definitions";
 
-export const DUNGEON_DATA: IDungeonInfo[] = [
+export const DUNGEON_DATA: readonly IDungeonInfo[] = Object.freeze([
     {
         codeName: "SNAKE_PIT",
         dungeonName: "Snake Pit",
@@ -1433,4 +1433,4 @@ export const DUNGEON_DATA: IDungeonInfo[] = [
         dungeonCategory: "Exaltation Dungeons",
         isBuiltIn: true
     }
-];
+]);

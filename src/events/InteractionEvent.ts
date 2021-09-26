@@ -236,7 +236,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     }
 
     // Check VERIFICATION
-    if (guildDoc.channels.verification.verificationChannelId === resolvedChannel.id) {
+    if (guildDoc.channels.verification.verificationChannelId === resolvedChannel.id && interaction.message.author.bot) {
         await VerifyManager.verifyInteraction(interaction, guildDoc, MongoManager.getMainSection(guildDoc));
         return;
     }
