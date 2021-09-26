@@ -577,6 +577,11 @@ export class ConfigureVerification extends BaseCommand {
                     : "Not Checking."
             );
 
+            await botMsg.edit({
+                embeds: [embed],
+                components: AdvancedCollector.getActionRowsFromComponents(buttons)
+            });
+
             const selectedButton = await AdvancedCollector.startInteractionCollector({
                 targetChannel: botMsg.channel as TextChannel,
                 targetAuthor: ctx.user,
@@ -953,8 +958,7 @@ export class ConfigureVerification extends BaseCommand {
                     return {value: exaltationInfo, status: TimedStatus.SUCCESS};
                 }
                 case "up": {
-                    selectedIdx--;
-                    selectedIdx %= 8;
+                    selectedIdx = (selectedIdx + 8 - 1) % 8;
                     break;
                 }
                 case "down": {
@@ -1163,7 +1167,8 @@ export class ConfigureVerification extends BaseCommand {
                     break;
                 }
                 case "up": {
-                    selectedIdx--;
+                    selectedIdx = (selectedIdx + newDungeonReq.botCompletions.length - 1)
+                        % newDungeonReq.botCompletions.length;
                     selectedIdx %= newDungeonReq.botCompletions.length;
                     break;
                 }
@@ -1291,8 +1296,8 @@ export class ConfigureVerification extends BaseCommand {
                     return {value: charInfo, status: TimedStatus.SUCCESS};
                 }
                 case "up": {
-                    selectedIdx--;
-                    selectedIdx %= newCharRequirements.statsNeeded.length;
+                    selectedIdx = (selectedIdx + newCharRequirements.statsNeeded.length
+                        - 1) % newCharRequirements.statsNeeded.length;
                     break;
                 }
                 case "down": {

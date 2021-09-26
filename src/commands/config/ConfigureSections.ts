@@ -652,8 +652,7 @@ export class ConfigureSections extends BaseCommand {
                         return;
                     }
                     case "up": {
-                        selectedIdx--;
-                        selectedIdx %= newSectionInfo.length;
+                        selectedIdx = (selectedIdx + newSectionInfo.length - 1) % newSectionInfo.length;
                         break;
                     }
                     case "down": {

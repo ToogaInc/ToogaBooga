@@ -444,6 +444,15 @@ export class ConfigureReactionsImages extends BaseCommand {
                     this.dispose(ctx, botMsg).catch();
                     return;
                 }
+                case "up": {
+                    currentIdx = (currentIdx + selectedImages.length - 1) % selectedImages.length;
+                    break;
+                }
+                case "down": {
+                    currentIdx++;
+                    currentIdx %= selectedImages.length;
+                    break;
+                }
             }
         }
     }
@@ -819,6 +828,15 @@ export class ConfigureReactionsImages extends BaseCommand {
                 case "quit": {
                     this.dispose(ctx, botMsg).catch();
                     return;
+                }
+                case "up": {
+                    selectedIdx = (selectedIdx + currentReactions.length - 1) % currentReactions.length;
+                    break;
+                }
+                case "down": {
+                    selectedIdx++;
+                    selectedIdx %= currentReactions.length;
+                    break;
                 }
             }
         }

@@ -905,8 +905,7 @@ export class ConfigureQuotas extends BaseCommand {
 
             switch (selectedRes.customId) {
                 case "up": {
-                    currIdx--;
-                    currIdx %= ptsToUse.length;
+                    currIdx = (currIdx + ptsToUse.length - 1) % ptsToUse.length;
                     break;
                 }
                 case "down": {

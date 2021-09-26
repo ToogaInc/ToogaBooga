@@ -831,8 +831,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     return;
                 }
                 case "up": {
-                    selected--;
-                    selected %= entries.length;
+                    selected = (entries.length + selected - 1) % entries.length;
                     break;
                 }
                 case "down": {

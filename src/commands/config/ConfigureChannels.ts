@@ -482,8 +482,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     return;
                 }
                 case "up": {
-                    selectedIdx--;
-                    selectedIdx %= logIds.length;
+                    selectedIdx = (selectedIdx + logIds.length - 1) % logIds.length;
                     break;
                 }
                 case "down": {
@@ -762,8 +761,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     return;
                 }
                 case "up": {
-                    selected--;
-                    selected %= entries.length;
+                    selected = (selected + entries.length - 1) % entries.length;
                     break;
                 }
                 case "down": {

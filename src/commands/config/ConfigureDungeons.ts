@@ -1685,8 +1685,7 @@ export class ConfigureDungeons extends BaseCommand {
                     break;
                 }
                 case upButton.customId!: {
-                    currentIdx--;
-                    currentIdx %= selected.length;
+                    currentIdx = (currentIdx + selected.length - 1) % selected.length;
                     break;
                 }
                 case downButton.customId!: {
@@ -2014,8 +2013,7 @@ export class ConfigureDungeons extends BaseCommand {
                     break;
                 }
                 case upButton.customId!: {
-                    currentIdx--;
-                    currentIdx %= currentReactions.length;
+                    currentIdx = (currentIdx + currentReactions.length - 1) % currentReactions.length;
                     break;
                 }
                 case downButton.customId!: {
