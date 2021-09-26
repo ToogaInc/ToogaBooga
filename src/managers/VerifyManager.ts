@@ -1,5 +1,5 @@
 import {
-    ButtonInteraction, CommandInteraction,
+    ButtonInteraction, Collection, CommandInteraction,
     EmbedFieldData,
     GuildMember,
     Interaction,
@@ -21,8 +21,7 @@ import {
     IGuildInfo, IIdNameInfo, IManualVerificationEntry,
     IPropertyKeyValuePair,
     ISectionInfo,
-    IVerificationProperties,
-    IVerificationRequirements
+    IVerificationProperties
 } from "../definitions";
 import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
@@ -30,6 +29,8 @@ import {Emojis} from "../constants/Emojis";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {ModmailManager} from "./ModmailManager";
 import {UserManager} from "./UserManager";
+import {DungeonUtilities} from "../utilities/DungeonUtilities";
+import {LoggerManager} from "./LoggerManager";
 
 export namespace VerifyManager {
     const CANCEL_ID: string = "cancel";
@@ -492,7 +493,7 @@ export namespace VerifyManager {
         const timeStarted = Date.now();
         await verifKit.msg.edit({
             embeds: [
-                getVerifEmbed(member, nameToVerify, code, guildDoc.otherMajorConfig.verificationProperties)
+                getVerifEmbed(member, nameToVerify, code, guildDoc, guildDoc.otherMajorConfig.verificationProperties)
                     .setFooter("Verification Process Expires")
                     .setTimestamp(timeStarted + 20 * 60 * 1000)
             ],
@@ -607,8 +608,13 @@ export namespace VerifyManager {
             if (!nameHistory) {
                 await verifKit.msg!.edit({
                     embeds: [
-                        getVerifEmbed(member, nameToVerify!, code, guildDoc.otherMajorConfig.verificationProperties)
-                            .setFooter("Verification Process Expires")
+                        getVerifEmbed(
+                            member,
+                            nameToVerify!,
+                            code,
+                            guildDoc,
+                            guildDoc.otherMajorConfig.verificationProperties
+                        ).setFooter("Verification Process Expires")
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
                                 `${Emojis.WARNING_EMOJI} Verification Issues`,
@@ -727,8 +733,13 @@ export namespace VerifyManager {
             if (checkRes.conclusion === "TRY_AGAIN") {
                 await verifKit.msg!.edit({
                     embeds: [
-                        getVerifEmbed(member, nameToVerify!, code, guildDoc.otherMajorConfig.verificationProperties)
-                            .setFooter("Verification Process Expires")
+                        getVerifEmbed(
+                            member,
+                            nameToVerify!,
+                            code,
+                            guildDoc,
+                            guildDoc.otherMajorConfig.verificationProperties
+                        ).setFooter("Verification Process Expires")
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
                                 `${Emojis.WARNING_EMOJI} Verification Issues`,
@@ -1365,11 +1376,12 @@ export namespace VerifyManager {
      * @param {GuildMember} member The member.
      * @param {string} ign The in-game name.
      * @param {string} code The verification code.
+     * @param {IGuildInfo} guildDoc The guild document.
      * @param {IVerificationProperties} verifProps The verification properties.
      * @returns {MessageEmbed} The message embed containing the verification steps.
      * @private
      */
-    function getVerifEmbed(member: GuildMember, ign: string, code: string,
+    function getVerifEmbed(member: GuildMember, ign: string, code: string, guildDoc: IGuildInfo,
                            verifProps: IVerificationProperties): MessageEmbed {
         return MessageUtilities.generateBlankEmbed(member.guild)
             .setTitle(`**${member.guild.name}**: Guild Verification`)
@@ -1379,7 +1391,7 @@ export namespace VerifyManager {
                 .append("password, you can learn how to get one [here](https://www.realmeye.com/mreyeball#password).")
                 .appendLine(2)
                 .append("As a reminder, the requirements for verification is:")
-                .append(StringUtil.codifyString(getVerificationRequirements(verifProps)))
+                .append(StringUtil.codifyString(getVerificationRequirements(guildDoc, verifProps)))
                 .append("Please complete the following steps. If you do not want to complete verification at this ")
                 .append("time, press the **Cancel** button.")
                 .toString())
@@ -1411,10 +1423,11 @@ export namespace VerifyManager {
 
     /**
      * Generates verification requirements from the given properties.
+     * @param {IGuildInfo} guildDoc The guild document.
      * @param {IVerificationProperties} verifProps The verification properties.
      * @returns {string} The requirements.
      */
-    export function getVerificationRequirements(verifProps: IVerificationProperties): string {
+    export function getVerificationRequirements(guildDoc: IGuildInfo, verifProps: IVerificationProperties): string {
         const sb = new StringBuilder();
         if (!verifProps.checkRequirements)
             return sb.append("No Requirements.").toString();
@@ -1465,20 +1478,30 @@ export namespace VerifyManager {
         }
 
         if (verifProps.verifReq.graveyardSummary.checkThis) {
-            let added = false;
-            for (const entry of verifProps.verifReq.graveyardSummary.realmEyeCompletions) {
-                if (entry.value === 0) continue;
-                // Put here so this shows up first on list
-                if (!added) {
-                    sb.append("- Graveyard History is Public.").appendLine();
-                    added = true;
+            if (verifProps.verifReq.graveyardSummary.useBotCompletions) {
+                for (const entry of verifProps.verifReq.graveyardSummary.botCompletions) {
+                    if (entry.value === 0) continue;
+                    const dgnInfo = DungeonUtilities.getDungeonInfo(guildDoc, entry.key);
+                    if (!dgnInfo) continue;
+                    sb.append(`- ${entry.value} ${dgnInfo.dungeonName} Completion Logged.`).appendLine();
                 }
-                const display = GeneralConstants.GY_HIST_TO_DISPLAY[entry.key];
-                sb.append(`- ${entry.value} ${display} Completions.`).appendLine();
+            }
+            else {
+                let added = false;
+                for (const entry of verifProps.verifReq.graveyardSummary.realmEyeCompletions) {
+                    if (entry.value === 0) continue;
+                    // Put here so this shows up first on list
+                    if (!added) {
+                        sb.append("- Graveyard History is Public.").appendLine();
+                        added = true;
+                    }
+                    const display = GeneralConstants.GY_HIST_TO_DISPLAY[entry.key];
+                    sb.append(`- ${entry.value} ${display} Completions.`).appendLine();
+                }
             }
         }
 
-        return sb.toString();
+        return sb.toString().trim();
     }
 
     interface IReqCheckResult {
@@ -1500,6 +1523,9 @@ export namespace VerifyManager {
      */
     async function checkRequirements(member: GuildMember, section: ISectionInfo | IGuildInfo,
                                      resp: PAD.IPlayerData): Promise<IReqCheckResult> {
+        const guildDoc = "guildId" in section
+            ? section
+            : await MongoManager.getOrCreateGuildDoc(member.guild.id, true);
         const verifReq = section.otherMajorConfig.verificationProperties.verifReq;
         const result: IReqCheckResult = {
             name: resp.name,
@@ -1656,36 +1682,41 @@ export namespace VerifyManager {
         }
 
         if (verifReq.graveyardSummary.checkThis) {
-            if (!gyHist) {
-                result.taIssues.push({
-                    key: "Graveyard History Private",
-                    value: "I am not able to access your graveyard summary. Make sure your graveyard is set so anyone "
-                        + "can see it and then try again.",
-                    log: "User's graveyard information is private."
-                });
-            }
-            else {
-                const issues: string[] = [];
-                const logIssues: string[] = [];
-                for (const gyStat of verifReq.graveyardSummary.realmEyeCompletions) {
-                    if (!(gyStat.key in GeneralConstants.DISPLAY_TO_GY_HIST)) continue;
-                    const gyHistKey = GeneralConstants.DISPLAY_TO_GY_HIST[gyStat.key];
-                    const data = gyHist.properties.find(x => x.achievement === gyHistKey);
-                    // Doesn't qualify because dungeon doesn't exist.
-                    if (!data) {
-                        issues.push(`- You do not have any ${gyStat.key} completions.`);
-                        logIssues.push(`- No ${gyStat.key} completions.`);
-                        continue;
-                    }
+            const issues: string[] = [];
+            const logIssues: string[] = [];
+            if (verifReq.graveyardSummary.useBotCompletions) {
+                const completionsNeeded = new Collection<string, number>(
+                    verifReq.graveyardSummary.botCompletions.map(x => [x.key, x.value])
+                );
+                const userDoc = await MongoManager.getUserDoc(resp.name);
+                const loggedInfo = userDoc.length === 0
+                    ? new Collection<string, number>()
+                    : LoggerManager.getCompletedDungeons(userDoc[0], member.guild.id);
 
-                    // Doesn't qualify because not enough
-                    if (gyStat.value > data.total) {
-                        issues.push(`- You have ${data.total} / ${gyStat.key} total ${gyStat.key} completions needed.`);
-                        logIssues.push(`- ${data.total} / ${gyStat.key} total ${gyStat.key} completions.`);
+                let allPassed = true;
+                for (const [dgnId, amt] of loggedInfo) {
+                    const dgnInfo = DungeonUtilities.getDungeonInfo(guildDoc, dgnId);
+                    if (!dgnInfo)
+                        continue;
+
+                    if (completionsNeeded.has(dgnId)) {
+                        const newAmt = completionsNeeded.get(dgnId)! - amt;
+                        if (newAmt <= 0) {
+                            completionsNeeded.delete(dgnId);
+                            continue;
+                        }
+
+                        allPassed = false;
+                        issues.push(
+                            `- ${newAmt}/${completionsNeeded.get(dgnId)!} ${dgnInfo.dungeonName} Completions Logged.`
+                        );
+                        logIssues.push(
+                            `- ${newAmt}/${completionsNeeded.get(dgnId)!} ${dgnInfo.dungeonName} Completions Logged.`
+                        );
                     }
                 }
 
-                if (issues.length > 0) {
+                if (!allPassed) {
                     const normalDisplay = StringUtil.codifyString(issues.join("\n"));
                     const logDisplay = StringUtil.codifyString(logIssues.join("\n"));
                     result.manualIssues.push({
@@ -1693,6 +1724,47 @@ export namespace VerifyManager {
                         value: `You still need to satisfy the following dungeon requirements: ${normalDisplay}`,
                         log: `User has not fulfilled the following dungeon requirements: ${logDisplay}`
                     });
+                }
+            }
+            else {
+                if (!gyHist) {
+                    result.taIssues.push({
+                        key: "Graveyard History Private",
+                        value: "I am not able to access your graveyard summary. Make sure your graveyard is set so"
+                            + " anyone can see it and then try again.",
+                        log: "User's graveyard information is private."
+                    });
+                }
+                else {
+                    for (const gyStat of verifReq.graveyardSummary.realmEyeCompletions) {
+                        if (!(gyStat.key in GeneralConstants.DISPLAY_TO_GY_HIST)) continue;
+                        const gyHistKey = GeneralConstants.DISPLAY_TO_GY_HIST[gyStat.key];
+                        const data = gyHist.properties.find(x => x.achievement === gyHistKey);
+                        // Doesn't qualify because dungeon doesn't exist.
+                        if (!data) {
+                            issues.push(`- You do not have any ${gyStat.key} completions.`);
+                            logIssues.push(`- No ${gyStat.key} completions.`);
+                            continue;
+                        }
+
+                        // Doesn't qualify because not enough
+                        if (gyStat.value > data.total) {
+                            issues.push(
+                                `- You have ${data.total} / ${gyStat.key} total ${gyStat.key} completions needed.`
+                            );
+                            logIssues.push(`- ${data.total} / ${gyStat.key} total ${gyStat.key} completions.`);
+                        }
+                    }
+
+                    if (issues.length > 0) {
+                        const normalDisplay = StringUtil.codifyString(issues.join("\n"));
+                        const logDisplay = StringUtil.codifyString(logIssues.join("\n"));
+                        result.manualIssues.push({
+                            key: "Dungeon Completion Requirement Not Fulfilled",
+                            value: `You still need to satisfy the following dungeon requirements: ${normalDisplay}`,
+                            log: `User has not fulfilled the following dungeon requirements: ${logDisplay}`
+                        });
+                    }
                 }
             }
         }
@@ -1815,72 +1887,5 @@ export namespace VerifyManager {
             if (GUILD_ROLES[i] === actual) return true;
         }
         return false;
-    }
-
-    /**
-     * Generates a string containing the verification requirements.
-     * @param {IVerificationRequirements} verifyReqs The section verification requirements.
-     * @return {string} The resulting string.
-     */
-    export function getVerificationReqsAsString(verifyReqs: IVerificationRequirements): string {
-        const requirementInfo = new StringBuilder();
-
-        if (verifyReqs.lastSeen.mustBeHidden)
-            requirementInfo.append("• Hidden Last Seen Location")
-                .appendLine();
-
-        if (verifyReqs.rank.checkThis && verifyReqs.rank.minRank >= 0)
-            requirementInfo.append(`• At Least ${verifyReqs.rank.minRank} Stars`);
-
-        // Show alive fame requirements.
-        if (verifyReqs.aliveFame.checkThis && verifyReqs.aliveFame.minFame > 0)
-            requirementInfo.append(`• ${verifyReqs.aliveFame.minFame} Alive Fame`)
-                .appendLine();
-
-        // Show character requirements.
-        if (verifyReqs.characters.checkThis && verifyReqs.characters.statsNeeded.some(x => x > 0)) {
-            for (let i = 0; i < verifyReqs.characters.statsNeeded.length; i++) {
-                if (verifyReqs.characters.statsNeeded[i] === 0) continue;
-                requirementInfo.append(`• ${verifyReqs.characters.statsNeeded[i]} ${i}/`)
-                    .append(`${GeneralConstants.NUMBER_OF_STATS} `);
-                if (verifyReqs.characters.checkPastDeaths)
-                    requirementInfo.append("(Dead or Alive Characters)");
-                else
-                    requirementInfo.append("(Alive Characters)");
-                requirementInfo.appendLine();
-            }
-        }
-
-        // Show exaltation requirements.
-        if (verifyReqs.exaltations.checkThis) {
-            for (const stat of Object.keys(verifyReqs.exaltations.minimum)) {
-                if (verifyReqs.exaltations.minimum[stat] <= 0) continue;
-                const statName = GeneralConstants.SHORT_STAT_TO_LONG[stat];
-                requirementInfo.append(`• ${verifyReqs.exaltations.minimum[stat]} ${statName} Exaltations`)
-                    .appendLine();
-            }
-        }
-
-        // Graveyard summary.
-        if (verifyReqs.graveyardSummary.checkThis) {
-            for (const gyStat of verifyReqs.graveyardSummary.realmEyeCompletions) {
-                if (gyStat.value <= 0) continue;
-                if (!(gyStat.key in GeneralConstants.DISPLAY_TO_GY_HIST)) continue;
-                requirementInfo.append(`• ${gyStat.value} ${gyStat.key} Completed`)
-                    .appendLine();
-            }
-        }
-
-        if (verifyReqs.guild.checkThis) {
-            requirementInfo.appendLine();
-            if (verifyReqs.guild.guildName.checkThis && verifyReqs.guild.guildName)
-                requirementInfo.append(`• In Guild: ${verifyReqs.guild.guildName}`)
-                    .appendLine();
-
-            if (verifyReqs.guild.guildRank.checkThis && verifyReqs.guild.guildName && verifyReqs.guild.guildRank)
-                requirementInfo.append(`• With Guild Rank: ${verifyReqs.guild.guildRank}`);
-        }
-
-        return StringUtil.codifyString(requirementInfo.toString());
     }
 }

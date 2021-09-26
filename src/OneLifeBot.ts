@@ -116,7 +116,8 @@ export class OneLifeBot {
             new Cmds.ConfigureSections(),
             new Cmds.ConfigureDungeons(),
             new Cmds.ConfigureReactionsImages(),
-            new Cmds.ConfigureQuotas()
+            new Cmds.ConfigureQuotas(),
+            new Cmds.ConfigureVerification()
         ]);
 
         OneLifeBot.Commands.set("Punishments", [
