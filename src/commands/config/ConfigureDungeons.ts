@@ -659,11 +659,10 @@ export class ConfigureDungeons extends BaseCommand {
                     .setLabel("Dungeon Category")
                     .setCustomId("dungeon_category")
                     .setStyle("PRIMARY"),
-                pointsToEnterButton,
-                nitroLimitButton,
-                vcLimitButton,
-                roleReqButton,
-                saveButton
+                new MessageButton()
+                    .setLabel("Specify Log Dungeon")
+                    .setCustomId("specify_log_dgn")
+                    .setStyle("PRIMARY")
             );
         }
         else {
@@ -676,15 +675,16 @@ export class ConfigureDungeons extends BaseCommand {
                     + " If you decide that you don't want to override a dungeon at this time, press the **Back** button."
                 );
 
-            buttons.push(
-                reactionsButton,
-                pointsToEnterButton,
-                nitroLimitButton,
-                vcLimitButton,
-                roleReqButton,
-                saveButton
-            );
+            buttons.push(reactionsButton);
         }
+
+        buttons.push(
+            pointsToEnterButton,
+            nitroLimitButton,
+            vcLimitButton,
+            roleReqButton,
+            saveButton
+        );
 
 
         while (true) {
@@ -749,6 +749,13 @@ export class ConfigureDungeons extends BaseCommand {
                     + (cDungeon.dungeonCategory.length === 0
                         ? StringUtil.codifyString("Not Set.")
                         : StringUtil.codifyString(cDungeon.dungeonCategory.length))
+                ).addField(
+                    "Specify Log Dungeon Type",
+                    "Click on the `Specify Log Dungeon` button to set what this dungeon should be logged as. For"
+                    + " example, for a dungeon like `Vet Void`, you might want to log this as a normal Void run."
+                    + " Keep in mind that you can **only** log this dungeon as itself or one of the built-in"
+                    + " dungeons. Currently, this is being logged as:"
+                    + (DUNGEON_DATA.find(x => x.codeName === cDungeon.logFor)?.dungeonName ?? "N/A")
                 );
             }
 
@@ -829,6 +836,28 @@ export class ConfigureDungeons extends BaseCommand {
                     });
 
                     this.mainMenu(ctx, botMsg).catch();
+                    break;
+                }
+                case "specify_log_dgn": {
+                    if (!isCustomDungeon(cDungeon))
+                        break;
+
+                    const res = await this.selectDungeon(
+                        ctx,
+                        botMsg,
+                        DUNGEON_DATA,
+                        {
+                            nameOfPrompt: "Specify Logging Dungeon",
+                            descOfPrompt: "Select a dungeon that you want this *custom* dungeon to be logged as."
+                                + " Whenever someone logs a run under this dungeon or completes this dungeon, the"
+                                + " bot will log it as whatever you specify."
+                        }
+                    ) as IDungeonInfo | null;
+
+                    if (!res)
+                        break;
+
+                    cDungeon.logFor = res.codeName;
                     break;
                 }
                 case "dungeon_name": {
@@ -1196,7 +1225,8 @@ export class ConfigureDungeons extends BaseCommand {
             nitroEarlyLocationLimit: -1,
             pointCost: 0,
             vcLimit: -1,
-            roleRequirement: []
+            roleRequirement: [],
+            logFor: null
         } as ICustomDungeonInfo;
     }
 

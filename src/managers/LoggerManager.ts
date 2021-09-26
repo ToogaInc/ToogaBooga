@@ -1,7 +1,7 @@
 import {Collection, GuildMember} from "discord.js";
 import {MongoManager} from "./MongoManager";
 import {FilterQuery, UpdateQuery} from "mongodb";
-import {IUserInfo} from "../definitions";
+import {IGuildInfo, IUserInfo} from "../definitions";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
 import {DUNGEON_DATA} from "../constants/DungeonData";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -52,6 +52,21 @@ export namespace LoggerManager {
          * @type {Collection<string, number>}
          */
         points: Collection<string, number>;
+    }
+
+    /**
+     * Gets the dungeon ID to log this dungeon as. This is useful if a custom dungeon specified that logging should
+     * be done with a base dungeon.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {string} origDungeonId The original dungeon ID.
+     * @return {string} The dungeon ID to log as.
+     * @private
+     */
+    function getDungeonIdToLog(guildDoc: IGuildInfo, origDungeonId: string): string | null {
+        if (!DungeonUtilities.isCustomDungeon(origDungeonId))
+            return origDungeonId;
+        const dgnObj = guildDoc.properties.customDungeons.find(x => x.codeName === origDungeonId);
+        return dgnObj?.codeName ?? null;
     }
 
     /**
@@ -134,7 +149,10 @@ export namespace LoggerManager {
     export async function logDungeonRun(member: GuildMember, dungeonId: string, completed: boolean,
                                         amt: number = 1): Promise<void> {
         // Format:      R:GUILD_ID:DUNGEON_ID:COMPLETED(1/0)
-        await internalUpdateLoggedInfo(member, `R:${member.guild.id}:${dungeonId}:${completed ? 1 : 0}`, amt);
+        const dgnId = getDungeonIdToLog(await MongoManager.getOrCreateGuildDoc(member.guild, true), dungeonId);
+        if (!dgnId)
+            return;
+        await internalUpdateLoggedInfo(member, `R:${member.guild.id}:${dgnId}:${completed ? 1 : 0}`, amt);
     }
 
     /**
@@ -147,7 +165,10 @@ export namespace LoggerManager {
     export async function logDungeonLead(member: GuildMember, dungeonId: string, result: RunResult,
                                          amt: number = 1): Promise<void> {
         // Format:      L:GUILD_ID:DUNGEON_ID:RESULT
-        await internalUpdateLoggedInfo(member, `L:${member.guild.id}:${dungeonId}:${result}`, amt);
+        const dgnId = getDungeonIdToLog(await MongoManager.getOrCreateGuildDoc(member.guild, true), dungeonId);
+        if (!dgnId)
+            return;
+        await internalUpdateLoggedInfo(member, `L:${member.guild.id}:${dgnId}:${result}`, amt);
     }
 
     /**

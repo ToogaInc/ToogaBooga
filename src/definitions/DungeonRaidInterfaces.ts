@@ -235,6 +235,16 @@ export interface ICustomDungeonInfo extends IDungeonInfo {
      * @type {object}
      */
     roleRequirement: string[];
+
+    /**
+     * Allows the user to set which dungeon should be logged in place of this dungeon. This will be a dungeon ID
+     * represented by one of the **built-in** dungeons. This will be:
+     * - `string` if this dungeon should be logged as another built-in dungeon.
+     * - `null` if this should be logged individually.
+     *
+     * @type {string | null}
+     */
+    logFor: string | null;
 }
 
 /**
