@@ -11,6 +11,7 @@ export * from "./config/ConfigureDungeons";
 export * from "./config/ConfigureReactionsImages";
 export * from "./config/ConfigureQuotas";
 export * from "./config/ConfigureVerification";
+export * from "./config/ConfigureAfkCheck";
 
 export * from "./staff/FindPunishment";
 export * from "./staff/CheckBlacklist";

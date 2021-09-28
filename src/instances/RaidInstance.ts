@@ -2202,8 +2202,7 @@ export class RaidInstance {
                 )
                 .appendLine(2);
 
-            if (reactInfo.type !== "EARLY_LOCATION"
-                && this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.earlyLocConfirmMsg) {
+            if (this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.earlyLocConfirmMsg) {
                 confirmationContent.append(
                     this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.earlyLocConfirmMsg
                 );

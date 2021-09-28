@@ -220,7 +220,6 @@ export async function sendOrEditBotMsg(
     return botMsg;
 }
 
-
 /**
  * Asks for the user's input.
  * @param {ICommandContext} ctx The command context.
@@ -231,7 +230,7 @@ export async function sendOrEditBotMsg(
  * to provide any information (for example, by pressing the Back button) and `undefined` if timed out.
  */
 export async function askInput<T>(ctx: ICommandContext, botMsg: Message, msgOptions: Omit<MessageOptions, "components">,
-    validator: (m: Message) => T | null | Promise<T | null>): Promise<T | null | undefined> {
+                                  validator: (m: Message) => T | null | Promise<T | null>): Promise<T | null | undefined> {
     await botMsg.edit({
         ...msgOptions,
         components: AdvancedCollector.getActionRowsFromComponents([
@@ -244,39 +243,39 @@ export async function askInput<T>(ctx: ICommandContext, botMsg: Message, msgOpti
     });
 
     while (true) {
-    const selectedValue = await AdvancedCollector.startDoubleCollector<T>({
-        acknowledgeImmediately: true,
-        cancelFlag: null,
-        clearInteractionsAfterComplete: false,
-        deleteBaseMsgAfterComplete: false,
-        deleteResponseMessage: true,
-        duration: 60 * 1000,
-        targetAuthor: ctx.user,
-        targetChannel: botMsg.channel,
-        oldMsg: botMsg
-    }, async m => {
-        const v = await validator(m);
-        return v ? v : undefined;
-    });
+        const selectedValue = await AdvancedCollector.startDoubleCollector<T>({
+            acknowledgeImmediately: true,
+            cancelFlag: null,
+            clearInteractionsAfterComplete: false,
+            deleteBaseMsgAfterComplete: false,
+            deleteResponseMessage: true,
+            duration: 60 * 1000,
+            targetAuthor: ctx.user,
+            targetChannel: botMsg.channel,
+            oldMsg: botMsg
+        }, async m => {
+            const v = await validator(m);
+            return v ? v : undefined;
+        });
 
-    if (!selectedValue) {
-        return;
+        if (!selectedValue) {
+            return;
+        }
+
+        if (selectedValue instanceof MessageComponentInteraction) {
+            return null;
+        }
+
+        // Is of type T
+        if (selectedValue)
+            return selectedValue;
+
+        // Failed = loop back to beginning and ask again
+        ctx.channel.send({
+            content: "Your input was invalid. Please refer to the directions above and try again."
+        }).then(async m => {
+            await MiscUtilities.stopFor(5 * 1000);
+            m.delete().catch();
+        });
     }
-
-    if (selectedValue instanceof MessageComponentInteraction) {
-        return null;
-    }
-
-    // Is of type T
-    if (selectedValue)
-        return selectedValue;
-
-    // Failed = loop back to beginning and ask again
-    ctx.channel.send({
-        content: "Your input was invalid. Please refer to the directions above and try again."
-    }).then(async m => {
-        await MiscUtilities.stopFor(5 * 1000);
-        m.delete().catch();
-    });
-}
 }
