@@ -26,7 +26,6 @@ import {
     VoiceState
 } from "discord.js";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {ChannelTypes, MessageButtonStyles} from "discord.js/typings/enums";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
 import {MessageUtilities} from "../utilities/MessageUtilities";
@@ -759,7 +758,7 @@ export class RaidInstance {
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
         const [vc, logChannel] = await Promise.all([
             this._guild.channels.create(`${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
-                type: ChannelTypes.GUILD_VOICE,
+                type: "GUILD_VOICE",
                 userLimit: this._vcLimit,
                 permissionOverwrites: this.getPermissionsForRaidVc(false),
                 parent: this._afkCheckChannel!.parent!
@@ -769,7 +768,7 @@ export class RaidInstance {
                     return resolve(null);
 
                 const logChan = await this._guild.channels.create(`${this._leaderName}-raid-logs`, {
-                    type: ChannelTypes.GUILD_TEXT,
+                    type: "GUILD_TEXT",
                     parent: this._afkCheckChannel!.parent!,
                     permissionOverwrites: [
                         {
@@ -940,7 +939,7 @@ export class RaidInstance {
                     .setCustomId(`reconnect_${this._afkCheckMsg.id}`)
                     .setEmoji(Emojis.INBOX_EMOJI)
                     .setLabel("Reconnect")
-                    .setStyle(MessageButtonStyles.SUCCESS)
+                    .setStyle("SUCCESS")
             ])
         }).catch();
 

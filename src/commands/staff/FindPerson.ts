@@ -12,7 +12,7 @@ import {TimeUtilities} from "../../utilities/TimeUtilities";
 
 export class FindPerson extends BaseCommand {
     public constructor() {
-        const cmi: ICommandInfo ={
+        const cmi: ICommandInfo = {
             cmdCode: "FIND_PERSON",
             formalCommandName: "Find Person/User",
             botCommandName: "find",
@@ -27,6 +27,16 @@ export class FindPerson extends BaseCommand {
                 "RaidLeader",
                 "VeteranRaidLeader",
                 "HeadRaidLeader"
+            ],
+            argumentInfo: [
+                {
+                    displayName: "In-Game Name",
+                    argName: "ign",
+                    desc: "The member to look up.",
+                    type: "String",
+                    required: true,
+                    example: ["Darkmattr", "Opre"]
+                }
             ],
             generalPermissions: [],
             botPermissions: [],

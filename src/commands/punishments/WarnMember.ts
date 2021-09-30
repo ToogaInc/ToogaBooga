@@ -27,6 +27,24 @@ export class WarnMember extends BaseCommand {
             ],
             generalPermissions: [],
             botPermissions: [],
+            argumentInfo: [
+                {
+                    displayName: "Member",
+                    argName: "member",
+                    desc: "The member to warn.",
+                    type: "Member Resolvable (ID, Mention, IGN)",
+                    required: true,
+                    example: ["@Console#8939", "123313141413155", "Darkmattr"]
+                },
+                {
+                    displayName: "Reason",
+                    argName: "reason",
+                    desc: "The reason for this warning.",
+                    type: "String",
+                    required: true,
+                    example: ["For being bad."]
+                }
+            ],
             commandCooldown: 3 * 1000,
             usageGuide: ["warn [Member] [Reason]"],
             exampleGuide: ["warn @Console#8939 For being bad", "warn Darkmattr For being bad"],

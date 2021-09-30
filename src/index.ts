@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 (async () => {
-    const content = fs.readFileSync(path.join(".", "..", "config.json"));
+    const content = fs.readFileSync(path.join(__dirname, "..", "config.json"));
     const config: IConfiguration = JSON.parse(content.toString());
     const bot = new OneLifeBot(config);
     bot.startAllEvents();

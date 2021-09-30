@@ -328,6 +328,12 @@ export interface ICommandInfo {
     description: string;
 
     /**
+     * Information about the arguments.
+     * @type {IArgumentInfo[]}
+     */
+    argumentInfo: IArgumentInfo[];
+
+    /**
      * Information on how this command is used.
      * @type {string[]}
      */
@@ -374,4 +380,40 @@ export interface ICommandInfo {
      * @type {boolean}
      */
     botOwnerOnly: boolean;
+}
+
+interface IArgumentInfo {
+    /**
+     * The formal name of the argument.
+     */
+    displayName: string;
+
+    /**
+     * The displayed name (what is shown in Discord's slash command) of the argument.
+     * @type {string}
+     */
+    argName: string;
+
+    /**
+     * The argument type.
+     * @type {string}
+     */
+    type: string;
+
+    /**
+     * The description of this argument.
+     * @type {string}
+     */
+    desc: string;
+
+    /**
+     * Examples of how this argument can be satisfied.
+     */
+    example: string[];
+
+    /**
+     * Whether the argument is required.
+     * @type {boolean}
+     */
+    required: boolean;
 }

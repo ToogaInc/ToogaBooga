@@ -26,6 +26,34 @@ export class SuspendMember extends BaseCommand {
             commandCooldown: 3 * 1000,
             usageGuide: ["suspend [Member] {Duration} [Reason]"],
             exampleGuide: ["suspend @Console#8939 For being bad", "suspend @Console#8939 3d For being bad"],
+            argumentInfo: [
+                {
+                    displayName: "Member",
+                    argName: "member",
+                    desc: "The member to suspend.",
+                    type: "Member Resolvable (ID, Mention, IGN)",
+                    required: true,
+                    example: ["@Console#8939", "123313141413155", "Darkmattr"]
+                },
+                {
+                    displayName: "Duration",
+                    argName: "duration",
+                    desc: "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
+                        + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
+                        + " implies an indefinite suspension. Not specifying the time unit for the mute implies days.",
+                    type: "String",
+                    required: false,
+                    example: ["3h10m", "10w10h8d-1m"]
+                },
+                {
+                    displayName: "Reason",
+                    argName: "reason",
+                    desc: "The reason for this suspension.",
+                    type: "String",
+                    required: true,
+                    example: ["For being bad."]
+                }
+            ],
             guildOnly: true,
             botOwnerOnly: false
         };

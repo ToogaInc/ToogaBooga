@@ -14,8 +14,7 @@ export class FindPunishment extends BaseCommand {
             cmdCode: "FIND_PUNISHMENT",
             formalCommandName: "Find Punishment",
             botCommandName: "findpunishment",
-            description: "Finds punishment information given a punishment ID. This command should be used when the"
-                + " punishment ID is known.",
+            description: "Finds punishment information given a punishment ID.",
             rolePermissions: [
                 "Helper",
                 "Security",
@@ -28,6 +27,16 @@ export class FindPunishment extends BaseCommand {
             generalPermissions: [],
             botPermissions: [],
             commandCooldown: 3 * 1000,
+            argumentInfo: [
+                {
+                    displayName: "Moderation ID",
+                    argName: "moderation_id",
+                    desc: "The moderation ID to look up.",
+                    type: "String",
+                    required: true,
+                    example: ["ijwqbriouh2q9t4928ht3q8ghw"]
+                }
+            ],
             usageGuide: ["findpunishment [Punishment ID]"],
             exampleGuide: ["findpunishment 2130idosfhowadf"],
             guildOnly: true,

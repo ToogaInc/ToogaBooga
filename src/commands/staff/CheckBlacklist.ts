@@ -24,6 +24,16 @@ export class CheckBlacklist extends BaseCommand {
             generalPermissions: [],
             botPermissions: [],
             commandCooldown: 3 * 1000,
+            argumentInfo: [
+                {
+                    displayName: "Name",
+                    argName: "name",
+                    desc: "The name to blacklist.",
+                    type: "String",
+                    required: true,
+                    example: ["Darkmattr", "Opre"]
+                }
+            ],
             usageGuide: ["checkblacklist [Name]"],
             exampleGuide: ["checkblacklist Opre"],
             guildOnly: true,

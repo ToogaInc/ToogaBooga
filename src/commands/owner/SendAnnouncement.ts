@@ -1,4 +1,4 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
+import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {MessageEmbed} from "discord.js";
 import {MongoManager} from "../../managers/MongoManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
@@ -8,19 +8,27 @@ import {SlashCommandBuilder} from "@discordjs/builders";
 
 export class SendAnnouncement extends BaseCommand {
     public constructor() {
-        const cmi = {
+        const cmi: ICommandInfo = {
             cmdCode: "SEND_ANNOUNCEMENTS_COMMAND",
             formalCommandName: "Send Announcements Command",
             botCommandName: "sendbotannouncement",
             description: "Sends an announcement to every server that has a set bot updates channel.",
             usageGuide: ["sendbotannouncement [Content, STR]"],
             exampleGuide: ["sendbotannouncement Hello world!"],
-            deleteCommandAfter: 10 * 1000,
             commandCooldown: 0,
             generalPermissions: [],
+            argumentInfo: [
+                {
+                    displayName: "Announcement Text",
+                    argName: "announcement",
+                    desc: "The announcement to send to all servers the bot is in.",
+                    type: "String",
+                    required: true,
+                    example: ["This is a test announcement!"]
+                }
+            ],
             botPermissions: [],
             rolePermissions: [],
-            isRoleInclusive: false,
             guildOnly: false,
             botOwnerOnly: true
         };

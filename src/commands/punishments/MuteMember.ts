@@ -34,6 +34,34 @@ export class MuteMember extends BaseCommand {
             ],
             generalPermissions: [],
             botPermissions: [],
+            argumentInfo: [
+                {
+                    displayName: "Member",
+                    argName: "member",
+                    desc: "The member to mute.",
+                    type: "Member Resolvable (ID, Mention, IGN)",
+                    required: true,
+                    example: ["@Console#8939", "123313141413155", "Darkmattr"]
+                },
+                {
+                    displayName: "Duration",
+                    argName: "duration",
+                    desc: "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
+                        + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
+                        + " implies an indefinite mute. Not specifying the time unit for the mute implies days.",
+                    type: "String",
+                    required: false,
+                    example: ["3h10m", "10w10h8d-1m"]
+                },
+                {
+                    displayName: "Reason",
+                    argName: "reason",
+                    desc: "The reason for this mute.",
+                    type: "String",
+                    required: true,
+                    example: ["For being bad."]
+                }
+            ],
             commandCooldown: 3 * 1000,
             usageGuide: ["mute [Member] {Duration} [Reason]"],
             exampleGuide: ["mute @Console#8939 10m For being bad", "mute Darkmattr For being bad"],
@@ -52,11 +80,7 @@ export class MuteMember extends BaseCommand {
         }).addStringOption(o => {
             return o
                 .setName("duration")
-                .setDescription(
-                    "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
-                    + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
-                    + " implies an indefinite mute. Not specifying the time unit for the mute implies days."
-                )
+                .setDescription("The duration of this mute. See help command for more info.")
                 .setRequired(false);
         }).addStringOption(o => {
             return o

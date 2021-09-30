@@ -1,4 +1,4 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
+import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {OneLifeBot} from "../../OneLifeBot";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
@@ -8,7 +8,7 @@ import {Role} from "discord.js";
 
 export class Help extends BaseCommand {
     public constructor() {
-        const cmi = {
+        const cmi: ICommandInfo = {
             cmdCode: "HELP",
             formalCommandName: "Help",
             botCommandName: "help",
@@ -16,7 +16,16 @@ export class Help extends BaseCommand {
             rolePermissions: [],
             generalPermissions: [],
             botPermissions: [],
-            isRoleInclusive: false,
+            argumentInfo: [
+                {
+                    displayName: "Command Name",
+                    argName: "command",
+                    desc: "The command to find help information for.",
+                    type: "String",
+                    required: false,
+                    example: ["help", "startafkcheck"]
+                }
+            ],
             commandCooldown: 4 * 1000,
             usageGuide: ["help {Command}", "help"],
             exampleGuide: ["help ping", "help"],
@@ -31,8 +40,7 @@ export class Help extends BaseCommand {
         scb.addStringOption(
             option => option
                 .setName("command")
-                .setDescription("The command to get help information for. If you don't know the command, use `all`"
-                    + " to show all available commands.")
+                .setDescription("The command to get help information for. Use `all` to show all available commands.")
                 .setRequired(false)
         );
 

@@ -1,7 +1,6 @@
 import {MessageActionRow, MessageButton} from "discord.js";
 import {Emojis} from "./Emojis";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {MessageButtonStyles} from "discord.js/typings/enums";
 import {IPermAllowDeny} from "../definitions";
 import {DefinedRole} from "../definitions/Types";
 
@@ -218,7 +217,7 @@ export namespace GeneralConstants {
     export const YES_NO_ACTION_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setCustomId("yes")
-            .setStyle(MessageButtonStyles.SUCCESS)
+            .setStyle("SUCCESS")
             .setEmoji(Emojis.GREEN_CHECK_EMOJI)
             .setLabel("Yes"),
         new MessageButton()

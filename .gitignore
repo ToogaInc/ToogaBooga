@@ -6,6 +6,7 @@
 
 # Configuration.
 config.json
+config.production.json
 
 # Notes
 /notes/*

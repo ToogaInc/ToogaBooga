@@ -22,7 +22,6 @@ import {StringUtil} from "../utilities/StringUtilities";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
-import {ChannelTypes} from "discord.js/typings/enums";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {IModmailThread, IModmailThreadMessage, IGuildInfo} from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
@@ -355,7 +354,7 @@ export namespace ModmailManager {
         const createdTime = Date.now();
         const channelName = `${targetMember.user.username}-${targetMember.user.discriminator}`;
         const threadChannel = await initiatedBy.guild.channels.create(channelName, {
-            type: ChannelTypes.GUILD_TEXT,
+            type: "GUILD_TEXT",
             parent: modmailCategory,
             topic: new StringBuilder().append(`Modmail Thread For: ${targetMember}`).appendLine()
                 .append(`Created By: ${initiatedBy}`).appendLine()
@@ -531,7 +530,7 @@ export namespace ModmailManager {
             .appendLine()
             .append(`⇒ **Created By:** ${TimeUtilities.getDateTime(createdTime)}`);
         const threadChannel = await convertedToThreadBy.guild.channels.create(channelName, {
-            type: ChannelTypes.GUILD_TEXT,
+            type: "GUILD_TEXT",
             parent: modmailCategory,
             topic: description.toString()
         }) as TextChannel;
@@ -1016,7 +1015,7 @@ export namespace ModmailManager {
         // Create a new channel where the person can write a message.
         const channelName = `respond-${authorOfModmail.user.username}`;
         const responseChannel = await responder.guild.channels.create(channelName, {
-            type: ChannelTypes.GUILD_TEXT,
+            type: "GUILD_TEXT",
             permissionOverwrites: [
                 {
                     id: responder.guild.roles.everyone,

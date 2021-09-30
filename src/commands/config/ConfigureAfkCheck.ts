@@ -49,6 +49,7 @@ export class ConfigureAfkCheck extends BaseCommand {
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
             generalPermissions: [],
             commandCooldown: 3 * 1000,
+            argumentInfo: [],
             usageGuide: ["configafkcheck"],
             exampleGuide: ["configafkcheck"],
             guildOnly: true,

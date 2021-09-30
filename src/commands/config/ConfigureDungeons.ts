@@ -85,6 +85,7 @@ export class ConfigureDungeons extends BaseCommand {
             generalPermissions: [],
             botPermissions: [],
             commandCooldown: 3 * 1000,
+            argumentInfo: [],
             usageGuide: ["configdungeons"],
             exampleGuide: ["configdungeons"],
             guildOnly: true,

@@ -227,6 +227,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             exampleGuide: ["configchannels"],
             commandCooldown: 10 * 1000,
             generalPermissions: ["MANAGE_GUILD"],
+            argumentInfo: [],
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
             guildOnly: true,

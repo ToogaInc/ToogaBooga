@@ -20,6 +20,24 @@ export class BlacklistMember extends BaseCommand {
             generalPermissions: [],
             botPermissions: ["BAN_MEMBERS"],
             commandCooldown: 3 * 1000,
+            argumentInfo: [
+                {
+                    displayName: "Member",
+                    argName: "member",
+                    desc: "The member to blacklist.",
+                    type: "Member Resolvable (ID, Mention, IGN)",
+                    required: true,
+                    example: ["@Console#8939", "123313141413155", "Darkmattr"]
+                },
+                {
+                    displayName: "Reason",
+                    argName: "reason",
+                    desc: "The reason for this blacklist.",
+                    type: "String",
+                    required: true,
+                    example: ["For being bad."]
+                }
+            ],
             usageGuide: ["blacklist [Member] [Reason]"],
             exampleGuide: ["blacklist @Console#8939 For being bad", "blacklist Darkmattr For being bad"],
             guildOnly: true,

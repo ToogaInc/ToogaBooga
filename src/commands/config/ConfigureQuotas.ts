@@ -83,6 +83,7 @@ export class ConfigureQuotas extends BaseCommand {
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
             generalPermissions: [],
             commandCooldown: 3 * 1000,
+            argumentInfo: [],
             usageGuide: ["configquotas"],
             exampleGuide: ["configquotas"],
             guildOnly: true,

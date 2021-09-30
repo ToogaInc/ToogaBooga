@@ -11,6 +11,7 @@ export class Ping extends BaseCommand {
             generalPermissions: [],
             botPermissions: [],
             commandCooldown: 3 * 1000,
+            argumentInfo: [],
             usageGuide: ["ping"],
             exampleGuide: ["ping"],
             guildOnly: false,

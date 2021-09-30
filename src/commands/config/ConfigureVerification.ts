@@ -52,6 +52,7 @@ export class ConfigureVerification extends BaseCommand {
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
             generalPermissions: [],
             commandCooldown: 3 * 1000,
+            argumentInfo: [],
             usageGuide: ["configverification"],
             exampleGuide: ["configverification"],
             guildOnly: true,

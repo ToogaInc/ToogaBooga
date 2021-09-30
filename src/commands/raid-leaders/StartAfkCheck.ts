@@ -37,6 +37,16 @@ export class StartAfkCheck extends BaseCommand {
             generalPermissions: [],
             botPermissions: [],
             rolePermissions: ["RaidLeader", "AlmostRaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
+            argumentInfo: [
+                {
+                    displayName: "Location",
+                    argName: "location",
+                    desc: "The location for this raid.",
+                    required: false,
+                    example: ["usw right"],
+                    type: "String"
+                }
+            ],
             guildOnly: true,
             botOwnerOnly: false
         };

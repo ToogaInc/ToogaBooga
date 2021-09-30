@@ -140,6 +140,7 @@ export class ConfigureSections extends BaseCommand {
             usageGuide: ["configsections"],
             exampleGuide: ["configsections"],
             commandCooldown: 10 * 1000,
+            argumentInfo: [],
             generalPermissions: ["MANAGE_GUILD"],
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
