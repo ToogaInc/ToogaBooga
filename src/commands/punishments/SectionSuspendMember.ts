@@ -72,16 +72,16 @@ export class SectionSuspendMember extends BaseCommand {
                 .setRequired(true);
         }).addStringOption(o => {
             return o
+                .setName("reason")
+                .setDescription("The reason for this section suspension.")
+                .setRequired(true);
+        }).addStringOption(o => {
+            return o
                 .setName("duration")
                 .setDescription(
                     "The duration. See the help command for more information."
                 )
                 .setRequired(false);
-        }).addStringOption(o => {
-            return o
-                .setName("reason")
-                .setDescription("The reason for this section suspension.")
-                .setRequired(true);
         });
 
         super(cmi, scb);

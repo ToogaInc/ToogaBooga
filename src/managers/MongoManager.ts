@@ -45,7 +45,7 @@ export namespace MongoManager {
      * @return {boolean} Whether the program is connected to MongoDB.
      */
     export function isConnected(): boolean {
-        return ThisMongoClient !== null && ThisMongoClient.isConnected();
+        return ThisMongoClient !== null;
     }
 
     /**
@@ -81,7 +81,7 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getGuildCollection(): MCollection<IGuildInfo> {
-        if (GuildCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
+        if (GuildCollection === null || ThisMongoClient === null || !isConnected())
             throw new ReferenceError("GuildCollection null. Use connect method first.");
 
         return GuildCollection;
@@ -94,7 +94,7 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getUserCollection(): MCollection<IUserInfo> {
-        if (UserCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
+        if (UserCollection === null || ThisMongoClient === null || !isConnected())
             throw new ReferenceError("UserCollection null. Use connect method first.");
 
         return UserCollection;
@@ -106,7 +106,7 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getBotCollection(): MCollection<IBotInfo> {
-        if (BotCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
+        if (BotCollection === null || ThisMongoClient === null || !isConnected())
             throw new ReferenceError("BotCollection null.");
 
         return BotCollection;
@@ -118,7 +118,7 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getUnclaimedBlacklistCollection(): MCollection<IUnclaimedBlacklistInfo> {
-        if (UnclaimedBlacklistCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
+        if (UnclaimedBlacklistCollection === null || ThisMongoClient === null || !isConnected())
             throw new ReferenceError("UnclaimedBlacklistCollection null.");
 
         return UnclaimedBlacklistCollection;
@@ -131,7 +131,7 @@ export namespace MongoManager {
      * @returns {Promise<boolean>} Whether the instance is connected.
      */
     export async function connect(config: IDbConfiguration): Promise<boolean> {
-        if (ThisMongoClient && ThisMongoClient.isConnected())
+        if (ThisMongoClient && isConnected())
             return true;
 
         const mongoDbClient: MongoClient = new MongoClient(config.dbUrl, {

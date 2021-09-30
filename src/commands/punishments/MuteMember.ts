@@ -78,14 +78,14 @@ export class MuteMember extends BaseCommand {
                 .setRequired(true);
         }).addStringOption(o => {
             return o
-                .setName("duration")
-                .setDescription("The duration of this mute. See help command for more info.")
-                .setRequired(false);
-        }).addStringOption(o => {
-            return o
                 .setName("reason")
                 .setDescription("The reason for this mute.")
                 .setRequired(true);
+        }).addStringOption(o => {
+            return o
+                .setName("duration")
+                .setDescription("The duration of this mute. See help command for more info.")
+                .setRequired(false);
         });
 
         super(cmi, scb);

@@ -68,16 +68,16 @@ export class SuspendMember extends BaseCommand {
                 .setRequired(true);
         }).addStringOption(o => {
             return o
+                .setName("reason")
+                .setDescription("The reason for this suspension.")
+                .setRequired(true);
+        }).addStringOption(o => {
+            return o
                 .setName("duration")
                 .setDescription(
                     "The duration. See the help command for more information."
                 )
                 .setRequired(false);
-        }).addStringOption(o => {
-            return o
-                .setName("reason")
-                .setDescription("The reason for this suspension.")
-                .setRequired(true);
         });
 
         super(cmi, scb);
