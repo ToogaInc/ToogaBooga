@@ -13,8 +13,7 @@ export class WarnMember extends BaseCommand {
             cmdCode: "WARN_MEMBER",
             formalCommandName: "Warn Member",
             botCommandName: "warn",
-            description: "Warns a member. He or she will receive a message from the bot with the warning, and the"
-                + " warning will be logged in the database.",
+            description: "Warns a member, logging the warning in a database and messaging said member.",
             rolePermissions: [
                 "Helper",
                 "Security",

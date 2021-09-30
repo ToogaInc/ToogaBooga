@@ -44,7 +44,7 @@ export class SectionSuspendMember extends BaseCommand {
                     argName: "duration",
                     desc: "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
                         + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
-                        + " implies an indefinite suspension. Not specifying the time unit for the mute implies days.",
+                        + " implies an indefinite suspension. Not specifying the time unit implies days.",
                     type: "String",
                     required: false,
                     example: ["3h10m", "10w10h8d-1m"]
@@ -74,9 +74,7 @@ export class SectionSuspendMember extends BaseCommand {
             return o
                 .setName("duration")
                 .setDescription(
-                    "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
-                    + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
-                    + " implies an indefinite suspension. Not specifying the time unit for the suspension implies days."
+                    "The duration. See the help command for more information."
                 )
                 .setRequired(false);
         }).addStringOption(o => {

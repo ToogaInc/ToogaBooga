@@ -20,8 +20,7 @@ export class MuteMember extends BaseCommand {
             cmdCode: "MUTE_MEMBER",
             formalCommandName: "Mute Member",
             botCommandName: "mute",
-            description: "Mutes a member. He or she will not be able to talk in public voice channels or any text"
-                + " channels unless permission is explicitly granted to that person.",
+            description: "Mutes a member, preventing the member from talking in any channels.",
             rolePermissions: [
                 "Helper",
                 "Security",
