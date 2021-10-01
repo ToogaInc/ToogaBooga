@@ -23,6 +23,7 @@ import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {QuotaManager} from "../../managers/QuotaManager";
+import {StringUtil} from "../../utilities/StringUtilities";
 
 type QuotaAddResult = {
     quotaType: QuotaLogType;
@@ -121,6 +122,10 @@ export class ConfigureQuotas extends BaseCommand {
                 .setEmoji(Emojis.CLOCK_EMOJI)
         ];
 
+        const resetInfo = ctx.guildDoc!.quotas.resetTime;
+        const dayOfWeek = ConfigureQuotas.DAYS_OF_WEEK[resetInfo.dayOfWeek][0];
+        const seconds = resetInfo.time % 100;
+        const timeReset = `${Math.floor(resetInfo.time / 100)}:${seconds < 10 ? "0" + seconds.toString() : seconds}`;
         const embed: MessageEmbed = new MessageEmbed()
             .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
             .setTitle("Quota Configuration Command")
@@ -132,7 +137,8 @@ export class ConfigureQuotas extends BaseCommand {
                 "Click on the `Exit` button to exit this process."
             ).addField(
                 "Set Reset Time",
-                "Click on the `Set Reset Time` button to set the time when all quotas will reset."
+                "Click on the `Set Reset Time` button to set the time when all quotas will reset. The current reset"
+                + " time is:" + StringUtil.codifyString(`${dayOfWeek} at ${timeReset}`)
             );
 
         if (ctx.guildDoc!.quotas.quotaInfo.length + 1 < ConfigureQuotas.MAX_QUOTAS_ALLOWED) {
@@ -349,10 +355,11 @@ export class ConfigureQuotas extends BaseCommand {
                     deleteBaseMsgAfterComplete: false,
                     duration: 45 * 1000
                 }, m => {
+                    console.log(m.content);
                     if (!m.content.includes(":") || m.content.substring(m.content.indexOf(":") + 1).length === 0)
                         return;
 
-                    const [hr, min] = m.content.split(":").map(Number.parseInt);
+                    const [hr, min] = m.content.split(":").map(x => Number.parseInt(x, 10));
                     if (Number.isNaN(hr) || hr < 0 || hr > 23)
                         return;
 

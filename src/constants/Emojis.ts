@@ -39,10 +39,10 @@ export namespace Emojis {
     export const GREEN_CHECK_EMOJI: string = "✅";
     export const HOURGLASS_EMOJI: string = "⌛";
     export const RIGHT_TRIANGLE_EMOJI: string = "▶️";
-    export const UP_TRIANGLE_EMOJI: string = "🔼 ";
+    export const UP_TRIANGLE_EMOJI: string = "🔼";
     export const DOWN_TRIANGLE_EMOJI: string = "🔽";
-    export const LONG_LEFT_ARROW_EMOJI: string = "⬅️";
-    export const LONG_RIGHT_TRIANGLE_EMOJI: string = "➡️";
+    export const LONG_LEFT_ARROW_EMOJI: string = "⬅";
+    export const LONG_RIGHT_TRIANGLE_EMOJI: string = "➡";
     export const WASTEBIN_EMOJI: string = "🗑️";
     export const MAP_EMOJI: string = "🗺️";
     export const SPEECH_BUBBLE_EMOJI: string = "🗨️";

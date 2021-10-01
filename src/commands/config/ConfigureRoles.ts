@@ -427,7 +427,8 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     section,
                     botMsg,
                     ConfigureRoles.ROLE_MONGO.filter(x => {
-                        return x.roleType === RoleCategoryType.General && section.isMainSection ? true : x.sectionPath;
+                        return x.roleType === RoleCategoryType.General
+                            && (section.isMainSection ? true : !!x.sectionPath);
                     }),
                     "General"
                 ).then();
@@ -499,11 +500,15 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     guildDoc.roles.mutedRoleId
                 );
 
-                currentConfiguration.append(`⇒ Suspended Role: ${suspendedRole ?? ConfigureRoles.NA}`).appendLine()
-                    .append(`⇒ Muted Role: ${mutedRole ?? ConfigureRoles.NA}`).appendLine();
-            }
+                const teamRole = getCachedRole(
+                    guild,
+                    guildDoc.roles.staffRoles.teamRoleId
+                );
 
-            currentConfiguration.appendLine();
+                currentConfiguration.append(`⇒ Suspended Role: ${suspendedRole ?? ConfigureRoles.NA}`).appendLine()
+                    .append(`⇒ Muted Role: ${mutedRole ?? ConfigureRoles.NA}`).appendLine()
+                    .append(`⇒ Team Role: ${teamRole ?? ConfigureRoles.NA}`).appendLine();
+            }
         }
 
         if (displayFilter & DisplayFilter.SectionLeader) {
@@ -646,7 +651,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                 else {
                     const fields = ArrayUtilities.arrayToStringFields(
                         validStaffRoles,
-                        (i, e) => `**\`[${i + 1}]\`** ${e}`
+                        (i, e) => `**\`[${i + 1}]\`** ${e}\n`
                     );
                     for (const field of fields) {
                         embedToDisplay.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
@@ -687,12 +692,16 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                 if (role) return role;
                 // Parse for number.
                 const num = Number.parseInt(msg.content, 10);
-                if (Number.isNaN(num) || num <= 0 || num > validStaffRoles.length) return;
-                return num - 1;
+                if (Number.isNaN(num)) return;
+                const actualIdx = num - 1;
+                if (actualIdx < 0 || actualIdx >= validStaffRoles.length)
+                    return;
+
+                return actualIdx;
             });
 
             // Case 0: Nothing
-            if (!result) {
+            if (result === null) {
                 this.dispose(ctx, botMsg).then();
                 return;
             }

@@ -235,9 +235,9 @@ export namespace AdvancedCollector {
         return new Promise(async (resolve) => {
             const msgCollector = new MessageCollector(options.targetChannel, {
                 time: options.duration,
-                max: 1,
                 filter: (m: Message) => m.author.id === options.targetAuthor.id
             });
+
             const interactionCollector = botMsg.createMessageComponentCollector({
                 filter: i => i.user.id === options.targetAuthor.id,
                 max: 1,
@@ -245,7 +245,7 @@ export namespace AdvancedCollector {
             });
 
             msgCollector.on("collect", async (c: Message) => {
-                if (options.deleteResponseMessage)
+                if (options.deleteResponseMessage && !c.deleted)
                     await GlobalFgrUtilities.tryExecuteAsync(() => c.delete());
 
                 if (cancelFlag && cancelFlag.toLowerCase() === c.content.toLowerCase()) {
@@ -255,12 +255,14 @@ export namespace AdvancedCollector {
 
                 const info: T | null = await new Promise(async res => {
                     const attempt = await func(c);
-                    return res(attempt ? attempt : null);
+                    return res(attempt ?? null);
                 });
 
-                if (!info) return;
-                interactionCollector.stop();
+                if (info === null) return;
+                console.log(info);
                 resolve(info);
+                interactionCollector.stop();
+                msgCollector.stop();
             });
 
             interactionCollector.on("collect", async i => {
@@ -621,15 +623,13 @@ export namespace AdvancedCollector {
         const rows: MessageActionRow[] = [];
         let rowsUsed = 0;
 
-        const selectMenus = options
-            .filter(x => x.type === "SELECT_MENU") as MessageSelectMenu[];
+        const selectMenus = options.filter(x => x.type === "SELECT_MENU") as MessageSelectMenu[];
         for (let i = 0; i < Math.min(selectMenus.length, MAX_ACTION_ROWS); i++) {
             rows.push(new MessageActionRow().addComponents(selectMenus[i]));
             rowsUsed++;
         }
 
-        const buttons = options
-            .filter(x => x.type === "BUTTON") as MessageButton[];
+        const buttons = options.filter(x => x.type === "BUTTON") as MessageButton[];
         for (let i = 0; i < Math.min(buttons.length, 5 * (MAX_ACTION_ROWS - rowsUsed)); i += 5) {
             const actionRow = new MessageActionRow();
             for (let j = 0; j < 5 && i + j < buttons.length; j++)

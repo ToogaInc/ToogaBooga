@@ -35,7 +35,7 @@ export const DB_CONFIG_BUTTONS: MessageButton[] = [
     new MessageButton()
         .setLabel("Reset")
         .setEmoji(Emojis.WASTEBIN_EMOJI)
-        .setCustomId("down")
+        .setCustomId("reset")
         .setStyle("PRIMARY"),
     new MessageButton()
         .setLabel("Quit")
@@ -178,9 +178,8 @@ export async function entryFunction(ctx: ICommandContext, botMsg: Message | null
             mOpt
         );
 
-        if (!queryResult) {
+        if (!queryResult)
             return null;
-        }
 
         newBotMsg = botMsg;
         selectedSection = queryResult;
@@ -190,9 +189,9 @@ export async function entryFunction(ctx: ICommandContext, botMsg: Message | null
             ctx.guildDoc!,
             ctx.member!,
             ctx.channel as TextChannel,
-            "Please select the appropriate section.",
-            true
+            "Please select the appropriate section."
         );
+
         if (!queryResult || !queryResult[1])
             return null;
         [selectedSection, newBotMsg] = queryResult;

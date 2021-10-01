@@ -479,7 +479,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             // Case 3: Button
             switch (result.customId) {
                 case "back": {
-                    this.doBaseChannels(ctx, section, botMsg).then();
+                    this.mainMenu(ctx, section, botMsg).then();
                     return;
                 }
                 case "up": {

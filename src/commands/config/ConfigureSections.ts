@@ -197,7 +197,7 @@ export class ConfigureSections extends BaseCommand {
                 .setEmoji(Emojis.X_EMOJI)
         ];
 
-        const remainingSecs = ctx.guildDoc!.guildSections.length - ConfigureSections.MAXIMUM_SECTIONS_ALLOWED;
+        const remainingSecs = ConfigureSections.MAXIMUM_SECTIONS_ALLOWED - ctx.guildDoc!.guildSections.length;
         if (remainingSecs > 0) {
             embed.addField(
                 "Create Section",

@@ -925,6 +925,11 @@ export class ConfigureVerification extends BaseCommand {
                 );
             }
 
+            await botMsg.edit({
+                embeds: [embed],
+                components: AdvancedCollector.getActionRowsFromComponents(buttons)
+            });
+
             const selectedChoice = await AdvancedCollector.startDoubleCollector<number>({
                 acknowledgeImmediately: true,
                 cancelFlag: null,
@@ -1262,6 +1267,11 @@ export class ConfigureVerification extends BaseCommand {
                     StringUtil.codifyString(`Minimum Needed: ${numOfThis}`)
                 );
             }
+
+            await botMsg.edit({
+                embeds: [embed],
+                components: AdvancedCollector.getActionRowsFromComponents(buttons)
+            });
 
             const selectedChoice = await AdvancedCollector.startDoubleCollector<number>({
                 acknowledgeImmediately: true,

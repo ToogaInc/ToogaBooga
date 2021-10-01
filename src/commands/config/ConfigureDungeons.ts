@@ -2064,7 +2064,7 @@ export class ConfigureDungeons extends BaseCommand {
                     .toString()
             ).addField(
                 "Current Value",
-                validationInfo.currentValue ?? "*Not Set*"
+                !validationInfo.currentValue ? "*Not Set*" : validationInfo.currentValue
             );
 
         await botMsg.edit({

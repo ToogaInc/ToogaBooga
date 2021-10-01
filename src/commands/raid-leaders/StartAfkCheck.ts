@@ -98,7 +98,6 @@ export class StartAfkCheck extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const location = ctx.interaction.options.getString("location");
-        await ctx.interaction.deferReply();
         const allSections = MongoManager.getAllSections(ctx.guildDoc!);
 
         // Step 1: Find all sections that the leader can lead in.
