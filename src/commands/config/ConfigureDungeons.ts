@@ -417,7 +417,7 @@ export class ConfigureDungeons extends BaseCommand {
                         ? `${Emojis.GREEN_CHECK_EMOJI} `
                         : "";
                     const customTxt = elem.isBuiltIn ? "" : "(Custom)";
-                    return `\`[${i + 1}]\` ${emojiToUse}${elem.dungeonName}) ${customTxt}`;
+                    return `\`[${i + 1}]\` ${emojiToUse}${elem.dungeonName} ${customTxt}\n`;
                 }
             );
 
@@ -479,7 +479,7 @@ export class ConfigureDungeons extends BaseCommand {
                 if (res.length === 0)
                     continue;
 
-                for (const n of res) {
+                for (const n of res.sort((a, b) => b - a)) {
                     const tempIdx = n - 1;
                     if (tempIdx < 0 || tempIdx >= allPossibleDungeons.length)
                         continue;

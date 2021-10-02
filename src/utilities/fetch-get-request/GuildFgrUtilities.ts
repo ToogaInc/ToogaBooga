@@ -195,7 +195,7 @@ export namespace GuildFgrUtilities {
      */
     export function hasCachedChannel(guild: Guild, channelId: string): boolean {
         if (!MiscUtilities.isSnowflake(channelId)) return false;
-        return guild.roles.cache.has(channelId);
+        return guild.channels.cache.has(channelId);
     }
 
     /**

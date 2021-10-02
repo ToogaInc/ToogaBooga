@@ -295,10 +295,8 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
     /** @inheritDoc */
     public async entry(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
         const entryRes = await entryFunction(ctx, botMsg);
-        if (!entryRes) {
-            this.dispose(ctx, botMsg).catch();
+        if (!entryRes)
             return;
-        }
 
         this.mainMenu(ctx, entryRes[0], entryRes[1]).then();
     }

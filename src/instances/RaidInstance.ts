@@ -786,7 +786,7 @@ export class RaidInstance {
                     ]
                 });
 
-                return resolve(logChannel as TextChannel);
+                return resolve(logChan as TextChannel);
             })
         ]);
 
@@ -1039,15 +1039,6 @@ export class RaidInstance {
 
         // If this method was called during the AFK check, simply abort the AFK check.
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
-            const abortAfkEmbed = new MessageEmbed()
-                .setAuthor(`${leaderName} has aborted the ${this._dungeon.dungeonName} AFK check.`,
-                    memberThatEnded.user.displayAvatarURL())
-                .setDescription("There was probably not enough keys or raiders. Check back at a later time.")
-                .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} AFK Check Aborted.`)
-                .setTimestamp()
-                .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
-            await this._afkCheckMsg.edit({embeds: [abortAfkEmbed]}).catch();
-
             this.logEvent(
                 resolvedMember
                     ? `${resolvedMember.displayName} (${resolvedMember.id}) has aborted the AFK check.`
@@ -1058,15 +1049,6 @@ export class RaidInstance {
             return;
         }
 
-        // Otherwise, we treat it as if the raid is officially over.
-        const endAfkEmbed = new MessageEmbed()
-            .setAuthor(`${this._leaderName} has ended the ${this._dungeon.dungeonName} run.`,
-                memberThatEnded.user.displayAvatarURL())
-            .setDescription("The raid is now over. Thank you all for attending.")
-            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Run Ended.`)
-            .setTimestamp()
-            .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors));
-        await this._afkCheckMsg.edit({embeds: [endAfkEmbed]}).catch();
         this.logEvent(
             resolvedMember
                 ? `${resolvedMember.displayName} (${resolvedMember.id}) has ended the raid.`
@@ -1262,7 +1244,8 @@ export class RaidInstance {
             $push: {
                 "activeRaids.$.earlyLocationReactions": {
                     userId: member.id,
-                    reactCodeName: prop
+                    reactCodeName: reactionCodeName,
+                    modifiers: modifiers
                 }
             }
         });
@@ -1395,9 +1378,7 @@ export class RaidInstance {
     public getRaidInfoObject(): IRaidInfo | null {
         if (!this._afkCheckMsg
             || !this._controlPanelMsg
-            || !this._raidVc
-            || !this._afkCheckInterval
-            || !this._controlPanelInterval)
+            || !this._raidVc)
             return null;
 
         const raidObj: IRaidInfo = {
@@ -1489,22 +1470,22 @@ export class RaidInstance {
      */
     public async cleanUpRaid(): Promise<void> {
         this.stopAllIntervalsAndCollectors();
+        // Step 1: Remove from ActiveRaids collection
+        RaidInstance.ActiveRaids.delete(this._afkCheckMsg!.id);
+
         await Promise.all([
-            // Step 0: Remove the raid object. We don't need it anymore.
+            // Step 2: Remove the raid object. We don't need it anymore.
             // Also stop all collectors.
             this.removeRaidFromDatabase(),
-            // Step 1: Remove the control panel message.
+            // Step 3: Remove the control panel message.
             this._controlPanelMsg?.delete().catch(),
-            // Step 2: Unpin the AFK check message.
-            this._afkCheckMsg?.unpin().catch(),
-            // Step 3: Delete the raid VC
+            // Step 4: Unpin the AFK check message.
+            this._afkCheckMsg?.delete().catch(),
+            // Step 5: Delete the raid VC
             this._raidVc?.delete().catch(),
-            // Step 4: Delete the logging channel
+            // Step 6: Delete the logging channel
             this._logChan?.delete().catch()
         ]);
-
-        // Step 5: Remove from ActiveRaids collection
-        RaidInstance.ActiveRaids.delete(this._afkCheckMsg!.id);
     }
 
     /**
@@ -1536,6 +1517,7 @@ export class RaidInstance {
             guild,
             section.channels.raids.controlPanelChannelId
         )!;
+
         const acCategory = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
             section.channels.raids.afkCheckChannelId
@@ -2101,15 +2083,19 @@ export class RaidInstance {
 
         this._afkCheckButtonCollector = this._afkCheckMsg.createMessageComponentCollector({
             filter: i => !i.user.bot && this._allEssentialOptions.has(i.customId),
-            time: this._raidSection.otherMajorConfig.afkCheckProperties.afkCheckTimeout * 60 * 1000
+            time: this._raidSection.otherMajorConfig.afkCheckProperties.afkCheckTimeout
         });
 
         // Remember that interactions are all going to be in _allEssentialOptions
         this._afkCheckButtonCollector.on("collect", async i => {
-            await i.deferUpdate();
             const memberThatResponded = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
-            if (!memberThatResponded)
+            if (!memberThatResponded) {
+                await i.reply({
+                    content: "An unknown error occurred.",
+                    ephemeral: true
+                });
                 return;
+            }
 
             // Does the VC even exist?
             if (!this._raidVc || this._raidVc.deleted) {
@@ -2162,7 +2148,7 @@ export class RaidInstance {
 
             const res = await RaidInstance.confirmReaction(i, this);
             if (!res) {
-                await i.editReply({
+                await i.reply({
                     content: "You either did not respond to a question that was asked, or chose to cancel this"
                         + " process. Either way, the preference that you selected has **not** been logged with the"
                         + " raid leader.",
@@ -2173,7 +2159,7 @@ export class RaidInstance {
 
             // Make sure we can actually give early location. It might have changed.
             if (!this.stillNeedEssentialReact(mapKey)) {
-                await i.editReply({
+                await i.reply({
                     content: reactInfo.type === "EARLY_LOCATION"
                         ? "Although you reacted with this button, you are not able to receive early location"
                         + " because someone else beat you to the last slot."
@@ -2597,11 +2583,13 @@ export class RaidInstance {
         const mapKey = interaction.customId;
         const reactInfo = raidInstance._allEssentialOptions.get(mapKey)!;
         const itemDisplay = RaidInstance.getItemDisplay(reactInfo);
+        const uniqueIdentifier = StringUtil.generateRandomString(20);
 
         if (reactInfo.type === "KEY") {
             const selectMenu = new MessageSelectMenu()
                 .setMinValues(0)
-                .setMaxValues(4);
+                .setMaxValues(4)
+                .setCustomId(`${uniqueIdentifier}_select`);
             for (const modifier of RaidInstance.DUNGEON_MODIFIERS) {
                 selectMenu.addOptions({
                     description: modifier.description,
@@ -2610,7 +2598,6 @@ export class RaidInstance {
                 });
             }
 
-            const uniqueIdentifier = StringUtil.generateRandomString(20);
             const noModifierId = `${uniqueIdentifier}_no_modifier`;
             const cancelModId = `${uniqueIdentifier}_cancel_mods`;
             const cancelButton = new MessageButton()

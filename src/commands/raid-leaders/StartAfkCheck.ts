@@ -97,6 +97,7 @@ export class StartAfkCheck extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.deferReply();
         const location = ctx.interaction.options.getString("location");
         const allSections = MongoManager.getAllSections(ctx.guildDoc!);
 
@@ -120,7 +121,7 @@ export class StartAfkCheck extends BaseCommand {
                 if (DungeonUtilities.isCustomDungeon(id)) {
                     const customDgn = ctx.guildDoc!.properties.customDungeons.find(x => x.codeName === id);
                     if (customDgn) {
-                        if (!StartAfkCheck.hasPermsToRaid(customDgn?.roleRequirement, ctx.member!, allRolePerms)) {
+                        if (!StartAfkCheck.hasPermsToRaid(customDgn.roleRequirement, ctx.member!, allRolePerms)) {
                             return;
                         }
 
@@ -131,15 +132,16 @@ export class StartAfkCheck extends BaseCommand {
                 }
 
                 const dgn = DUNGEON_DATA.find(x => x.codeName === id);
-                if (dgn) {
-                    const overrideInfo = ctx.guildDoc!.properties.dungeonOverride.find(x => x.codeName === id);
-                    if (!StartAfkCheck.hasPermsToRaid(overrideInfo?.roleRequirement, ctx.member!, allRolePerms)) {
-                        return;
-                    }
+                if (!dgn)
+                    return;
 
-                    dungeons.push(dgn);
+                const overrideInfo = ctx.guildDoc!.properties.dungeonOverride.find(x => x.codeName === id);
+                if (!StartAfkCheck.hasPermsToRaid(overrideInfo?.roleRequirement, ctx.member!, allRolePerms)) {
                     return;
                 }
+
+                dungeons.push(dgn);
+                return;
             });
 
             if (dungeons.length === 0)

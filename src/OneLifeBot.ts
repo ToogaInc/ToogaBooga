@@ -91,7 +91,9 @@ export class OneLifeBot {
                 // Need direct messages for modmail
                 "DIRECT_MESSAGES",
                 // Need guild emojis for custom emojis
-                "GUILD_EMOJIS_AND_STICKERS"
+                "GUILD_EMOJIS_AND_STICKERS",
+                // For checking voice channel changes
+                "GUILD_VOICE_STATES"
             ]
         });
 

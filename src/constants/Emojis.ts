@@ -62,38 +62,38 @@ export namespace Emojis {
     export const EYES_EMOJI: string = "👀";
 
     // specific classes
-    export const ROGUE: string = "";
-    export const ARCHER: string = "";
-    export const WIZARD: string = "";
-    export const PRIEST: string = "";
-    export const WARRIOR: string = "";
-    export const KNIGHT: string = "";
-    export const PALADIN: string = "";
-    export const ASSASSIN: string = "";
-    export const NECROMANCER: string = "";
-    export const HUNTRESS: string = "";
-    export const MYSTIC: string = "";
-    export const TRICKSTER: string = "";
-    export const SORCERER: string = "";
-    export const NINJA: string = "";
-    export const SAMURAI: string = "";
-    export const BARD: string = "";
+    export const ROGUE: string = "585616162189082626";
+    export const ARCHER: string = "585616163149709312";
+    export const WIZARD: string = "585616163158097950";
+    export const PRIEST: string = "585616162411249691";
+    export const WARRIOR: string = "585616162407186433";
+    export const KNIGHT: string = "585616162189213696";
+    export const PALADIN: string = "585616162163916800";
+    export const ASSASSIN: string = "585616162155528192";
+    export const NECROMANCER: string = "585616162151202836";
+    export const HUNTRESS: string = "585616163262824448";
+    export const MYSTIC: string = "585616161773977621";
+    export const TRICKSTER: string = "585616162415575060";
+    export const SORCERER: string = "585616162163785738";
+    export const NINJA: string = "585616162151202817";
+    export const SAMURAI: string = "585616163078275102";
+    export const BARD: string = "714015181679624203";
 
     // status effects
-    export const PARALYZE: string = "";
-    export const STUN: string = "";
-    export const SLOW: string = "";
-    export const DAZE: string = "";
-    export const ARMOR_BREAK: string = "";
+    export const PARALYZE: string = "678792068906352642";
+    export const STUN: string = "678792068889444397";
+    export const SLOW: string = "678792068965072906";
+    export const DAZE: string = "678792068948295686";
+    export const ARMOR_BREAK: string = "678792068889444397";
 
     // util/generic
-    export const RUSHING_CLASS: string = "";
+    export const RUSHING_CLASS: string = "585616161878835220";
 
     // items
-    export const MSEAL: string = "";
-    export const SCHOLAR_SEAL: string = "";
-    export const BRAIN_PRISM: string = "";
+    export const MSEAL: string = "893939303950983268";
+    export const SCHOLAR_SEAL: string = "678792068935450634";
+    export const BRAIN_PRISM: string = "708927848076935218";
 
     // otherButtons
-    export const NITRO_EMOJI: string = "";
+    export const NITRO_EMOJI: string = "706246225200152656";
 }

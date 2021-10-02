@@ -249,10 +249,9 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
     /** @inheritDoc */
     public async entry(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
         const entryRes = await entryFunction(ctx, botMsg);
-        if (!entryRes) {
-            this.dispose(ctx, botMsg).catch();
+
+        if (!entryRes)
             return;
-        }
 
         this.mainMenu(ctx, entryRes[0], entryRes[1]).then();
     }
@@ -669,6 +668,8 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
+        if (botMsg?.deleted)
+            return;
         await botMsg?.delete().catch();
     }
 
@@ -758,7 +759,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             // Case 3: Button
             switch (result.customId) {
                 case "back": {
-                    this.doBaseChannels(ctx, section, botMsg).then();
+                    this.mainMenu(ctx, section, botMsg).then();
                     return;
                 }
                 case "up": {

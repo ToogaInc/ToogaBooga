@@ -1,11 +1,12 @@
 import {IMappedAfkCheckReactions} from "../definitions";
+import {Emojis} from "./Emojis";
 
 export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
     NITRO: {
         type: "EARLY_LOCATION",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.NITRO_EMOJI
         },
         name: "Nitro"
     },
@@ -14,7 +15,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.ROGUE
         },
         name: "Rogue"
     },
@@ -22,7 +23,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.ARCHER
         },
         name: "Archer"
     },
@@ -30,7 +31,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.WIZARD
         },
         name: "Wizard"
     },
@@ -38,7 +39,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.PRIEST
         },
         name: "Priest"
     },
@@ -46,7 +47,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.WARRIOR
         },
         name: "Warrior"
     },
@@ -54,7 +55,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.KNIGHT
         },
         name: "Knight"
     },
@@ -62,7 +63,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.PALADIN
         },
         name: "Paladin"
     },
@@ -70,7 +71,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.ASSASSIN
         },
         name: "Assassin"
     },
@@ -78,7 +79,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.NECROMANCER
         },
         name: "Necromancer"
     },
@@ -86,7 +87,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.HUNTRESS
         },
         name: "Huntress"
     },
@@ -94,7 +95,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.MYSTIC
         },
         name: "Mystic"
     },
@@ -102,7 +103,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.TRICKSTER
         },
         name: "Trickster"
     },
@@ -110,7 +111,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.SORCERER
         },
         name: "Sorcerer"
     },
@@ -118,7 +119,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.NINJA
         },
         name: "Ninja"
     },
@@ -126,7 +127,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.SAMURAI
         },
         name: "Samurai"
     },
@@ -134,7 +135,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.BARD
         },
         name: "Bard"
     },
@@ -143,7 +144,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.PARALYZE
         },
         name: "Paralyze"
     },
@@ -151,7 +152,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.STUN
         },
         name: "Stun"
     },
@@ -159,7 +160,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.SLOW
         },
         name: "Slow"
     },
@@ -167,7 +168,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.DAZE
         },
         name: "Daze"
     },
@@ -175,7 +176,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.ARMOR_BREAK
         },
         name: "Armor Break"
     },
@@ -183,7 +184,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.RUSHING_CLASS
         },
         name: "Rushing Class"
     },
@@ -192,7 +193,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "ITEM",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.MSEAL
         },
         name: "Marble Seal"
     },
@@ -200,7 +201,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "ITEM",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.SCHOLAR_SEAL
         },
         name: "Scholar Seal"
     },
@@ -208,7 +209,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "ITEM",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: Emojis.BRAIN_PRISM
         },
         name: "Brain of the Golem"
     },
@@ -218,7 +219,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916734083075"
         },
         name: "Snake Pit Key"
     },
@@ -226,7 +227,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916805386270"
         },
         name: "Magic Wood Key"
     },
@@ -234,7 +235,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561249834292477967"
         },
         name: "Sprite World Key"
     },
@@ -242,7 +243,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "745810341312593950"
         },
         name: "Ancient Ruins Key"
     },
@@ -250,7 +251,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916989935656"
         },
         name: "Candyland Hunting Ground Key"
     },
@@ -258,7 +259,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916968964129"
         },
         name: "Cave of a Thousand Treasures Key"
     },
@@ -266,7 +267,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917090729999"
         },
         name: "Undead Lair Key"
     },
@@ -274,7 +275,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917090729999"
         },
         name: "Heroic Undead Lair Key"
     },
@@ -282,7 +283,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916624900097"
         },
         name: "Abyss of Demons Key"
     },
@@ -290,7 +291,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916624900097"
         },
         name: "Heroic Abyss of Demons Key"
     },
@@ -298,7 +299,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917120090142"
         },
         name: "Manor of the Immortals Key"
     },
@@ -306,7 +307,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917082079252"
         },
         name: "Puppet Master's Theatre Key"
     },
@@ -314,7 +315,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917145124874"
         },
         name: "Toxic Sewers Key"
     },
@@ -322,7 +323,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917052981278"
         },
         name: "Haunted Cemetery Key"
     },
@@ -330,7 +331,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917010776065"
         },
         name: "Mad Lab Key"
     },
@@ -338,7 +339,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917115633665"
         },
         name: "Parasite Chambers Key"
     },
@@ -346,7 +347,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917086273536"
         },
         name: "Davy Jones' Locker Key"
     },
@@ -354,7 +355,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917027684367"
         },
         name: "Mountain Temple Key"
     },
@@ -362,7 +363,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916931084320"
         },
         name: "Lair of Draconis Key"
     },
@@ -370,7 +371,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917052850176"
         },
         name: "Deadwater Docks Key"
     },
@@ -378,7 +379,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917115633667"
         },
         name: "Woodland Labyrinth Key"
     },
@@ -386,7 +387,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917052719104"
         },
         name: "Crawling Depths Key"
     },
@@ -394,7 +395,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917048655882"
         },
         name: "Ocean Trench Key"
     },
@@ -402,7 +403,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916620967949"
         },
         name: "Ice Cave Key"
     },
@@ -410,7 +411,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916822163487"
         },
         name: "Tomb of the Ancients Key"
     },
@@ -418,7 +419,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917191131152"
         },
         name: "Lair of Shaitans Key"
     },
@@ -426,7 +427,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917082079252"
         },
         name: "Puppet Masters Encore Key"
     },
@@ -434,7 +435,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561251664388947968"
         },
         name: "Cnidarian Reef Key"
     },
@@ -442,7 +443,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917208039434"
         },
         name: "Secluded Thicket Key"
     },
@@ -450,7 +451,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "893941853777457193"
         },
         name: "High Tech Terror Key"
     },
@@ -458,7 +459,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916570505219"
         },
         name: "Battle for the Nexus Key"
     },
@@ -466,7 +467,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248916830552067"
         },
         name: "Belladonnas Garden Key"
     },
@@ -474,7 +475,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917082079272"
         },
         name: "Ice Tomb Key"
     },
@@ -482,7 +483,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "561248917010776065"
         },
         name: "Mad God Mayhem Key"
     },
@@ -490,7 +491,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "880490109106020352"
         },
         name: "Shatters Key"
     },
@@ -498,15 +499,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "711442921211035701"
         },
-        name: "Maching Key"
+        name: "Machine Key"
     },
     NEST_KEY: {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "585617056192266240"
         },
         name: "Nest Key"
     },
@@ -514,7 +515,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "576610460690939914"
         },
         name: "Cursed Library Key"
     },
@@ -522,7 +523,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "585613660878274571"
         },
         name: "Lost Halls Key"
     },
@@ -530,7 +531,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "714012990873272321"
         },
         name: "Vial of Pure Darkness"
     },
@@ -538,7 +539,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "609078341529632778"
         },
         name: "Fungal Cavern Key"
     },
@@ -546,7 +547,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "711443611429896245"
         },
         name: "Miscellaneous Dungeon Key"
     },
@@ -554,7 +555,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "NM_KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "708191799750950962"
         },
         name: "Wine Cellar Incantation"
     },
@@ -562,7 +563,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "NM_KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "708191783674314814"
         },
         name: "Shield Rune"
     },
@@ -570,7 +571,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "NM_KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "708191783405879378"
         },
         name: "Sword Rune"
     },
@@ -578,41 +579,8 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "NM_KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: ""
+            identifier: "708191783825178674"
         },
         name: "Helm Rune"
-    },
-    // Shatters specific stuff
-    SHATTERS_SWITCH_1: {
-        type: "UTILITY",
-        emojiInfo: {
-            isCustom: true,
-            identifier: ""
-        },
-        name: "Shatters Switch #1"
-    },
-    SHATTERS_SWITCH_2: {
-        type: "UTILITY",
-        emojiInfo: {
-            isCustom: true,
-            identifier: ""
-        },
-        name: "Shatters Switch #2"
-    },
-    SHATTERS_SWITCH_SEC: {
-        type: "UTILITY",
-        emojiInfo: {
-            isCustom: true,
-            identifier: ""
-        },
-        name: "Shatters Secret Switch"
-    },
-    SHATTERS_DRAG: {
-        type: "UTILITY",
-        emojiInfo: {
-            isCustom: true,
-            identifier: ""
-        },
-        name: "Shatters Drag"
     }
 };
