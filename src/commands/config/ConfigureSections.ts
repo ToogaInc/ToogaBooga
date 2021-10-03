@@ -173,8 +173,8 @@ export class ConfigureSections extends BaseCommand {
 
         const descSb = new StringBuilder();
         if (sectionDisplay.length > 0) {
-            descSb.append(`There are currently **${sectionDisplay.length}** sections. They are listed below:`)
-                .append(StringUtil.codifyString(sectionDisplay))
+            descSb.append(`There are currently **${ctx.guildDoc!.guildSections.length}** section(s). They are listed`)
+                .append(` below: ${StringUtil.codifyString(sectionDisplay)}`)
                 .appendLine(2);
         }
 
@@ -447,7 +447,7 @@ export class ConfigureSections extends BaseCommand {
                 this.deleteSection(ctx, botMsg, section).then();
                 break;
             }
-            case "exit": {
+            case "quit": {
                 this.dispose(ctx, botMsg).then();
                 return;
             }
@@ -608,6 +608,7 @@ export class ConfigureSections extends BaseCommand {
         let selectedIdx = 0;
 
         mainLoop: while (true) {
+            saveButton.setDisabled(!newSectionInfo[0] || !newSectionInfo[1]);
             baseEmbed.fields = [];
             for (let i = 0; i < newSectionInfo.length; i++) {
                 baseEmbed.addField(
@@ -628,14 +629,12 @@ export class ConfigureSections extends BaseCommand {
             // String = Must be first option
             if (typeof selected === "string" && selectedIdx === 0) {
                 newSectionInfo[selectedIdx] = selected;
-                saveButton.setDisabled(!newSectionInfo[0] || !newSectionInfo[1]);
                 continue;
             }
 
             // Role = Must be second option
             if (selected instanceof Role && selectedIdx === 1) {
                 newSectionInfo[selectedIdx] = selected;
-                saveButton.setDisabled(!newSectionInfo[0] || !newSectionInfo[1]);
                 continue;
             }
 
@@ -674,9 +673,10 @@ export class ConfigureSections extends BaseCommand {
                         break mainLoop;
                     }
                 }
+
+                continue;
             }
 
-            // Otherwise, cancel this
             this.dispose(ctx, botMsg).catch();
             return;
         }
@@ -705,9 +705,14 @@ export class ConfigureSections extends BaseCommand {
             return;
         }
 
+        const sectionObj = MongoManager.getDefaultSectionObj(name, role.id);
+        sectionObj.channels.raids.afkCheckChannelId = afk?.id ?? "";
+        sectionObj.channels.raids.controlPanelChannelId = control?.id ?? "";
+        sectionObj.channels.verification.verificationChannelId = verify?.id ?? "";
+
         ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
             $push: {
-                guildSections: MongoManager.getDefaultSectionObj(name, role.id)
+                guildSections: sectionObj
             }
         });
 

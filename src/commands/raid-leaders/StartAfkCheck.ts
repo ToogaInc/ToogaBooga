@@ -234,6 +234,7 @@ export class StartAfkCheck extends BaseCommand {
                 return resolve(null);
             }
 
+            await res.deferUpdate();
             return resolve(availableSections.find(x => x.section.uniqueIdentifier === res.values[0])!);
         });
 

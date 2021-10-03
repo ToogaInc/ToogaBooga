@@ -632,7 +632,8 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     ctx,
                     section,
                     botMsg,
-                    ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Raiding),
+                    ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Raiding
+                    && section.isMainSection ? true : !!x.sectionPath),
                     "Raids"
                 ).then();
                 break;
@@ -643,7 +644,8 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     section,
                     botMsg,
                     ConfigureChannels.CHANNEL_MONGO
-                        .filter(x => x.channelType === ChannelCategoryType.Verification),
+                        .filter(x => x.channelType === ChannelCategoryType.Verification
+                        && section.isMainSection ? true : !!x.sectionPath),
                     "Verification"
                 ).then();
                 break;
