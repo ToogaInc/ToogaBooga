@@ -5,21 +5,6 @@ import {IPermAllowDeny} from "../definitions";
 import {DefinedRole} from "../definitions/Types";
 
 export namespace GeneralConstants {
-    export const ROLE_ORDER: readonly DefinedRole[] = Object.freeze([
-        GeneralConstants.MODERATOR_ROLE,
-        GeneralConstants.HEAD_LEADER_ROLE,
-        GeneralConstants.OFFICER_ROLE,
-        GeneralConstants.VETERAN_LEADER_ROLE,
-        GeneralConstants.LEADER_ROLE,
-        GeneralConstants.SECURITY_ROLE,
-        GeneralConstants.ALMOST_LEADER_ROLE,
-        GeneralConstants.HELPER_ROLE,
-        GeneralConstants.TEAM_ROLE,
-        GeneralConstants.MEMBER_ROLE,
-        GeneralConstants.SUSPENDED_ROLE,
-        GeneralConstants.EVERYONE_ROLE
-    ]);
-
     export const ZERO_WIDTH_SPACE: string = "\u200b";
 
     export const NUMBER_OF_STATS: number = 8;
@@ -165,7 +150,7 @@ export namespace GeneralConstants {
         {
             id: EVERYONE_ROLE,
             allow: [],
-            deny: ["VIEW_CHANNEL", "SPEAK", "STREAM", "CONNECT"]
+            deny: ["VIEW_CHANNEL", "SPEAK", "STREAM"]
         },
         {
             id: MEMBER_ROLE,
@@ -228,4 +213,19 @@ export namespace GeneralConstants {
     ]);
 
     export const GITHUB_URL: string = "https://github.com/ewang2002/OneLifeBot/";
+
+    export const ROLE_ORDER: readonly DefinedRole[] = Object.freeze([
+        MODERATOR_ROLE,
+        HEAD_LEADER_ROLE,
+        OFFICER_ROLE,
+        VETERAN_LEADER_ROLE,
+        LEADER_ROLE,
+        SECURITY_ROLE,
+        ALMOST_LEADER_ROLE,
+        HELPER_ROLE,
+        TEAM_ROLE,
+        MEMBER_ROLE,
+        SUSPENDED_ROLE,
+        EVERYONE_ROLE
+    ]);
 }

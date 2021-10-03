@@ -29,6 +29,7 @@ import {FilterQuery, UpdateQuery} from "mongodb";
 export class ConfigureAfkCheck extends BaseCommand {
     public static readonly MAX_PERMS_SET: number = 15;
     private static readonly VC_PERMISSIONS: [string, PermissionResolvable][] = [
+        ["View Channel", "VIEW_CHANNEL"],
         ["Connect", "CONNECT"],
         ["Speak", "SPEAK"],
         ["Share Screen (Stream)", "STREAM"],
@@ -287,7 +288,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                 );
 
             await botMsg.edit({
-                embeds: [],
+                embeds: [embed],
                 components: AdvancedCollector.getActionRowsFromComponents(buttons)
             });
 
@@ -538,14 +539,20 @@ export class ConfigureAfkCheck extends BaseCommand {
                                         + "Please type the duration now. Supported time units are minutes (m) or hours"
                                         + " (h). For example, to specify 1 hour and 10 minutes, use \"1h10m\" as the"
                                         + " the duration. If you want to specify 30 minutes, use \"30m\" as the"
-                                        + " duration. If you don't want to  set this right now, press the **Back**"
+                                        + " duration. If you don't want to set this right now, press the **Back**"
                                         + " button."
                                     )
                             ]
                         },
                         m => {
                             const timeStr = TimeUtilities.parseTimeUnit(m.content);
-                            return timeStr?.ms ?? null;
+                            if (!timeStr)
+                                return null;
+
+                            if (timeStr.ms > 7.2e+6 || timeStr.ms < 300000)
+                                return null;
+
+                            return timeStr.ms;
                         }
                     );
 
@@ -890,6 +897,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         key: specifiedChoice.id,
                         value: {allow: [], deny: []}
                     });
+                    currentRoleIdx = newPerms.length - 1;
                     break;
                 }
                 case "remove_role": {
@@ -914,7 +922,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                 }
                 case "allow_perm": {
                     const denyIdx = newPerms[currentRoleIdx].value.deny
-                        .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx]);
+                        .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                     if (denyIdx !== -1)
                         newPerms[currentRoleIdx].value.deny.splice(denyIdx, 1);
 
@@ -923,12 +931,12 @@ export class ConfigureAfkCheck extends BaseCommand {
                 }
                 case "null_perm": {
                     const denyIdx = newPerms[currentRoleIdx].value.deny
-                        .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx]);
+                        .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                     if (denyIdx !== -1)
                         newPerms[currentRoleIdx].value.deny.splice(denyIdx, 1);
                     else {
                         const allowIdx = newPerms[currentRoleIdx].value.allow
-                            .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx]);
+                            .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                         if (allowIdx !== -1)
                             newPerms[currentRoleIdx].value.allow.splice(allowIdx, 1);
                     }
@@ -936,7 +944,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                 }
                 case "deny_perm": {
                     const allowIdx = newPerms[currentRoleIdx].value.allow
-                        .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx]);
+                        .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                     if (allowIdx !== -1)
                         newPerms[currentRoleIdx].value.allow.splice(allowIdx, 1);
 
@@ -947,7 +955,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                     return {value: oldPerms, status: TimedStatus.SUCCESS};
                 }
                 case "quit": {
-                    return {value: null, status: TimedStatus.CANCELED};
+                    return {value: null, status: TimedStatus.TIMED_OUT};
                 }
             }
         }

@@ -396,7 +396,7 @@ export namespace MongoManager {
         const tempPerms = GeneralConstants.DEFAULT_AFK_CHECK_PERMISSIONS.slice();
         // Using .slice to make a copy of this array.
         // Get everyone role and don't allow everyone to connect
-        tempPerms[0].deny = ["VIEW_CHANNEL", "SPEAK", "STREAM"];
+        tempPerms[0].deny = ["VIEW_CHANNEL", "SPEAK", "STREAM", "CONNECT"];
         tempPerms.forEach(permObj => {
             prePostAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
         });

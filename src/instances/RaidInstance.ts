@@ -907,7 +907,8 @@ export class RaidInstance {
             this._raidVc.edit({
                 name: `${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`,
                 position: this._raidVc.parent?.children.filter(x => x.type === "GUILD_VOICE")
-                    .map(x => x.position).sort((a, b) => b - a)[0] ?? 0
+                    .map(x => x.position).sort((a, b) => b - a)[0] ?? 0,
+                permissionOverwrites: this.getPermissionsForRaidVc(false)
             })
         ]);
 
@@ -1596,6 +1597,11 @@ export class RaidInstance {
             : this._raidSection.otherMajorConfig.afkCheckProperties.prePostAfkCheckPermissions;
         // Declare all permissions which are declared as a necessary role (all bot-defined roles)
         const permsToReturn: OverwriteResolvable[] = [
+            {
+                id: this._guild!.roles.everyone.id,
+                allow: permsToEvaluate.find(x => x.key === GeneralConstants.EVERYONE_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === GeneralConstants.EVERYONE_ROLE)?.value.deny
+            },
             {
                 id: this._raidSection.roles.verifiedRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.allow,
