@@ -301,7 +301,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                 selectedImages,
                 (i, elem) => {
                     return i === currentIdx
-                        ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${elem.name} [Image](${elem.url}`
+                        ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${elem.name} [Image](${elem.url})`
                         : `${elem.name}`;
                 }
             );
@@ -350,7 +350,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                         ])
                     });
 
-                    const imageRes = await AdvancedCollector.startDoubleCollector<Buffer | Stream>({
+                    const imageRes = await AdvancedCollector.startDoubleCollector<Buffer | Stream | string>({
                         acknowledgeImmediately: true,
                         cancelFlag: null,
                         clearInteractionsAfterComplete: false,
@@ -367,7 +367,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                         }
 
                         const at = m.attachments.first()!;
-                        if (!at.height || typeof at.attachment === "string") {
+                        if (!at.height) {
                             m.delete().catch();
                             return;
                         }
@@ -620,18 +620,19 @@ export class ConfigureReactionsImages extends BaseCommand {
                     time: 60 * 1000
                 });
 
-                const rCollector = botMsg.createReactionCollector({
-                    filter: (r, u) => u.id === ctx.user.id,
-                    time: 60 * 1000
-                });
-
                 iCollector.on("collect", async i => {
+                    await i.deferUpdate();
                     iCollector.stop();
                     rCollector.stop();
                     return resolve({
                         value: null,
                         status: TimedStatus.CANCELED
                     });
+                });
+
+                const rCollector = botMsg.createReactionCollector({
+                    filter: (r, u) => u.id === ctx.user.id,
+                    time: 60 * 1000
                 });
 
                 rCollector.on("collect", async r => {
@@ -647,17 +648,15 @@ export class ConfigureReactionsImages extends BaseCommand {
                 });
 
                 rCollector.on("end", async (c, r) => {
-                    if (r === "time")
+                    if (r === "time") {
                         return resolve({
                             status: TimedStatus.TIMED_OUT,
                             value: null
                         });
+                    }
                 });
             });
         }
-
-        // Asks the user for a name for this reaction
-
 
         let selectedIdx = 0;
         while (true) {
@@ -675,7 +674,8 @@ export class ConfigureReactionsImages extends BaseCommand {
                         sb.append(Emojis.RIGHT_TRIANGLE_EMOJI).append(" ");
                     sb.append(elem.value.name)
                         .append(" ")
-                        .append(GlobalFgrUtilities.getNormalOrCustomEmoji(elem.value) ?? "(No Emoji)");
+                        .append(GlobalFgrUtilities.getNormalOrCustomEmoji(elem.value) ?? "(No Emoji)")
+                        .appendLine();
 
                     return sb.toString();
                 }

@@ -93,7 +93,9 @@ export class OneLifeBot {
                 // Need guild emojis for custom emojis
                 "GUILD_EMOJIS_AND_STICKERS",
                 // For checking voice channel changes
-                "GUILD_VOICE_STATES"
+                "GUILD_VOICE_STATES",
+                // For getting reaction data
+                "GUILD_MESSAGE_REACTIONS"
             ]
         });
 

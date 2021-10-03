@@ -271,6 +271,7 @@ export class ConfigureDungeons extends BaseCommand {
                 }
 
                 ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);
+                this.mainMenu(ctx, botMsg).catch();
                 return;
             }
             case "override_base": {
@@ -384,10 +385,12 @@ export class ConfigureDungeons extends BaseCommand {
      */
     public async allowDenyDungeons(ctx: ICommandContext, botMsg: Message,
                                    section: ISectionInfo): Promise<string[] | null> {
-        const allPossibleDungeons = DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons);
-        const allPossibleDungeonIds = new Set<string>(allPossibleDungeons.map(x => x.codeName));
-        const selectedDungeons = section.otherMajorConfig.afkCheckProperties.allowedDungeons
-            .filter(x => allPossibleDungeonIds.has(x));
+        const allDungeons = DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons).map(x => {
+            return {
+                dgn: x,
+                allow: section.otherMajorConfig.afkCheckProperties.allowedDungeons.some(z => z === x.codeName)
+            };
+        });
 
         const embed = new MessageEmbed()
             .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
@@ -398,9 +401,9 @@ export class ConfigureDungeons extends BaseCommand {
                     .append(` ${Emojis.GREEN_CHECK_EMOJI} next to the dungeon name indicates that raid leaders can`)
                     .append(` start an AFK check for this particular dungeon in this particular section.`)
                     .appendLine(2)
-                    .append("- Type either one number (e.g. `5`) or a series of numbers separated by a space or comma")
-                    .append(" (e.g. `1, 5, 10 12, 19`). If the dungeon corresponding to the number is selected, it")
-                    .append(` will be deselected; otherwise, it will be selected.`)
+                    .append("- Type either one number (e.g. `5`), a series of numbers separated by a space or comma")
+                    .append(" (e.g. `1, 5, 10 12, 19`), or a number range (e.g. 1-10). If the dungeon corresponding to")
+                    .append(" the number is selected, it will be deselected; otherwise, it will be selected.")
                     .appendLine()
                     .append("- Press the **Back** button if you want to go back to the previous page without saving ")
                     .append(" your changes.").appendLine()
@@ -411,13 +414,13 @@ export class ConfigureDungeons extends BaseCommand {
 
         while (true) {
             const fields = ArrayUtilities.arrayToStringFields(
-                allPossibleDungeons,
+                allDungeons,
                 (i, elem) => {
-                    const emojiToUse = selectedDungeons.some(x => elem.codeName === x)
+                    const emojiToUse = elem.allow
                         ? `${Emojis.GREEN_CHECK_EMOJI} `
                         : "";
-                    const customTxt = elem.isBuiltIn ? "" : "(Custom)";
-                    return `\`[${i + 1}]\` ${emojiToUse}${elem.dungeonName} ${customTxt}\n`;
+                    const customTxt = elem.dgn.isBuiltIn ? "" : "(Custom)";
+                    return `\`[${i + 1}]\` ${emojiToUse}${elem.dgn.dungeonName} ${customTxt}\n`;
                 }
             );
 
@@ -469,7 +472,7 @@ export class ConfigureDungeons extends BaseCommand {
                     case "cancel":
                         return null;
                     case "save":
-                        return selectedDungeons;
+                        return allDungeons.filter(x => x.allow).map(x => x.dgn.codeName);
                 }
 
                 continue;
@@ -479,16 +482,12 @@ export class ConfigureDungeons extends BaseCommand {
                 if (res.length === 0)
                     continue;
 
-                for (const n of res.sort((a, b) => b - a)) {
+                for (const n of res) {
                     const tempIdx = n - 1;
-                    if (tempIdx < 0 || tempIdx >= allPossibleDungeons.length)
+                    if (tempIdx < 0 || tempIdx >= allDungeons.length)
                         continue;
 
-                    const selectedIdx = selectedDungeons.findIndex(x => x === allPossibleDungeons[tempIdx].codeName);
-                    if (selectedIdx === -1)
-                        selectedDungeons.push(allPossibleDungeons[tempIdx].codeName);
-                    else
-                        selectedDungeons.splice(tempIdx, 1);
+                    allDungeons[tempIdx].allow = !allDungeons[tempIdx].allow;
                 }
             }
         }
@@ -581,7 +580,6 @@ export class ConfigureDungeons extends BaseCommand {
         };
 
         const embed = new MessageEmbed();
-        const buttons: MessageButton[] = [];
 
         function isCustomDungeon(dgn: ICustomDungeonInfo | IDungeonOverrideInfo): dgn is ICustomDungeonInfo {
             return dgn.hasOwnProperty("dungeonName");
@@ -590,13 +588,12 @@ export class ConfigureDungeons extends BaseCommand {
         const saveButton = new MessageButton()
             .setLabel("Save")
             .setCustomId("save")
-            .setStyle("SUCCESS")
-            .setDisabled(
-                isCustomDungeon(cDungeon)
-                    ? !cDungeon.dungeonName
-                    : true
-            );
-
+            .setStyle("SUCCESS");
+        const backButton = new MessageButton()
+            .setLabel("Go Back")
+            .setCustomId("back")
+            .setStyle("DANGER");
+        const buttons: MessageButton[] = [backButton];
         const reactionsButton = new MessageButton()
             .setLabel("Configure Reactions")
             .setCustomId("config_reactions")
@@ -631,10 +628,6 @@ export class ConfigureDungeons extends BaseCommand {
                 );
 
             buttons.push(
-                new MessageButton()
-                    .setLabel("Back")
-                    .setCustomId("back")
-                    .setStyle("DANGER"),
                 new MessageButton()
                     .setLabel("Dungeon Name")
                     .setCustomId("dungeon_name")
@@ -687,8 +680,13 @@ export class ConfigureDungeons extends BaseCommand {
             saveButton
         );
 
-
         while (true) {
+            saveButton.setDisabled(
+                isCustomDungeon(cDungeon)
+                    ? !cDungeon.dungeonName
+                    : false
+            );
+
             const ptCostStr = (cDungeon.pointCost === 0
                 ? "Point System Not Used"
                 : cDungeon.pointCost).toString();
@@ -747,16 +745,18 @@ export class ConfigureDungeons extends BaseCommand {
                     "Dungeon Category",
                     "Click on the `Dungeon Category` button to set what category this dungeon belongs to. At this time,"
                     + " this dungeon is currently set to the category:"
-                    + (cDungeon.dungeonCategory.length === 0
-                        ? StringUtil.codifyString("Not Set.")
-                        : StringUtil.codifyString(cDungeon.dungeonCategory.length))
+                    + StringUtil.codifyString(cDungeon.dungeonCategory.length === 0
+                        ? "Not Set."
+                        : cDungeon.dungeonCategory)
                 ).addField(
                     "Specify Log Dungeon Type",
                     "Click on the `Specify Log Dungeon` button to set what this dungeon should be logged as. For"
                     + " example, for a dungeon like `Vet Void`, you might want to log this as a normal Void run."
                     + " Keep in mind that you can **only** log this dungeon as itself or one of the built-in"
                     + " dungeons. Currently, this is being logged as:"
-                    + (DUNGEON_DATA.find(x => x.codeName === cDungeon.logFor)?.dungeonName ?? "N/A")
+                    + StringUtil.codifyString(
+                        DUNGEON_DATA.find(x => x.codeName === cDungeon.logFor)?.dungeonName ?? "N/A"
+                    )
                 );
             }
 
@@ -764,23 +764,23 @@ export class ConfigureDungeons extends BaseCommand {
                 "Points to Enter",
                 "Click on the `Points to Enter` button to set how many points a user needs in order to automatically"
                 + " join the VC and gain early location. This is currently set to: "
-                + ptCostStr
+                + StringUtil.codifyString(ptCostStr)
             ).addField(
                 "Number of Nitro Early Location",
                 "Click on the `Nitro Limit` button to set how many people can join the VC and gain early"
                 + " location via the Nitro reaction. This is currently set to: "
-                + nitroEarlyStr
+                + StringUtil.codifyString(nitroEarlyStr)
             ).addField(
                 "VC Limit",
                 "Click on the `VC Limit` button to set the VC limit for the raid voice channel. In particular, this"
                 + " will set the raid VC limit to the specified value *if* the raid is for this dungeon. The current"
                 + " VC limit is: "
-                + vcLimitStr
+                + StringUtil.codifyString(vcLimitStr)
             ).addField(
                 "Role Requirements",
                 "Click on the `Role Requirements` button to add or remove any additional roles needed to run this"
                 + " particular dungeon. For example, for full-skip dungeons, you might require a Fullskip role. The"
-                + ` number of role(s) set is: ${cDungeon.roleRequirement.length}`
+                + ` number of role(s) set is: \`${cDungeon.roleRequirement.length}\``
             );
 
             await botMsg.edit({
@@ -837,7 +837,7 @@ export class ConfigureDungeons extends BaseCommand {
                     });
 
                     this.mainMenu(ctx, botMsg).catch();
-                    break;
+                    return;
                 }
                 case "specify_log_dgn": {
                     if (!isCustomDungeon(cDungeon))
@@ -1274,12 +1274,13 @@ export class ConfigureDungeons extends BaseCommand {
         );
 
         const selectMenus: MessageSelectMenu[] = [];
+        let idx = 0;
         for (const selectOptions of allSelectOptions) {
             selectMenus.push(
                 new MessageSelectMenu()
                     .setMinValues(1)
                     .setMaxValues(1)
-                    .setCustomId("dungeon")
+                    .setCustomId(`dungeon_${++idx}`)
                     .addOptions(selectOptions)
             );
         }
@@ -1393,7 +1394,7 @@ export class ConfigureDungeons extends BaseCommand {
                     const emojiToUse = selected.some(x => x.url === elem.url)
                         ? `${Emojis.GREEN_CHECK_EMOJI} `
                         : "";
-                    return `\`[${i + 1}]\` ${emojiToUse}${elem.name})`;
+                    return `\`[${i + 1}]\` ${emojiToUse}${elem.name}`;
                 }
             );
 
@@ -1594,6 +1595,7 @@ export class ConfigureDungeons extends BaseCommand {
                                 ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${addOptions.embedTitleResolver(selected[i])}`
                                 : addOptions.embedTitleResolver(selected[i])
                         )
+                        .append(" ")
                         .append(addOptions.embedDescResolver(selected[i]))
                         .toString()
                 );
@@ -1717,10 +1719,13 @@ export class ConfigureDungeons extends BaseCommand {
         const currentReactions = cReactions.slice().filter(x => {
             return !!DungeonUtilities.getReaction(ctx.guildDoc!, x.mapKey)!;
         }).filter(y => {
-            const reactionInfo = DungeonUtilities.getReaction(ctx.guildDoc!, y.mapKey)!;
-            return !!(reactionInfo.emojiInfo.isCustom
-                ? GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiInfo.identifier)
-                : reactionInfo.emojiInfo.identifier);
+            // Don't include nitro
+            if (y.mapKey === "NITRO")
+                return false;
+
+            return !!GlobalFgrUtilities.getNormalOrCustomEmoji(
+                DungeonUtilities.getReaction(ctx.guildDoc!, y.mapKey)!
+            );
         });
 
         const saveButton = new MessageButton()
@@ -1814,6 +1819,7 @@ export class ConfigureDungeons extends BaseCommand {
 
         let currentIdx = 0;
         while (true) {
+            embed.fields = [];
             upButton.setDisabled(currentReactions.length <= 1);
             downButton.setDisabled(currentReactions.length <= 1);
             removeButton.setDisabled(currentReactions.length === 0);
@@ -1831,9 +1837,9 @@ export class ConfigureDungeons extends BaseCommand {
                             i === currentIdx
                                 ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${reactionInfo.name}`
                                 : reactionInfo.name
-                        )
+                        ).appendLine()
                         .append(`- Emoji: ${emoji ?? "N/A"} (ID: ${reactionInfo.emojiInfo.identifier})`).appendLine()
-                        .append(`- Priority: ${currentReactions[i].maxEarlyLocation}`).appendLine(2)
+                        .append(`- Priority Amount: ${currentReactions[i].maxEarlyLocation}`).appendLine(2)
                         .toString()
                 );
             }
@@ -1868,40 +1874,43 @@ export class ConfigureDungeons extends BaseCommand {
             if (!result)
                 return null;
 
-            if (currentReactions.length > 0 && typeof result === "string") {
-                if (result.startsWith("j ")) {
-                    const jumpBy = Number.parseInt(result.slice(2).trim(), 10);
-                    if (Number.isNaN(jumpBy))
+            if (typeof result === "string") {
+                if (currentReactions.length > 0) {
+                    if (result.startsWith("j ")) {
+                        const jumpBy = Number.parseInt(result.slice(2).trim(), 10);
+                        if (Number.isNaN(jumpBy))
+                            continue;
+
+                        currentIdx += jumpBy;
+                        currentIdx %= currentReactions.length;
+                        continue;
+                    }
+
+                    const num = Number.parseInt(result, 10);
+                    if (Number.isNaN(num) || num < 0 || num === currentReactions[currentIdx].maxEarlyLocation)
                         continue;
 
-                    currentIdx += jumpBy;
-                    currentIdx %= currentReactions.length;
-                    continue;
+                    if (num > 0) {
+                        if (numEarlyLocs + 1 > ConfigureDungeons.MAXIMUM_PRIORITY_REACTS)
+                            continue;
+                        numEarlyLocs++;
+                        normalReacts--;
+                    }
+                    else {
+                        if (normalReacts + 1 > ConfigureDungeons.MAXIMUM_NORMAL_REACTS)
+                            continue;
+                        normalReacts++;
+                        numEarlyLocs--;
+                    }
+
+
+                    currentReactions[currentIdx].maxEarlyLocation = num;
                 }
 
-                const num = Number.parseInt(result, 10);
-                if (Number.isNaN(num) || num < 0 || num === currentReactions[currentIdx].maxEarlyLocation)
-                    continue;
-
-                if (num > 0) {
-                    if (numEarlyLocs + 1 > ConfigureDungeons.MAXIMUM_PRIORITY_REACTS)
-                        continue;
-                    numEarlyLocs++;
-                    normalReacts--;
-                }
-                else {
-                    if (normalReacts + 1 > ConfigureDungeons.MAXIMUM_NORMAL_REACTS)
-                        continue;
-                    normalReacts++;
-                    numEarlyLocs--;
-                }
-
-
-                currentReactions[currentIdx].maxEarlyLocation = num;
                 continue;
             }
 
-            switch (result) {
+            switch (result.customId) {
                 case saveButton.customId!: {
                     return currentReactions;
                 }
@@ -1940,10 +1949,11 @@ export class ConfigureDungeons extends BaseCommand {
 
                     const subsets = ArrayUtilities.breakArrayIntoSubsets(possibleReactionsToUse, 25);
                     const selectMenus: MessageSelectMenu[] = [];
+                    let num = 0;
                     for (const subset of subsets) {
                         selectMenus.push(
                             new MessageSelectMenu()
-                                .setCustomId("r_chooser")
+                                .setCustomId(`r_chooser_${++num}`)
                                 .setMinValues(1)
                                 .setMaxValues(1)
                                 .addOptions(subset.map(x => {
