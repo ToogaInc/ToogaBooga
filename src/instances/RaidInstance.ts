@@ -336,6 +336,7 @@ export class RaidInstance {
 
     // Whether this has already been added to the database
     private _addedToDb: boolean = false;
+    private _peopleToAddToVc: Set<string> = new Set();
 
     /**
      * Creates a new `RaidInstance` object.
@@ -557,7 +558,7 @@ export class RaidInstance {
                     return;
 
                 reactions.set(reaction.mapKey, {
-                    ...MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey],
+                    ...obj,
                     earlyLocAmt: reaction.maxEarlyLocation,
                     isCustomReaction: false
                 });
@@ -671,7 +672,9 @@ export class RaidInstance {
         const memberInit = await GuildFgrUtilities.fetchGuildMember(guild, raidInfo.memberInit);
         if (!memberInit) return null;
 
-        const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === raidInfo.sectionIdentifier);
+        const section = raidInfo.sectionIdentifier === "MAIN"
+            ? MongoManager.getMainSection(guildDoc)
+            : guildDoc.guildSections.find(x => x.uniqueIdentifier === raidInfo.sectionIdentifier);
         if (!section) return null;
 
         // Get base dungeons + custom dungeons
@@ -790,8 +793,8 @@ export class RaidInstance {
             })
         ]);
 
-
         if (!vc) return;
+        vc.setPosition(0).then();
         this._raidVc = vc as VoiceChannel;
         this._logChan = logChannel;
 
@@ -825,32 +828,44 @@ export class RaidInstance {
         if (!this._afkCheckMsg || !this._controlPanelMsg || !this._raidVc || !this._afkCheckChannel)
             return;
 
+        await this._controlPanelMsg.edit({
+            embeds: [this.getControlPanelEmbed()!],
+            components: []
+        });
+
         this.logEvent("AFK check has been started.", true).catch();
         const tempMsg = await this._afkCheckChannel.send({
             content: `${this._raidVc.toString()} will be unlocked in 5 seconds. Prepare to join!`
         });
         await MiscUtilities.stopFor(5 * 1000);
+        tempMsg.delete().catch();
 
         // We are officially in AFK check mode.
         // We do NOT start the intervals OR collector since pre-AFK and AFK have the exact same collectors/intervals.
         await this.setRaidStatus(RaidStatus.AFK_CHECK);
         await this._raidVc.permissionOverwrites.set(this.getPermissionsForRaidVc(true));
 
-        // We do need to restart the control panel collector.
-        this._controlPanelReactionCollector?.stop();
+        this.stopAllIntervalsAndCollectors();
+        this.startIntervals();
         this.startControlPanelCollector();
+        this.startAfkCheckCollector();
 
         // However, we forcefully edit the embeds.
-        await this._afkCheckMsg.edit({
-            content: "@here An AFK Check is currently ongoing.",
-            embeds: [this.getAfkCheckEmbed()!],
-            components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
-        });
+        await Promise.all([
+            this._raidVc.edit({
+                name: `${Emojis.UNLOCK_EMOJI} ${this._leaderName}'s Raid`
+            }),
+            this._afkCheckMsg.edit({
+                content: "@here An AFK Check is currently ongoing.",
+                embeds: [this.getAfkCheckEmbed()!],
+                components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
+            }),
+            this._controlPanelMsg.edit({
+                embeds: [this.getControlPanelEmbed()!],
+                components: RaidInstance.CP_AFK_BUTTONS
+            })
+        ]);
         AdvancedCollector.reactFaster(this._afkCheckMsg, this._nonEssentialReactions);
-        await this._controlPanelMsg.edit({
-            embeds: [this.getControlPanelEmbed()!],
-            components: RaidInstance.CP_AFK_BUTTONS
-        });
     }
 
     /**
@@ -878,12 +893,23 @@ export class RaidInstance {
         ).catch();
 
         // Update the database so it is clear that we are in raid mode.
+        this.stopAllIntervalsAndCollectors();
+        this.startIntervals();
+        this.startControlPanelCollector();
+        this.startAfkCheckCollector();
         await this.setRaidStatus(RaidStatus.IN_RUN);
 
         // Lock the VC as well.
-        await this._raidVc.permissionOverwrites.edit(this._guild.roles.everyone.id, {
-            "CONNECT": false
-        }).catch();
+        await Promise.all([
+            this._raidVc.permissionOverwrites.edit(this._guild.roles.everyone.id, {
+                "CONNECT": false
+            }).catch(),
+            this._raidVc.edit({
+                name: `${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`,
+                position: this._raidVc.parent?.children.filter(x => x.type === "GUILD_VOICE")
+                    .map(x => x.position).sort((a, b) => b - a)[0] ?? 0
+            })
+        ]);
 
         // Add all members that were in the VC at the time.
         this._membersThatJoined.push(...Array.from(this._raidVc.members.values()).map(x => x.id));
@@ -902,7 +928,7 @@ export class RaidInstance {
         this.startControlPanelCollector();
         this.startIntervals();
 
-        const afkEndedEnded = new MessageEmbed()
+        const afkEndedEmbed = new MessageEmbed()
             .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
             .setAuthor(`${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
                 this._memberInit.user.displayAvatarURL())
@@ -915,7 +941,7 @@ export class RaidInstance {
             );
 
         if (this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo) {
-            afkEndedEnded.addField(
+            afkEndedEmbed.addField(
                 "Post-AFK Info",
                 this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo
             );
@@ -928,11 +954,50 @@ export class RaidInstance {
             .appendLine()
             .append("If you did not make it into the raid voice channel before the AFK check is over, then pressing ")
             .append("the button will not do anything.");
-        afkEndedEnded.addField("Rejoin Raid", rejoinRaidSb.toString());
+        afkEndedEmbed.addField("Rejoin Raid", rejoinRaidSb.toString());
+
+        let feedbackChannel: TextChannel | null = null;
+
+        if (this._feedbackBaseChannel && this._feedbackBaseChannel.parent && this._raidStorageChan) {
+            feedbackChannel = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                return this._guild.channels.create(`${this._leaderName}-feedback`, {
+                    parent: this._feedbackBaseChannel!.parent!,
+                    type: "GUILD_TEXT",
+                    rateLimitPerUser: 5 * 60,
+                    permissionOverwrites: [
+                        {
+                            id: this._raidSection.roles.verifiedRoleId,
+                            allow: ["VIEW_CHANNEL"]
+                        },
+                        {
+                            id: this._guild.roles.everyone,
+                            deny: ["VIEW_CHANNEL", "ADD_REACTIONS"]
+                        },
+                        {
+                            id: OneLifeBot.BotInstance.client.user!.id,
+                            allow: ["ADD_REACTIONS", "VIEW_CHANNEL"]
+                        },
+                        {
+                            id: this._guildDoc.roles.staffRoles.teamRoleId,
+                            allow: ["VIEW_CHANNEL"]
+                        }
+                    ],
+                    topic: `${this._raidVc!.id} - Do Not Edit This!`
+                });
+            });
+
+            if (feedbackChannel) {
+                afkEndedEmbed.addField(
+                    "Feedback Channel",
+                    `You can give ${member?.displayName ?? this._memberInit.displayName} feedback by going to the`
+                    + ` ${feedbackChannel} channel.`
+                );
+            }
+        }
 
         // And edit the AFK check message + start the collector.
         await this._afkCheckMsg.edit({
-            embeds: [afkEndedEnded],
+            embeds: [afkEndedEmbed],
             content: "The AFK check is now over.",
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageButton()
@@ -942,36 +1007,6 @@ export class RaidInstance {
                     .setStyle("SUCCESS")
             ])
         }).catch();
-
-        if (!this._feedbackBaseChannel || !this._feedbackBaseChannel.parent || !this._raidStorageChan)
-            return;
-
-        const feedbackChannel = await GlobalFgrUtilities.tryExecuteAsync(async () => {
-            return this._guild.channels.create(`${this._leaderName}-feedback`, {
-                parent: this._feedbackBaseChannel!.parent!,
-                type: "GUILD_TEXT",
-                rateLimitPerUser: 5 * 60 * 1000,
-                permissionOverwrites: [
-                    {
-                        id: this._raidSection.roles.verifiedRoleId,
-                        allow: ["VIEW_CHANNEL"]
-                    },
-                    {
-                        id: this._guild.roles.everyone,
-                        deny: ["VIEW_CHANNEL", "ADD_REACTIONS"]
-                    },
-                    {
-                        id: OneLifeBot.BotInstance.client.user!.id,
-                        allow: ["ADD_REACTIONS", "VIEW_CHANNEL"]
-                    },
-                    {
-                        id: this._guildDoc.roles.staffRoles.teamRoleId,
-                        allow: ["VIEW_CHANNEL"]
-                    }
-                ],
-                topic: `${this._raidVc!.id} - Do Not Edit This!`
-            });
-        });
 
         if (!feedbackChannel)
             return;
@@ -1008,6 +1043,7 @@ export class RaidInstance {
             Emojis.LONG_UP_ARROW_EMOJI
         ]);
 
+        await this.setThisFeedbackChannel(feedbackChannel);
         await feedbackMsg.pin().catch();
     }
 
@@ -1066,8 +1102,13 @@ export class RaidInstance {
         });
 
         setTimeout(async () => {
-            if (!this._thisFeedbackChan)
+            if (!this._thisFeedbackChan) {
+                if (!this._raidStorageChan)
+                    return;
+
+                this.compileHistory(this._raidStorageChan).then();
                 return;
+            }
 
             if (!this._raidStorageChan) {
                 await this._thisFeedbackChan.delete().catch();
@@ -1086,10 +1127,11 @@ export class RaidInstance {
 
             const botMsg = pinnedMsgs.filter(x => x.author.bot).first();
             if (botMsg) {
+                const m = await botMsg.fetch();
                 const [upvotes, noPref, downvotes] = await Promise.all([
-                    botMsg.reactions.cache.get(Emojis.LONG_UP_ARROW_EMOJI)?.fetch(),
-                    botMsg.reactions.cache.get(Emojis.LONG_SIDEWAYS_ARROW_EMOJI)?.fetch(),
-                    botMsg.reactions.cache.get(Emojis.LONG_DOWN_ARROW_EMOJI)?.fetch()
+                    m.reactions.cache.get(Emojis.LONG_UP_ARROW_EMOJI)?.fetch(),
+                    m.reactions.cache.get(Emojis.LONG_SIDEWAYS_ARROW_EMOJI)?.fetch(),
+                    m.reactions.cache.get(Emojis.LONG_DOWN_ARROW_EMOJI)?.fetch()
                 ]);
 
                 if (upvotes) sb.append(`- Upvotes      : ${upvotes.count - 1}`).appendLine();
@@ -1265,7 +1307,7 @@ export class RaidInstance {
             return false;
 
         this._location = newLoc;
-        this.logEvent(`Location changed to **\`${newLoc}\`**`, true).catch();
+        this.logEvent(`Location changed to: ${newLoc}`, true).catch();
 
         // Update the location in the database.
         const res = await MongoManager.updateAndFetchGuildDoc({
@@ -1660,7 +1702,7 @@ export class RaidInstance {
                     new MessageButton()
                         .setLabel("Cancel")
                         .setEmoji(Emojis.X_EMOJI)
-                        .setLabel("-cancel")
+                        .setCustomId("cancel")
                         .setStyle("DANGER")
                 ])
             },
@@ -1718,9 +1760,8 @@ export class RaidInstance {
         if (customPermData && !customPermData.value.useDefaultRolePerms)
             neededRoles.push(...customPermData.value.rolePermsNeeded);
 
-        return member.voice.channel?.id === this._raidVc.id
-            && (neededRoles.some(x => GuildFgrUtilities.memberHasCachedRole(member, x))
-                || member.permissions.has("ADMINISTRATOR"));
+        return neededRoles.some(x => GuildFgrUtilities.memberHasCachedRole(member, x))
+            || member.permissions.has("ADMINISTRATOR");
     }
 
     /**
@@ -1734,12 +1775,11 @@ export class RaidInstance {
 
         const descSb = new StringBuilder();
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
-            descSb.append(`⇨ To participate in this raid, join the ${this._raidVc.toString()} channel.`)
-                .appendLine()
-                .append("⇨ There are **no** required reactions.");
+            descSb.append(`To participate in this raid, join the ${this._raidVc.toString()} channel. There are no`)
+                .append(" required reactions.");
         }
         else {
-            descSb.append("⇨ Only priority reactions can join the raid VC at this time. You will be able to join the ")
+            descSb.append("Only priority reactions can join the raid VC at this time. You will be able to join the ")
                 .append("raid VC once all players with priority reactions have been confirmed.");
         }
 
@@ -1892,7 +1932,7 @@ export class RaidInstance {
                 .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice `)
                 .append("channel.")
                 .appendLine(2)
-                .append(`⇨ **Press** the **\`End AFK Check\`** button if you want to end the AFK check and start the `)
+                .append(`⇨ **Press** the **\`Start Raid\`** button if you want to end the AFK check and start the `)
                 .append("raid.")
                 .appendLine()
                 .append(`⇨ **Press** the **\`Abort AFK Check\`** button if you want to end the AFK check __without__ `)
@@ -1936,49 +1976,18 @@ export class RaidInstance {
             if (!mappedAfkCheckOption)
                 continue;
 
-            const emoji = mappedAfkCheckOption.emojiInfo.isCustom
-                ? GlobalFgrUtilities.getCachedEmoji(mappedAfkCheckOption.emojiInfo.identifier)
-                : mappedAfkCheckOption.emojiInfo.identifier;
+            const emoji = GlobalFgrUtilities.getNormalOrCustomEmoji(mappedAfkCheckOption);
 
             // Must have emoji
             if (!emoji)
                 continue;
-
-            // If there are modifiers, then fully display modifiers
-            if (peopleThatReacted.some(x => x.modifiers.length > 0)) {
-                const fieldArr: string[] = [];
-                for (const {member, modifiers} of peopleThatReacted) {
-                    fieldArr.push(
-                        new StringBuilder().append(member.toString()).appendLine()
-                            .append(
-                                modifiers.length > 0
-                                    ? `- Modifiers: ${modifiers.join(", ")}`
-                                    : "- Modifiers: None."
-                            ).appendLine()
-                            .toString()
-                    );
-                }
-
-                const fields = ArrayUtilities.arrayToStringFields(fieldArr, (_, elem) => elem);
-                let titleAdded = false;
-                for (const field of fields) {
-                    controlPanelEmbed.addField(
-                        titleAdded ? GeneralConstants.ZERO_WIDTH_SPACE : `${emoji} ${mappedAfkCheckOption.name}`,
-                        field
-                    );
-
-                    titleAdded = true;
-                }
-
-                continue;
-            }
 
             const maximum = this._allEssentialOptions.get(codeName)!.earlyLocAmt;
             cpFields.push(
                 new StringBuilder()
                     .append(`⇨ ${emoji} ${mappedAfkCheckOption.name}: ${peopleThatReacted.length} / ${maximum}`)
                     .appendLine()
-                    .append(peopleThatReacted.join(", "))
+                    .append(peopleThatReacted.map(x => `${x.member}: \`[${x.modifiers.join(", ")}]\``).join("\n"))
                     .appendLine(2)
                     .toString()
             );
@@ -2090,10 +2099,10 @@ export class RaidInstance {
         this._afkCheckButtonCollector.on("collect", async i => {
             const memberThatResponded = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
             if (!memberThatResponded) {
-                await i.reply({
+                i.reply({
                     content: "An unknown error occurred.",
                     ephemeral: true
-                });
+                }).catch();
                 return;
             }
 
@@ -2105,13 +2114,8 @@ export class RaidInstance {
 
             // Is the person in a VC?
             if (!memberThatResponded.voice.channel) {
-                const notInVcEmbed = MessageUtilities.generateBlankEmbed(memberThatResponded, "RED")
-                    .setTitle("Not In Raid VC")
-                    .setDescription("In order to indicate your class/gear preference, you need to be in the raid "
-                        + "VC.")
-                    .setTimestamp();
-                await i.reply({
-                    embeds: [notInVcEmbed],
+                i.reply({
+                    content: "In order to indicate your class/gear preference, you need to be in a voice channel.",
                     ephemeral: true
                 }).catch();
                 return;
@@ -2121,37 +2125,31 @@ export class RaidInstance {
             const reactInfo = this._allEssentialOptions.get(mapKey)!;
             const members = this._pplWithEarlyLoc.get(mapKey)!;
             // If the member already got this, then don't let them get this again.
-            if (members.some(x => x.member.id === i.user.id))
+            if (members.some(x => x.member.id === i.user.id)) {
+                i.reply({
+                    content: "You have already selected this!",
+                    ephemeral: true
+                }).catch();
                 return;
+            }
 
             // Item display for future use
-            const itemDisplaySb = new StringBuilder();
-            if (reactInfo.emojiInfo.isCustom && !GlobalFgrUtilities.hasCachedEmoji(reactInfo.emojiInfo.identifier))
-                itemDisplaySb.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiInfo.identifier)!).append(" ");
-            itemDisplaySb.append(`**\`${reactInfo.name}\`**`);
-            const itemDisplay = itemDisplaySb.toString();
+            const itemDis = `${GlobalFgrUtilities.getNormalOrCustomEmoji(reactInfo) ?? ""} **\`${reactInfo.name}\`**`;
 
             // If we no longer need this anymore, then notify them
             if (!this.stillNeedEssentialReact(mapKey)) {
-                const noLongerNeedEmbed = MessageUtilities.generateBlankEmbed(memberThatResponded.user, "RED")
-                    .setTitle("No Longer Needed")
-                    .setDescription(`We no longer need **\`${itemDisplay.toString()}\`**.`)
-                    .addField("What This Means", "You will not be given early location. However, you "
-                        + "are free to bring this along.")
-                    .setFooter("No Longer Needed.");
-
                 i.reply({
-                    embeds: [noLongerNeedEmbed],
+                    content: `We no longer need ${itemDis}. You can still bring it along, though!`,
                     ephemeral: true
                 }).catch();
             }
 
             const res = await RaidInstance.confirmReaction(i, this);
             if (!res) {
-                await i.reply({
+                await i.editReply({
                     content: "You either did not respond to a question that was asked, or chose to cancel this"
-                        + " process. Either way, the preference that you selected has **not** been logged with the"
-                        + " raid leader.",
+                        + ` process. Either way, the preference (${itemDis}) that you selected has **not** been logged`
+                        + " with the raid leader.",
                     components: []
                 });
                 return;
@@ -2163,7 +2161,7 @@ export class RaidInstance {
                     content: reactInfo.type === "EARLY_LOCATION"
                         ? "Although you reacted with this button, you are not able to receive early location"
                         + " because someone else beat you to the last slot."
-                        : `Although you said you would bring ${itemDisplay}, we do not need this anymore.`,
+                        : `Although you have a ${itemDis}, we do not need this anymore.`,
                     components: []
                 });
                 return;
@@ -2178,7 +2176,7 @@ export class RaidInstance {
             }
 
             const confirmationContent = new StringBuilder()
-                .append(`Thank you for confirming your choice of: ${itemDisplay}. `)
+                .append(`Thank you for confirming your choice of: `).append(itemDis)
                 .appendLine(2)
                 .append(
                     this._location
@@ -2207,6 +2205,16 @@ export class RaidInstance {
                 + ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.modifiers.join(", ")}]\``,
                 true
             ).catch();
+
+            if (memberThatResponded.voice.channel) {
+                if (memberThatResponded.voice.channelId === this._raidVc.id)
+                    return;
+
+                memberThatResponded.voice.setChannel(this._raidVc).catch();
+                return;
+            }
+
+            this._peopleToAddToVc.add(memberThatResponded.id);
         });
 
         // If time expires, then end AFK check immediately.
@@ -2235,6 +2243,18 @@ export class RaidInstance {
         const member = oldState.member ?? newState.member;
         if (!member)
             return;
+
+        if (member.voice.channelId
+            && member.voice.channelId !== this._raidVc.id
+            && this._peopleToAddToVc.has(member.id)) {
+            this._peopleToAddToVc.delete(member.id);
+            member.voice.setChannel(this._raidVc).catch();
+            this.logEvent(
+                `${member.displayName} (${member.id}) has been added to the VC for being a priority react.`,
+                true
+            ).catch();
+            return;
+        }
 
         if (oldState.channelId !== newState.channelId) {
             if (oldState.channelId && !newState.channelId) {
@@ -2350,7 +2370,12 @@ export class RaidInstance {
             return;
         }
 
-        await member.voice.setChannel(this._raidVc).catch();
+        interaction.deferUpdate().catch();
+
+        if (member.voice.channel.id === this._raidVc?.id)
+            return;
+
+        member.voice.setChannel(this._raidVc).catch();
         this.logEvent(`${member.displayName} (${member.id}) has reconnected to the raid VC.`, true).catch();
     }
 
@@ -2371,6 +2396,25 @@ export class RaidInstance {
 
         if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
             this._controlPanelReactionCollector.on("collect", async i => {
+                // Should have already been fetched from the collector filter function
+                // So this should be cached
+                const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
+                if (!member) {
+                    i.reply({
+                        content: "An unknown error occurred. Please try again later.",
+                        ephemeral: true
+                    }).catch();
+                    return;
+                }
+
+                if (member.voice.channel?.id !== this._raidVc?.id) {
+                    i.reply({
+                        content: "You need to be in the correct raiding VC to interact with these controls.",
+                        ephemeral: true
+                    }).catch();
+                    return;
+                }
+
                 await i.deferUpdate();
                 if (i.customId === RaidInstance.START_AFK_CHECK_ID) {
                     this.startAfkCheck().then();
@@ -2408,13 +2452,13 @@ export class RaidInstance {
         }
 
         this._controlPanelReactionCollector.on("collect", async i => {
-            await i.deferUpdate();
             if (i.customId === RaidInstance.END_RAID_ID) {
                 this.endRaid(i.user).then();
                 return;
             }
 
             if (i.customId === RaidInstance.SET_LOCATION_ID) {
+                await i.deferUpdate();
                 this.getNewLocation(i.user).then();
                 return;
             }
@@ -2448,6 +2492,7 @@ export class RaidInstance {
             }
 
             if (i.customId === RaidInstance.PARSE_VC_ID) {
+                await i.deferUpdate();
                 const res = await AdvancedCollector.startNormalCollector<MessageAttachment>({
                     msgOptions: {
                         content: "Please send a **screenshot** (not a URL to a screenshot, but an actual attachment)"
@@ -2546,18 +2591,7 @@ export class RaidInstance {
      * @returns {string} The item display.
      */
     public static getItemDisplay(reactInfo: ReactionInfoMore): string {
-        const itemDisplayBuilder = new StringBuilder();
-        if (reactInfo.emojiInfo.isCustom) {
-            if (GlobalFgrUtilities.hasCachedEmoji(reactInfo.emojiInfo.identifier))
-                itemDisplayBuilder.append(GlobalFgrUtilities.getCachedEmoji(reactInfo.emojiInfo.identifier)!)
-                    .append(" ");
-        }
-        else {
-            itemDisplayBuilder.append(reactInfo.emojiInfo.identifier).append(" ");
-        }
-
-        itemDisplayBuilder.append(`**\`${reactInfo.name}\`**`);
-        return itemDisplayBuilder.toString();
+        return `${GlobalFgrUtilities.getNormalOrCustomEmoji(reactInfo) ?? ""} **\`${reactInfo.name}\`**`.trim();
     }
 
     /**

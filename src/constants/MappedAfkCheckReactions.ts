@@ -271,7 +271,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         },
         name: "Undead Lair Key"
     },
-    HEROIC_UNDEAD_LAIR_LEY: {
+    HEROIC_UNDEAD_LAIR_KEY: {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
@@ -528,7 +528,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Lost Halls Key"
     },
     VIAL_OF_PURE_DARKNESS: {
-        type: "KEY",
+        type: "NM_KEY",
         emojiInfo: {
             isCustom: true,
             identifier: "714012990873272321"

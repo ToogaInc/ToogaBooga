@@ -174,12 +174,12 @@ export namespace GeneralConstants {
         },
         {
             id: HELPER_ROLE,
-            allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS"],
+            allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS"],
             deny: []
         },
         {
             id: SECURITY_ROLE,
-            allow: ["CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "STREAM"],
+            allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "MOVE_MEMBERS", "STREAM"],
             deny: []
         },
         {

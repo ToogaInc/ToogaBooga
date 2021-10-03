@@ -148,14 +148,25 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     // Get corresponding channel.
     const channel = interaction.channel;
     if (!channel || !channel.isText() || channel instanceof NewsChannel) return;
-    const resolvedChannel = await channel.fetch();
+    const [resolvedChannel, guildDoc] = await Promise.all([
+        channel.fetch(),
+        MongoManager.getOrCreateGuildDoc(guild.id, true)
+    ]);
+
+    // If this is happening in control panel, don't process it
+    const allControlPanelChannels = [
+        guildDoc.channels.raids.controlPanelChannelId,
+        ...guildDoc.guildSections.map(x => x.channels.raids.controlPanelChannelId)
+    ];
+
+    if (allControlPanelChannels.includes(resolvedChannel.id))
+        return;
 
     // Get guild document, users, and message.
-    const [resolvedUser, resolvedMember, message, guildDoc] = await Promise.all([
+    const [resolvedUser, resolvedMember, message] = await Promise.all([
         GlobalFgrUtilities.fetchUser(interaction.user.id),
         GuildFgrUtilities.fetchGuildMember(guild, interaction.user.id),
-        GuildFgrUtilities.fetchMessage(resolvedChannel, interaction.message.id),
-        MongoManager.getOrCreateGuildDoc(guild.id, true)
+        GuildFgrUtilities.fetchMessage(resolvedChannel, interaction.message.id)
     ]);
 
     // All must exist.

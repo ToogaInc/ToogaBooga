@@ -247,8 +247,12 @@ export namespace GuildFgrUtilities {
      */
     export async function fetchMessage(channel: Channel,
                                        msgId: string): Promise<Message | null> {
-        if (!MiscUtilities.isSnowflake(msgId)) return null;
-        if (!channel.isText()) return null;
+        if (!MiscUtilities.isSnowflake(msgId))
+            return null;
+
+        if (!channel.isText())
+            return null;
+
         try {
             return channel.messages.fetch(msgId);
         } catch (e) {

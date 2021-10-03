@@ -27,7 +27,7 @@ export class StringBuilder {
      * @param {string} content The content to append.
      * @returns {StringBuilder} This object.
      */
-    public append(content: any): this {
+    public append<T>(content: T): this {
         this._str += content;
         return this;
     }

@@ -259,7 +259,6 @@ export namespace AdvancedCollector {
                 });
 
                 if (info === null) return;
-                console.log(info);
                 resolve(info);
                 interactionCollector.stop();
                 msgCollector.stop();

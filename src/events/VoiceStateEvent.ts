@@ -7,6 +7,5 @@ export async function onVoiceStateEvent(oldState: VoiceState, newState: VoiceSta
         if (raidInstance.raidVc?.id !== oldState.channel?.id && raidInstance.raidVc?.id !== newState.channel?.id)
             continue;
         await raidInstance.voiceStateUpdateEventFunction(oldState, newState);
-        return;
     }
 }
