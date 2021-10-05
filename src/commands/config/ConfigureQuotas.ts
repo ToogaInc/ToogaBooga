@@ -13,7 +13,7 @@ import {IPropertyKeyValuePair, IQuotaInfo} from "../../definitions";
 import {DUNGEON_DATA} from "../../constants/DungeonData";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {askInput, DB_CONFIG_ACTION_ROW, sendOrEditBotMsg} from "./common/ConfigCommon";
+import {askInput, sendOrEditBotMsg} from "./common/ConfigCommon";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {MongoManager} from "../../managers/MongoManager";
@@ -355,7 +355,6 @@ export class ConfigureQuotas extends BaseCommand {
                     deleteBaseMsgAfterComplete: false,
                     duration: 45 * 1000
                 }, m => {
-                    console.log(m.content);
                     if (!m.content.includes(":") || m.content.substring(m.content.indexOf(":") + 1).length === 0)
                         return;
 
@@ -388,7 +387,7 @@ export class ConfigureQuotas extends BaseCommand {
             }
             case "add": {
                 this.addOrEditQuota(ctx, botMsg).then();
-                break;
+                return;
             }
             case "edit": {
                 const quotaToEdit = await selectQuota(
@@ -409,7 +408,7 @@ export class ConfigureQuotas extends BaseCommand {
                     botMsg,
                     ctx.guildDoc!.quotas.quotaInfo.find(x => x.roleId === quotaToEdit.value![0])!
                 ).then();
-                break;
+                return;
             }
             case "remove": {
                 const quotaToRemove = await selectQuota(
@@ -560,15 +559,15 @@ export class ConfigureQuotas extends BaseCommand {
 
             await botMsg.edit({
                 embeds: [embed],
-                components: DB_CONFIG_ACTION_ROW
+                components: AdvancedCollector.getActionRowsFromComponents(buttons)
             });
 
             const selectedButton = await AdvancedCollector.startInteractionCollector({
                 targetChannel: botMsg.channel as TextChannel,
                 targetAuthor: ctx.user,
                 oldMsg: botMsg,
-                acknowledgeImmediately: true,
                 clearInteractionsAfterComplete: false,
+                acknowledgeImmediately: true,
                 deleteBaseMsgAfterComplete: false,
                 duration: 2 * 60 * 1000
             });
@@ -840,7 +839,10 @@ export class ConfigureQuotas extends BaseCommand {
 
         let currIdx = 0;
         while (true) {
-            addButton.setDisabled(ptsToUse.length + 1 > ConfigureQuotas.MAX_QUOTAS_ALLOWED);
+            const allPossChoices = this.getQuotasToAdd(ptsToUse);
+            addButton.setDisabled(
+                ptsToUse.length + 1 > ConfigureQuotas.MAX_QUOTAS_ALLOWED || allPossChoices.length === 0
+            );
             removeButton.setDisabled(ptsToUse.length === 0);
             upButton.setDisabled(ptsToUse.length <= 1);
             downButton.setDisabled(ptsToUse.length <= 1);
@@ -848,18 +850,25 @@ export class ConfigureQuotas extends BaseCommand {
             const fields = ArrayUtilities.arrayToStringFields(ptsToUse, (i, elem) => {
                 if (elem.key.startsWith("Run")) {
                     const logTypeAndDgnId = elem.key.split(":");
+                    const logType = logTypeAndDgnId[0];
                     if (logTypeAndDgnId.length === 1) {
-                        return `${ConfigureQuotas.ALL_QUOTAS_KV[elem.key]} (All): \`${elem.value}\` Points`;
+                        const tempS = `${ConfigureQuotas.ALL_QUOTAS_KV[logType]} (All): \`${elem.value}\` Points\n`;
+                        return i === currIdx
+                            ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${tempS}`
+                            : tempS;
                     }
 
-                    const dungeonId = logTypeAndDgnId[1];
-                    const dungeonName = DungeonUtilities.isCustomDungeon(dungeonId)
-                        ? ctx.guildDoc!.properties.customDungeons.find(x => x.codeName === dungeonId)!
-                        : DUNGEON_DATA.find(x => x.codeName === dungeonId)!;
-                    return `${ConfigureQuotas.ALL_QUOTAS_KV[elem.key]} (${dungeonName}): \`${elem.value}\` Points`;
+                    const dungeonName = DungeonUtilities.getDungeonInfo(ctx.guildDoc!, logTypeAndDgnId[1])!.dungeonName;
+                    const s = `${ConfigureQuotas.ALL_QUOTAS_KV[logType]} (${dungeonName}): \`${elem.value}\` Points\n`;
+                    return i === currIdx
+                        ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${s}`
+                        : s;
                 }
 
-                return `${ConfigureQuotas.ALL_QUOTAS_KV[elem.key]}: \`${elem.value}\` Points`;
+                const mainS = `${ConfigureQuotas.ALL_QUOTAS_KV[elem.key]}: \`${elem.value}\` Points\n`;
+                return i === currIdx
+                    ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${mainS}`
+                    : mainS;
             });
 
             for (const field of fields) {
@@ -937,7 +946,7 @@ export class ConfigureQuotas extends BaseCommand {
                                 }
                             }
                         }
-                        // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
+                            // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
                         // types that does have a specific dungeon
                         else {
                             for (let i = ptsToUse.length - 1; i >= 0; i--) {
@@ -952,6 +961,9 @@ export class ConfigureQuotas extends BaseCommand {
                         key: r.value!.quotaType,
                         value: r.value!.points
                     });
+
+                    if (ptsToUse.length > 0)
+                        currIdx = 0;
                     break;
                 }
                 case "remove": {
@@ -997,6 +1009,13 @@ export class ConfigureQuotas extends BaseCommand {
                 }
             );
         }
+        else {
+            res.push({
+                name: "Run Complete (Specific Dungeon)",
+                key: "RunComplete:*"
+            });
+        }
+
 
         const runFailedIdx = currentSet.findIndex(x => x.key.startsWith("RunFailed"));
         if (runFailedIdx === -1 || currentSet[runFailedIdx].key.includes(":")) {
@@ -1010,6 +1029,12 @@ export class ConfigureQuotas extends BaseCommand {
                     key: "RunFailed"
                 }
             );
+        }
+        else {
+            res.push({
+                name: "Run Failed (Specific Dungeon)",
+                key: "RunFailed:*"
+            });
         }
 
         const runAssistIdx = currentSet.findIndex(x => x.key.startsWith("RunAssist"));
@@ -1025,9 +1050,15 @@ export class ConfigureQuotas extends BaseCommand {
                 }
             );
         }
+        else {
+            res.push({
+                name: "Run Assist (Specific Dungeon)",
+                key: "RunAssist:*"
+            });
+        }
 
         for (const q of ConfigureQuotas.BASE_QUOTA_RECOGNIZED) {
-            if (res.some(x => x.key === q.key))
+            if (currentSet.some(x => x.key === q.key))
                 continue;
             res.push(q);
         }
@@ -1107,7 +1138,7 @@ export class ConfigureQuotas extends BaseCommand {
                     let finalStr = `\`[${i + 1}]\` `;
                     if (emoji)
                         finalStr += `${emoji} `;
-                    finalStr += `${d.dungeonName} ${d.isBuiltIn ? "" : "(Custom)"}`;
+                    finalStr += `${d.dungeonName} ${d.isBuiltIn ? "" : "(Custom)"}\n`;
                     return finalStr;
                 }
             );
@@ -1149,7 +1180,7 @@ export class ConfigureQuotas extends BaseCommand {
                 return {value: null, status: TimedStatus.TIMED_OUT};
             if (resNum instanceof MessageComponentInteraction)
                 return {value: null, status: TimedStatus.CANCELED};
-            finalQuotaType = `${logType}:${allDungeons[resNum]}`;
+            finalQuotaType = `${logType}:${allDungeons[resNum - 1].codeName}`;
         }
 
         // Now we need a value

@@ -536,7 +536,7 @@ export namespace QuotaManager {
             guildDoc.quotas.resetTime.dayOfWeek,
             guildDoc.quotas.resetTime.time
         );
-        const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - startTime);
+        const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - Date.now(), false);
 
         const embed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
             .setTitle(`Active Quota: ${role.name}`)
@@ -550,7 +550,7 @@ export namespace QuotaManager {
                     .toString()
             )
             .setTimestamp()
-            .setFooter("Leaderboard Updated Every 5 Minutes. Last Updated:");
+            .setFooter("Leaderboard Updated Every 30 Seconds. Last Updated:");
 
         if (quotaInfo.quotaLog.length === 0)
             return embed;
@@ -661,6 +661,6 @@ export namespace QuotaService {
             }
         }
 
-        setTimeout(run, 5 * 60 * 1000);
+        setTimeout(run, 30 * 1000);
     }
 }
