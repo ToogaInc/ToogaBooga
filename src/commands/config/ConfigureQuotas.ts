@@ -433,7 +433,7 @@ export class ConfigureQuotas extends BaseCommand {
                 });
                 break;
             }
-            case "reset": {
+            case "reset_quotas": {
                 const quotasToReset = await selectQuota(
                     "Please select the quota(s) that you want to reset.",
                     ctx.guildDoc!.quotas.quotaInfo.length

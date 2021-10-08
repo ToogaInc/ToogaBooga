@@ -83,7 +83,8 @@ export namespace QuotaManager {
         }
 
         const role = await GuildFgrUtilities.fetchRole(guild, roleId);
-        const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, oldQuotas.messageId);
+        const possMsgs = await quotaChannel.messages.fetchPinned();
+        const quotaMsg = possMsgs.get(oldQuotas.messageId) ?? null;
         // Only care about quota actions worth points
         const quotaLogMap = new Collection<string, number>();
         for (const {key, value} of oldQuotas.pointValues) {
@@ -128,7 +129,7 @@ export namespace QuotaManager {
         // Process it so it can be put in a text file
         const arrStrArr: string[] = [];
         const memberIds = Array.from(quotaPointMap.keys());
-        const members = await Promise.all(memberIds.map(async x => await GuildFgrUtilities.fetchGuildMember(guild, x)));
+        const members = await Promise.all(memberIds.map(x => GuildFgrUtilities.fetchGuildMember(guild, x)));
         for (let i = 0; i < members.length; i++) {
             const logInfo = quotaPointMap.get(memberIds[i])!;
             const memberDisplay = members[i]?.displayName ?? memberIds[i];
@@ -160,7 +161,7 @@ export namespace QuotaManager {
                         const dungeonName = (DungeonUtilities.isCustomDungeon(logArr[1])
                             ? guildDoc.properties.customDungeons.find(x => x.codeName === logArr[1])?.dungeonName
                             : DUNGEON_DATA.find(x => x.codeName === logArr[1])?.dungeonName) ?? logArr[1];
-                        
+
                         sb.append(`\t\t- ${logArr[0]} (${dungeonName}): ${num}`)
                             .appendLine();
                         continue;
@@ -174,59 +175,60 @@ export namespace QuotaManager {
             arrStrArr.push(sb.toString().trim());
         }
         // If there's nothing to update, then we don't need to send inactive quota
-        if (arrStrArr.length > 0) {
-            const storageChannel = await MongoManager.getStorageChannel(guild);
-            const channelToUse = storageChannel ? storageChannel : quotaChannel;
-            let urlToFile: string | null = null;
-            if (channelToUse) {
-                const storageMsg = await GlobalFgrUtilities.sendMsg(
-                    channelToUse,
-                    {
-                        files: [
-                            new MessageAttachment(Buffer.from(arrStrArr.join("\n"), "utf8"),
-                                `quota_${guild.id}_${roleId}_${Date.now()}.txt`)
-                        ]
-                    }
-                ).catch();
-
-                if (storageMsg)
-                    urlToFile = storageMsg.attachments.first()!.url;
-            }
-
-            const descSb = new StringBuilder()
-                .append(`- Start Time: ${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT`).appendLine()
-                .append(`- End Time: ${TimeUtilities.getDateTime(Date.now())} GMT`).appendLine()
-                .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine();
-            if (!role) {
-                descSb.append("- Warning: This role was not found; it might have been deleted. This role has been ")
-                    .append("removed from the quota system.");
-            }
-
-            const summaryEmbed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
-                .setTitle(`Inactive Quota - Summary: **${role?.name ?? "ID " + roleId}**`)
-                .setDescription(descSb.toString())
-                .setTimestamp();
-            if (urlToFile) {
-                summaryEmbed.addField(
-                    "Summary",
-                    `Click [here](${urlToFile}) to get this quota period's summary. This will download a file.`
-                );
-            }
-            else {
-                const fields = ArrayUtilities.arrayToStringFields(
-                    arrStrArr,
-                    (_, elem) => elem
-                );
-                for (const field of fields) {
-                    summaryEmbed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
+        const storageChannel = await MongoManager.getStorageChannel(guild);
+        const channelToUse = storageChannel ? storageChannel : quotaChannel;
+        let urlToFile: string | null = null;
+        if (channelToUse) {
+            const storageMsg = await GlobalFgrUtilities.sendMsg(
+                channelToUse,
+                {
+                    files: [
+                        new MessageAttachment(Buffer.from(arrStrArr.join("\n"), "utf8"),
+                            `quota_${guild.id}_${roleId}_${Date.now()}.txt`)
+                    ]
                 }
-            }
+            ).catch();
 
-            if (quotaMsg)
-                await quotaMsg.edit({embeds: [summaryEmbed]});
-            else
-                await quotaChannel.send({embeds: [summaryEmbed]});
+            if (storageMsg)
+                urlToFile = storageMsg.attachments.first()!.url;
         }
+
+        const descSb = new StringBuilder()
+            .append(`- Start Time: ${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT`).appendLine()
+            .append(`- End Time: ${TimeUtilities.getDateTime(Date.now())} GMT`).appendLine()
+            .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine();
+        if (!role) {
+            descSb.append("- Warning: This role was not found; it might have been deleted. This role has been ")
+                .append("removed from the quota system.");
+        }
+
+        const summaryEmbed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
+            .setTitle(`Inactive Quota - Summary: **${role?.name ?? "ID " + roleId}**`)
+            .setDescription(descSb.toString())
+            .setTimestamp();
+        if (urlToFile) {
+            summaryEmbed.addField(
+                "Summary",
+                `Click [here](${urlToFile}) to get this quota period's summary. This will download a file.`
+            );
+        }
+        else {
+            const fields = ArrayUtilities.arrayToStringFields(
+                arrStrArr,
+                (_, elem) => elem
+            );
+            for (const field of fields) {
+                summaryEmbed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
+            }
+        }
+
+        if (quotaMsg) {
+            await quotaMsg.edit({embeds: [summaryEmbed]});
+            quotaMsg.unpin().catch();
+        }
+        else
+            await quotaChannel.send({embeds: [summaryEmbed]});
+
 
         const startTime = new Date();
         const endTime = TimeUtilities.getNextDate(
@@ -244,6 +246,8 @@ export namespace QuotaManager {
                     (await getQuotaLeaderboardEmbed(guild, guildDoc, oldQuotas))!
                 ]
             });
+
+            newMsg.pin().catch();
 
             await MongoManager.updateAndFetchGuildDoc({
                 guildId: guild.id,
@@ -600,6 +604,31 @@ export namespace QuotaService {
      */
     export async function startService(): Promise<void> {
         if (_isRunning) return;
+
+        const docs = await MongoManager.getGuildCollection().find().toArray();
+        if (docs.length > 0) {
+            const allQuotasToReset: Promise<boolean>[] = [];
+            for (const doc of docs) {
+                const guild = await GlobalFgrUtilities.fetchGuild(doc.guildId);
+                if (!guild)
+                    continue;
+
+                doc.quotas.quotaInfo.filter(quotaInfo => {
+                    const endTime = TimeUtilities.getNextDate(
+                        quotaInfo.lastReset,
+                        doc.quotas.resetTime.dayOfWeek,
+                        doc.quotas.resetTime.time
+                    );
+
+                    return endTime.getTime() - Date.now() < 0;
+                }).forEach(quotasToReset => {
+                    allQuotasToReset.push(QuotaManager.resetQuota(guild, quotasToReset.roleId));
+                });
+
+                await Promise.all(allQuotasToReset);
+            }
+        }
+
         _isRunning = true;
         run().then();
     }
@@ -607,7 +636,7 @@ export namespace QuotaService {
     /**
      * Stops the quota service.
      */
-    export async function stopService(): Promise<void> {
+    export function stopService(): void {
         if (!_isRunning) return;
         _isRunning = false;
     }
@@ -633,13 +662,16 @@ export namespace QuotaService {
                 if (!role || !quotaChannel)
                     continue;
 
-                const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, quotaInfo.messageId);
+                const possMsgs = await quotaChannel.messages.fetchPinned();
+                const quotaMsg = possMsgs.get(quotaInfo.messageId) ?? null;
                 if (!quotaMsg) {
                     const newMsg: Message = await quotaChannel.send({
                         embeds: [
                             (await QuotaManager.getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo))!
                         ]
                     });
+
+                    newMsg.pin().catch();
 
                     await MongoManager.updateAndFetchGuildDoc({
                         guildId: guild.id,
