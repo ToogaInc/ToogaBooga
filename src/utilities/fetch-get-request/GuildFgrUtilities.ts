@@ -2,7 +2,7 @@ import {
     Channel,
     Guild, GuildChannel,
     GuildMember,
-    Message, Role, Snowflake,
+    Message, Role, Snowflake, TextBasedChannels,
 } from "discord.js";
 import {MiscUtilities} from "../MiscUtilities";
 import {DefinedRole} from "../../definitions/Types";
@@ -239,14 +239,34 @@ export namespace GuildFgrUtilities {
     }
 
     /**
+     * A simple function that checks if a message still exists.
+     * @param {TextBasedChannels | Channel} channel The channel.
+     * @param {string} msgId The message to fetch. This assumes a valid ID. If an invalid ID is given, `null` will
+     * be returned.
+     * @returns {Promise<boolean>} Whether the message exists.
+     */
+    export async function hasMessage(channel: TextBasedChannels | Channel, msgId: string): Promise<boolean> {
+        if (!MiscUtilities.isSnowflake(msgId))
+            return false;
+
+        if (!channel.isText())
+            return false;
+
+        try {
+            return !!(await channel.messages.fetch(msgId));
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
      * A simple function that fetches a message. This will handle any exceptions that may occur.
-     * @param {Channel} channel The channel.
+     * @param {TextBasedChannels | Channel} channel The channel.
      * @param {string} msgId The message to fetch. This assumes a valid ID. If an invalid ID is given, `null` will
      * be returned.
      * @returns {Promise<Message | null>} The message object, if found. Null otherwise.
      */
-    export async function fetchMessage(channel: Channel,
-                                       msgId: string): Promise<Message | null> {
+    export async function fetchMessage(channel: TextBasedChannels | Channel, msgId: string): Promise<Message | null> {
         if (!MiscUtilities.isSnowflake(msgId))
             return null;
 
@@ -254,7 +274,7 @@ export namespace GuildFgrUtilities {
             return null;
 
         try {
-            return channel.messages.fetch(msgId);
+            return await channel.messages.fetch(msgId);
         } catch (e) {
             return null;
         }

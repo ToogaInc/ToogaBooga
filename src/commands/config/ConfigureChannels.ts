@@ -670,7 +670,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
-        if (botMsg?.deleted)
+        if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
             return;
         await botMsg?.delete().catch();
     }

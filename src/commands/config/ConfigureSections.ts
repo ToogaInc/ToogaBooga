@@ -277,6 +277,8 @@ export class ConfigureSections extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
+        if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
+            return;
         await botMsg?.delete().catch();
     }
 
