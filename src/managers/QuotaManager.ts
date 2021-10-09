@@ -83,8 +83,7 @@ export namespace QuotaManager {
         }
 
         const role = await GuildFgrUtilities.fetchRole(guild, roleId);
-        const possMsgs = await quotaChannel.messages.fetchPinned();
-        const quotaMsg = possMsgs.get(oldQuotas.messageId) ?? null;
+        const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, oldQuotas.messageId);
         // Only care about quota actions worth points
         const quotaLogMap = new Collection<string, number>();
         for (const {key, value} of oldQuotas.pointValues) {
@@ -662,8 +661,7 @@ export namespace QuotaService {
                 if (!role || !quotaChannel)
                     continue;
 
-                const possMsgs = await quotaChannel.messages.fetchPinned();
-                const quotaMsg = possMsgs.get(quotaInfo.messageId) ?? null;
+                const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, quotaInfo.messageId);
                 if (!quotaMsg) {
                     const newMsg: Message = await quotaChannel.send({
                         embeds: [

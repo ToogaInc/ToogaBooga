@@ -930,8 +930,11 @@ export class RaidInstance {
         this.startIntervals();
 
         const afkEndedEmbed = new MessageEmbed()
-            .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
-            .setAuthor(`${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
+            .setColor(
+                this._dungeon.dungeonColors.length === 0
+                    ? [255, 255, 255]
+                    : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
+            ).setAuthor(`${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
                 this._memberInit.user.displayAvatarURL())
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Raid`)
             .setTimestamp()
@@ -1826,12 +1829,17 @@ export class RaidInstance {
             .setDescription(descSb.toString())
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: ${raidStatus}.`)
             .setTimestamp()
-            .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
-            .setThumbnail(
-                this._afkCheckMsg
-                    ? this._afkCheckMsg.embeds[0].thumbnail!.url
-                    : ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url
+            .setColor(
+                this._dungeon.dungeonColors.length === 0
+                    ? [255, 255, 255]
+                    : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
             );
+
+        if (this._afkCheckMsg && this._afkCheckMsg.embeds[0].thumbnail)
+            afkCheckEmbed.setThumbnail(this._afkCheckMsg.embeds[0].thumbnail.url);
+        else if (this._dungeon.bossLinks.length > 0)
+            afkCheckEmbed.setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url);
+
 
         if (prioritySb.length() > 0) {
             afkCheckEmbed.addField("Priority Reactions (**Join** VC First)", prioritySb.toString());
@@ -1910,11 +1918,15 @@ export class RaidInstance {
             .setTitle(`**${this._dungeon.dungeonName}** Raid.`)
             .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`)
             .setTimestamp()
-            .setColor(ArrayUtilities.getRandomElement(this._dungeon.dungeonColors))
-            .setThumbnail(this._controlPanelMsg
-                ? this._controlPanelMsg.embeds[0].thumbnail!.url
-                : ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url)
-            .addField("General Status", generalStatus.toString());
+            .setColor(this._dungeon.dungeonColors.length === 0
+                ? [255, 255, 255]
+                : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
+            ).addField("General Status", generalStatus.toString());
+
+        if (this._controlPanelMsg && this._controlPanelMsg.embeds[0].thumbnail)
+            controlPanelEmbed.setThumbnail(this._controlPanelMsg.embeds[0].thumbnail.url);
+        else if (this._dungeon.bossLinks.length > 0)
+            controlPanelEmbed.setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url);
 
         if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
             descSb

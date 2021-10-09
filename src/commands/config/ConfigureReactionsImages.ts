@@ -544,6 +544,14 @@ export class ConfigureReactionsImages extends BaseCommand {
             .setLabel("Down")
             .setCustomId("down")
             .setStyle("PRIMARY");
+        const changeEmojiBtn = new MessageButton()
+            .setStyle("PRIMARY")
+            .setLabel("Change Emoji")
+            .setCustomId("change_emoji");
+        const changeNameBtn = new MessageButton()
+            .setStyle("PRIMARY")
+            .setLabel("Change Name")
+            .setCustomId("change_name");
 
         const buttons: MessageButton[] = [
             new MessageButton()
@@ -554,14 +562,8 @@ export class ConfigureReactionsImages extends BaseCommand {
             downButton,
             addButton,
             removeButton,
-            new MessageButton()
-                .setStyle("PRIMARY")
-                .setLabel("Change Emoji")
-                .setCustomId("change_emoji"),
-            new MessageButton()
-                .setStyle("PRIMARY")
-                .setLabel("Change Name")
-                .setCustomId("change_name"),
+            changeEmojiBtn,
+            changeNameBtn,
             new MessageButton()
                 .setStyle("SUCCESS")
                 .setLabel("Save")
@@ -664,6 +666,8 @@ export class ConfigureReactionsImages extends BaseCommand {
             removeButton.setDisabled(currentReactions.length === 0);
             upButton.setDisabled(currentReactions.length <= 1);
             downButton.setDisabled(currentReactions.length <= 1);
+            changeEmojiBtn.setDisabled(currentReactions.length === 0);
+            changeNameBtn.setDisabled(currentReactions.length === 0);
 
             embed.fields = [];
             const fields = ArrayUtilities.arrayToStringFields(

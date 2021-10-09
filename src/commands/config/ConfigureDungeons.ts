@@ -908,7 +908,7 @@ export class ConfigureDungeons extends BaseCommand {
                     }, "");
 
                     if (typeof res === "string") {
-                        cDungeon.dungeonName = res;
+                        cDungeon.portalEmojiId = res;
                         break;
                     }
 
@@ -949,10 +949,16 @@ export class ConfigureDungeons extends BaseCommand {
                     if (!isCustomDungeon(cDungeon))
                         break;
 
-                    const newImg = await this.getNewLinks(ctx, botMsg, [cDungeon.portalLink], {
-                        max: 1,
-                        nameOfPrompt: "Portal Link"
-                    });
+                    const newImg = await this.getNewLinks(
+                        ctx,
+                        botMsg,
+                        cDungeon.portalLink.url
+                            ? [cDungeon.portalLink]
+                            : [],
+                        {
+                            max: 1,
+                            nameOfPrompt: "Portal Link"
+                        });
 
                     if (!newImg) {
                         this.dispose(ctx, botMsg).catch();
@@ -1329,6 +1335,7 @@ export class ConfigureDungeons extends BaseCommand {
     private async getNewLinks(ctx: ICommandContext, botMsg: Message, currLinks: ImageInfo[],
                               options: LinkConfigOptions): Promise<ImageInfo[] | null> {
         const selected = currLinks.slice();
+
         // TODO make more efficient
         let validBuiltInImageUrls = DUNGEON_DATA.flatMap(x => [x.portalLink, ...x.bossLinks]);
         validBuiltInImageUrls = validBuiltInImageUrls.filter((elem, idx) => {
@@ -1403,7 +1410,7 @@ export class ConfigureDungeons extends BaseCommand {
                 embed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
             }
 
-            embed.setFooter(`Used: ${imagesToUse.length}/${options.max}`);
+            embed.setFooter(`Used: ${selected.length}/${options.max}`);
 
             await botMsg.edit({
                 embeds: [embed],
@@ -1586,22 +1593,18 @@ export class ConfigureDungeons extends BaseCommand {
             downButton.setDisabled(selected.length <= 1);
             removeButton.setDisabled(selected.length === 0);
 
-            const rawFields: string[] = [];
-            for (let i = 0; i < selected.length; i++) {
-                rawFields.push(
-                    new StringBuilder()
-                        .append(
-                            i === currentIdx
-                                ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${addOptions.embedTitleResolver(selected[i])}`
-                                : addOptions.embedTitleResolver(selected[i])
-                        )
-                        .append(" ")
-                        .append(addOptions.embedDescResolver(selected[i]))
-                        .toString()
-                );
-            }
-
-            const fields = ArrayUtilities.arrayToStringFields(rawFields, (_, elem) => elem);
+            embed.fields = [];
+            const fields = ArrayUtilities.arrayToStringFields(selected, (i, elem) => {
+                return new StringBuilder()
+                    .append(
+                        i === currentIdx
+                            ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${addOptions.embedTitleResolver(selected[i])}`
+                            : addOptions.embedTitleResolver(selected[i])
+                    )
+                    .append(" ")
+                    .append(addOptions.embedDescResolver(selected[i])).appendLine()
+                    .toString();
+            });
             for (const field of fields) {
                 embed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
             }
@@ -1673,6 +1676,9 @@ export class ConfigureDungeons extends BaseCommand {
                         return null;
 
                     if (validatorRes instanceof MessageComponentInteraction)
+                        break;
+
+                    if (selected.includes(validatorRes))
                         break;
 
                     selected.push(validatorRes);
