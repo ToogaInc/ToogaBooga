@@ -97,6 +97,7 @@ export class StartAfkCheck extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        ctx.guildDoc = await DungeonUtilities.fixDungeons(ctx.guildDoc!, ctx.guild!)!;
         await ctx.interaction.deferReply();
         const location = ctx.interaction.options.getString("location");
         const allSections = MongoManager.getAllSections(ctx.guildDoc!);

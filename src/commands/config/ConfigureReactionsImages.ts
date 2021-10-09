@@ -240,6 +240,10 @@ export class ConfigureReactionsImages extends BaseCommand {
             .setLabel("Down")
             .setCustomId("down")
             .setStyle("PRIMARY");
+        const changeButton = new MessageButton()
+            .setStyle("PRIMARY")
+            .setLabel("Change Name")
+            .setCustomId("change_name");
 
         const buttons: MessageButton[] = [
             new MessageButton()
@@ -250,10 +254,7 @@ export class ConfigureReactionsImages extends BaseCommand {
             downButton,
             addButton,
             removeButton,
-            new MessageButton()
-                .setStyle("PRIMARY")
-                .setLabel("Change Name")
-                .setCustomId("change_name"),
+            changeButton ,
             new MessageButton()
                 .setStyle("SUCCESS")
                 .setLabel("Save")
@@ -291,6 +292,7 @@ export class ConfigureReactionsImages extends BaseCommand {
 
 
         while (true) {
+            changeButton.setDisabled(selectedImages.length === 0);
             addButton.setDisabled(selectedImages.length + 1 > ConfigureReactionsImages.MAX_CUSTOM_IMAGES);
             removeButton.setDisabled(selectedImages.length === 0);
             upButton.setDisabled(selectedImages.length <= 1);

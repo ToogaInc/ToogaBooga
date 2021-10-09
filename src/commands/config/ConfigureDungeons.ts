@@ -100,6 +100,8 @@ export class ConfigureDungeons extends BaseCommand {
         });
 
         if (!(ctx.channel instanceof TextChannel)) return -1;
+
+        ctx.guildDoc = await DungeonUtilities.fixDungeons(ctx.guildDoc!, ctx.guild!)!;
         this.mainMenu(ctx, null).then();
         return 0;
     }
