@@ -172,6 +172,17 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     // All must exist.
     if (!resolvedMember || !resolvedUser || !message) return;
 
+    // Check MANUAL VERIFICATION
+    const manualVerifyChannels = guildDoc.manualVerificationEntries
+        .find(x => x.manualVerifyMsgId === message.id && x.manualVerifyChannelId === channel.id);
+
+    if (manualVerifyChannels) {
+        interaction.deferUpdate().catch();
+        VerifyManager.acknowledgeManualVerifyRes(manualVerifyChannels, resolvedMember, interaction.customId, message)
+            .then();
+        return;
+    }
+
     // Check MODMAIL
     if (guildDoc.channels.modmailChannelId === resolvedChannel.id) {
         // Several choices.

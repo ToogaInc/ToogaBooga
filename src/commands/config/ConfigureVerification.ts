@@ -230,16 +230,20 @@ export class ConfigureVerification extends BaseCommand {
             ).addField(
                 "Verification Success Message",
                 StringUtil.codifyString(
-                    verifConfig.verificationSuccessMessage.length > 1000
-                        ? verifConfig.verificationSuccessMessage.slice(0, 1000) + "..."
-                        : verifConfig.verificationSuccessMessage
+                    verifConfig.verificationSuccessMessage.length === 0
+                        ? "Not Set."
+                        : verifConfig.verificationSuccessMessage.length > 1000
+                            ? verifConfig.verificationSuccessMessage.slice(0, 1000) + "..."
+                            : verifConfig.verificationSuccessMessage
                 )
             ).addField(
                 "Verification Embed Message",
                 StringUtil.codifyString(
-                    verifConfig.additionalVerificationInfo.length > 1000
-                        ? verifConfig.additionalVerificationInfo.slice(0, 1000) + "..."
-                        : verifConfig.additionalVerificationInfo
+                    verifConfig.additionalVerificationInfo.length === 0
+                        ? "Not Set."
+                        : verifConfig.additionalVerificationInfo.length > 1000
+                            ? verifConfig.additionalVerificationInfo.slice(0, 1000) + "..."
+                            : verifConfig.additionalVerificationInfo
                 )
             );
 
@@ -361,6 +365,14 @@ export class ConfigureVerification extends BaseCommand {
                     return;
                 }
                 case "send": {
+                    const filterQuery: FilterQuery<IGuildInfo> = section.isMainSection
+                        ? {guildId: ctx.guild!.id}
+                        : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
+                    const updateQuery: UpdateQuery<IGuildInfo> = section.isMainSection
+                        ? {$set: {"otherMajorConfig.verificationProperties": verifConfig}}
+                        : {$set: {"guildSections.$.otherMajorConfig.verificationProperties": verifConfig}};
+                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);
+
                     const c = GuildFgrUtilities.getCachedChannel<TextChannel>(
                         ctx.guild!,
                         section.channels.verification.verificationChannelId
@@ -462,6 +474,8 @@ export class ConfigureVerification extends BaseCommand {
                     .append(" refer to the directions below:").appendLine()
                     .append("- To go back (without saving your changes), press the **Back** button.").appendLine()
                     .append("- To change the minimum number of stars needed, press the **Rank** button.").appendLine()
+                    .append("- To toggle whether the last seen location should be checked, press the **Last Seen")
+                    .append(" Location** button.").appendLine()
                     .append("- To change the minimum number of alive fame needed, press the **Alive Fame** button.")
                     .appendLine()
                     .append("- To change whether the last-seen location is needed, press the **Last Seen** button.")
@@ -491,6 +505,10 @@ export class ConfigureVerification extends BaseCommand {
                 .setLabel("Rank")
                 .setStyle("PRIMARY")
                 .setCustomId("rank"),
+            new MessageButton()
+                .setLabel("Last Seen Location")
+                .setStyle("PRIMARY")
+                .setCustomId("last_seen"),
             new MessageButton()
                 .setLabel("Alive Fame")
                 .setStyle("PRIMARY")
@@ -555,27 +573,33 @@ export class ConfigureVerification extends BaseCommand {
                 true
             ).addField(
                 "Guild Rank Needed",
-                newVerifReqs.guild.checkThis && newVerifReqs.guild.guildRank.checkThis
-                    ? newVerifReqs.guild.guildRank.exact
-                        ? `Exactly: ${newVerifReqs.guild.guildRank.minRank}`
-                        : `At Least: ${newVerifReqs.guild.guildRank.minRank}`
-                    : "Not Checking."
+                StringUtil.codifyString(
+                    newVerifReqs.guild.checkThis && newVerifReqs.guild.guildRank.checkThis
+                        ? newVerifReqs.guild.guildRank.exact
+                            ? `Exactly: ${newVerifReqs.guild.guildRank.minRank}`
+                            : `At Least: ${newVerifReqs.guild.guildRank.minRank}`
+                        : "Not Checking."
+                )
             ).addField(
                 "Maxed Characters",
                 StringUtil.codifyString(
-                    newVerifReqs.characters.checkThis
+                    newVerifReqs.characters.checkThis && newVerifReqs.characters.statsNeeded.some(x => x > 0)
                         ? newVerifReqs.characters.statsNeeded
-                            .map((num, idx) => `- ${idx + 1}/8: ${num}`)
+                            .map((num, idx) => `- ${idx}/8: ${num}`)
+                            .filter(x => !x.endsWith("0"))
                             .join("\n")
                         : "Not Checking."
                 )
             ).addField(
                 "Exaltations",
-                newVerifReqs.exaltations.checkThis
-                    ? Object.keys(newVerifReqs.exaltations.minimum)
-                        .map(x => `- ${x.toUpperCase()}: ${newVerifReqs.exaltations.minimum[x]}`)
-                        .join("\n")
-                    : "Not Checking."
+                StringUtil.codifyString(
+                    newVerifReqs.exaltations.checkThis
+                        ? Object.keys(newVerifReqs.exaltations.minimum)
+                            .filter(x => newVerifReqs.exaltations.minimum[x] > 0)
+                            .map(x => `- ${x.toUpperCase()}: ${newVerifReqs.exaltations.minimum[x]}/5`)
+                            .join("\n")
+                        : "Not Checking."
+                )
             );
 
             await botMsg.edit({
@@ -599,6 +623,10 @@ export class ConfigureVerification extends BaseCommand {
             switch (selectedButton.customId) {
                 case "back": {
                     return {value: verifReqs, status: TimedStatus.SUCCESS};
+                }
+                case "last_seen": {
+                    newVerifReqs.lastSeen.mustBeHidden = !newVerifReqs.lastSeen.mustBeHidden;
+                    break;
                 }
                 case "guild_rank": {
                     await botMsg.edit({
@@ -813,6 +841,7 @@ export class ConfigureVerification extends BaseCommand {
                         if (gNamePrompt.customId === "reset") {
                             newVerifReqs.guild.guildName.name = "";
                             newVerifReqs.guild.guildName.checkThis = false;
+                            newVerifReqs.guild.checkThis = false;
                         }
 
                         break;
@@ -820,6 +849,7 @@ export class ConfigureVerification extends BaseCommand {
 
                     newVerifReqs.guild.guildName.name = gNamePrompt;
                     newVerifReqs.guild.guildName.checkThis = true;
+                    newVerifReqs.guild.checkThis = true;
                     break;
                 }
                 case "chars": {
@@ -951,7 +981,7 @@ export class ConfigureVerification extends BaseCommand {
                 return {value: null, status: TimedStatus.TIMED_OUT};
 
             if (typeof selectedChoice === "number") {
-                newExaltationInfo.minimum[selectedIdx] = selectedChoice;
+                newExaltationInfo.minimum[entries[selectedIdx][0]] = selectedChoice;
                 continue;
             }
 
@@ -973,6 +1003,7 @@ export class ConfigureVerification extends BaseCommand {
                     break;
                 }
                 case "save": {
+                    newExaltationInfo.checkThis = Object.values(newExaltationInfo.minimum).some(x => x > 0);
                     return {value: newExaltationInfo, status: TimedStatus.SUCCESS};
                 }
             }
@@ -1052,8 +1083,8 @@ export class ConfigureVerification extends BaseCommand {
                 (i, elem) => {
                     const dgn = DungeonUtilities.getDungeonInfo(ctx.guildDoc!, newDungeonReq.botCompletions[i].key)!;
                     return i === selectedIdx
-                        ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${dgn.dungeonName}: \`${elem.value}\``
-                        : `${dgn.dungeonName}: \`${elem.value}\``;
+                        ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${dgn.dungeonName}: \`${elem.value}\`\n`
+                        : `${dgn.dungeonName}: \`${elem.value}\`\n`;
                 }
             );
 
@@ -1110,10 +1141,10 @@ export class ConfigureVerification extends BaseCommand {
                         break;
 
                     const selectMenus: MessageSelectMenu[] = [];
-                    for (const subset of ArrayUtilities.breakArrayIntoSubsets(possDungeons, 25).slice(4)) {
+                    for (const subset of ArrayUtilities.breakArrayIntoSubsets(possDungeons, 25)) {
                         selectMenus.push(
                             new MessageSelectMenu()
-                                .setCustomId(StringUtil.generateRandomString(10))
+                                .setCustomId(StringUtil.generateRandomString(40))
                                 .setMaxValues(1)
                                 .setMinValues(1)
                                 .addOptions(subset.map(x => {
@@ -1138,11 +1169,12 @@ export class ConfigureVerification extends BaseCommand {
                                 )
                         ],
                         components: AdvancedCollector.getActionRowsFromComponents([
+                            ...selectMenus,
                             new MessageButton()
-                                .setLabel("Back")
+                                .setLabel("Go Back")
+                                .setCustomId("go_back")
                                 .setStyle("DANGER")
-                                .setCustomId("back"),
-                            ...selectMenus
+                                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
                         ])
                     });
 
@@ -1184,6 +1216,7 @@ export class ConfigureVerification extends BaseCommand {
                     break;
                 }
                 case "save": {
+                    newDungeonReq.checkThis = newDungeonReq.botCompletions.some(x => x.value > 0);
                     return {value: newDungeonReq, status: TimedStatus.SUCCESS};
                 }
             }
@@ -1290,7 +1323,7 @@ export class ConfigureVerification extends BaseCommand {
                     : Math.max(0, num);
             });
 
-            if (!selectedChoice)
+            if (selectedChoice === null)
                 return {value: null, status: TimedStatus.TIMED_OUT};
 
             if (typeof selectedChoice === "number") {
@@ -1317,6 +1350,7 @@ export class ConfigureVerification extends BaseCommand {
                     break;
                 }
                 case "save": {
+                    newCharRequirements.checkThis = newCharRequirements.statsNeeded.some(x => x > 0);
                     return {value: newCharRequirements, status: TimedStatus.SUCCESS};
                 }
             }

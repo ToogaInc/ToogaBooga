@@ -1727,10 +1727,6 @@ export class ConfigureDungeons extends BaseCommand {
         const currentReactions = cReactions.slice().filter(x => {
             return !!DungeonUtilities.getReaction(ctx.guildDoc!, x.mapKey)!;
         }).filter(y => {
-            // Don't include nitro
-            if (y.mapKey === "NITRO")
-                return false;
-
             return !!GlobalFgrUtilities.getNormalOrCustomEmoji(
                 DungeonUtilities.getReaction(ctx.guildDoc!, y.mapKey)!
             );
@@ -1929,6 +1925,10 @@ export class ConfigureDungeons extends BaseCommand {
                     }).concat(Object.entries(MAPPED_AFK_CHECK_REACTIONS).map(x => {
                         return {mapKey: x[0], ...x[1]};
                     })).filter(y => {
+                        // Don't include nitro
+                        if (y.mapKey === "NITRO")
+                            return false;
+
                         // Check if this has already been used
                         if (currentReactions.some(x => x.mapKey === y.mapKey))
                             return false;

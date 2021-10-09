@@ -66,14 +66,15 @@ export namespace DungeonUtilities {
         }
 
         const overriddenDungeons: IDungeonOverrideInfo[] = [];
-        for await (const overriddenDungeon of guildDoc.properties.dungeonOverride) {
+        const customDungeons: ICustomDungeonInfo[] = [];
+
+        await Promise.all(guildDoc.properties.dungeonOverride.map(async overriddenDungeon => {
             checkReactions(overriddenDungeon);
             await checkRoles(overriddenDungeon);
             overriddenDungeons.push(overriddenDungeon);
-        }
+        }));
 
-        const customDungeons: ICustomDungeonInfo[] = [];
-        for (const customDungeon of guildDoc.properties.customDungeons) {
+        await Promise.all(guildDoc.properties.customDungeons.map(async customDungeon => {
             checkReactions(customDungeon);
             await checkRoles(customDungeon);
 
@@ -99,7 +100,10 @@ export namespace DungeonUtilities {
             }
 
             customDungeons.push(customDungeon);
-        }
+        }));
+
+        console.assert(overriddenDungeons.length === guildDoc.properties.dungeonOverride.length);
+        console.assert(customDungeons.length === guildDoc.properties.customDungeons.length);
 
         return changed ? await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
             $set: {

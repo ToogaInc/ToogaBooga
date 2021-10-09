@@ -487,7 +487,8 @@ export namespace VerifyManager {
 
         const code = StringUtil.generateRandomString(15);
         verifKit.verifyStep?.send({
-            content: `[Main] ${member} will be trying to verify under the name: **\`${nameToVerify}\`**`
+            content: `[Main] ${member} will be trying to verify under the name: **\`${nameToVerify}\`** with code`
+                + "`" + code + "`."
         });
 
         const timeStarted = Date.now();
@@ -513,6 +514,7 @@ export namespace VerifyManager {
         });
 
         collector.on("collect", async i => {
+            await i.deferUpdate();
             if (i.customId === "cancel") {
                 await verifKit.msg!.edit({
                     embeds: [
@@ -597,6 +599,48 @@ export namespace VerifyManager {
                 });
 
                 collector.stop();
+                return;
+            }
+
+            // Check desc
+            let codeFound = false;
+            for (const d of requestData.description) {
+                if (!d.includes(code))
+                    continue;
+                codeFound = true;
+                break;
+            }
+
+            if (!codeFound) {
+                await verifKit.msg!.edit({
+                    embeds: [
+                        getVerifEmbed(
+                            member,
+                            nameToVerify!,
+                            code,
+                            guildDoc,
+                            guildDoc.otherMajorConfig.verificationProperties
+                        ).setFooter("Verification Process Expires")
+                            .setTimestamp(timeStarted + 20 * 60 * 1000)
+                            .addField(
+                                `${Emojis.WARNING_EMOJI} Verification Issues`,
+                                "Your verification code was not found in your RealmEye profile's description."
+                            )
+                    ],
+                    components: AdvancedCollector.getActionRowsFromComponents([
+                        CHECK_PROFILE_BUTTON,
+                        CANCEL_PROFILE_CHECK_BUTTON
+                    ])
+                });
+                await member.send({
+                    content: "An error occurred while reviewing your profile. Please see the above embed."
+                }).catch();
+
+                verifKit.verifyFail?.send({
+                    content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but the verification code,`
+                        + `\`${code}\`, was not found in his or her description.`
+                });
+
                 return;
             }
 
@@ -693,7 +737,8 @@ export namespace VerifyManager {
             const checkRes = await checkRequirements(member, MongoManager.getMainSection(guildDoc), requestData);
 
             if (checkRes.conclusion === "FAIL") {
-                const fields: EmbedFieldData[] = checkRes.fatalIssues.map(x => {
+                const issuesToUse = checkRes.fatalIssues.length === 0 ? checkRes.manualIssues : checkRes.fatalIssues;
+                const fields: EmbedFieldData[] = issuesToUse.map(x => {
                     return {name: x.key, value: x.value};
                 });
 
@@ -723,7 +768,7 @@ export namespace VerifyManager {
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but there were several `
                         + "fatal issues with the person's profile. These issues are listed below:\n"
-                        + checkRes.fatalIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                        + issuesToUse.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
                 });
 
                 collector.stop();
@@ -1140,7 +1185,7 @@ export namespace VerifyManager {
             .setDescription(descSb.toString())
             .addField(
                 "Reason(s) for Manual Verification",
-                checkRes.manualIssues.join("\n")
+                checkRes.manualIssues.map(x => `- **${x.key}**: ${x.log}`).join("\n")
             );
 
         const manualVerifMsg = await verifKit.manualVerify.send({
@@ -1451,6 +1496,8 @@ export namespace VerifyManager {
             const checkPastDeaths = verifProps.verifReq.characters.checkPastDeaths;
             for (let i = 0; i < verifProps.verifReq.characters.statsNeeded.length; i++) {
                 const numNeeded = verifProps.verifReq.characters.statsNeeded[i];
+                if (numNeeded === 0)
+                    continue;
                 sb.append(`- ${numNeeded} ${i}/${GeneralConstants.NUMBER_OF_STATS} Characters`)
                     .append(checkPastDeaths ? " (Past Deaths Allowed)." : ".").appendLine();
             }
@@ -1566,8 +1613,8 @@ export namespace VerifyManager {
             }
 
             if (verifReq.guild.guildRank.checkThis) {
-                const rankHasDisplay = `**\`${resp.rank}\`**`;
-                const rankNeedDisplay = `**\`${verifReq.rank}\`**`;
+                const rankHasDisplay = `**\`${resp.guildRank}\`**`;
+                const rankNeedDisplay = `**\`${verifReq.guild.guildRank.minRank}\`**`;
 
                 if (verifReq.guild.guildRank.exact) {
                     if (verifReq.guild.guildRank.minRank !== resp.guildRank) {
@@ -1586,7 +1633,7 @@ export namespace VerifyManager {
                 }
                 else if (!isValidGuildRank(verifReq.guild.guildRank.minRank, resp.guildRank)) {
                     result.fatalIssues.push({
-                        key: "Not In Correct Guild",
+                        key: "Invalid Guild Rank",
                         value: resp.guild
                             ? `You have the rank ${rankHasDisplay} but must have at least rank ${rankNeedDisplay}.`
                             : `You must be in the guild, **\`${verifReq.guild.guildName.name}\`**.`,
@@ -1839,7 +1886,8 @@ export namespace VerifyManager {
                     else {
                         for (const statNotFulfilled of notMetExaltations) {
                             const statName = GeneralConstants.SHORT_STAT_TO_LONG[statNotFulfilled];
-                            issuesExaltations.append(`- Need ${neededExalt[statNotFulfilled]} ${statName} Exaltations.`)
+                            issuesExaltations.append(`- Need ${neededExalt[statNotFulfilled]} ${statName[1]}`)
+                                .append(" Exaltations.")
                                 .appendLine();
                         }
                     }
@@ -1864,7 +1912,7 @@ export namespace VerifyManager {
         else
             result.conclusion = "PASS";
 
-        if (result.conclusion === "MANUAL" && GuildFgrUtilities.hasCachedChannel(
+        if (result.conclusion === "MANUAL" && !GuildFgrUtilities.hasCachedChannel(
             member.guild,
             section.channels.verification.manualVerificationChannelId
         )) {
@@ -1882,10 +1930,15 @@ export namespace VerifyManager {
      */
     export function isValidGuildRank(minNeeded: string, actual: string): boolean {
         if (minNeeded === actual) return true;
-        for (let i = GUILD_ROLES.length - 1; i >= 0; i--) {
-            if (GUILD_ROLES[i] !== minNeeded) continue;
-            if (GUILD_ROLES[i] === actual) return true;
+        const idx = GUILD_ROLES.indexOf(minNeeded);
+        if (idx === -1)
+            return false;
+
+        for (let i = idx; i >= 0; i--) {
+            if (GUILD_ROLES[i] === actual)
+                return true;
         }
+
         return false;
     }
 }
