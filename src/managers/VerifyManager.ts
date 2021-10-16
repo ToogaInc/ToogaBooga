@@ -1239,7 +1239,7 @@ export namespace VerifyManager {
         )!;
 
         const [manualVerifMsg, member, guildDoc] = await Promise.all([
-            mVerifMsg ?? await GuildFgrUtilities.fetchMessage(manualVerifChannel, manualVerifyRes.manualVerifyMsgId),
+            mVerifMsg ?? GuildFgrUtilities.fetchMessage(manualVerifChannel, manualVerifyRes.manualVerifyMsgId),
             GuildFgrUtilities.fetchGuildMember(moderator.guild, manualVerifyRes.userId),
             MongoManager.getOrCreateGuildDoc(moderator.guild, true)
         ]);
@@ -1278,18 +1278,22 @@ export namespace VerifyManager {
             return false;
         }
 
-        const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === manualVerifyRes.sectionId);
+        let section = guildDoc.guildSections.find(x => x.uniqueIdentifier === manualVerifyRes.sectionId);
         // No section = remove all manual verification requests for that section
         if (!section) {
-            await MongoManager.updateAndFetchGuildDoc({guildId: moderator.guild.id}, {
-                $pull: {
-                    manualVerificationEntries: {
-                        sectionId: manualVerifyRes.sectionId
+            if (manualVerifyRes.sectionId !== "MAIN") {
+                await MongoManager.updateAndFetchGuildDoc({guildId: moderator.guild.id}, {
+                    $pull: {
+                        manualVerificationEntries: {
+                            sectionId: manualVerifyRes.sectionId
+                        }
                     }
-                }
-            });
+                });
 
-            return false;
+                return false;
+            }
+
+            section = MongoManager.getMainSection(guildDoc);
         }
 
         // No verified role = no point in manually verifying that person.
@@ -1378,7 +1382,9 @@ export namespace VerifyManager {
                 if (section.isMainSection) {
                     promises.push(
                         MongoManager.addIdNameToTheCollection(member, manualVerifyRes.ign),
-                        member.setNickname(manualVerifyRes.ign, "Manually verified successfully."),
+                        GlobalFgrUtilities.tryExecuteAsync(async () => {
+                            await member.setNickname(manualVerifyRes.ign, "Manually verified successfully.");
+                        }),
                         verifySuccessChannel?.send({
                             content: `[Main] ${member} has been manually verified as **\`${manualVerifyRes.ign}\`** by`
                                 + ` ${moderator}.`

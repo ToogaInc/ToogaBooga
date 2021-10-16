@@ -38,14 +38,7 @@ type QuotaName = {
 export class ConfigureQuotas extends BaseCommand {
     public static MAX_QUOTAS_ALLOWED: number = 10;
 
-    public static ALL_QUOTAS_KV: { [key: string]: string } = {
-        "Parse": "Parse",
-        "ManualVerify": "Manual Verify",
-        "PunishmentIssued": "Punishment Issued",
-        "RunComplete": "Run Complete",
-        "RunAssist": "Run Assist",
-        "RunFailed": "Run Failed"
-    };
+
 
     public static DAYS_OF_WEEK: [string, number][] = [
         ["Sunday", 0],
@@ -852,20 +845,20 @@ export class ConfigureQuotas extends BaseCommand {
                     const logTypeAndDgnId = elem.key.split(":");
                     const logType = logTypeAndDgnId[0];
                     if (logTypeAndDgnId.length === 1) {
-                        const tempS = `${ConfigureQuotas.ALL_QUOTAS_KV[logType]} (All): \`${elem.value}\` Points\n`;
+                        const tempS = `${GeneralConstants.ALL_QUOTAS_KV[logType]} (All): \`${elem.value}\` Points\n`;
                         return i === currIdx
                             ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${tempS}`
                             : tempS;
                     }
 
                     const dungeonName = DungeonUtilities.getDungeonInfo(ctx.guildDoc!, logTypeAndDgnId[1])!.dungeonName;
-                    const s = `${ConfigureQuotas.ALL_QUOTAS_KV[logType]} (${dungeonName}): \`${elem.value}\` Points\n`;
+                    const s = `${GeneralConstants.ALL_QUOTAS_KV[logType]} (${dungeonName}): \`${elem.value}\` Points\n`;
                     return i === currIdx
                         ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${s}`
                         : s;
                 }
 
-                const mainS = `${ConfigureQuotas.ALL_QUOTAS_KV[elem.key]}: \`${elem.value}\` Points\n`;
+                const mainS = `${GeneralConstants.ALL_QUOTAS_KV[elem.key]}: \`${elem.value}\` Points\n`;
                 return i === currIdx
                     ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${mainS}`
                     : mainS;
@@ -938,10 +931,11 @@ export class ConfigureQuotas extends BaseCommand {
                         return {status: TimedStatus.CANCELED, value: null};
 
                     if (r.value!.quotaType.startsWith("Run")) {
+                        const runType = r.value!.quotaType.split(":")[0];
                         // If the new quota log type has a specific dungeon, remove dungeon run general quota log types
                         if (r.value!.quotaType.includes(":")) {
                             for (let i = ptsToUse.length - 1; i >= 0; i--) {
-                                if (ptsToUse[i].key.startsWith("Run") && !ptsToUse[i].key.includes(":")) {
+                                if (ptsToUse[i].key.startsWith(runType) && !ptsToUse[i].key.includes(":")) {
                                     ptsToUse.splice(i, 1);
                                 }
                             }
@@ -950,7 +944,7 @@ export class ConfigureQuotas extends BaseCommand {
                         // types that does have a specific dungeon
                         else {
                             for (let i = ptsToUse.length - 1; i >= 0; i--) {
-                                if (ptsToUse[i].key.startsWith("Run") && ptsToUse[i].key.includes(":")) {
+                                if (ptsToUse[i].key.startsWith(runType) && ptsToUse[i].key.includes(":")) {
                                     ptsToUse.splice(i, 1);
                                 }
                             }

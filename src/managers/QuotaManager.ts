@@ -193,9 +193,10 @@ export namespace QuotaManager {
         }
 
         const descSb = new StringBuilder()
-            .append(`- Start Time: ${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT`).appendLine()
-            .append(`- End Time: ${TimeUtilities.getDateTime(Date.now())} GMT`).appendLine()
-            .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine();
+            .append(`- Start Time: \`${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT\``).appendLine()
+            .append(`- End Time: \`${TimeUtilities.getDateTime(Date.now())} GMT\``).appendLine()
+            .append(`- Members w/ Role: \`${role?.members.size ?? "N/A"}\``).appendLine()
+            .append(`- Minimum Points Needed: \`${oldQuotas.pointsNeeded}\``).appendLine();
         if (!role) {
             descSb.append("- Warning: This role was not found; it might have been deleted. This role has been ")
                 .append("removed from the quota system.");
@@ -541,13 +542,38 @@ export namespace QuotaManager {
         );
         const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - Date.now(), false);
 
+        const quotaPtDisplay = quotaInfo.pointValues.map(x => {
+            const {key, value} = x;
+            const logTypeDgnId = key.split(":");
+            const logType = logTypeDgnId[0];
+            if (key.startsWith("Run")) {
+                if (logTypeDgnId.length === 1) {
+                    return `- ${GeneralConstants.ALL_QUOTAS_KV[logType]} (All): ${value} PT`;
+                }
+
+                const dungeonName = DungeonUtilities.getDungeonInfo(guildDoc, logTypeDgnId[1])!.dungeonName;
+                return `${GeneralConstants.ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
+            }
+
+            return `${GeneralConstants.ALL_QUOTAS_KV[key]}: ${value} PT`;
+        }).join("\n");
+
         const embed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
             .setTitle(`Active Quota: ${role.name}`)
             .setDescription(
                 new StringBuilder()
-                    .append(`- Start Time: ${TimeUtilities.getDateTime(startTime)} GMT`).appendLine()
-                    .append(`- End Time: ${TimeUtilities.getDateTime(endTime)} GMT`).appendLine()
-                    .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine().appendLine()
+                    .append(`- Start Time: \`${TimeUtilities.getDateTime(startTime)} GMT\``).appendLine()
+                    .append(`- End Time: \`${TimeUtilities.getDateTime(endTime)} GMT\``).appendLine()
+                    .append(`- Members w/ Role: \`${role?.members.size ?? "N/A"}\``).appendLine()
+                    .append(`- Minimum Points Needed: \`${quotaInfo.pointsNeeded}\``).appendLine()
+                    .append("__**Point Values**__")
+                    .append(
+                        StringUtil.codifyString(
+                            quotaPtDisplay.length === 0
+                                ? "N/A"
+                                : quotaPtDisplay
+                        )
+                    )
                     .append("__**Time Left**__")
                     .append(StringUtil.codifyString(timeLeft))
                     .toString()

@@ -15,6 +15,15 @@ export namespace GeneralConstants {
         ..."0123456789".split("")
     ];
 
+    export const ALL_QUOTAS_KV: { [key: string]: string } = {
+        "Parse": "Parse",
+        "ManualVerify": "Manual Verify",
+        "PunishmentIssued": "Punishment Issued",
+        "RunComplete": "Run Complete",
+        "RunAssist": "Run Assist",
+        "RunFailed": "Run Failed"
+    };
+
     // These are from the IVerificationRequirements.ts file
     export const SHORT_STAT_TO_LONG: { [s: string]: [string, string] } = {
         "att": ["attack", "Attack"],

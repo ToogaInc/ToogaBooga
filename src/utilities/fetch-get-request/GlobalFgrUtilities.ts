@@ -174,7 +174,7 @@ export namespace GlobalFgrUtilities {
      */
     export async function tryExecuteAsync<T = void>(func: () => Promise<T | null>): Promise<T | null> {
         try {
-            return func();
+            return await func();
         } catch (e) {
             return null;
         }
