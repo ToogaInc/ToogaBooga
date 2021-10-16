@@ -94,14 +94,12 @@ export namespace VerifyManager {
      * @private
      */
     async function getInitialMessage(member: GuildMember): Promise<Message | null> {
-        return GlobalFgrUtilities.tryExecuteAsync<Message>(async () => {
-            return member.send({
-                embeds: [
-                    new MessageEmbed()
-                        .setColor("YELLOW")
-                        .setDescription("This is a test message to ensure that you can receive direct messages.")
-                ]
-            });
+        return await GlobalFgrUtilities.sendMsg(member, {
+            embeds: [
+                new MessageEmbed()
+                    .setColor("YELLOW")
+                    .setDescription("This is a test message to ensure that you can receive direct messages.")
+            ]
         });
     }
 
@@ -297,7 +295,9 @@ export namespace VerifyManager {
 
         // If this is true, then this person is being manually verified.
         if (manualVerifyEntry) {
-            await member.send("Your profile is currently under manual verification. Please try again later.");
+            await GlobalFgrUtilities.sendMsg(member, {
+                content: "Your profile is currently under manual verification. Please try again later."
+            });
             verifKit.verifyFail?.send({
                 content: `[${section.sectionName}] ${member} tried to verify but he or she is currently under manual `
                     + "verification."
@@ -586,10 +586,10 @@ export namespace VerifyManager {
                     ],
                     components: []
                 });
-                await member.send({
+                await GlobalFgrUtilities.sendMsg(member, {
                     content: "An error occurred while trying to get basic data from your profile. Please see the above"
                         + " embed."
-                }).catch();
+                });
 
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but an unknown error `
@@ -632,14 +632,25 @@ export namespace VerifyManager {
                         CANCEL_PROFILE_CHECK_BUTTON
                     ])
                 });
-                await member.send({
-                    content: "An error occurred while reviewing your profile. Please see the above embed."
-                }).catch();
 
+                const r = await GlobalFgrUtilities.sendMsg(member, {
+                    content: "An error occurred while reviewing your profile. Please see the above embed."
+                });
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but the verification code,`
                         + `\`${code}\`, was not found in his or her description.`
                 });
+
+                if (!r) {
+                    collector.stop();
+                    verifKit.msg?.delete().catch();
+
+                    verifKit.verifyFail?.send({
+                        content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but something went wrong`
+                            + " when trying to message the user. Verification has been canceled."
+                    });
+                    return;
+                }
 
                 return;
             }
@@ -672,14 +683,26 @@ export namespace VerifyManager {
                         CANCEL_PROFILE_CHECK_BUTTON
                     ])
                 });
-                await member.send({
+
+                const r = await GlobalFgrUtilities.sendMsg(member, {
                     content: "An error occurred while trying to get your name history. Please see the above embed."
-                }).catch();
+                });
 
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but an unknown error `
                         + "occurred when trying to reach his or her profile's **name history**."
                 });
+
+                if (!r) {
+                    collector.stop();
+                    verifKit.msg?.delete().catch();
+
+                    verifKit.verifyFail?.send({
+                        content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but something went wrong`
+                            + " when trying to message the user. Verification has been canceled."
+                    });
+                    return;
+                }
                 return;
             }
 
@@ -717,10 +740,10 @@ export namespace VerifyManager {
                         ],
                         components: []
                     });
-                    await member.send({
+                    await GlobalFgrUtilities.sendMsg(member, {
                         content: "You are blacklisted and cannot verify in this server at this time. Please see the"
                             + " above embed."
-                    }).catch();
+                    });
 
                     verifKit.verifyFail?.send({
                         content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but he or she is `
@@ -757,19 +780,20 @@ export namespace VerifyManager {
                     + " Message a staff member for more assistance."
                 );
 
-                await verifKit.msg!.edit({
-                    embeds: [failEmbed],
-                    components: []
-                });
-                await member.send({
-                    content: "A major requirement was not met. Please review the above embed."
-                }).catch();
-
-                verifKit.verifyFail?.send({
-                    content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but there were several `
-                        + "fatal issues with the person's profile. These issues are listed below:\n"
-                        + issuesToUse.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
-                });
+                await Promise.all([
+                    verifKit.msg!.edit({
+                        embeds: [failEmbed],
+                        components: []
+                    }),
+                    GlobalFgrUtilities.sendMsg(member, {
+                        content: "A major requirement was not met. Please review the above embed."
+                    }),
+                    verifKit.verifyFail?.send({
+                        content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but there were several `
+                            + "fatal issues with the person's profile. These issues are listed below:\n"
+                            + issuesToUse.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                    })
+                ]);
 
                 collector.stop();
                 return;
@@ -798,15 +822,26 @@ export namespace VerifyManager {
                         CANCEL_PROFILE_CHECK_BUTTON
                     ])
                 });
-                await member.send({
+                const r = await GlobalFgrUtilities.sendMsg(member, {
                     content: "An error occurred while reviewing your profile. Please see the above embed."
-                }).catch();
+                });
 
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but there were several `
                         + "minor issues with the person's profile. These issues are listed below:\n"
                         + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
                 });
+
+                if (!r) {
+                    collector.stop();
+                    verifKit.msg?.delete().catch();
+
+                    verifKit.verifyFail?.send({
+                        content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but something went wrong`
+                            + " when trying to message the user. Verification has been canceled."
+                    });
+                    return;
+                }
 
                 return;
             }
@@ -1051,11 +1086,9 @@ export namespace VerifyManager {
             new Promise<Message | null>((resolve) => {
                 if (!verifKit.msg) {
                     return resolve(
-                        GlobalFgrUtilities.tryExecuteAsync<Message>(() => {
-                            return member.send({
-                                embeds: [failEmbed],
-                                components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
-                            });
+                        GlobalFgrUtilities.sendMsg(member, {
+                            embeds: [failEmbed],
+                            components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
                         })
                     );
                 }
@@ -1071,10 +1104,10 @@ export namespace VerifyManager {
                 if (!verifKit.msg)
                     return resolve();
 
-                member.send({
+                GlobalFgrUtilities.sendMsg(member, {
                     content: "You do not meet the requirements to verify in this server or section. Please review"
                         + " the above."
-                }).catch();
+                });
                 resolve();
             }),
             await member.createDM()
@@ -1335,9 +1368,7 @@ export namespace VerifyManager {
                     );
 
                 promises.push(
-                    GlobalFgrUtilities.tryExecuteAsync(async () => {
-                        await member.send({embeds: [finishedEmbed]});
-                    }),
+                    GlobalFgrUtilities.sendMsg(member, {embeds: [finishedEmbed]}),
                     section.isMainSection
                         ? verifyFailChannel?.send({
                             content: `[Main] ${member} has tried to verify as **\`${manualVerifyRes.ign}\`**, but his`
@@ -1373,9 +1404,7 @@ export namespace VerifyManager {
                 }
 
                 promises.push(
-                    GlobalFgrUtilities.tryExecuteAsync(async () => {
-                        await member.send({embeds: [finishedEmbed]});
-                    }),
+                    GlobalFgrUtilities.sendMsg(member, {embeds: [finishedEmbed]}),
                     member.roles.add(section.roles.verifiedRoleId).catch()
                 );
 

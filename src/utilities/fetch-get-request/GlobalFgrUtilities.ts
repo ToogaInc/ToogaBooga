@@ -141,7 +141,7 @@ export namespace GlobalFgrUtilities {
     export async function sendMsg(channel: PartialTextBasedChannelFields,
                                   msgOptions: MessageOptions): Promise<Message | null> {
         try {
-            return channel.send({
+            return await channel.send({
                 content: msgOptions.content,
                 embeds: msgOptions.embeds,
                 files: msgOptions.files,
