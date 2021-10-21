@@ -92,7 +92,7 @@ export class WarnMember extends BaseCommand {
             .setTitle("Warning Issued.")
             .setDescription(`You have issued a warning to ${resMember.member} (${resMember.member.displayName}).`)
             .addField("Reason", StringUtil.codifyString(reason))
-            .addField("Moderation ID", StringUtil.codifyString(reason))
+            .addField("Moderation ID", StringUtil.codifyString(warningId))
             .setTimestamp();
 
         const logInfo = await PunishmentManager.logPunishment(resMember.member, "Warn", {

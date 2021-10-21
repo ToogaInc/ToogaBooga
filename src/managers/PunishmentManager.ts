@@ -1,4 +1,4 @@
-import {Collection, Guild, GuildChannel, GuildMember, MessageEmbed, TextChannel} from "discord.js";
+import {Collection, Guild, GuildChannel, GuildMember, TextChannel} from "discord.js";
 import {IGuildInfo, IMutedUser, IPunishmentHistoryEntry, ISectionInfo, ISuspendedUser, IUserInfo} from "../definitions";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -9,6 +9,7 @@ import {AllModLogType, MainOnlyModLogType, SectionModLogType} from "../definitio
 import {FilterQuery} from "mongodb";
 import {Queue} from "../utilities/Queue";
 import {TimeUtilities} from "../utilities/TimeUtilities";
+import {MessageUtilities} from "../utilities/MessageUtilities";
 
 interface IPunishmentCommandResult {
     /**
@@ -300,17 +301,15 @@ export namespace PunishmentManager {
             .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${TimeUtilities.getDateTime(entry.expiresAt!)} GMT`}`)
             .toString();
 
-        const logToChanEmbed = new MessageEmbed()
-            .setColor(isAddingPunishment ? "RED" : "GREEN")
+        const logToChanEmbed = MessageUtilities.generateBlankEmbed(details.guild, isAddingPunishment ? "RED" : "GREEN")
             .addField("Moderator", modStr)
-            .addField("Reason", entry.reason)
+            .addField("Reason", StringUtil.codifyString(entry.reason))
             .setTimestamp()
             .setFooter(`Mod. ID: ${entry.actionId}`);
 
-        const toSendToUserEmbed = new MessageEmbed()
-            .setColor(isAddingPunishment ? "RED" : "GREEN")
+        const toSendToUserEmbed = MessageUtilities.generateBlankEmbed(details.guild, isAddingPunishment ? "RED" : "GREEN")
             .addField("Moderator", modStr)
-            .addField("Reason", entry.reason)
+            .addField("Reason", StringUtil.codifyString(entry.reason))
             .setTimestamp()
             .setFooter(`Mod. ID: ${entry.actionId}`);
 
@@ -320,6 +319,39 @@ export namespace PunishmentManager {
         }
 
         switch (punishmentType) {
+            case "Warn": {
+                if (!("id" in member))
+                    return null;
+
+                // Logging
+                logToChanEmbed
+                    .setTitle("Warning Issued.")
+                    .setDescription(new StringBuilder()
+                        .append(`⇒ **Member Warned:** ${entry.affectedUser.name}`)
+                        .appendLine()
+                        .append(`⇒ **Member Mention:** ${member} (${member.id})`)
+                        .toString());
+
+                // To send to member
+                toSendToUserEmbed
+                    .setTitle("Warning.")
+                    .setDescription(`You have been warned in **${details.guild.name}**.`);
+                break;
+            }
+            case "Unwarn": {
+                if (!("id" in member))
+                    return null;
+
+                // Logging
+                logToChanEmbed
+                    .setTitle("Warning Removed.")
+                    .setDescription(new StringBuilder()
+                        .append(`⇒ **Member Affected:** ${entry.affectedUser.name}`)
+                        .appendLine()
+                        .append(`⇒ **Member Mention:** ${member} (${member.id})`)
+                        .toString());
+                break;
+            }
             case "Blacklist": {
                 // Logging
                 const descSb = new StringBuilder()
@@ -519,6 +551,7 @@ export namespace PunishmentManager {
         }
 
         // Update the user database if possible.
+        let idToResolve: string;
         if (isAddingPunishment) {
             const filterQuery: FilterQuery<IUserInfo> = {
                 $or: []
@@ -531,6 +564,8 @@ export namespace PunishmentManager {
                 filterQuery.$or?.push({
                     discordId: nameRes[0].currentDiscordId
                 });
+
+                idToResolve = nameRes[0].currentDiscordId;
 
                 // For logging purposes
                 if (nameRes.length > 1)
@@ -547,11 +582,14 @@ export namespace PunishmentManager {
                 filterQuery.$or?.push({
                     discordId: member.id
                 });
+
+                idToResolve = member.id;
             }
 
             if ((filterQuery.$or?.length ?? 0) === 0)
                 return null;
 
+            await MongoManager.getOrCreateUserDoc(idToResolve);
             const queryResult = await MongoManager.getUserCollection().updateOne(filterQuery, {
                 $push: {
                     "details.moderationHistory": entry

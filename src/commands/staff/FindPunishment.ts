@@ -129,7 +129,7 @@ export class FindPunishment extends BaseCommand {
 
         // If this is a punishment, we also include duration, expiration time BEFORE the reason + evidence
         if (pInfo.actionId === punishmentId) {
-            if (typeof pInfo.duration !== "undefined") {
+            if (typeof pInfo.duration !== "undefined" && pInfo.duration !== -1) {
                 embed.addField(
                     "Duration",
                     StringUtil.codifyString(TimeUtilities.formatDuration(pInfo.duration, false))
