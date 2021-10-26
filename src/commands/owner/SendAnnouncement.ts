@@ -46,6 +46,9 @@ export class SendAnnouncement extends BaseCommand {
         super(cmi, builder);
     }
 
+    /**
+     * @inheritDoc
+     */
     public async run(ctx: ICommandContext): Promise<number> {
         const args = ctx.interaction.options.get("msg", true);
         const allGuildDocs = await MongoManager.getGuildCollection().find({}).toArray();

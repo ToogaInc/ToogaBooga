@@ -92,42 +92,52 @@ export class Help extends BaseCommand {
                 const pRoleIds: string[] = [];
                 if (ctx.guildDoc) {
                     const customPermData = ctx.guildDoc.properties.customCmdPermissions
-                        .find(x => x.key === this.commandInfo.cmdCode);
+                        .find(x => x.key === command.commandInfo.cmdCode);
                     const useCustomPerms = Boolean(customPermData && !customPermData.value.useDefaultRolePerms);
                     const rPerms = useCustomPerms
                         ? customPermData!.value.rolePermsNeeded
-                        : this.commandInfo.rolePermissions;
-                    const roles: Role[] = this.getNeededPermissionsBase(rPerms, ctx.guildDoc)
+                        : command.commandInfo.rolePermissions;
+                    const roles: Role[] = BaseCommand.getNeededPermissionsBase(rPerms, ctx.guildDoc)
                         .map(x => GuildFgrUtilities.getCachedRole(ctx.guild!, x))
                         .filter(x => Boolean(x)) as Role[];
 
                     cmdHelpEmbed.addField(
                         "Server Roles Needed (≥ 1)",
-                        roles.length > 0 ? roles.join(", ") : "N/A."
+                        roles.length > 0 ? roles.join(", ") : StringUtil.codifyString("N/A.")
+                    );
+                }
+                else if (command.commandInfo.rolePermissions.length > 0) {
+                    cmdHelpEmbed.addField(
+                        "Server Roles Needed (≥ 1)",
+                        command.commandInfo.rolePermissions.join(", ")
                     );
                 }
                 else {
                     cmdHelpEmbed.addField(
-                        "Roles Needed (≥ 1)",
-                        command.commandInfo.rolePermissions.join(", ")
+                        "Server Roles Needed (≥ 1)",
+                        StringUtil.codifyString("N/A")
                     );
                 }
 
                 cmdHelpEmbed
                     .addField(
                         "Usage Guide",
-                        command.commandInfo.usageGuide.length > 0
-                            ? command.commandInfo.usageGuide.map(x => `- /${x}`).join("\n")
-                            : "N/A."
+                        StringUtil.codifyString(
+                            command.commandInfo.usageGuide.length > 0
+                                ? command.commandInfo.usageGuide.map(x => `- /${x}`).join("\n")
+                                : "N/A."
+                        )
                     )
                     .addField(
                         "Example(s)",
-                        command.commandInfo.exampleGuide.length > 0
-                            ? command.commandInfo.exampleGuide.map(x => `- /${x}`).join("\n")
-                            : "N/A."
+                        StringUtil.codifyString(
+                            command.commandInfo.exampleGuide.length > 0
+                                ? command.commandInfo.exampleGuide.map(x => `- /${x}`).join("\n")
+                                : "N/A."
+                        )
                     );
 
-                await ctx.interaction.editReply({
+                await ctx.interaction.reply({
                     embeds: [cmdHelpEmbed]
                 });
 
@@ -157,7 +167,7 @@ export class Help extends BaseCommand {
             );
         }
 
-        await ctx.interaction.editReply({
+        await ctx.interaction.reply({
             embeds: [helpEmbed]
         });
         return 0;

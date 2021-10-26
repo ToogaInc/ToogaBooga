@@ -215,7 +215,7 @@ export abstract class BaseCommand {
             : this.commandInfo.rolePermissions;
         // This represents the roles that are needed to ensure that the command can be executed. The user must have
         // at least one of these roles.
-        const allRoleIds = this.getNeededPermissionsBase(rolePermissions, guildDoc);
+        const allRoleIds = BaseCommand.getNeededPermissionsBase(rolePermissions, guildDoc);
 
         const serverPermissions = customPermData && !customPermData.value.useDefaultServerPerms
             ? customPermData.value.serverPermsNeeded
@@ -276,7 +276,7 @@ export abstract class BaseCommand {
      * @return {string[]} All role IDs that can be used to satisfy the requirement.
      * @private
      */
-    public getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo): string[] {
+    public static getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo): string[] {
         const roleCollection = MongoManager.getAllConfiguredRoles(guildDoc);
 
         // Here, we need to assume that there are both role IDs along with concrete role names.
