@@ -313,8 +313,14 @@ export namespace PunishmentManager {
             .setFooter(`Mod. ID: ${entry.actionId}`);
 
         if (!isAddingPunishment) {
-            logToChanEmbed.addField("Resolving Moderation ID", details.actionIdToResolve ?? "N/A");
-            toSendToUserEmbed.addField("Resolving Moderation ID", details.actionIdToResolve ?? "N/A");
+            logToChanEmbed.addField(
+                "Resolving Moderation ID",
+                StringUtil.codifyString(details.actionIdToResolve ?? "N/A")
+            );
+            toSendToUserEmbed.addField(
+                "Resolving Moderation ID",
+                StringUtil.codifyString(details.actionIdToResolve ?? "N/A")
+            );
         }
 
         switch (punishmentType) {
@@ -617,7 +623,7 @@ export namespace PunishmentManager {
             delete entry.expiresAt;
             delete entry.duration;
             const queryResult = await MongoManager.getUserCollection().updateOne({
-                "details.moderationHistory.$.actionId": details.actionIdToResolve
+                "details.moderationHistory.actionId": details.actionIdToResolve
             }, {
                 $set: {
                     "details.moderationHistory.$.resolved": entry
