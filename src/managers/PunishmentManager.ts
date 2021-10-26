@@ -813,7 +813,7 @@ export namespace SuspensionManager {
                     }
 
                     // Check if this person still needs to serve time.
-                    if (Date.now() - details.timeEnd >= 0)
+                    if (details.timeEnd - Date.now() >= 0)
                         continue;
 
                     removeSectionSuspension(
@@ -850,7 +850,7 @@ export namespace SuspensionManager {
                 if (!suspendedMember)
                     continue;
 
-                if (Date.now() - details.timeEnd >= 0)
+                if (details.timeEnd - Date.now() >= 0)
                     continue;
 
                 // Don't need to wait for this to resolve
@@ -1242,7 +1242,7 @@ export namespace MuteManager {
                 if (!mutedMember)
                     continue;
 
-                if (Date.now() - mutedInfo.timeEnd >= 0)
+                if (mutedInfo.timeEnd - Date.now() >= 0)
                     continue;
 
                 // Handle unmuting.

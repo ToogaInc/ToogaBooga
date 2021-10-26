@@ -76,7 +76,12 @@ export class FindPunishment extends BaseCommand {
         ]);
 
         const embed = MessageUtilities.generateBlankEmbed(ctx.guild!)
-            .setTitle(`${pInfo.moderationType} Information: ${pInfo.affectedUser.name}`);
+            .setTitle(
+                pInfo.resolved?.actionId === punishmentId
+                    ? `(Resolved) ${pInfo.moderationType} Information: ${pInfo.affectedUser.name}`
+                    : `${pInfo.moderationType} Information: ${pInfo.affectedUser.name}`
+            );
+
 
         // Let bot owners see all moderation history regardless of guild, but no one else
         if (pInfo.guildId !== ctx.guild!.id && !OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id)) {
@@ -105,20 +110,26 @@ export class FindPunishment extends BaseCommand {
             ? mResolvedMention
             : mMention;
 
+        const descSb = new StringBuilder();
+        // We might not have all this info
+        if (punishmentObj.affectedUser.id || punishmentObj.affectedUser.tag || punishmentObj.affectedUser.name) {
+            descSb.append(`__**User Information**__ ${uMention ?? ""}`).appendLine();
+            if (punishmentObj.affectedUser.id)
+                descSb.append(`- User ID: ${punishmentObj.affectedUser.id}`).appendLine();
+            if (punishmentObj.affectedUser.tag)
+                descSb.append(`- User Tag: ${punishmentObj.affectedUser.tag}`).appendLine();
+            if (punishmentObj.affectedUser.name)
+                descSb.append(`- User Nickname: ${punishmentObj.affectedUser.name}`).appendLine();
+        }
+
+        // But we should have all this
+        descSb.appendLine()
+            .append(`__**Moderator Information**__ ${modMentionToUse ?? ""}`).appendLine()
+            .append(`- Moderator ID: ${punishmentObj.moderator.id}`).appendLine()
+            .append(`- Moderator Tag: ${punishmentObj.moderator.tag}`).appendLine()
+            .append(`- Moderator Nickname: ${punishmentObj.moderator.name}`).appendLine();
         embed.setColor(pInfo.resolved?.actionId === punishmentId ? "GREEN" : "RED")
-            .setDescription(
-            new StringBuilder()
-                .append(`__**User Information**__ ${uMention ?? ""}`).appendLine()
-                .append(`- User ID: ${punishmentObj.affectedUser.id}`).appendLine()
-                .append(`- User Tag: ${punishmentObj.affectedUser.tag}`).appendLine()
-                .append(`- User Nickname: ${punishmentObj.affectedUser.name}`).appendLine()
-                .appendLine()
-                .append(`__**Moderator Information**__ ${modMentionToUse ?? ""}`).appendLine()
-                .append(`- Moderator ID: ${punishmentObj.moderator.id}`).appendLine()
-                .append(`- Moderator Tag: ${punishmentObj.moderator.tag}`).appendLine()
-                .append(`- Moderator Nickname: ${punishmentObj.moderator.name}`).appendLine()
-                .toString()
-        ).addField(
+            .setDescription(descSb.toString()).addField(
             "Moderation ID",
             StringUtil.codifyString(punishmentObj.actionId)
         ).addField(

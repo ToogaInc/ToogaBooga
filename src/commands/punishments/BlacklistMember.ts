@@ -125,12 +125,12 @@ export class BlacklistMember extends BaseCommand {
             const res = await PunishmentManager.logPunishment({name: mStr}, "Blacklist", {
                 actionIdToUse: blacklistId,
                 evidence: [],
-                guild: ctx.guild!,
                 guildDoc: ctx.guildDoc!,
+                guild: ctx.guild!,
                 issuedTime: currTime,
+                section: MongoManager.getMainSection(ctx.guildDoc!),
                 moderator: ctx.member!,
                 reason: reason,
-                section: MongoManager.getMainSection(ctx.guildDoc!),
                 sendLogInfo: true,
                 sendNoticeToAffectedUser: false
             });
@@ -217,7 +217,7 @@ export class BlacklistMember extends BaseCommand {
             sendNoticeToAffectedUser: false
         });
 
-        finalEmbed.setDescription(`\`${resMember.member}\` has been blacklisted successfully.`);
+        finalEmbed.setDescription(`\`${finalIgnToBl}\` has been blacklisted successfully.`);
         if (!logInfo) {
             finalEmbed.addField(
                 "Warning",
