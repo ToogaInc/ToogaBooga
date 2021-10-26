@@ -8,6 +8,7 @@ import generateRandomString = StringUtil.generateRandomString;
 import {MongoManager} from "../../managers/MongoManager";
 import {IBlacklistedUser} from "../../definitions";
 import {PunishmentManager} from "../../managers/PunishmentManager";
+import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class BlacklistMember extends BaseCommand {
     public constructor() {
@@ -83,7 +84,7 @@ export class BlacklistMember extends BaseCommand {
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
         const reason = ctx.interaction.options.getString("reason", true);
 
-        const blacklistId = `Blacklist_${Date.now()}_${resMember?.member.id ?? mStr}}_${generateRandomString(10)}`;
+        const blacklistId = `Blacklist_${Date.now()}_${generateRandomString(15)}`;
         const currTime = Date.now();
 
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
@@ -195,8 +196,10 @@ export class BlacklistMember extends BaseCommand {
                     "moderation.blacklistedUsers": rBlInfo
                 }
             }),
-            resMember.member.ban({
-                reason: `Blacklisted. Reason: ${reason}`
+            GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await resMember.member.ban({
+                    reason: `Blacklisted. Reason: ${reason}`
+                });
             })
         ]);
 

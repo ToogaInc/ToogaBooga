@@ -106,7 +106,7 @@ export class MuteMember extends BaseCommand {
             return 0;
         }
 
-        const warningId = `Mute_${Date.now()}_${resMember?.member.id ?? mStr}}_${generateRandomString(10)}`;
+        const muteId = `Mute_${Date.now()}_${generateRandomString(15)}`;
 
         const durationStr = ctx.interaction.options.getString("duration", false);
         const parsedDuration = durationStr ? TimeUtilities.parseTimeUnit(durationStr) : null;

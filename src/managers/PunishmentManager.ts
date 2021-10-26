@@ -217,8 +217,7 @@ export namespace PunishmentManager {
 
         let actionId = details.actionIdToUse;
         if (!actionId) {
-            const memberStr = "name" in member ? StringUtil.generateRandomString(16) : member.id;
-            actionId = `${punishmentType}_${Date.now()}_${memberStr}_${StringUtil.generateRandomString(10)}`;
+            actionId = `${punishmentType}_${Date.now()}_${StringUtil.generateRandomString(15)}`;
         }
 
         const mainSection = MongoManager.getMainSection(details.guildDoc);
@@ -901,7 +900,7 @@ export namespace SuspensionManager {
                 name: mod?.displayName ?? ""
             },
             reason: info.reason,
-            actionId: `Suspend_${timeStarted}_${member.id}_${StringUtil.generateRandomString(10)}`,
+            actionId: `Suspend_${timeStarted}_${StringUtil.generateRandomString(15)}`,
             evidence: info.evidence
         };
 
@@ -1030,7 +1029,7 @@ export namespace SuspensionManager {
                 name: mod?.displayName ?? ""
             },
             reason: info.reason,
-            actionId: `SecSuspend_${timeStarted}_${member.id}_${StringUtil.generateRandomString(10)}`,
+            actionId: `SecSuspend_${timeStarted}_${StringUtil.generateRandomString(15)}`,
             evidence: info.evidence
         };
 
@@ -1317,7 +1316,7 @@ export namespace MuteManager {
                 name: mod?.displayName ?? ""
             },
             reason: info.reason,
-            actionId: `Mute_${timeStarted}_${member.id}_${StringUtil.generateRandomString(10)}`,
+            actionId: `Mute_${timeStarted}_${StringUtil.generateRandomString(15)}`,
             evidence: info.evidence
         };
 

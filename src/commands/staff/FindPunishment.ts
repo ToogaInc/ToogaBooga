@@ -139,7 +139,11 @@ export class FindPunishment extends BaseCommand {
             if (typeof pInfo.expiresAt !== "undefined") {
                 embed.addField(
                     "Expires At",
-                    StringUtil.codifyString(`${TimeUtilities.getDateTime(pInfo.expiresAt)} GMT`)
+                    StringUtil.codifyString(
+                        pInfo.expiresAt === -1
+                            ? "Indefinite"
+                            : `${TimeUtilities.getDateTime(pInfo.expiresAt)} GMT`
+                    )
                 );
             }
         }

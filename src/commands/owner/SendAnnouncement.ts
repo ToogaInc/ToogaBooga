@@ -50,7 +50,9 @@ export class SendAnnouncement extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
-        const args = ctx.interaction.options.get("msg", true);
+        // TODO check if attachment, if so read from it
+        // otherwise, find better way to send attachment (maybe message collector?)
+        const args = ctx.interaction.options.get("announcement", true);
         const allGuildDocs = await MongoManager.getGuildCollection().find({}).toArray();
         const embedToSend = new MessageEmbed()
             .setColor("RANDOM")

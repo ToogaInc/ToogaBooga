@@ -85,7 +85,7 @@ export class WarnMember extends BaseCommand {
         }
 
         const reason = ctx.interaction.options.getString("reason", true);
-        const warningId = `Warning_${Date.now()}_${resMember?.member.id ?? mStr}}_${generateRandomString(10)}`;
+        const warningId = `Warning_${Date.now()}_${generateRandomString(15)}`;
         const currTime = Date.now();
 
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
