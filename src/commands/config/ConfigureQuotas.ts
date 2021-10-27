@@ -1,5 +1,6 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
+    Collection,
     Message,
     MessageButton,
     MessageComponentInteraction,
@@ -38,8 +39,6 @@ type QuotaName = {
 export class ConfigureQuotas extends BaseCommand {
     public static MAX_QUOTAS_ALLOWED: number = 10;
 
-
-
     public static DAYS_OF_WEEK: [string, number][] = [
         ["Sunday", 0],
         ["Monday", 1],
@@ -67,6 +66,11 @@ export class ConfigureQuotas extends BaseCommand {
         }
     ];
 
+    // All users that are using this command
+    // We want at most 1 user per server using this command.
+    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
+
+
     public constructor() {
         super({
             cmdCode: "CONFIGURE_QUOTAS",
@@ -87,11 +91,23 @@ export class ConfigureQuotas extends BaseCommand {
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
+        if (!(ctx.channel instanceof TextChannel)) return -1;
+
+        if (!ConfigureQuotas.ACTIVE_USERS.has(ctx.guild!.id)) {
+            ConfigureQuotas.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
+        }
+
+        if (ConfigureQuotas.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
+            await ctx.interaction.reply({
+                content: "Someone else is using this command right now. Please wait for them to finish!"
+            });
+            return -1;
+        }
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
 
-        if (!(ctx.channel instanceof TextChannel)) return -1;
         this.mainMenu(ctx, null).then();
         return 0;
     }
@@ -1231,5 +1247,6 @@ export class ConfigureQuotas extends BaseCommand {
         if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
             return;
         await botMsg?.delete().catch();
+        ConfigureQuotas.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
     }
 }

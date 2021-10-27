@@ -7,7 +7,7 @@ import {
     IConfigCommand
 } from "./common/ConfigCommon";
 import {IGuildInfo, ISectionInfo} from "../../definitions";
-import {Guild, Message, MessageButton, MessageEmbed, Role, TextChannel} from "discord.js";
+import {Collection, Guild, Message, MessageButton, MessageEmbed, Role, TextChannel} from "discord.js";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import getCachedRole = GuildFgrUtilities.getCachedRole;
@@ -263,6 +263,12 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         },
     ];
 
+    // All users that are using this command
+    // We want at most 1 user per server using this command.
+    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
+
+
+
     public constructor() {
         super({
             cmdCode: "CONFIGURE_ROLE_COMMAND",
@@ -283,11 +289,23 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
+        if (!(ctx.channel instanceof TextChannel)) return -1;
+
+        if (!ConfigureRoles.ACTIVE_USERS.has(ctx.guild!.id)) {
+            ConfigureRoles.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
+        }
+
+        if (ConfigureRoles.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
+            await ctx.interaction.reply({
+                content: "Someone else is using this command right now. Please wait for them to finish!"
+            });
+            return -1;
+        }
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
 
-        if (!(ctx.channel instanceof TextChannel)) return -1;
         this.entry(ctx, null).then();
         return 0;
     }
@@ -597,6 +615,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
             return;
         await botMsg?.delete().catch();
+        ConfigureRoles.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
     }
 
     /**

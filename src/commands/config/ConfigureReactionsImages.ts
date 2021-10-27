@@ -1,5 +1,6 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
+    Collection,
     Message,
     MessageButton,
     MessageComponentInteraction,
@@ -77,6 +78,11 @@ export class ConfigureReactionsImages extends BaseCommand {
     public static MAX_CUSTOM_REACTIONS: number = 30;
     public static MAX_CUSTOM_IMAGES: number = 40;
 
+    // All users that are using this command
+    // We want at most 1 user per server using this command.
+    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
+
+
     public constructor() {
         super({
             cmdCode: "CONFIGURE_REACTIONS_IMAGES",
@@ -97,11 +103,23 @@ export class ConfigureReactionsImages extends BaseCommand {
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
+        if (!(ctx.channel instanceof TextChannel)) return -1;
+
+        if (!ConfigureReactionsImages.ACTIVE_USERS.has(ctx.guild!.id)) {
+            ConfigureReactionsImages.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
+        }
+
+        if (ConfigureReactionsImages.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
+            await ctx.interaction.reply({
+                content: "Someone else is using this command right now. Please wait for them to finish!"
+            });
+            return -1;
+        }
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
 
-        if (!(ctx.channel instanceof TextChannel)) return -1;
         this.mainMenu(ctx, null).then();
         return 0;
     }
@@ -858,5 +876,6 @@ export class ConfigureReactionsImages extends BaseCommand {
         if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
             return;
         await botMsg?.delete().catch();
+        ConfigureReactionsImages.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
     }
 }

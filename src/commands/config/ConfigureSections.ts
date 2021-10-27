@@ -1,5 +1,6 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
+    Collection,
     Message,
     MessageButton,
     MessageComponentInteraction,
@@ -131,6 +132,10 @@ export class ConfigureSections extends BaseCommand {
 
     public static readonly MAXIMUM_SECTIONS_ALLOWED: number = 10;
 
+    // All users that are using this command
+    // We want at most 1 user per server using this command.
+    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
+
     public constructor() {
         super({
             cmdCode: "CONFIGURE_SECTION_COMMAND",
@@ -151,11 +156,23 @@ export class ConfigureSections extends BaseCommand {
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
+        if (!(ctx.channel instanceof TextChannel)) return -1;
+
+        if (!ConfigureSections.ACTIVE_USERS.has(ctx.guild!.id)) {
+            ConfigureSections.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
+        }
+
+        if (ConfigureSections.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
+            await ctx.interaction.reply({
+                content: "Someone else is using this command right now. Please wait for them to finish!"
+            });
+            return -1;
+        }
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
 
-        if (!(ctx.channel instanceof TextChannel)) return -1;
         this.mainMenu(ctx, null).then();
         return 0;
     }
@@ -280,6 +297,7 @@ export class ConfigureSections extends BaseCommand {
         if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
             return;
         await botMsg?.delete().catch();
+        ConfigureSections.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
     }
 
     /**

@@ -1,5 +1,6 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
+    Collection,
     Message,
     MessageButton,
     MessageComponentInteraction,
@@ -74,6 +75,10 @@ export class ConfigureDungeons extends BaseCommand {
     public static readonly MAXIMUM_NORMAL_REACTS: number = 20;
     public static readonly MAXIMUM_CUSTOM_DUNGEONS: number = 20;
 
+    // All users that are using this command
+    // We want at most 1 user per server using this command.
+    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
+
     public constructor() {
         super({
             cmdCode: "CONFIGURE_DUNGEONS",
@@ -95,11 +100,23 @@ export class ConfigureDungeons extends BaseCommand {
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
+        if (!(ctx.channel instanceof TextChannel)) return -1;
+
+        if (!ConfigureDungeons.ACTIVE_USERS.has(ctx.guild!.id)) {
+            ConfigureDungeons.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
+        }
+
+        if (ConfigureDungeons.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
+            await ctx.interaction.reply({
+                content: "Someone else is using this command right now. Please wait for them to finish!"
+            });
+            return -1;
+        }
+
+        ConfigureDungeons.ACTIVE_USERS.get(ctx.guild!.id)!.add(ctx.user.id);
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
-
-        if (!(ctx.channel instanceof TextChannel)) return -1;
 
         ctx.guildDoc = await DungeonUtilities.fixDungeons(ctx.guildDoc!, ctx.guild!)!;
         this.mainMenu(ctx, null).then();
@@ -2159,5 +2176,6 @@ export class ConfigureDungeons extends BaseCommand {
         if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
             return;
         await botMsg?.delete().catch();
+        ConfigureDungeons.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
     }
 }

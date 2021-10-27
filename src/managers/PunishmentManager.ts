@@ -332,9 +332,9 @@ export namespace PunishmentManager {
                 logToChanEmbed
                     .setTitle("Warning Issued.")
                     .setDescription(new StringBuilder()
-                        .append(`⇒ **Member Warned:** ${entry.affectedUser.name}`)
+                        .append(`⇒ Member Warned: ${entry.affectedUser.name}`)
                         .appendLine()
-                        .append(`⇒ **Member Mention:** ${member} (${member.id})`)
+                        .append(`⇒ Member Mention: ${member} (${member.id})`)
                         .toString());
 
                 // To send to member
@@ -351,19 +351,19 @@ export namespace PunishmentManager {
                 logToChanEmbed
                     .setTitle("Warning Removed.")
                     .setDescription(new StringBuilder()
-                        .append(`⇒ **Member Affected:** ${entry.affectedUser.name}`)
+                        .append(`⇒ Member Affected: ${entry.affectedUser.name}`)
                         .appendLine()
-                        .append(`⇒ **Member Mention:** ${member} (${member.id})`)
+                        .append(`⇒ Member Mention: ${member} (${member.id})`)
                         .toString());
                 break;
             }
             case "Blacklist": {
                 // Logging
                 const descSb = new StringBuilder()
-                    .append(`⇒ **Blacklisted Name:** ${entry.affectedUser.name}`)
+                    .append(`⇒ Blacklisted Name: \`${entry.affectedUser.name}\``)
                     .appendLine();
                 if (member instanceof GuildMember) {
-                    descSb.append(`⇒ **Member:** ${member} (${member.id})`)
+                    descSb.append(`⇒ Member: ${member} (${member.id})`)
                         .appendLine();
                 }
 
@@ -381,7 +381,7 @@ export namespace PunishmentManager {
                 // Logging
                 logToChanEmbed.setTitle("__Server__ Blacklist Removed.")
                     .setDescription(new StringBuilder()
-                        .append(`⇒ **Unblacklisted Name:** ${entry.affectedUser.name}`)
+                        .append(`⇒ Unblacklisted Name: ${entry.affectedUser.name}`)
                         .toString());
 
                 break;
@@ -394,9 +394,9 @@ export namespace PunishmentManager {
                 logToChanEmbed
                     .setTitle("__Server__ Suspended.")
                     .setDescription(new StringBuilder()
-                        .append(`⇒ **Member Suspended:** ${entry.affectedUser.name}`)
+                        .append(`⇒ Member Suspended: ${entry.affectedUser.name}`)
                         .appendLine()
-                        .append(`⇒ **Member Mention:** ${member} (${member.id})`)
+                        .append(`⇒ Member Mention: ${member} (${member.id})`)
                         .toString())
                     .addField("Suspension Time", durationStr);
 
@@ -415,9 +415,9 @@ export namespace PunishmentManager {
                 logToChanEmbed
                     .setTitle("__Server__ Suspension Removed.")
                     .setDescription(new StringBuilder()
-                        .append(`⇒ **Member Unsuspended:** ${entry.affectedUser.name}`)
+                        .append(`⇒ Member Unsuspended: ${entry.affectedUser.name}`)
                         .appendLine()
-                        .append(`⇒ **Member Mention:** ${member} (${member.id})`)
+                        .append(`⇒ Member Mention: ${member} (${member.id})`)
                         .toString());
 
                 // To send to member
@@ -434,11 +434,11 @@ export namespace PunishmentManager {
                 logToChanEmbed
                     .setTitle(`${details.section.sectionName}: __Section__ Suspended.`)
                     .setDescription(new StringBuilder()
-                        .append(`⇒ **Member Suspended:** ${entry.affectedUser.name}`)
+                        .append(`⇒ Member Suspended: ${entry.affectedUser.name}`)
                         .appendLine()
-                        .append(`⇒ **Member Mention:** ${member} (${member.id})`)
+                        .append(`⇒ Member Mention: ${member} (${member.id})`)
                         .appendLine()
-                        .append(`⇒ **Suspended From:** ${details.section.sectionName}`)
+                        .append(`⇒ Suspended From: ${details.section.sectionName}`)
                         .toString())
                     .addField("Suspension Time", durationStr);
 
@@ -460,11 +460,11 @@ export namespace PunishmentManager {
                 logToChanEmbed
                     .setTitle("__Section__ Suspension Removed.")
                     .setDescription(new StringBuilder()
-                        .append(`⇒ **Member Unsuspended:** ${entry.affectedUser.name}`)
+                        .append(`⇒ Member Unsuspended: ${entry.affectedUser.name}`)
                         .appendLine()
-                        .append(`⇒ **Member Mention:** ${member} (${member.id})`)
+                        .append(`⇒ Member Mention: ${member} (${member.id})`)
                         .appendLine()
-                        .append(`⇒ **Unsuspended From:** ${details.section.sectionName}`)
+                        .append(`⇒ Unsuspended From: ${details.section.sectionName}`)
                         .toString());
 
                 // To send to member
@@ -483,7 +483,7 @@ export namespace PunishmentManager {
                 // Logging
                 logToChanEmbed
                     .setTitle(`Modmail Blacklisted.`)
-                    .setDescription(`⇒ **Modmail Blacklisted:** ${member} (${member.id})`);
+                    .setDescription(`⇒ Modmail Blacklisted: ${member} (${member.id})`);
 
                 // To send to member
                 toSendToUserEmbed
@@ -498,7 +498,7 @@ export namespace PunishmentManager {
                 // Logging
                 logToChanEmbed
                     .setTitle(`Modmail Blacklisted Removed.`)
-                    .setDescription(`⇒ **Modmail Unblacklisted:** ${member} (${member.id})`);
+                    .setDescription(`⇒ Modmail Unblacklisted: ${member} (${member.id})`);
 
                 // To send to member
                 toSendToUserEmbed
@@ -513,7 +513,7 @@ export namespace PunishmentManager {
                 // Logging
                 logToChanEmbed
                     .setTitle(`Server Muted.`)
-                    .setDescription(`⇒ **Member Muted:** ${member} (${member.id})`)
+                    .setDescription(`⇒ Member Muted: ${member} (${member.id})`)
                     .addField("Mute Time", durationStr);
 
                 // To send to member
@@ -530,7 +530,7 @@ export namespace PunishmentManager {
                 // Logging
                 logToChanEmbed
                     .setTitle(`Server Mute Removed.`)
-                    .setDescription(`⇒ **Member Unmuted:** ${member} (${member.id})`);
+                    .setDescription(`⇒ Member Unmuted: ${member} (${member.id})`);
 
                 // To send to member
                 toSendToUserEmbed

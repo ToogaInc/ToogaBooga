@@ -63,12 +63,12 @@ export class UnmuteMember extends BaseCommand {
         scb.addStringOption(o => {
             return o
                 .setName("member")
-                .setDescription("The member to mute. This can either be an ID, IGN, or mention.")
+                .setDescription("The member to unmute. This can either be an ID, IGN, or mention.")
                 .setRequired(true);
         }).addStringOption(o => {
             return o
                 .setName("reason")
-                .setDescription("The reason for this mute.")
+                .setDescription("The reason for this unmute.")
                 .setRequired(true);
         });
 
