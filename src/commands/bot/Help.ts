@@ -59,7 +59,7 @@ export class Help extends BaseCommand {
             if (command) {
                 const cmdHelpEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "GREEN")
                     .setTitle(`Command Help: **${command.commandInfo.formalCommandName}**`)
-                    .setFooter(`Server Context: ${ctx.guild!.name}`)
+                    .setFooter(`Server Context: ${ctx.guild?.name ?? "Direct Message"}`)
                     .setDescription(command.commandInfo.description)
                     .addField("Command Code", StringUtil.codifyString(command.commandInfo.botCommandName))
                     .addField(
