@@ -6,7 +6,7 @@ import {
     IBaseDatabaseEntryInfo,
     IConfigCommand
 } from "./common/ConfigCommon";
-import {Collection, Guild, Message, MessageButton, MessageEmbed, TextChannel} from "discord.js";
+import {Guild, Message, MessageButton, MessageEmbed, TextChannel} from "discord.js";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
@@ -217,10 +217,6 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         }
     ];
 
-    // All users that are using this command
-    // We want at most 1 user per server using this command.
-    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
-
     public constructor() {
         super({
             cmdCode: "CONFIGURE_CHANNEL_COMMAND",
@@ -235,7 +231,9 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
             guildOnly: true,
-            botOwnerOnly: false
+            botOwnerOnly: false,
+            guildConcurrencyLimit: 1,
+            allowMultipleExecutionByUser: false
         });
     }
 
@@ -243,21 +241,11 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
 
-        if (!ConfigureChannels.ACTIVE_USERS.has(ctx.guild!.id)) {
-            ConfigureChannels.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
-        }
-
-        if (ConfigureChannels.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
-            await ctx.interaction.reply({
-                content: "Someone else is using this command right now. Please wait for them to finish!"
-            });
-            return -1;
-        }
-
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
-        this.entry(ctx, null).then();
+
+        await this.entry(ctx, null);
         return 0;
     }
 
@@ -265,10 +253,12 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
     public async entry(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
         const entryRes = await entryFunction(ctx, botMsg);
 
-        if (!entryRes)
+        if (!entryRes) {
+            await this.dispose(ctx, botMsg);
             return;
+        }
 
-        this.mainMenu(ctx, entryRes[0], entryRes[1]).then();
+        await this.mainMenu(ctx, entryRes[0], entryRes[1]);
     }
 
     /** @inheritDoc */
@@ -358,35 +348,35 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         });
 
         if (!selectedButton) {
-            this.dispose(ctx, botMsg).then();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
         switch (selectedButton.customId) {
             case "go_back": {
-                this.entry(ctx, botMsg).then();
+                await this.entry(ctx, botMsg);
                 return;
             }
             case "base": {
-                this.doBaseChannels(ctx, section, botMsg).then();
+                await this.doBaseChannels(ctx, section, botMsg);
                 return;
             }
             case "logging": {
-                this.doLoggingChannels(ctx, section, botMsg).then();
+                await this.doLoggingChannels(ctx, section, botMsg);
                 return;
             }
             case "other": {
-                this.editDatabaseSettings(
+                await this.editDatabaseSettings(
                     ctx,
                     section,
                     botMsg,
                     ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Other),
                     "Others"
-                ).then();
+                );
                 return;
             }
             case "exit": {
-                this.dispose(ctx, botMsg).then();
+                await this.dispose(ctx, botMsg);
                 return;
             }
         }
@@ -449,7 +439,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
             // Case 0: Nothing
             if (!result) {
-                this.dispose(ctx, botMsg).then();
+                await this.dispose(ctx, botMsg);
                 return;
             }
 
@@ -493,7 +483,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             // Case 3: Button
             switch (result.customId) {
                 case "back": {
-                    this.mainMenu(ctx, section, botMsg).then();
+                    await this.mainMenu(ctx, section, botMsg);
                     return;
                 }
                 case "up": {
@@ -525,7 +515,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     break;
                 }
                 case "quit": {
-                    this.dispose(ctx, botMsg).then();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
             }
@@ -633,28 +623,28 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         });
 
         if (!selectedButton) {
-            this.dispose(ctx, botMsg).then();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
         switch (selectedButton.customId) {
             case "go_back": {
-                this.mainMenu(ctx, section, botMsg).then();
+                await this.mainMenu(ctx, section, botMsg);
                 break;
             }
             case "raids": {
-                this.editDatabaseSettings(
+                await this.editDatabaseSettings(
                     ctx,
                     section,
                     botMsg,
                     ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Raiding
                     && section.isMainSection ? true : !!x.sectionPath),
                     "Raids"
-                ).then();
+                );
                 break;
             }
             case "verification": {
-                this.editDatabaseSettings(
+                await this.editDatabaseSettings(
                     ctx,
                     section,
                     botMsg,
@@ -662,22 +652,22 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                         .filter(x => x.channelType === ChannelCategoryType.Verification
                         && section.isMainSection ? true : !!x.sectionPath),
                     "Verification"
-                ).then();
+                );
                 break;
             }
             // This should only hit if it's the guild doc (not a section)
             case "modmail": {
-                this.editDatabaseSettings(
+                await this.editDatabaseSettings(
                     ctx,
                     section,
                     botMsg,
                     ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Modmail),
                     "Modmail"
-                ).then();
+                );
                 break;
             }
             case "exit": {
-                this.dispose(ctx, botMsg).then();
+                await this.dispose(ctx, botMsg);
                 return;
             }
         }
@@ -685,10 +675,9 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
-        if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
-            return;
-        await botMsg?.delete().catch();
-        ConfigureChannels.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
+        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
+            await botMsg?.delete();
+        }
     }
 
     /**
@@ -744,7 +733,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             // Case 0: Nothing
             // noinspection DuplicatedCode
             if (!result) {
-                this.dispose(ctx, botMsg).then();
+                await this.dispose(ctx, botMsg);
                 return;
             }
 
@@ -777,7 +766,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             // Case 3: Button
             switch (result.customId) {
                 case "back": {
-                    this.mainMenu(ctx, section, botMsg).then();
+                    await this.mainMenu(ctx, section, botMsg);
                     return;
                 }
                 case "up": {
@@ -800,7 +789,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     break;
                 }
                 case "quit": {
-                    this.dispose(ctx, botMsg).then();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
             }

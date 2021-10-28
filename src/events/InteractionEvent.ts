@@ -85,13 +85,43 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
         });
     }
 
+    // Check if too many people running
+    if (ctx.guild && foundCommand.hasMaxConcurrentUsersRunning(ctx.guild.id)) {
+        const tooManyPeopleEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "RED")
+            .setTitle("Too Many People Using Command.")
+            .setDescription(
+                `Only a maximum of ${foundCommand.getGuildConcurrentLimit()} user(s) can run this command at any given`
+                + " time. Please wait for someone to stop using the command."
+            ).setTimestamp();
+        return interaction.reply({
+            embeds: [tooManyPeopleEmbed],
+            ephemeral: true
+        });
+    }
+
+    // Don't let the user run the command again if he or she is already running it
+    if (!foundCommand.allowsMultipleExecutionsByUser() && foundCommand.hasActiveUser(ctx.user.id, ctx.guild?.id)) {
+        const alreadyRunningCmdEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "RED")
+            .setTitle("Already Using Command.")
+            .setDescription(
+                "You are already using this command. If you can't find the running instance, please wait a few minutes"
+                + " for the command to time-out before you try again."
+            ).setTimestamp();
+        return interaction.reply({
+            embeds: [alreadyRunningCmdEmbed],
+            ephemeral: true
+        });
+    }
+
     // Check permissions
     const canRunInfo = foundCommand.hasPermissionToRun(ctx.member!, ctx.guild, guildDoc!);
     if (!OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id) && !canRunInfo.hasAdmin)
         foundCommand.addToCooldown(ctx.user);
 
     if (canRunInfo.canRun) {
+        foundCommand.addActiveUser(ctx.user.id, ctx.guild?.id);
         await foundCommand.run(ctx);
+        foundCommand.removeActiveUser(ctx.user.id, ctx.guild?.id);
         return;
     }
 

@@ -1,6 +1,5 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
-    Collection,
     Message,
     MessageButton,
     MessageComponentInteraction,
@@ -131,11 +130,7 @@ export class ConfigureSections extends BaseCommand {
     ];
 
     public static readonly MAXIMUM_SECTIONS_ALLOWED: number = 10;
-
-    // All users that are using this command
-    // We want at most 1 user per server using this command.
-    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
-
+    
     public constructor() {
         super({
             cmdCode: "CONFIGURE_SECTION_COMMAND",
@@ -150,30 +145,21 @@ export class ConfigureSections extends BaseCommand {
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
             guildOnly: true,
-            botOwnerOnly: false
+            botOwnerOnly: false,
+            guildConcurrencyLimit: 1,
+            allowMultipleExecutionByUser: false
         });
     }
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-
-        if (!ConfigureSections.ACTIVE_USERS.has(ctx.guild!.id)) {
-            ConfigureSections.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
-        }
-
-        if (ConfigureSections.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
-            await ctx.interaction.reply({
-                content: "Someone else is using this command right now. Please wait for them to finish!"
-            });
-            return -1;
-        }
-
+        
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
 
-        this.mainMenu(ctx, null).then();
+        await this.mainMenu(ctx, null);
         return 0;
     }
 
@@ -268,21 +254,21 @@ export class ConfigureSections extends BaseCommand {
         });
 
         if (!selectedButton) {
-            await botMsg.delete().catch();
+            await botMsg.delete();
             return;
         }
 
         switch (selectedButton.customId) {
             case "exit": {
-                this.dispose(ctx, botMsg).catch();
+                await this.dispose(ctx, botMsg);
                 return;
             }
             case "create": {
-                this.createSection(ctx, botMsg).then();
+                await this.createSection(ctx, botMsg);
                 return;
             }
             case "manage": {
-                this.preManageSection(ctx, botMsg).then();
+                await this.preManageSection(ctx, botMsg);
                 return;
             }
         }
@@ -294,10 +280,9 @@ export class ConfigureSections extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
-            return;
-        await botMsg?.delete().catch();
-        ConfigureSections.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
+        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
+            await botMsg?.delete();
+        }
     }
 
     /**
@@ -357,15 +342,15 @@ export class ConfigureSections extends BaseCommand {
         });
 
         if (!result) {
-            this.dispose(ctx, botMsg).catch();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
         if (result.isButton()) {
             if (result.customId === "cancel_button")
-                this.dispose(ctx, botMsg).catch();
+                await this.dispose(ctx, botMsg);
             else
-                this.mainMenu(ctx, botMsg).catch();
+                await this.mainMenu(ctx, botMsg);
 
             return;
         }
@@ -374,11 +359,11 @@ export class ConfigureSections extends BaseCommand {
         if (!result.isSelectMenu())
             return;
 
-        this.manageSection(
+        await this.manageSection(
             ctx,
             botMsg,
             ctx.guildDoc!.guildSections.find(x => x.uniqueIdentifier === result.values[0])!
-        ).then();
+        );
     }
 
     /**
@@ -450,25 +435,25 @@ export class ConfigureSections extends BaseCommand {
         });
 
         if (!selectedButton) {
-            this.dispose(ctx, botMsg).then();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
         switch (selectedButton.customId) {
             case "go_back": {
-                this.preManageSection(ctx, botMsg).then();
+                await this.preManageSection(ctx, botMsg);
                 break;
             }
             case "rename": {
-                this.renameSection(ctx, botMsg, section).then();
+                await this.renameSection(ctx, botMsg, section);
                 break;
             }
             case "delete": {
-                this.deleteSection(ctx, botMsg, section).then();
+                await this.deleteSection(ctx, botMsg, section);
                 break;
             }
             case "quit": {
-                this.dispose(ctx, botMsg).then();
+                await this.dispose(ctx, botMsg);
                 return;
             }
         }
@@ -509,17 +494,17 @@ export class ConfigureSections extends BaseCommand {
         }, AdvancedCollector.getStringPrompt(ctx.channel!, {max: 30, min: 1}));
 
         if (!res) {
-            this.dispose(ctx, botMsg).catch();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
         if (res instanceof MessageComponentInteraction) {
             if (res.customId === "go_back") {
-                this.manageSection(ctx, botMsg, section).then();
+                await this.manageSection(ctx, botMsg, section);
                 return;
             }
 
-            this.dispose(ctx, botMsg).catch();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
@@ -533,7 +518,7 @@ export class ConfigureSections extends BaseCommand {
         });
 
         section.sectionName = res;
-        this.manageSection(ctx, botMsg, section).then();
+        await this.manageSection(ctx, botMsg, section);
     }
 
     /**
@@ -566,7 +551,7 @@ export class ConfigureSections extends BaseCommand {
         });
 
         if (!selectedButton || selectedButton.customId === "no") {
-            this.manageSection(ctx, botMsg, section).then();
+            await this.manageSection(ctx, botMsg, section);
             return;
         }
 
@@ -579,7 +564,7 @@ export class ConfigureSections extends BaseCommand {
             }
         });
 
-        this.mainMenu(ctx, botMsg).then();
+        await this.mainMenu(ctx, botMsg);
     }
 
     /**
@@ -668,7 +653,7 @@ export class ConfigureSections extends BaseCommand {
             if (selected instanceof MessageComponentInteraction) {
                 switch (selected.customId) {
                     case "back": {
-                        this.mainMenu(ctx, botMsg).then();
+                        await this.mainMenu(ctx, botMsg);
                         return;
                     }
                     case "up": {
@@ -685,7 +670,7 @@ export class ConfigureSections extends BaseCommand {
                         break;
                     }
                     case "quit": {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
                     case "save": {
@@ -697,7 +682,7 @@ export class ConfigureSections extends BaseCommand {
                 continue;
             }
 
-            this.dispose(ctx, botMsg).catch();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
@@ -710,7 +695,7 @@ export class ConfigureSections extends BaseCommand {
                     + "to create a new section, please remove a section."
             });
             await MiscUtilities.stopFor(5 * 1000);
-            this.dispose(ctx, botMsg).catch();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
@@ -721,7 +706,7 @@ export class ConfigureSections extends BaseCommand {
                 content: "An unknown error occurred when trying to create this section. Please try again later."
             });
             await MiscUtilities.stopFor(5 * 1000);
-            this.dispose(ctx, botMsg).catch();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
@@ -736,6 +721,6 @@ export class ConfigureSections extends BaseCommand {
             }
         });
 
-        this.mainMenu(ctx, botMsg).then();
+        await this.mainMenu(ctx, botMsg);
     }
 }

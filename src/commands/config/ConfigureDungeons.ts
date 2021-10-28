@@ -1,6 +1,5 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
-    Collection,
     Message,
     MessageButton,
     MessageComponentInteraction,
@@ -75,10 +74,6 @@ export class ConfigureDungeons extends BaseCommand {
     public static readonly MAXIMUM_NORMAL_REACTS: number = 20;
     public static readonly MAXIMUM_CUSTOM_DUNGEONS: number = 20;
 
-    // All users that are using this command
-    // We want at most 1 user per server using this command.
-    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
-
     public constructor() {
         super({
             cmdCode: "CONFIGURE_DUNGEONS",
@@ -94,32 +89,22 @@ export class ConfigureDungeons extends BaseCommand {
             usageGuide: ["configdungeons"],
             exampleGuide: ["configdungeons"],
             guildOnly: true,
-            botOwnerOnly: false
+            botOwnerOnly: false,
+            guildConcurrencyLimit: 1,
+            allowMultipleExecutionByUser: false
         });
     }
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-
-        if (!ConfigureDungeons.ACTIVE_USERS.has(ctx.guild!.id)) {
-            ConfigureDungeons.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
-        }
-
-        if (ConfigureDungeons.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
-            await ctx.interaction.reply({
-                content: "Someone else is using this command right now. Please wait for them to finish!"
-            });
-            return -1;
-        }
-
-        ConfigureDungeons.ACTIVE_USERS.get(ctx.guild!.id)!.add(ctx.user.id);
+        
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
 
         ctx.guildDoc = await DungeonUtilities.fixDungeons(ctx.guildDoc!, ctx.guild!)!;
-        this.mainMenu(ctx, null).then();
+        await this.mainMenu(ctx, null);
         return 0;
     }
 
@@ -239,13 +224,13 @@ export class ConfigureDungeons extends BaseCommand {
         });
 
         if (!selectedButton) {
-            this.dispose(ctx, botMsg).then();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
         switch (selectedButton.customId) {
             case "exit": {
-                this.dispose(ctx, botMsg).catch();
+                await this.dispose(ctx, botMsg);
                 return;
             }
             case "allow_deny_dungeon": {
@@ -260,13 +245,13 @@ export class ConfigureDungeons extends BaseCommand {
                 });
 
                 if (!res) {
-                    this.dispose(ctx, botMsg).catch();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
 
-                const r = await this.allowDenyDungeons(ctx, botMsg, res[0]).catch();
+                const r = await this.allowDenyDungeons(ctx, botMsg, res[0]);
                 if (!r) {
-                    this.dispose(ctx, botMsg).catch();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
 
@@ -290,7 +275,7 @@ export class ConfigureDungeons extends BaseCommand {
                 }
 
                 ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);
-                this.mainMenu(ctx, botMsg).catch();
+                await this.mainMenu(ctx, botMsg);
                 return;
             }
             case "override_base": {
@@ -305,12 +290,12 @@ export class ConfigureDungeons extends BaseCommand {
                 ) as IDungeonInfo | null;
 
                 if (!res) {
-                    this.dispose(ctx, botMsg).catch();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
 
                 const overrideInfo = ctx.guildDoc!.properties.dungeonOverride.find(x => x.codeName === res.codeName);
-                this.createOrModifyCustomDungeon(ctx, botMsg, overrideInfo ?? ({
+                await this.createOrModifyCustomDungeon(ctx, botMsg, overrideInfo ?? ({
                     codeName: res.codeName,
                     keyReactions: res.keyReactions,
                     otherReactions: res.otherReactions,
@@ -318,11 +303,11 @@ export class ConfigureDungeons extends BaseCommand {
                     vcLimit: -1,
                     pointCost: 0,
                     roleRequirement: []
-                } as IDungeonOverrideInfo)).then();
+                } as IDungeonOverrideInfo));
                 return;
             }
             case "create_custom": {
-                this.createOrModifyCustomDungeon(ctx, botMsg).then();
+                await this.createOrModifyCustomDungeon(ctx, botMsg);
                 return;
             }
             case "clone_base": {
@@ -338,11 +323,11 @@ export class ConfigureDungeons extends BaseCommand {
                 ) as IDungeonInfo | null;
 
                 if (!res) {
-                    this.dispose(ctx, botMsg).catch();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
 
-                this.createOrModifyCustomDungeon(ctx, botMsg, ConfigureDungeons.cloneDungeonForCustom(res)).then();
+                await this.createOrModifyCustomDungeon(ctx, botMsg, ConfigureDungeons.cloneDungeonForCustom(res));
                 return;
             }
             case "modify_custom": {
@@ -357,11 +342,11 @@ export class ConfigureDungeons extends BaseCommand {
                 ) as ICustomDungeonInfo | null;
 
                 if (!res) {
-                    this.dispose(ctx, botMsg).catch();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
 
-                this.createOrModifyCustomDungeon(ctx, botMsg, res).then();
+                await this.createOrModifyCustomDungeon(ctx, botMsg, res);
                 return;
             }
             case "delete_custom": {
@@ -377,7 +362,7 @@ export class ConfigureDungeons extends BaseCommand {
                 ) as ICustomDungeonInfo | null;
 
                 if (!res) {
-                    this.dispose(ctx, botMsg).catch();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
 
@@ -389,7 +374,7 @@ export class ConfigureDungeons extends BaseCommand {
                     }
                 });
 
-                this.mainMenu(ctx, botMsg).catch();
+                await this.mainMenu(ctx, botMsg);
                 return;
             }
         }
@@ -818,13 +803,13 @@ export class ConfigureDungeons extends BaseCommand {
             });
 
             if (!selectedButton) {
-                this.dispose(ctx, botMsg).then();
+                await this.dispose(ctx, botMsg);
                 return;
             }
 
             switch (selectedButton.customId) {
                 case "back": {
-                    this.mainMenu(ctx, botMsg).catch();
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
                 case "save": {
@@ -845,7 +830,7 @@ export class ConfigureDungeons extends BaseCommand {
                     if (!isCustomDungeon(cDungeon)
                         && dgnToOverrideInfo
                         && ConfigureDungeons.isDefaultOverride(cDungeon, dgnToOverrideInfo)) {
-                        this.mainMenu(ctx, botMsg).catch();
+                        await this.mainMenu(ctx, botMsg);
                         return;
                     }
 
@@ -855,7 +840,7 @@ export class ConfigureDungeons extends BaseCommand {
                         }
                     });
 
-                    this.mainMenu(ctx, botMsg).catch();
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
                 case "specify_log_dgn": {
@@ -900,7 +885,7 @@ export class ConfigureDungeons extends BaseCommand {
                     }
 
                     if (res === ValidatorResult.Failed) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -932,7 +917,7 @@ export class ConfigureDungeons extends BaseCommand {
                     }
 
                     if (res === ValidatorResult.Failed) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -946,7 +931,7 @@ export class ConfigureDungeons extends BaseCommand {
                     );
 
                     if (!newReactions) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -980,7 +965,7 @@ export class ConfigureDungeons extends BaseCommand {
                         });
 
                     if (!newImg) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -997,7 +982,7 @@ export class ConfigureDungeons extends BaseCommand {
                     });
 
                     if (!newImgs) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -1047,7 +1032,7 @@ export class ConfigureDungeons extends BaseCommand {
                     );
 
                     if (!newDgnColors) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -1134,7 +1119,7 @@ export class ConfigureDungeons extends BaseCommand {
                     }
 
                     if (res === ValidatorResult.Failed) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
                     break;
@@ -1162,7 +1147,7 @@ export class ConfigureDungeons extends BaseCommand {
                     }
 
                     if (res === ValidatorResult.Failed) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
                     break;
@@ -1189,7 +1174,7 @@ export class ConfigureDungeons extends BaseCommand {
                     }
 
                     if (res === ValidatorResult.Failed) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
                     break;
@@ -1216,7 +1201,7 @@ export class ConfigureDungeons extends BaseCommand {
                     );
 
                     if (!newRoleReqs) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -2162,7 +2147,7 @@ export class ConfigureDungeons extends BaseCommand {
                 content: `Your input was invalid. Please specify a value of \`${validationInfo.expectedType}\`.`
             }).then(async m => {
                 await MiscUtilities.stopFor(5 * 1000);
-                m.delete().catch();
+                m.delete();
             });
         }
     }
@@ -2173,9 +2158,8 @@ export class ConfigureDungeons extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
-            return;
-        await botMsg?.delete().catch();
-        ConfigureDungeons.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
+        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
+            await botMsg?.delete();
+        }
     }
 }

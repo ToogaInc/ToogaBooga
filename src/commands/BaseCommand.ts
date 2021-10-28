@@ -62,6 +62,9 @@ export interface ICommandContext {
 }
 
 export abstract class BaseCommand {
+    private readonly activeGuildUsers: Collection<string, Set<string>>;
+    private readonly activeDMUsers: Set<string>;
+
     /**
      * The command info object.
      * @type {ICommandInfo}
@@ -111,6 +114,8 @@ export abstract class BaseCommand {
             .setDescription(cmi.description);
 
         this.onCooldown = new Collection<string, number>();
+        this.activeGuildUsers = new Collection<string, Set<string>>();
+        this.activeDMUsers = new Set<string>();
     }
 
     /**
@@ -292,6 +297,95 @@ export abstract class BaseCommand {
         // the remaining role IDs.
         return Array.from(roleCollection.values()).flat().concat(rolePerms.filter(x => MiscUtilities.isSnowflake(x)));
     }
+
+
+    /**
+     * This should be called when someone is in the process of running a command. This is only important if a
+     * concurrency limit needs to be implemented.
+     * @param {string} userId The user ID corresponding to the user that is running the command.
+     * @param {string} [guildId] The guild ID, if any.
+     */
+    public addActiveUser(userId: string, guildId?: string): void {
+        if (guildId) {
+            if (!this.activeGuildUsers.has(guildId)) {
+                this.activeGuildUsers.set(guildId, new Set<string>());
+            }
+
+            this.activeGuildUsers.get(guildId)!.add(userId);
+            return;
+        }
+
+        this.activeDMUsers.add(userId);
+    }
+
+    /**
+     * Whether the user is using this command.
+     * @param {string} userId The user.
+     * @param {string} guildId The guild.
+     * @return {boolean} Whether the user is running the command.
+     */
+    public hasActiveUser(userId: string, guildId?: string): boolean {
+        return guildId
+            ? this.activeGuildUsers.get(guildId)?.has(userId) ?? false
+            : this.activeDMUsers.has(userId);
+    }
+
+    /**
+     * This should be called when someone is finished running a command.
+     * @param {string} userId The user ID corresponding to the user that has finished running the command.
+     * @param {string} [guildId] The guild ID, if any.
+     */
+    public removeActiveUser(userId: string, guildId?: string): void {
+        if (guildId) {
+            if (!this.activeGuildUsers.has(guildId)) {
+                return;
+            }
+
+            this.activeGuildUsers.get(guildId)!.delete(userId);
+            return;
+        }
+
+        this.activeDMUsers.delete(userId);
+    }
+
+    /**
+     * Gets the number of active users using this particular command.
+     * @param {string} guildId The guild ID.
+     * @return {number} The number of people using this command.
+     */
+    public getActiveUserCount(guildId: string): number {
+        return this.activeGuildUsers.get(guildId)?.size ?? 0;
+    }
+
+    /**
+     * Checks if the command has the maximum number of people running the command.
+     * @param {string} guildId The guild ID.
+     * @return {boolean} Whether another person can run this command.
+     */
+    public hasMaxConcurrentUsersRunning(guildId: string): boolean {
+        if (this.getGuildConcurrentLimit() === -1) {
+            return false;
+        }
+
+        return this.getGuildConcurrentLimit() <= this.getActiveUserCount(guildId);
+    }
+
+    /**
+     * Gets the number of people that can run a command concurrently in a guild context.
+     * @return {number} The number of people that can use this command concurrently. This will either be a positive
+     * integer or `-1` if no limit is set.
+     */
+    public getGuildConcurrentLimit(): number {
+        return this.commandInfo.guildConcurrencyLimit ?? -1;
+    }
+
+    /**
+     * Whether users can run this command again after running it. Applies to both DM and guild contexts.
+     * @return {boolean} Whether users can run this command again after running it.
+     */
+    public allowsMultipleExecutionsByUser(): boolean {
+        return this.commandInfo.allowMultipleExecutionByUser ?? true;
+    }
 }
 
 interface ICanRunResult {
@@ -380,6 +474,18 @@ export interface ICommandInfo {
      * @type {boolean}
      */
     botOwnerOnly: boolean;
+
+    /**
+     * The number of people that can use this command at any given time in a guild.
+     * @type {number}
+     */
+    guildConcurrencyLimit?: number;
+
+    /**
+     * Whether to allow the user to run the command (concurrently) multiple times.
+     * @type {boolean}
+     */
+    allowMultipleExecutionByUser?: boolean;
 }
 
 interface IArgumentInfo {

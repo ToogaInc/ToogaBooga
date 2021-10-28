@@ -7,7 +7,7 @@ import {
     IConfigCommand
 } from "./common/ConfigCommon";
 import {IGuildInfo, ISectionInfo} from "../../definitions";
-import {Collection, Guild, Message, MessageButton, MessageEmbed, Role, TextChannel} from "discord.js";
+import {Guild, Message, MessageButton, MessageEmbed, Role, TextChannel} from "discord.js";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import getCachedRole = GuildFgrUtilities.getCachedRole;
@@ -263,12 +263,6 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         },
     ];
 
-    // All users that are using this command
-    // We want at most 1 user per server using this command.
-    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
-
-
-
     public constructor() {
         super({
             cmdCode: "CONFIGURE_ROLE_COMMAND",
@@ -283,40 +277,33 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
             botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
             guildOnly: true,
-            botOwnerOnly: false
+            botOwnerOnly: false,
+            guildConcurrencyLimit: 1,
+            allowMultipleExecutionByUser: false
         });
     }
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-
-        if (!ConfigureRoles.ACTIVE_USERS.has(ctx.guild!.id)) {
-            ConfigureRoles.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
-        }
-
-        if (ConfigureRoles.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
-            await ctx.interaction.reply({
-                content: "Someone else is using this command right now. Please wait for them to finish!"
-            });
-            return -1;
-        }
-
+        
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
 
-        this.entry(ctx, null).then();
+        await this.entry(ctx, null);
         return 0;
     }
 
     /** @inheritDoc */
     public async entry(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
         const entryRes = await entryFunction(ctx, botMsg);
-        if (!entryRes)
+        if (!entryRes) {
+            await this.dispose(ctx, botMsg);
             return;
+        }
 
-        this.mainMenu(ctx, entryRes[0], entryRes[1]).then();
+        await this.mainMenu(ctx, entryRes[0], entryRes[1]);
     }
 
     /** @inheritDoc */
@@ -428,17 +415,17 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         });
 
         if (!selectedButton) {
-            this.dispose(ctx, botMsg).then();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
         switch (selectedButton.customId) {
             case "go_back": {
-                this.entry(ctx, botMsg).then();
+                await this.entry(ctx, botMsg);
                 return;
             }
             case "general": {
-                this.editDatabaseSettings(
+                await this.editDatabaseSettings(
                     ctx,
                     section,
                     botMsg,
@@ -447,45 +434,45 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                             && (section.isMainSection ? true : !!x.sectionPath);
                     }),
                     "General"
-                ).then();
+                );
                 return;
             }
             case "sec_leader": {
-                this.editDatabaseSettings(
+                await this.editDatabaseSettings(
                     ctx,
                     section,
                     botMsg,
                     ConfigureRoles.ROLE_MONGO.filter(x => x.roleType === RoleCategoryType.SectionLeader),
                     "Section Leaders"
-                ).then();
+                );
                 return;
             }
             case "uni_leader": {
-                this.editDatabaseSettings(
+                await this.editDatabaseSettings(
                     ctx,
                     section,
                     botMsg,
                     ConfigureRoles.ROLE_MONGO.filter(x => x.roleType === RoleCategoryType.UniversalLeader),
                     "Universal Leaders"
-                ).then();
+                );
                 return;
             }
             case "mod": {
-                this.editDatabaseSettings(
+                await this.editDatabaseSettings(
                     ctx,
                     section,
                     botMsg,
                     ConfigureRoles.ROLE_MONGO.filter(x => x.roleType === RoleCategoryType.Moderation),
                     "Moderation"
-                ).then();
+                );
                 return;
             }
             case "team": {
-                this.editTeamRoles(ctx, botMsg).then();
+                await this.editTeamRoles(ctx, botMsg);
                 return;
             }
             case "exit": {
-                this.dispose(ctx, botMsg).then();
+                await this.dispose(ctx, botMsg);
                 return;
             }
         }
@@ -612,10 +599,9 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
-        if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
-            return;
-        await botMsg?.delete().catch();
-        ConfigureRoles.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
+        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
+            await botMsg?.delete();
+        }
     }
 
     /**
@@ -721,7 +707,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
             // Case 0: Nothing
             if (result === null) {
-                this.dispose(ctx, botMsg).then();
+                await this.dispose(ctx, botMsg);
                 return;
             }
 
@@ -748,11 +734,11 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             // Case 3: Buttons
             switch (result.customId) {
                 case "back": {
-                    this.mainMenu(ctx, MongoManager.getMainSection(ctx.guildDoc!), botMsg).then();
+                    await this.mainMenu(ctx, MongoManager.getMainSection(ctx.guildDoc!), botMsg);
                     return;
                 }
                 case "quit": {
-                    this.dispose(ctx, botMsg).then();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
             }
@@ -823,7 +809,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             // Case 0: Nothing
             // noinspection DuplicatedCode
             if (!result) {
-                this.dispose(ctx, botMsg).then();
+                await this.dispose(ctx, botMsg);
                 return;
             }
 
@@ -856,7 +842,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             // Case 3: Button
             switch (result.customId) {
                 case "back": {
-                    this.mainMenu(ctx, section, botMsg).then();
+                    await this.mainMenu(ctx, section, botMsg);
                     return;
                 }
                 case "up": {
@@ -879,7 +865,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     break;
                 }
                 case "quit": {
-                    this.dispose(ctx, botMsg).then();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
             }

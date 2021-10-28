@@ -48,7 +48,9 @@ export class StartAfkCheck extends BaseCommand {
                 }
             ],
             guildOnly: true,
-            botOwnerOnly: false
+            botOwnerOnly: false,
+            allowMultipleExecutionByUser: false,
+            guildConcurrencyLimit: 2
         };
 
         const scb = new SlashCommandBuilder()
@@ -333,7 +335,7 @@ export class StartAfkCheck extends BaseCommand {
             content: `An AFK Check has been started. See ${sectionToUse.afkCheckChan} and ${sectionToUse.cpChan}`,
             embeds: []
         });
-        await rm.startPreAfkCheck();
+        rm.startPreAfkCheck().then();
         return 0;
     }
 }

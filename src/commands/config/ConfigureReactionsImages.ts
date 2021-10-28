@@ -1,6 +1,5 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
-    Collection,
     Message,
     MessageButton,
     MessageComponentInteraction,
@@ -78,11 +77,6 @@ export class ConfigureReactionsImages extends BaseCommand {
     public static MAX_CUSTOM_REACTIONS: number = 30;
     public static MAX_CUSTOM_IMAGES: number = 40;
 
-    // All users that are using this command
-    // We want at most 1 user per server using this command.
-    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
-
-
     public constructor() {
         super({
             cmdCode: "CONFIGURE_REACTIONS_IMAGES",
@@ -97,30 +91,21 @@ export class ConfigureReactionsImages extends BaseCommand {
             usageGuide: ["configreactionsimages"],
             exampleGuide: ["configreactionsimages"],
             guildOnly: true,
-            botOwnerOnly: false
+            botOwnerOnly: false,
+            guildConcurrencyLimit: 1,
+            allowMultipleExecutionByUser: false
         });
     }
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-
-        if (!ConfigureReactionsImages.ACTIVE_USERS.has(ctx.guild!.id)) {
-            ConfigureReactionsImages.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
-        }
-
-        if (ConfigureReactionsImages.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
-            await ctx.interaction.reply({
-                content: "Someone else is using this command right now. Please wait for them to finish!"
-            });
-            return -1;
-        }
-
+        
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
 
-        this.mainMenu(ctx, null).then();
+        await this.mainMenu(ctx, null);
         return 0;
     }
 
@@ -179,21 +164,21 @@ export class ConfigureReactionsImages extends BaseCommand {
         });
 
         if (!selectedButton) {
-            this.dispose(ctx, botMsg).catch();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
         switch (selectedButton.customId) {
             case "exit": {
-                this.dispose(ctx, botMsg).catch();
+                await this.dispose(ctx, botMsg);
                 break;
             }
             case "reactions": {
-                this.manageReactions(ctx, botMsg).catch();
+                await this.manageReactions(ctx, botMsg);
                 break;
             }
             case "images": {
-                this.manageImages(ctx, botMsg).catch();
+                await this.manageImages(ctx, botMsg);
                 break;
             }
         }
@@ -234,7 +219,7 @@ export class ConfigureReactionsImages extends BaseCommand {
             });
 
             await MiscUtilities.stopFor(5 * 1000);
-            this.mainMenu(ctx, botMsg).then();
+            await this.mainMenu(ctx, botMsg);
             return;
         }
 
@@ -346,13 +331,13 @@ export class ConfigureReactionsImages extends BaseCommand {
             });
 
             if (!res) {
-                this.dispose(ctx, botMsg).catch();
+                await this.dispose(ctx, botMsg);
                 return;
             }
 
             switch (res.customId) {
                 case "go_back": {
-                    this.mainMenu(ctx, botMsg).catch();
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
                 case "add_image": {
@@ -382,24 +367,24 @@ export class ConfigureReactionsImages extends BaseCommand {
                         targetChannel: ctx.channel
                     }, async m => {
                         if (m.attachments.size === 0) {
-                            m.delete().catch();
+                            await m.delete();
                             return;
                         }
 
                         const at = m.attachments.first()!;
                         if (!at.height) {
-                            m.delete().catch();
+                            await m.delete();
                             return;
                         }
 
                         setTimeout(() => {
-                            m.delete().catch();
+                            m.delete();
                         }, 5 * 1000);
                         return at.attachment;
                     });
 
                     if (!imageRes) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -417,7 +402,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     const newName = await this.getNameFunction(ctx, botMsg, "IMAGE")();
 
                     if (newName.status === TimedStatus.TIMED_OUT) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -442,7 +427,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     const r = await this.getNameFunction(ctx, botMsg, "IMAGE")();
 
                     if (r.status === TimedStatus.TIMED_OUT) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -458,11 +443,11 @@ export class ConfigureReactionsImages extends BaseCommand {
                             "properties.approvedCustomImages": selectedImages
                         }
                     });
-                    this.mainMenu(ctx, botMsg).catch();
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
                 case "quit": {
-                    this.dispose(ctx, botMsg).catch();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
                 case "up": {
@@ -725,20 +710,20 @@ export class ConfigureReactionsImages extends BaseCommand {
             });
 
             if (!res) {
-                this.dispose(ctx, botMsg).catch();
+                await this.dispose(ctx, botMsg);
                 return;
             }
 
             switch (res.customId) {
                 case "go_back": {
-                    this.mainMenu(ctx, botMsg).catch();
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
                 case "add_reaction": {
                     const newEmoji = await getEmojiForReaction();
 
                     if (newEmoji.status === TimedStatus.TIMED_OUT) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -747,7 +732,7 @@ export class ConfigureReactionsImages extends BaseCommand {
 
                     const newName = await this.getNameFunction(ctx, botMsg, "REACTION")();
                     if (newName.status === TimedStatus.TIMED_OUT) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -792,7 +777,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     });
 
                     if (!reactionType) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -818,7 +803,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     const r = await getEmojiForReaction();
 
                     if (r.status === TimedStatus.TIMED_OUT) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -831,7 +816,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                 case "change_name": {
                     const r = await this.getNameFunction(ctx, botMsg, "REACTION")();
                     if (r.status === TimedStatus.TIMED_OUT) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -847,11 +832,11 @@ export class ConfigureReactionsImages extends BaseCommand {
                             "properties.customReactions": currentReactions
                         }
                     });
-                    this.mainMenu(ctx, botMsg).catch();
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
                 case "quit": {
-                    this.dispose(ctx, botMsg).catch();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
                 case "up": {
@@ -873,9 +858,8 @@ export class ConfigureReactionsImages extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && !(await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)))
-            return;
-        await botMsg?.delete().catch();
-        ConfigureReactionsImages.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
+        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
+            await botMsg?.delete();
+        }
     }
 }

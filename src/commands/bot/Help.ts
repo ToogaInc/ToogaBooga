@@ -149,7 +149,7 @@ export class Help extends BaseCommand {
 
         const helpEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "GREEN")
             .setTitle("Command List")
-            .setFooter(`Server Context: ${ctx.guild!.name}`)
+            .setFooter(`Server Context: ${ctx.guild?.name ?? "Direct Messages"}`)
             .setDescription(
                 showCmdHelp
                     ? `The command, \`${cmdName}\`, could not be found. Try looking through the list below.`

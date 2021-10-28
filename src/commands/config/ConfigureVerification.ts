@@ -1,6 +1,5 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
-    Collection,
     Message,
     MessageButton,
     MessageComponentInteraction,
@@ -42,11 +41,7 @@ export class ConfigureVerification extends BaseCommand {
     ];
 
     public static MAX_DUNGEON_REQS: number = 8;
-
-    // All users that are using this command
-    // We want at most 1 user per server using this command.
-    private static readonly ACTIVE_USERS: Collection<string, Set<string>> = new Collection<string, Set<string>>();
-
+    
     public constructor() {
         super({
             cmdCode: "CONFIG_VERIFICATION",
@@ -61,30 +56,21 @@ export class ConfigureVerification extends BaseCommand {
             usageGuide: ["configverification"],
             exampleGuide: ["configverification"],
             guildOnly: true,
-            botOwnerOnly: false
+            botOwnerOnly: false,
+            guildConcurrencyLimit: 1,
+            allowMultipleExecutionByUser: false
         });
     }
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-
-        if (!ConfigureVerification.ACTIVE_USERS.has(ctx.guild!.id)) {
-            ConfigureVerification.ACTIVE_USERS.set(ctx.guild!.id, new Set<string>());
-        }
-
-        if (ConfigureVerification.ACTIVE_USERS.get(ctx.guild!.id)!.size >= 1) {
-            await ctx.interaction.reply({
-                content: "Someone else is using this command right now. Please wait for them to finish!"
-            });
-            return -1;
-        }
-
+        
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
 
-        this.mainMenu(ctx, null).then();
+        await this.mainMenu(ctx, null);
         return 0;
     }
 
@@ -137,12 +123,12 @@ export class ConfigureVerification extends BaseCommand {
         });
 
         if (!selected || !selected.isSelectMenu()) {
-            this.dispose(ctx, botMsg).catch();
+            await this.dispose(ctx, botMsg);
             return;
         }
 
-        this.configVerification(ctx, botMsg, allSections.find(x => x.uniqueIdentifier === selected.values[0])!)
-            .then();
+        await this.configVerification(ctx, botMsg, allSections.find(x => x.uniqueIdentifier === selected.values[0])!)
+            ;
     }
 
     /**
@@ -280,7 +266,7 @@ export class ConfigureVerification extends BaseCommand {
             });
 
             if (!selectedButton) {
-                this.dispose(ctx, botMsg).catch();
+                await this.dispose(ctx, botMsg);
                 return;
             }
 
@@ -288,7 +274,7 @@ export class ConfigureVerification extends BaseCommand {
                 case "config_req": {
                     const cr = await this.configVerifReqs(ctx, botMsg, verifConfig.verifReq);
                     if (cr.status === TimedStatus.TIMED_OUT) {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -322,7 +308,7 @@ export class ConfigureVerification extends BaseCommand {
                     );
 
                     if (typeof verifMsg === "undefined") {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -352,7 +338,7 @@ export class ConfigureVerification extends BaseCommand {
                     );
 
                     if (typeof verifSuccessMsg === "undefined") {
-                        this.dispose(ctx, botMsg).catch();
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -370,15 +356,15 @@ export class ConfigureVerification extends BaseCommand {
                         ? {$set: {"otherMajorConfig.verificationProperties": verifConfig}}
                         : {$set: {"guildSections.$.otherMajorConfig.verificationProperties": verifConfig}};
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);
-                    this.mainMenu(ctx, botMsg).catch();
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
                 case "go_back": {
-                    this.mainMenu(ctx, botMsg).catch();
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
                 case "quit": {
-                    this.dispose(ctx, botMsg).catch();
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
                 case "send": {
@@ -453,7 +439,7 @@ export class ConfigureVerification extends BaseCommand {
                                 .setCustomId("verify_me")
                         ])
                     });
-                    newMsg.pin().catch();
+                    await newMsg.pin();
                     break;
                 }
             }
@@ -1409,9 +1395,8 @@ export class ConfigureVerification extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg?.deleted)
-            return;
-        await botMsg?.delete().catch();
-        ConfigureVerification.ACTIVE_USERS.get(ctx.guild!.id)?.delete(ctx.user.id);
+        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
+            await botMsg?.delete();
+        }
     }
 }
