@@ -606,7 +606,7 @@ export namespace AdvancedCollector {
     ): Promise<Message | null> {
         let botMsg: Message | null = null;
         if (options.msgOptions)
-            botMsg = await options.targetChannel.send(options.msgOptions);
+            botMsg = await GlobalFgrUtilities.sendMsg(options.targetChannel, options.msgOptions);
         else if (options.oldMsg)
             botMsg = options.oldMsg;
 
