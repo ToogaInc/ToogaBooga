@@ -855,7 +855,7 @@ export namespace VerifyManager {
 
             collector.stop();
             await Promise.all([
-                MongoManager.addIdNameToTheCollection(member, requestData.name),
+                MongoManager.addIdNameToIdNameCollection(member, requestData.name),
                 member.roles.add(guildDoc.roles.verifiedRoleId).catch(),
                 member.setNickname(requestData.name, "Verified in the main section successfully.")
             ]);
@@ -1410,7 +1410,7 @@ export namespace VerifyManager {
 
                 if (section.isMainSection) {
                     promises.push(
-                        MongoManager.addIdNameToTheCollection(member, manualVerifyRes.ign),
+                        MongoManager.addIdNameToIdNameCollection(member, manualVerifyRes.ign),
                         GlobalFgrUtilities.tryExecuteAsync(async () => {
                             await member.setNickname(manualVerifyRes.ign, "Manually verified successfully.");
                         }),

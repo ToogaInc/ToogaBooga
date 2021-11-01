@@ -16,10 +16,13 @@ export namespace UserManager {
      * Attempts to resolve an IGN, Discord ID, or mention.
      * @param {Guild} guild The guild.
      * @param {string} memberResolvable The member resolvable.
+     * @param {boolean} [checkDb] Whether to check the database. If true, this will check the database for the
+     * specified IGN.
      * @returns {Promise<IResolvedMember | null>} The member + other relevant information, if any. `null` if no such
      * member was found.
      */
-    export async function resolveMember(guild: Guild, memberResolvable: string): Promise<IResolvedMember | null> {
+    export async function resolveMember(guild: Guild, memberResolvable: string,
+                                        checkDb: boolean = true): Promise<IResolvedMember | null> {
         async function getMemberFromId(idToUse: string): Promise<GuildMember | null> {
             // If cached, then use that
             const cachedMember = GuildFgrUtilities.getCachedMember(guild, idToUse);
@@ -43,7 +46,7 @@ export namespace UserManager {
         // Snowflake = Discord ID
         if (CommonRegex.ONLY_NUMBERS.test(memberResolvable)) {
             member = await getMemberFromId(memberResolvable);
-            if (!member) {
+            if (!member && checkDb) {
                 const doc = await MongoManager.findIdInIdNameCollection(memberResolvable);
                 if (doc.length > 0) idUserDoc = doc[0];
             }
@@ -62,7 +65,7 @@ export namespace UserManager {
             if (memberRes) {
                 member = memberRes;
             }
-            else {
+            else if (checkDb) {
                 const doc = await MongoManager.findNameInIdNameCollection(memberResolvable);
                 if (doc.length > 0) idUserDoc = doc[0];
             }
@@ -74,6 +77,15 @@ export namespace UserManager {
                 return null;
             member = await getMemberFromId(parsedMention[1]);
         }
+
+        if (!checkDb) {
+            return member ? {
+                member: member,
+                idNameDoc: null,
+                userDoc: null
+            } : null;
+        }
+
 
         if (member) {
             const [idNameDocs, userDocs] = await getDocs(member.id);

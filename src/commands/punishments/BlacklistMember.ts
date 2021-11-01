@@ -162,7 +162,7 @@ export class BlacklistMember extends BaseCommand {
         if (CommonRegex.ONLY_LETTERS.test(mStr))
             finalIgnToBl = mStr;
         // Not IGN, must be either mention or ID
-        else if (resMember.idNameDoc)
+        else if (resMember.idNameDoc && resMember.idNameDoc.rotmgNames.length > 0)
             finalIgnToBl = resMember.idNameDoc.rotmgNames[0].ign;
         // Otherwise, check nickname
         else {

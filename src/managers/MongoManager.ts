@@ -211,14 +211,30 @@ export namespace MongoManager {
 
     /**
      * Adds the specified name and ID to the IDName collection. This will take care of any potential duplicate
-     * entries that may exist in both IDNameCollection and UserCollection.
+     * entries that may exist in both IDNameCollection and UserCollection. It should be noted that:
+     * - Every document (in IDNameCollection) must have a Discord ID.
+     * - Every document (in IDNameCollection) does not necessarily need an IGN.
+     *
      * @param {GuildMember} member The member.
-     * @param {string} ign The in-game name.
+     * @param {string} [ign] The in-game name, if any.
+     * @returns {IIdNameInfo | null} The new document, if any. `null` if addition could not be performed.
      * @throws {ReferenceError} If the Mongo instance isn't connected.
      */
-    export async function addIdNameToTheCollection(member: GuildMember, ign: string): Promise<void> {
+    export async function addIdNameToIdNameCollection(member: GuildMember, ign?: string): Promise<IIdNameInfo | null> {
         if (IdNameCollection === null)
             throw new ReferenceError("IDNameCollection null. Use connect method first.");
+
+        // No IGN specified means we're just adding an ID/Name identifier without a name
+        if (!ign) {
+            const possIdEntries = await findIdInIdNameCollection(member.id);
+            // No such entries means we can add
+            if (possIdEntries.length === 0) {
+                const t = await IdNameCollection.insertOne(getDefaultIdNameObj(member.id));
+                return t.ops.length === 0 ? null : t.ops[0];
+            }
+
+            return possIdEntries[0];
+        }
 
         const [idEntries, ignEntries] = await Promise.all([
             findIdInIdNameCollection(member.id),
@@ -228,22 +244,22 @@ export namespace MongoManager {
         // There are three cases to consider.
         // Case 1: No entries found.
         if (idEntries.length === 0 && ignEntries.length === 0) {
-            await IdNameCollection.insertOne(getDefaultIdNameObj(member.id, ign));
-            return;
+            const t = await IdNameCollection.insertOne(getDefaultIdNameObj(member.id, ign));
+            return t.ops.length === 0 ? null : t.ops[0];
         }
 
         // Case 2: ID found, IGN not.
         // In this case, we can simply push the name into the names array.
         if (idEntries.length > 0 && ignEntries.length === 0) {
-            await IdNameCollection.updateOne({currentDiscordId: idEntries[0].currentDiscordId}, {
+            const r = await IdNameCollection.findOneAndUpdate({currentDiscordId: idEntries[0].currentDiscordId}, {
                 $push: {
                     rotmgNames: {
                         lowercaseIgn: ign.toLowerCase(),
                         ign: ign
                     }
                 }
-            });
-            return;
+            }, {returnDocument: "after"});
+            return r.value ?? null;
         }
 
         // Case 3: ID not found, IGN found.
@@ -262,18 +278,18 @@ export namespace MongoManager {
                         toDate: Date.now()
                     }
                 }
-            }, {returnDocument: "before"});
+            }, {returnDocument: "after"});
 
             // Also update the user collection.
             if (oldDoc.value) {
-                await getUserCollection().updateOne({discordId: oldDoc.value.currentDiscordId}, {
+                await getUserCollection().updateOne({discordId: oldDiscordId}, {
                     $set: {
                         discordId: member.id
                     }
                 });
             }
 
-            return;
+            return oldDoc.value ?? null;
         }
 
         // Case 4: ID and IGN found. In this case, we just merge the objects together.
@@ -310,7 +326,10 @@ export namespace MongoManager {
                 }
             ]
         });
-        await IdNameCollection.insertOne(newObj);
+        const addedDocArr = await IdNameCollection.insertOne(newObj);
+
+        if (addedDocArr.ops.length === 0)
+            return null;
 
         // And now create a new User document.
         const filterQuery: FilterQuery<IUserInfo>[] = [];
@@ -331,7 +350,7 @@ export namespace MongoManager {
         }).toArray();
 
         if (foundDocs.length === 0)
-            return;
+            return addedDocArr.ops[0];
 
         const userDoc = getDefaultUserConfig(member.id, ign);
         const allNotes: string[] = [];
@@ -379,6 +398,7 @@ export namespace MongoManager {
 
         // And add the new user document.
         await getUserCollection().insertOne(userDoc);
+        return addedDocArr.ops[0];
     }
 
     /**
@@ -576,13 +596,13 @@ export namespace MongoManager {
     /**
      * Gets the default basic user configuration object.
      * @param {string} userId The person's Discord ID.
-     * @param {string} ign The IGN of the person.
+     * @param {string} [ign] The IGN of the person, if any.
      * @return {IIdNameInfo} The basic user configuration object.
      */
-    export function getDefaultIdNameObj(userId: string, ign: string): IIdNameInfo {
+    export function getDefaultIdNameObj(userId: string, ign?: string): IIdNameInfo {
         return {
             _id: new ObjectID(),
-            rotmgNames: [{lowercaseIgn: ign.toLowerCase(), ign: ign}],
+            rotmgNames: ign ? [{lowercaseIgn: ign.toLowerCase(), ign: ign}] : [],
             currentDiscordId: userId,
             pastDiscordIds: [],
             pastRealmNames: []

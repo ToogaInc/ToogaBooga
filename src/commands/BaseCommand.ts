@@ -119,9 +119,10 @@ export abstract class BaseCommand {
     }
 
     /**
-     * Executes a command.
+     * Executes a command. This promise should be resolved when the command is "done" running.
      * @param {ICommandContext} ctx The command context.
-     * @return {Promise<number>} The command result. 0 = success, any other number = fail.
+     * @return {Promise<number>} The command result. 0 implies successful execution. Any other number implies
+     * non-successful execution.
      */
     public abstract run(ctx: ICommandContext): Promise<number>;
 

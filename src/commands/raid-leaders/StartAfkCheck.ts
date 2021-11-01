@@ -22,6 +22,15 @@ import {Emojis} from "../../constants/Emojis";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 
+type DungeonSelectionType = {
+    section: ISectionInfo;
+    afkCheckChan: TextChannel;
+    cpChan: TextChannel;
+    raiderRole: Role;
+    dungeons: IDungeonInfo[];
+    omittedDungeons: IDungeonInfo[];
+};
+
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
 
@@ -105,13 +114,7 @@ export class StartAfkCheck extends BaseCommand {
         const allSections = MongoManager.getAllSections(ctx.guildDoc!);
 
         // Step 1: Find all sections that the leader can lead in.
-        const availableSections: {
-            section: ISectionInfo;
-            afkCheckChan: TextChannel;
-            cpChan: TextChannel;
-            raiderRole: Role;
-            dungeons: IDungeonInfo[];
-        }[] = [];
+        const availableSections: DungeonSelectionType[] = [];
 
         // Get all sections that the member can lead in
         const allRolePerms = MongoManager.getAllConfiguredRoles(ctx.guildDoc!);
@@ -120,11 +123,13 @@ export class StartAfkCheck extends BaseCommand {
                 continue;
 
             const dungeons: IDungeonInfo[] = [];
+            const omittedDungeons: IDungeonInfo[] = [];
             section.otherMajorConfig.afkCheckProperties.allowedDungeons.forEach(id => {
                 if (DungeonUtilities.isCustomDungeon(id)) {
                     const customDgn = ctx.guildDoc!.properties.customDungeons.find(x => x.codeName === id);
                     if (customDgn) {
                         if (!StartAfkCheck.hasPermsToRaid(customDgn.roleRequirement, ctx.member!, allRolePerms)) {
+                            omittedDungeons.push(customDgn);
                             return;
                         }
 
@@ -140,6 +145,7 @@ export class StartAfkCheck extends BaseCommand {
 
                 const overrideInfo = ctx.guildDoc!.properties.dungeonOverride.find(x => x.codeName === id);
                 if (!StartAfkCheck.hasPermsToRaid(overrideInfo?.roleRequirement, ctx.member!, allRolePerms)) {
+                    omittedDungeons.push(dgn);
                     return;
                 }
 
@@ -170,7 +176,8 @@ export class StartAfkCheck extends BaseCommand {
                 cpChan: controlPanelChan,
                 afkCheckChan: afkCheckChan,
                 raiderRole: verifiedRole,
-                dungeons: dungeons
+                dungeons: dungeons,
+                omittedDungeons: omittedDungeons
             });
         }
 
@@ -185,13 +192,7 @@ export class StartAfkCheck extends BaseCommand {
         }
 
         // Step 2: Ask for the appropriate section.
-        const sectionToUse: {
-            section: ISectionInfo;
-            afkCheckChan: TextChannel;
-            cpChan: TextChannel;
-            raiderRole: Role;
-            dungeons: IDungeonInfo[];
-        } | null = await new Promise(async (resolve) => {
+        const sectionToUse: DungeonSelectionType | null = await new Promise(async (resolve) => {
             if (availableSections.length === 1)
                 return resolve(availableSections[0]);
 
@@ -253,7 +254,6 @@ export class StartAfkCheck extends BaseCommand {
         const uIdentifier = StringUtil.generateRandomString(20);
         const selectMenus: MessageSelectMenu[] = [];
         const dungeonSubset = ArrayUtilities.breakArrayIntoSubsets(sectionToUse.dungeons, 25);
-
         for (let i = 0; i < Math.min(4, dungeonSubset.length); i++) {
             selectMenus.push(
                 new MessageSelectMenu()
@@ -276,6 +276,19 @@ export class StartAfkCheck extends BaseCommand {
                 + " press the **Cancel** button.")
             .setFooter("You have 1 minute and 30 seconds to select a dungeon.")
             .setTimestamp();
+
+        if (sectionToUse.omittedDungeons.length > 0) {
+            askDgnEmbed.addField(
+                "Omitted Dungeon",
+                "You are not able to lead in the following dungeons due to not having the necessary role(s)."
+                + StringUtil.codifyString(
+                    sectionToUse.omittedDungeons
+                        .map(x => `- ${x.dungeonName} (${x.isBuiltIn ? "Built-In" : "Custom"})`)
+                        .join("\n")
+                )
+            );
+        }
+
         if (dungeonSubset.length > 4) {
             askDgnEmbed.addField(
                 "Warning",
