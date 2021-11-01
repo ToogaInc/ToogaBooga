@@ -111,7 +111,9 @@ export class OneLifeBot {
         OneLifeBot.Commands.set("Staff", [
             new Cmds.FindPunishment(),
             new Cmds.CheckBlacklist(),
-            new Cmds.FindPerson()
+            new Cmds.FindPerson(),
+            new Cmds.ManualVerifyMain(),
+            new Cmds.ManualVerifySection()
         ]);
 
         OneLifeBot.Commands.set("Configuration", [

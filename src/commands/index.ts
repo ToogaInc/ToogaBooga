@@ -16,6 +16,8 @@ export * from "./config/ConfigureAfkCheck";
 export * from "./staff/FindPunishment";
 export * from "./staff/CheckBlacklist";
 export * from "./staff/FindPerson";
+export * from "./staff/ManualVerifyMain";
+export * from "./staff/ManualVerifySection";
 
 export * from "./punishments/SuspendMember";
 export * from "./punishments/SectionSuspendMember";

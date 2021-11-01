@@ -612,8 +612,13 @@ export namespace QuotaManager {
             1000
         );
 
+        let initialAdded = false;
         for (const field of fields) {
-            embed.addField(GeneralConstants.ZERO_WIDTH_SPACE, StringUtil.codifyString(field));
+            embed.addField(
+                initialAdded ? GeneralConstants.ZERO_WIDTH_SPACE : "Leaderboard",
+                StringUtil.codifyString(field)
+            );
+            initialAdded = true;
         }
 
         return embed;

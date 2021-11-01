@@ -561,6 +561,8 @@ export namespace PunishmentManager {
             const filterQuery: FilterQuery<IUserInfo> = {
                 $or: []
             };
+
+            // This is only true for blacklists or unblacklists. Everything else is expected to have the member object.
             if ("name" in member) {
                 const nameRes = await MongoManager.findNameInIdNameCollection(member.name);
                 if (nameRes.length === 0)
@@ -578,8 +580,10 @@ export namespace PunishmentManager {
             }
             else {
                 const idRes = await MongoManager.findIdInIdNameCollection(member.id);
-                if (idRes.length === 0)
-                    return null;
+                if (idRes.length === 0) {
+                    const t = await MongoManager.addIdNameToIdNameCollection(member);
+                    if (!t) return null;
+                }
 
                 if (idRes.length > 1)
                     console.log(`[id] ${member.id} has multiple documents in IDName Collection.`);
