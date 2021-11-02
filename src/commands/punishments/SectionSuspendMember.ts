@@ -81,10 +81,13 @@ export class SectionSuspendMember extends BaseCommand {
             return 0;
         }
 
-        const sections = [
+        const sections = ([
             ctx.guildDoc!.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
             ctx.guildDoc!.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
-            ctx.guildDoc!.roles.staffRoles.universalLeaderRoleIds.leaderRoleId
+            ctx.guildDoc!.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+            ctx.guildDoc!.roles.staffRoles.moderation.officerRoleId,
+            ctx.guildDoc!.roles.staffRoles.moderation.securityRoleId,
+            ctx.guildDoc!.roles.staffRoles.moderation.moderatorRoleId
         ].some(x => ctx.member!.roles.cache.has(x))
             ? ctx.guildDoc!.guildSections
             : ctx.guildDoc!.guildSections.filter(x => {
@@ -92,11 +95,12 @@ export class SectionSuspendMember extends BaseCommand {
                     x.roles.leaders.sectionVetLeaderRoleId,
                     x.roles.leaders.sectionLeaderRoleId
                 ].some(y => ctx.member!.roles.cache.has(y));
-            });
+            })).filter(sec => sec.moderation.sectionSuspended
+            .every(susInfo => susInfo.affectedUser.id !== resMember.member.id));
 
         if (sections.length === 0) {
             await ctx.interaction.reply({
-                content: "You are not able to suspend this user from any sections at this time. Try again later",
+                content: "You are not able to suspend this user from any sections at this time. Try again later.",
                 ephemeral: true
             });
 
@@ -162,7 +166,8 @@ export class SectionSuspendMember extends BaseCommand {
 
         if (!susRes.punishmentResolved) {
             await ctx.interaction.editReply({
-                content: SuspendMember.ERROR_NO_SUSPEND_STR
+                content: SuspendMember.ERROR_NO_SUSPEND_STR,
+                components: []
             });
 
             return 0;
@@ -185,8 +190,10 @@ export class SectionSuspendMember extends BaseCommand {
             );
         }
 
-        await ctx.interaction.reply({
-            embeds: [embed]
+        await ctx.interaction.editReply({
+            content: null,
+            embeds: [embed],
+            components: []
         });
 
         return 0;
