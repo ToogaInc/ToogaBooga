@@ -133,7 +133,7 @@ export namespace QuotaManager {
             const logInfo = quotaPointMap.get(memberIds[i])!;
             const memberDisplay = members[i]?.displayName ?? memberIds[i];
             const status = logInfo.points >= oldQuotas.pointsNeeded
-                ? "Complete   "
+                ? " Complete  "
                 : logInfo.points > 0
                     ? "Incomplete "
                     : "Not Started";
@@ -142,9 +142,10 @@ export namespace QuotaManager {
                 .appendLine()
                 .append(`\tUser Tag (ID): ${members[i]?.user.tag ?? "N/A"} (${memberIds[i]})`)
                 .appendLine()
-                .append(`\tRoles: ${members[i]?.roles.cache.map(x => x.name).join(", ") ?? "N/A"}`)
+                .append(`\tRoles: [${members[i]?.roles.cache.map(x => x.name).join(", ") ?? ""}]`)
                 .appendLine()
-                .append(`\tBreakdown:`);
+                .append(`\tBreakdown:`)
+                .appendLine();
             const entries = Object.entries(logInfo.quotaBreakdown);
             if (entries.length === 0) {
                 sb.append("\t\t- None Available.")

@@ -665,7 +665,7 @@ export class ConfigureQuotas extends BaseCommand {
                                     .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
                                     .setTitle("Set Minimum Points Needed for Quota")
                                     .setDescription(
-                                        `Current Minimum Points: ${quotaToEdit.pointValues}\n\nType a positive number`
+                                        `Current Minimum Points: ${quotaToEdit.pointsNeeded}\n\nType a positive number`
                                         + " that you want to make the minimum number of points needed to pass the"
                                         + " weekly quota. If you don't want to set this up, press the **Back** button."
                                     )
