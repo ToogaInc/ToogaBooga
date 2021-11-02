@@ -25,6 +25,7 @@ export * from "./punishments/BlacklistMember";
 export * from "./punishments/WarnMember";
 export * from "./punishments/MuteMember";
 export * from "./punishments/UnmuteMember";
+export * from "./punishments/UnblacklistMember";
 
 export * from "./owner/SendAnnouncement";
 

@@ -68,19 +68,6 @@ export class BlacklistMember extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const mStr = ctx.interaction.options.getString("member", true);
-        const blInfo = ctx.guildDoc!.moderation.blacklistedUsers
-            .find(x => x.realmName.lowercaseIgn === mStr.toLowerCase());
-        if (blInfo) {
-            await ctx.interaction.reply({
-                content: `\`${mStr}\` is already blacklisted. The moderation ID associated with this blacklist is:`
-                    + StringUtil.codifyString(blInfo.actionId),
-                ephemeral: true
-            });
-
-            return 0;
-        }
-
-
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
         const reason = ctx.interaction.options.getString("reason", true);
 
@@ -100,6 +87,18 @@ export class BlacklistMember extends BaseCommand {
             if (!CommonRegex.ONLY_LETTERS.test(mStr)) {
                 await ctx.interaction.reply({
                     content: "This member could not be resolved. Please try again.",
+                    ephemeral: true
+                });
+
+                return 0;
+            }
+
+            const notInGuildBlInfo = ctx.guildDoc!.moderation.blacklistedUsers
+                .find(x => x.realmName.lowercaseIgn === mStr.toLowerCase());
+            if (notInGuildBlInfo) {
+                await ctx.interaction.reply({
+                    content: `\`${mStr}\` is already blacklisted. The moderation ID associated with this blacklist is:`
+                        + StringUtil.codifyString(notInGuildBlInfo.actionId),
                     ephemeral: true
                 });
 
@@ -179,6 +178,18 @@ export class BlacklistMember extends BaseCommand {
             finalIgnToBl = possNames[0];
         }
 
+
+        const blInfo = ctx.guildDoc!.moderation.blacklistedUsers
+            .find(x => x.realmName.lowercaseIgn === finalIgnToBl.toLowerCase());
+        if (blInfo) {
+            await ctx.interaction.reply({
+                content: `\`${finalIgnToBl}\` is already blacklisted. The moderation ID associated with this blacklist:`
+                    + ` is: ${StringUtil.codifyString(blInfo.actionId)}`,
+                ephemeral: true
+            });
+
+            return 0;
+        }
 
         const rBlInfo: IBlacklistedUser = {
             actionId: blacklistId,

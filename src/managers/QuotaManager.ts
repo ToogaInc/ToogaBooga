@@ -607,7 +607,7 @@ export namespace QuotaManager {
                     ? `ID ${member}`
                     : member.displayName;
 
-                return `[${rank}] ${displayMember} - ${amt} Points`;
+                return `[${rank}] ${displayMember} - ${amt} PTS`;
             },
             1000
         );
