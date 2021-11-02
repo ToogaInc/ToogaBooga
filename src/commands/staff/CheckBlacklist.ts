@@ -1,4 +1,4 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
@@ -28,14 +28,13 @@ export class CheckBlacklist extends BaseCommand {
                 {
                     displayName: "Name",
                     argName: "name",
-                    desc: "The name to blacklist.",
-                    type: "String",
+                    desc: "The name to check.",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["Darkmattr", "Opre"]
                 }
             ],
-            usageGuide: ["checkblacklist [Name]"],
-            exampleGuide: ["checkblacklist Opre"],
             guildOnly: true,
             botOwnerOnly: false
         };

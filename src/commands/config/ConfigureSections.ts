@@ -137,8 +137,6 @@ export class ConfigureSections extends BaseCommand {
             formalCommandName: "Configure Section Command",
             botCommandName: "configsections",
             description: "Allows the user to add or remove sections",
-            usageGuide: ["configsections"],
-            exampleGuide: ["configsections"],
             commandCooldown: 10 * 1000,
             argumentInfo: [],
             generalPermissions: ["MANAGE_GUILD"],

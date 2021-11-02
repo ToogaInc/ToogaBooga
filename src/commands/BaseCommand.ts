@@ -16,6 +16,7 @@ import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {MongoManager} from "../managers/MongoManager";
+import {SlashCommandOptionBase} from "@discordjs/builders/dist/interactions/slashCommands/mixins/CommandOptionBase";
 
 export interface ICommandContext {
     /**
@@ -61,6 +62,79 @@ export interface ICommandContext {
     interaction: CommandInteraction;
 }
 
+export enum ArgumentType {
+    String,
+    Boolean,
+    Channel,
+    Integer,
+    Mention,
+    Number,
+    Role,
+    User
+}
+
+/**
+ * Given a `SlashCommandOptionBase`, this will configure the argument's name, description, and whether it is required.
+ * @param {T} o The options for this argument.
+ * @param {IArgumentInfo} argInfo The argument information.
+ * @returns {T} The configured options.
+ */
+function optionAdder<T extends SlashCommandOptionBase>(o: T, argInfo: IArgumentInfo): T {
+    return o.setName(argInfo.argName)
+        .setRequired(argInfo.required)
+        .setDescription(
+            argInfo.shortDesc ?? argInfo.desc.length > 100
+                ? argInfo.desc.substring(0, 95) + "..."
+                : argInfo.desc
+        );
+}
+
+/**
+ * Adds an argument to the `SlashCommandBuilder`.
+ * @param {SlashCommandBuilder} scb The `SlashCommandBuilder` object.
+ * @param {IArgumentInfo} argInfo The argument information.
+ * @throws {Error} If an invalid option was somehow provided.
+ */
+function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
+    switch (argInfo.type) {
+        case ArgumentType.Boolean: {
+            scb.addBooleanOption(o => optionAdder(o, argInfo));
+            break;
+        }
+        case ArgumentType.Channel: {
+            scb.addChannelOption(o => optionAdder(o, argInfo));
+            break;
+        }
+        case ArgumentType.Role: {
+            scb.addRoleOption(o => optionAdder(o, argInfo));
+            break;
+        }
+        case ArgumentType.User: {
+            scb.addUserOption(o => optionAdder(o, argInfo));
+            break;
+        }
+        case ArgumentType.Integer: {
+            scb.addIntegerOption(o => optionAdder(o, argInfo));
+            break;
+        }
+        case ArgumentType.Mention: {
+            scb.addMentionableOption(o => optionAdder(o, argInfo));
+            break;
+        }
+        case ArgumentType.Number: {
+            scb.addNumberOption(o => optionAdder(o, argInfo));
+            break;
+        }
+        case ArgumentType.String: {
+            scb.addStringOption(o => optionAdder(o, argInfo));
+            break;
+        }
+        default: {
+            throw new Error("invalid option.");
+        }
+    }
+}
+
 export abstract class BaseCommand {
     private readonly activeGuildUsers: Collection<string, Set<string>>;
     private readonly activeDMUsers: Set<string>;
@@ -87,9 +161,10 @@ export abstract class BaseCommand {
     /**
      * Creates a new `BaseCommand` object.
      * @param {ICommandInfo} cmi The command information object.
-     * @param {SlashCommandBuilder} [slashCmdBuilder] The slash command object. If none is specified, only the
-     * `name` and `description` of the slash command will be specified. If you need to supply arguments, provide
-     * this argument yourself.
+     * @param {SlashCommandBuilder} [slashCmdBuilder] The slash command object. If none is specified, this will
+     * create a new `SlashCommandBuilder` instance with the specified name, description, and arguments (specified by
+     * the `argumentInfo` array). If you need more control over the arguments (e.g. maximum/minimum), pass your own
+     * instance.
      * @throws {Error} If the command doesn't have any way to be called, or doesn't have a description, or doesn't
      * have a name.
      * @throws {Error} If the command's `name` or `description` doesn't match the specified command information's
@@ -109,9 +184,23 @@ export abstract class BaseCommand {
         }
 
         this.commandInfo = cmi;
-        this.data = slashCmdBuilder ?? new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
+        if (slashCmdBuilder) {
+            this.data = slashCmdBuilder;
+        }
+        else {
+            this.data = new SlashCommandBuilder()
+                .setName(cmi.botCommandName)
+                .setDescription(cmi.description);
+
+            cmi.argumentInfo.filter(x => x.required).forEach(requiredArg => {
+                addArgument(this.data, requiredArg);
+            });
+
+            // Optional arguments always goes last.
+            cmi.argumentInfo.filter(x => !x.required).forEach(optionalArg => {
+                addArgument(this.data, optionalArg);
+            });
+        }
 
         this.onCooldown = new Collection<string, number>();
         this.activeGuildUsers = new Collection<string, Set<string>>();
@@ -429,18 +518,6 @@ export interface ICommandInfo {
     argumentInfo: IArgumentInfo[];
 
     /**
-     * Information on how this command is used.
-     * @type {string[]}
-     */
-    usageGuide: string[];
-
-    /**
-     * Examples on how the command can be used.
-     * @type {string[]}
-     */
-    exampleGuide: string[];
-
-    /**
      * A cooldown, in milliseconds, that users will have to wait out after executing a command.
      * @type {number}
      */
@@ -505,13 +582,26 @@ interface IArgumentInfo {
      * The argument type.
      * @type {string}
      */
-    type: string;
+    type: ArgumentType;
+
+    /**
+     * The argument type, formatted as a string which will then be displayed to the end user.
+     * @type {string}
+     */
+    prettyType: string;
 
     /**
      * The description of this argument.
      * @type {string}
      */
     desc: string;
+
+    /**
+     * A shortened description of this argument. If none is provided, this defaults to the first 100 characters of
+     * the specified description.
+     * @type {string}
+     */
+    shortDesc?: string;
 
     /**
      * Examples of how this argument can be satisfied.

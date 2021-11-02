@@ -1,14 +1,13 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {UserManager} from "../../managers/UserManager";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {CommonRegex} from "../../constants/CommonRegex";
-import generateRandomString = StringUtil.generateRandomString;
 import {MongoManager} from "../../managers/MongoManager";
 import {IBlacklistedUser} from "../../definitions";
 import {PunishmentManager} from "../../managers/PunishmentManager";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import generateRandomString = StringUtil.generateRandomString;
 
 export class BlacklistMember extends BaseCommand {
     public constructor() {
@@ -26,7 +25,8 @@ export class BlacklistMember extends BaseCommand {
                     displayName: "Member",
                     argName: "member",
                     desc: "The member to blacklist.",
-                    type: "Member Resolvable (ID, Mention, IGN)",
+                    type: ArgumentType.String,
+                    prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: true,
                     example: ["@Console#8939", "123313141413155", "Darkmattr"]
                 },
@@ -34,33 +34,17 @@ export class BlacklistMember extends BaseCommand {
                     displayName: "Reason",
                     argName: "reason",
                     desc: "The reason for this blacklist.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["For being bad."]
                 }
             ],
-            usageGuide: ["blacklist [Member] [Reason]"],
-            exampleGuide: ["blacklist @Console#8939 For being bad", "blacklist Darkmattr For being bad"],
             guildOnly: true,
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => {
-            return o
-                .setName("member")
-                .setDescription("The member to blacklist. This can either be an ID, IGN, or mention.")
-                .setRequired(true);
-        }).addStringOption(o => {
-            return o
-                .setName("reason")
-                .setDescription("The reason for this blacklist.")
-                .setRequired(true);
-        });
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**

@@ -1,11 +1,10 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {UserManager} from "../../managers/UserManager";
 import {StringUtil} from "../../utilities/StringUtilities";
-import generateRandomString = StringUtil.generateRandomString;
 import {MuteManager} from "../../managers/PunishmentManager";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import generateRandomString = StringUtil.generateRandomString;
 
 export class UnmuteMember extends BaseCommand {
     public static readonly ERROR_NO_UNMUTE_STR: string = new StringBuilder()
@@ -37,7 +36,8 @@ export class UnmuteMember extends BaseCommand {
                     displayName: "Member",
                     argName: "member",
                     desc: "The member to unmute.",
-                    type: "Member Resolvable (ID, Mention, IGN)",
+                    type: ArgumentType.String,
+                    prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: true,
                     example: ["@Console#8939", "123313141413155", "Darkmattr"]
                 },
@@ -45,34 +45,18 @@ export class UnmuteMember extends BaseCommand {
                     displayName: "Reason",
                     argName: "reason",
                     desc: "The reason for this unmute.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["For being good."]
                 }
             ],
             commandCooldown: 3 * 1000,
-            usageGuide: ["unmute [Member] [Reason]"],
-            exampleGuide: ["unmute @Console#8939 For being good"],
             guildOnly: true,
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => {
-            return o
-                .setName("member")
-                .setDescription("The member to unmute. This can either be an ID, IGN, or mention.")
-                .setRequired(true);
-        }).addStringOption(o => {
-            return o
-                .setName("reason")
-                .setDescription("The reason for this unmute.")
-                .setRequired(true);
-        });
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**

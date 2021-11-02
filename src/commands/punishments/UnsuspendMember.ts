@@ -1,11 +1,10 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {UserManager} from "../../managers/UserManager";
 import {StringUtil} from "../../utilities/StringUtilities";
-import generateRandomString = StringUtil.generateRandomString;
 import {SuspensionManager} from "../../managers/PunishmentManager";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import generateRandomString = StringUtil.generateRandomString;
 
 export class UnsuspendMember extends BaseCommand {
     public static readonly ERROR_NO_UNMUTE_STR: string = new StringBuilder()
@@ -28,7 +27,8 @@ export class UnsuspendMember extends BaseCommand {
                     displayName: "Member",
                     argName: "member",
                     desc: "The member to unsuspend.",
-                    type: "Member Resolvable (ID, Mention, IGN)",
+                    type: ArgumentType.String,
+                    prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: true,
                     example: ["@Console#8939", "123313141413155", "Darkmattr"]
                 },
@@ -36,34 +36,18 @@ export class UnsuspendMember extends BaseCommand {
                     displayName: "Reason",
                     argName: "reason",
                     desc: "The reason for this unsuspension.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["For being good."]
                 }
             ],
             commandCooldown: 3 * 1000,
-            usageGuide: ["unsuspend [Member] [Reason]"],
-            exampleGuide: ["unsuspend @Console#8939 For being good"],
             guildOnly: true,
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => {
-            return o
-                .setName("member")
-                .setDescription("The member to unsuspend. This can either be an ID, IGN, or mention.")
-                .setRequired(true);
-        }).addStringOption(o => {
-            return o
-                .setName("reason")
-                .setDescription("The reason for this unsuspension.")
-                .setRequired(true);
-        });
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**

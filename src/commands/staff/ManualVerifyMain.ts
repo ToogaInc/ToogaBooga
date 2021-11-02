@@ -1,5 +1,4 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {UserManager} from "../../managers/UserManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../../managers/MongoManager";
@@ -34,7 +33,8 @@ export class ManualVerifyMain extends BaseCommand {
                     displayName: "Member",
                     argName: "member",
                     desc: "The member to manual verify.",
-                    type: "Member Resolvable (ID, Mention)",
+                    type: ArgumentType.String,
+                    prettyType: "Member Resolvable (ID, Mention)",
                     required: true,
                     example: ["@Console#8939", "123313141413155"]
                 },
@@ -42,33 +42,17 @@ export class ManualVerifyMain extends BaseCommand {
                     displayName: "In-Game Name",
                     argName: "ign",
                     desc: "The in-game name to manually verify this person under.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["Darkmattr"]
                 }
             ],
-            usageGuide: ["manualverifymain [Member] {IGN}"],
-            exampleGuide: ["manualverifymain @Console#8939 ConsoleMC", "manualverifymain 123313141413155"],
             guildOnly: true,
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => {
-            return o
-                .setName("member")
-                .setDescription("The member to manual verify. This should be a mention or ID (no IGN).")
-                .setRequired(true);
-        }).addStringOption(o => {
-            return o
-                .setName("ign")
-                .setDescription("The in-game name to manually verify this person under.")
-                .setRequired(true);
-        });
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**

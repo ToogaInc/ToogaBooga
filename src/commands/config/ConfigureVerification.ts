@@ -53,8 +53,6 @@ export class ConfigureVerification extends BaseCommand {
             generalPermissions: [],
             commandCooldown: 3 * 1000,
             argumentInfo: [],
-            usageGuide: ["configverification"],
-            exampleGuide: ["configverification"],
             guildOnly: true,
             botOwnerOnly: false,
             guildConcurrencyLimit: 1,

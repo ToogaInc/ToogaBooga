@@ -76,8 +76,6 @@ export class ConfigureQuotas extends BaseCommand {
             generalPermissions: [],
             commandCooldown: 3 * 1000,
             argumentInfo: [],
-            usageGuide: ["configquotas"],
-            exampleGuide: ["configquotas"],
             guildOnly: true,
             botOwnerOnly: false,
             guildConcurrencyLimit: 1,

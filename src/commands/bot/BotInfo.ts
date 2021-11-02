@@ -18,8 +18,6 @@ export class BotInfo extends BaseCommand {
             botPermissions: [],
             commandCooldown: 4 * 1000,
             argumentInfo: [],
-            usageGuide: ["ping"],
-            exampleGuide: ["ping"],
             guildOnly: false,
             botOwnerOnly: false
         });

@@ -1,4 +1,4 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {MessageEmbed} from "discord.js";
 import {MongoManager} from "../../managers/MongoManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
@@ -13,8 +13,6 @@ export class SendAnnouncement extends BaseCommand {
             formalCommandName: "Send Announcements Command",
             botCommandName: "sendbotannouncement",
             description: "Sends an announcement to every server that has a set bot updates channel.",
-            usageGuide: ["sendbotannouncement [Content, STR]"],
-            exampleGuide: ["sendbotannouncement Hello world!"],
             commandCooldown: 0,
             generalPermissions: [],
             argumentInfo: [
@@ -22,7 +20,8 @@ export class SendAnnouncement extends BaseCommand {
                     displayName: "Announcement Text",
                     argName: "announcement",
                     desc: "The announcement to send to all servers the bot is in.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["This is a test announcement!"]
                 }

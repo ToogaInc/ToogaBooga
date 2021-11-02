@@ -1,5 +1,4 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {GuildMember} from "discord.js";
 import {UserManager} from "../../managers/UserManager";
 import {MongoManager} from "../../managers/MongoManager";
@@ -33,7 +32,8 @@ export class FindPerson extends BaseCommand {
                     displayName: "In-Game Name",
                     argName: "ign",
                     desc: "The member to look up.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["Darkmattr", "Opre"]
                 }
@@ -41,22 +41,11 @@ export class FindPerson extends BaseCommand {
             generalPermissions: [],
             botPermissions: [],
             commandCooldown: 3 * 1000,
-            usageGuide: ["find [IGN]"],
-            exampleGuide: ["find MeatRod"],
             guildOnly: true,
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => o
-            .setName("ign")
-            .setDescription("The in-game name to lookup.")
-            .setRequired(true)
-        );
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**

@@ -1,10 +1,11 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {OneLifeBot} from "../../OneLifeBot";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {Role} from "discord.js";
+import {ArrayUtilities} from "../../utilities/ArrayUtilities";
+import {StringBuilder} from "../../utilities/StringBuilder";
 
 export class Help extends BaseCommand {
     public constructor() {
@@ -21,30 +22,18 @@ export class Help extends BaseCommand {
                     displayName: "Command Name",
                     argName: "command",
                     desc: "The command to find help information for.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: false,
                     example: ["help", "startafkcheck"]
                 }
             ],
             commandCooldown: 4 * 1000,
-            usageGuide: ["help {Command}", "help"],
-            exampleGuide: ["help ping", "help"],
             guildOnly: false,
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-
-        scb.addStringOption(
-            option => option
-                .setName("command")
-                .setDescription("The command to get help information for. Use `all` to show all available commands.")
-                .setRequired(false)
-        );
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**
@@ -119,23 +108,21 @@ export class Help extends BaseCommand {
                     );
                 }
 
-                cmdHelpEmbed
-                    .addField(
-                        "Usage Guide",
-                        StringUtil.codifyString(
-                            command.commandInfo.usageGuide.length > 0
-                                ? command.commandInfo.usageGuide.map(x => `- /${x}`).join("\n")
-                                : "N/A."
-                        )
-                    )
-                    .addField(
-                        "Example(s)",
-                        StringUtil.codifyString(
-                            command.commandInfo.exampleGuide.length > 0
-                                ? command.commandInfo.exampleGuide.map(x => `- /${x}`).join("\n")
-                                : "N/A."
-                        )
-                    );
+                const argDisplay = ArrayUtilities.arrayToStringFields(
+                    command.commandInfo.argumentInfo,
+                    (_, elem) => {
+                        return new StringBuilder()
+                            .append(`__Argument__: ${elem.displayName} (\`${elem.argName}\`)`).appendLine()
+                            .append(`- ${elem.desc}`).appendLine()
+                            .append(`- Required? ${elem.required ? "Yes" : "No"}`).appendLine()
+                            .append(`- Example(s): \`[${elem.example.join(", ")}]\``).appendLine(2)
+                            .toString();
+                    }
+                );
+
+                for (const d of argDisplay) {
+                    cmdHelpEmbed.addField(`Argument Information (${command.commandInfo.argumentInfo.length})`, d);
+                }
 
                 await ctx.interaction.reply({
                     embeds: [cmdHelpEmbed]

@@ -88,8 +88,6 @@ export class ConfigureReactionsImages extends BaseCommand {
             botPermissions: [],
             commandCooldown: 3 * 1000,
             argumentInfo: [],
-            usageGuide: ["configreactionsimages"],
-            exampleGuide: ["configreactionsimages"],
             guildOnly: true,
             botOwnerOnly: false,
             guildConcurrencyLimit: 1,

@@ -1,12 +1,11 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {UserManager} from "../../managers/UserManager";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
-import generateRandomString = StringUtil.generateRandomString;
 import {MuteManager} from "../../managers/PunishmentManager";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
+import generateRandomString = StringUtil.generateRandomString;
 
 export class MuteMember extends BaseCommand {
     public static readonly ERROR_NO_MUTE_STR: string = new StringBuilder()
@@ -38,7 +37,8 @@ export class MuteMember extends BaseCommand {
                     displayName: "Member",
                     argName: "member",
                     desc: "The member to mute.",
-                    type: "Member Resolvable (ID, Mention, IGN)",
+                    type: ArgumentType.String,
+                    prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: true,
                     example: ["@Console#8939", "123313141413155", "Darkmattr"]
                 },
@@ -48,7 +48,8 @@ export class MuteMember extends BaseCommand {
                     desc: "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
                         + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
                         + " implies an indefinite mute. Not specifying the time unit for the mute implies days.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: false,
                     example: ["3h10m", "10w10h8d-1m"]
                 },
@@ -56,39 +57,18 @@ export class MuteMember extends BaseCommand {
                     displayName: "Reason",
                     argName: "reason",
                     desc: "The reason for this mute.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["For being bad."]
                 }
             ],
             commandCooldown: 3 * 1000,
-            usageGuide: ["mute [Member] {Duration} [Reason]"],
-            exampleGuide: ["mute @Console#8939 10m For being bad", "mute Darkmattr For being bad"],
             guildOnly: true,
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => {
-            return o
-                .setName("member")
-                .setDescription("The member to mute. This can either be an ID, IGN, or mention.")
-                .setRequired(true);
-        }).addStringOption(o => {
-            return o
-                .setName("reason")
-                .setDescription("The reason for this mute.")
-                .setRequired(true);
-        }).addStringOption(o => {
-            return o
-                .setName("duration")
-                .setDescription("The duration of this mute. See help command for more info.")
-                .setRequired(false);
-        });
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**

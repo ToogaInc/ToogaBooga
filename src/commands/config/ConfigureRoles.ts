@@ -269,8 +269,6 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             formalCommandName: "Configure Roles Command",
             botCommandName: "configroles",
             description: "Allows the user to configure roles for the entire server or for a specific section",
-            usageGuide: ["configroles"],
-            exampleGuide: ["configroles"],
             commandCooldown: 10 * 1000,
             generalPermissions: ["MANAGE_GUILD"],
             argumentInfo: [],

@@ -1,5 +1,4 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {CommonRegex} from "../../constants/CommonRegex";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
@@ -23,7 +22,8 @@ export class UnblacklistMember extends BaseCommand {
                     displayName: "Member",
                     argName: "member",
                     desc: "The member to unblacklist.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["Opre", "MeatRod", "Darkmattr"]
                 },
@@ -31,34 +31,18 @@ export class UnblacklistMember extends BaseCommand {
                     displayName: "Reason",
                     argName: "reason",
                     desc: "The reason for this unblacklist.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["Appealed blacklist."]
                 }
             ],
             commandCooldown: 3 * 1000,
-            usageGuide: ["unblacklist [Member] [Reason]"],
-            exampleGuide: ["unblacklist Opre Appealed blacklist successfully."],
             guildOnly: true,
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => {
-            return o
-                .setName("member")
-                .setDescription("The member to unblacklist. This should be an IGN.")
-                .setRequired(true);
-        }).addStringOption(o => {
-            return o
-                .setName("reason")
-                .setDescription("The reason for this unblacklist.")
-                .setRequired(true);
-        });
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**

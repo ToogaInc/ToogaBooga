@@ -1,5 +1,4 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {UserManager} from "../../managers/UserManager";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
 import {SuspensionManager} from "../../managers/PunishmentManager";
@@ -28,14 +27,13 @@ export class SectionSuspendMember extends BaseCommand {
             generalPermissions: [],
             botPermissions: ["MANAGE_ROLES"],
             commandCooldown: 3 * 1000,
-            usageGuide: ["sectionsuspend [Member] {Duration} [Reason]"],
-            exampleGuide: ["sectionsuspend @Console#8939 For being bad", "suspend @Console#8939 3d For being bad"],
             argumentInfo: [
                 {
                     displayName: "Member",
                     argName: "member",
                     desc: "The member to section suspend.",
-                    type: "Member Resolvable (ID, Mention, IGN)",
+                    type: ArgumentType.String,
+                    prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: true,
                     example: ["@Console#8939", "123313141413155", "Darkmattr"]
                 },
@@ -45,7 +43,8 @@ export class SectionSuspendMember extends BaseCommand {
                     desc: "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
                         + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
                         + " implies an indefinite suspension. Not specifying the time unit implies days.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: false,
                     example: ["3h10m", "10w10h8d-1m"]
                 },
@@ -53,7 +52,8 @@ export class SectionSuspendMember extends BaseCommand {
                     displayName: "Reason",
                     argName: "reason",
                     desc: "The reason for this section suspension.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["For being bad."]
                 }
@@ -62,29 +62,7 @@ export class SectionSuspendMember extends BaseCommand {
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => {
-            return o
-                .setName("member")
-                .setDescription("The member to suspend from the section. This can either be an ID, IGN, or mention.")
-                .setRequired(true);
-        }).addStringOption(o => {
-            return o
-                .setName("reason")
-                .setDescription("The reason for this section suspension.")
-                .setRequired(true);
-        }).addStringOption(o => {
-            return o
-                .setName("duration")
-                .setDescription(
-                    "The duration. See the help command for more information."
-                )
-                .setRequired(false);
-        });
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**

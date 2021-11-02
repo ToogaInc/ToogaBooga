@@ -1,10 +1,11 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {MongoManager} from "../../managers/MongoManager";
 import {IDungeonInfo, ISectionInfo} from "../../definitions";
 import {
     Collection,
     GuildMember,
-    MessageActionRow, MessageButton,
+    MessageActionRow,
+    MessageButton,
     MessageSelectMenu,
     Role,
     TextChannel
@@ -40,8 +41,6 @@ export class StartAfkCheck extends BaseCommand {
             formalCommandName: "Start AFK Check Command",
             botCommandName: "startafkcheck",
             description: "Starts a wizard that can be used to start an AFK check.",
-            usageGuide: ["startafkcheck"],
-            exampleGuide: ["startafkcheck"],
             commandCooldown: 8 * 1000,
             generalPermissions: [],
             botPermissions: [],
@@ -53,7 +52,8 @@ export class StartAfkCheck extends BaseCommand {
                     desc: "The location for this raid.",
                     required: false,
                     example: ["usw right"],
-                    type: "String"
+                    type: ArgumentType.String,
+                    prettyType: "String"
                 }
             ],
             guildOnly: true,

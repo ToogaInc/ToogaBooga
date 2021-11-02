@@ -1,5 +1,4 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {MongoManager} from "../../managers/MongoManager";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
@@ -32,27 +31,17 @@ export class FindPunishment extends BaseCommand {
                     displayName: "Moderation ID",
                     argName: "moderation_id",
                     desc: "The moderation ID to look up.",
-                    type: "String",
+                    type: ArgumentType.String,
+                    prettyType: "String",
                     required: true,
                     example: ["ijwqbriouh2q9t4928ht3q8ghw"]
                 }
             ],
-            usageGuide: ["findpunishment [Punishment ID]"],
-            exampleGuide: ["findpunishment 2130idosfhowadf"],
             guildOnly: true,
             botOwnerOnly: false
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => o
-            .setName("moderation_id")
-            .setDescription("The moderation ID to lookup.")
-            .setRequired(true)
-        );
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**

@@ -51,8 +51,6 @@ export class ConfigureAfkCheck extends BaseCommand {
             generalPermissions: [],
             commandCooldown: 3 * 1000,
             argumentInfo: [],
-            usageGuide: ["configafkcheck"],
-            exampleGuide: ["configafkcheck"],
             guildOnly: true,
             botOwnerOnly: false,
             guildConcurrencyLimit: 1,
