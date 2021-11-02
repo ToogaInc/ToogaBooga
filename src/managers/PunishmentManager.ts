@@ -928,11 +928,25 @@ export namespace SuspensionManager {
         SuspendedMembers.get(member.guild.id)!.set(member.id, suspendedUserObj);
 
         // Remove roles and log it
-        await member.roles.set(
-            GuildFgrUtilities.hasCachedRole(member.guild, info.guildDoc.roles.suspendedRoleId)
-                ? [info.guildDoc.roles.suspendedRoleId]
-                : []
-        ).catch();
+        const initPass = await GlobalFgrUtilities.tryExecuteAsync(() => {
+            return member.roles.set(
+                GuildFgrUtilities.hasCachedRole(member.guild, info.guildDoc.roles.suspendedRoleId)
+                    ? [info.guildDoc.roles.suspendedRoleId]
+                    : []
+            );
+        });
+
+        if (!initPass) {
+            await Promise.all(
+                member.roles.cache.map(x => {
+                    return GlobalFgrUtilities.tryExecuteAsync(() => {
+                        return member.roles.remove(x);
+                    });
+                })
+            );
+
+            await member.roles.add(info.guildDoc.roles.suspendedRoleId);
+        }
 
         const r = await PunishmentManager.logPunishment(member, "Suspend", {
             reason: info.reason,
@@ -988,7 +1002,28 @@ export namespace SuspensionManager {
             _queuedDelSuspendedMembers.enqueue({...data, guildId: member.guild.id});
         }
 
-        await member.roles.set(memberLookup.oldRoles).catch();
+        const initPass = await GlobalFgrUtilities.tryExecuteAsync(() => {
+            return member.roles.set(memberLookup.oldRoles);
+        });
+
+        if (!initPass) {
+            await Promise.all(
+                member.roles.cache.map(x => {
+                    return GlobalFgrUtilities.tryExecuteAsync(() => {
+                        return member.roles.remove(x);
+                    });
+                })
+            );
+
+            await Promise.all(
+                memberLookup.oldRoles.map(x => {
+                    return GlobalFgrUtilities.tryExecuteAsync(() => {
+                        return member.roles.add(x);
+                    });
+                })
+            );
+        }
+
         const r = await PunishmentManager.logPunishment(member, "Unsuspend", {
             reason: info.reason,
             issuedTime: Date.now(),

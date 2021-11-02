@@ -134,7 +134,8 @@ export class OneLifeBot {
             new Cmds.WarnMember(),
             new Cmds.MuteMember(),
             new Cmds.UnmuteMember(),
-            new Cmds.UnblacklistMember()
+            new Cmds.UnblacklistMember(),
+            new Cmds.UnsuspendMember()
         ]);
 
         OneLifeBot.Commands.set("Bot Owner", [
