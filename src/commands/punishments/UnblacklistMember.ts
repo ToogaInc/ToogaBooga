@@ -2,7 +2,6 @@ import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {CommonRegex} from "../../constants/CommonRegex";
-import generateRandomString = StringUtil.generateRandomString;
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {MongoManager} from "../../managers/MongoManager";
@@ -101,7 +100,6 @@ export class UnblacklistMember extends BaseCommand {
             }
         }
 
-        const unblacklistId = `Unblacklist_${Date.now()}_${generateRandomString(15)}`;
         const reason = ctx.interaction.options.getString("reason", true);
         const currTime = Date.now();
         await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
@@ -115,7 +113,7 @@ export class UnblacklistMember extends BaseCommand {
         const logInfo = await PunishmentManager.logPunishment({
             name: blInfo.realmName.ign
         }, "Unblacklist", {
-            actionIdToUse: unblacklistId,
+            actionIdToResolve: blInfo.actionId,
             evidence: [],
             guild: ctx.guild!,
             guildDoc: ctx.guildDoc!,

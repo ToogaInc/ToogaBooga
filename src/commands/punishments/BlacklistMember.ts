@@ -77,7 +77,7 @@ export class BlacklistMember extends BaseCommand {
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
             .setTitle("Blacklist Issued.")
             .addField("Reason", StringUtil.codifyString(reason))
-            .addField("Moderation ID", StringUtil.codifyString(reason))
+            .addField("Moderation ID", StringUtil.codifyString(blacklistId))
             .setTimestamp();
 
         // No member = we need to assume that mStr is an IGN
