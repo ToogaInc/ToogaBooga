@@ -4,10 +4,9 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {SuspensionManager} from "../../managers/PunishmentManager";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
-import generateRandomString = StringUtil.generateRandomString;
 
 export class UnsuspendMember extends BaseCommand {
-    public static readonly ERROR_NO_UNMUTE_STR: string = new StringBuilder()
+    public static readonly ERROR_NO_UNSUSPEND_STR: string = new StringBuilder()
         .append("Something went wrong when trying to unsuspend this person.").appendLine()
         .append("- The person doesn't have the Suspended role.")
         .toString();
@@ -65,7 +64,6 @@ export class UnsuspendMember extends BaseCommand {
             return 0;
         }
 
-        const unmuteId = `Unsuspension_${Date.now()}_${generateRandomString(15)}`;
         const reason = ctx.interaction.options.getString("reason", true);
         const currTime = Date.now();
 
@@ -77,7 +75,7 @@ export class UnsuspendMember extends BaseCommand {
 
         if (!unsuspensionRes.punishmentResolved) {
             await ctx.interaction.reply({
-                content: UnsuspendMember.ERROR_NO_UNMUTE_STR,
+                content: UnsuspendMember.ERROR_NO_UNSUSPEND_STR,
                 ephemeral: true
             });
 

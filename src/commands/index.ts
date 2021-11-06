@@ -27,6 +27,7 @@ export * from "./punishments/MuteMember";
 export * from "./punishments/UnmuteMember";
 export * from "./punishments/UnblacklistMember";
 export * from "./punishments/UnsuspendMember";
+export * from "./punishments/UnsuspendFromSection";
 
 export * from "./owner/SendAnnouncement";
 

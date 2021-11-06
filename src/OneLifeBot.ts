@@ -135,7 +135,8 @@ export class OneLifeBot {
             new Cmds.MuteMember(),
             new Cmds.UnmuteMember(),
             new Cmds.UnblacklistMember(),
-            new Cmds.UnsuspendMember()
+            new Cmds.UnsuspendMember(),
+            new Cmds.UnsuspendFromSection()
         ]);
 
         OneLifeBot.Commands.set("Bot Owner", [

@@ -1205,6 +1205,26 @@ export namespace SuspensionManager {
             ? guildDoc.moderation.suspendedUsers.find(x => x.actionId === lookupType.actionId) ?? null
             : section.moderation.sectionSuspended.find(x => x.actionId === lookupType.actionId) ?? null;
     }
+
+
+    /**
+     * Gets the roles that can suspend users in the specified section.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {ISectionInfo} section The section.
+     * @returns {ISectionInfo[]} The roles that can suspend members in the specified section.
+     */
+    export function sectionsToManage(guildDoc: IGuildInfo, section: ISectionInfo): string[] {
+        return [
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+            guildDoc.roles.staffRoles.moderation.officerRoleId,
+            guildDoc.roles.staffRoles.moderation.securityRoleId,
+            guildDoc.roles.staffRoles.moderation.moderatorRoleId,
+            section.roles.leaders.sectionVetLeaderRoleId,
+            section.roles.leaders.sectionLeaderRoleId
+        ];
+    }
 }
 
 export namespace MuteManager {

@@ -1,63 +1,43 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {UserManager} from "../../managers/UserManager";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {SuspensionManager} from "../../managers/PunishmentManager";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
-import {MessageSelectMenu, MessageSelectOptionData} from "discord.js";
+import {SuspensionManager} from "../../managers/PunishmentManager";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import {MessageSelectMenu, MessageSelectOptionData} from "discord.js";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {SuspendMember} from "./SuspendMember";
 
-export class SectionSuspendMember extends BaseCommand {
-    private static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
-        .append("Something went wrong when trying to suspend this person.").appendLine()
-        .append("- The person already has the suspended role. In this case, manually remove the Suspended role and")
-        .append(" then try running the command again.").appendLine()
-        .toString();
-
+export class UnsuspendFromSection extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "SECTION_SUSPEND_MEMBER",
-            formalCommandName: "Section Suspend Member",
-            botCommandName: "sectionsuspend",
-            description: "Suspends a user from a particular section (not the main section).",
+            cmdCode: "UNSUSPEND_FROM_SECTION",
+            formalCommandName: "Unsuspend from Section",
+            botCommandName: "unsectionsuspend",
+            description: "Unsuspends a member from a section, allowing them to re-verify in the section.",
             rolePermissions: ["Security", "Officer", "Moderator", "RaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
             generalPermissions: [],
             botPermissions: ["MANAGE_ROLES"],
-            commandCooldown: 3 * 1000,
             argumentInfo: [
                 {
                     displayName: "Member",
                     argName: "member",
-                    desc: "The member to section suspend.",
+                    desc: "The member to unsuspend from a section.",
                     type: ArgumentType.String,
                     prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: true,
                     example: ["@Console#8939", "123313141413155", "Darkmattr"]
                 },
                 {
-                    displayName: "Duration",
-                    argName: "duration",
-                    desc: "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
-                        + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
-                        + " implies an indefinite suspension. Not specifying the time unit implies days.",
-                    type: ArgumentType.String,
-                    prettyType: "String",
-                    required: false,
-                    example: ["3h10m", "10w10h8d-1m"]
-                },
-                {
                     displayName: "Reason",
                     argName: "reason",
-                    desc: "The reason for this section suspension.",
+                    desc: "The reason for this section unsuspension.",
                     type: ArgumentType.String,
                     prettyType: "String",
                     required: true,
-                    example: ["For being bad."]
+                    example: ["For being good."]
                 }
             ],
+            commandCooldown: 3 * 1000,
             guildOnly: true,
             botOwnerOnly: false
         };
@@ -69,9 +49,8 @@ export class SectionSuspendMember extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
-        const memberStr = ctx.interaction.options.getString("member", true);
-        const resMember = await UserManager.resolveMember(ctx.guild!, memberStr);
-
+        const mStr = ctx.interaction.options.getString("member", true);
+        const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
         if (!resMember) {
             await ctx.interaction.reply({
                 content: "This member could not be resolved. Please try again.",
@@ -81,19 +60,20 @@ export class SectionSuspendMember extends BaseCommand {
             return 0;
         }
 
-        const sections = ctx.guildDoc!.guildSections.filter(section => {
-            // Already suspended = cannot suspend again
-            if (section.moderation.sectionSuspended.some(x => x.affectedUser.id === resMember.member.id)) {
+        const sections = ctx.guildDoc!.guildSections.filter(sec => {
+            // Not suspended in section = nothing to do here
+            if (sec.moderation.sectionSuspended.every(susInfo => susInfo.affectedUser.id !== resMember.member.id)) {
                 return false;
             }
 
-            return SuspensionManager.sectionsToManage(ctx.guildDoc!, section)
+            // Has permission = good
+            return SuspensionManager.sectionsToManage(ctx.guildDoc!, sec)
                 .some(x => GuildFgrUtilities.memberHasCachedRole(ctx.member!, x));
         });
 
         if (sections.length === 0) {
             await ctx.interaction.reply({
-                content: "You are not able to suspend this user from any sections at this time. Try again later.",
+                content: "It appears that this person is not suspended in any sections.",
                 ephemeral: true
             });
 
@@ -112,7 +92,7 @@ export class SectionSuspendMember extends BaseCommand {
 
         const uId = StringUtil.generateRandomString(30);
         await ctx.interaction.reply({
-            content: "Please select the section where you want to section suspend this person from.",
+            content: "Please select the section where you want to unsuspend this person from.",
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageSelectMenu()
                     .setMaxValues(1)
@@ -120,7 +100,7 @@ export class SectionSuspendMember extends BaseCommand {
                     .setCustomId(uId)
                     .addOptions(secSelectOpt.concat({
                         label: "Cancel",
-                        description: "Cancel the Section Suspension Process",
+                        description: "Cancel the Section Unsuspension Process",
                         value: "cancel"
                     }))
             ])
@@ -129,8 +109,8 @@ export class SectionSuspendMember extends BaseCommand {
         const result = await AdvancedCollector.startInteractionEphemeralCollector({
             targetChannel: ctx.channel!,
             targetAuthor: ctx.user,
-            acknowledgeImmediately: true,
-            duration: 60 * 1000
+            duration: 45 * 1000,
+            acknowledgeImmediately: true
         }, uId);
 
         if (!result || !result.isSelectMenu() || result.values[0] === "cancel") {
@@ -143,49 +123,46 @@ export class SectionSuspendMember extends BaseCommand {
         }
 
         const sectionPicked = sections.find(x => x.uniqueIdentifier === result.values[0])!;
-
-        const durationStr = ctx.interaction.options.getString("duration", false);
-        const parsedDuration = durationStr ? TimeUtilities.parseTimeUnit(durationStr) : null;
-
         const reason = ctx.interaction.options.getString("reason", true);
+        const currTime = Date.now();
 
-        const susRes = await SuspensionManager.tryAddSectionSuspension(resMember.member, ctx.member!, {
-            duration: parsedDuration?.ms ?? -1,
+        const unsuspensionRes = await SuspensionManager.removeSectionSuspension(resMember.member, ctx.member!, {
+            section: sectionPicked,
             evidence: [],
             guildDoc: ctx.guildDoc!,
-            reason: reason,
-            section: sectionPicked
+            reason: reason
         });
 
-        if (!susRes.punishmentResolved) {
-            await ctx.interaction.editReply({
-                content: SuspendMember.ERROR_NO_SUSPEND_STR,
+        if (!unsuspensionRes.punishmentResolved) {
+            await ctx.interaction.reply({
+                content: "Something went wrong when trying to unsuspend this person.",
+                ephemeral: true,
                 components: []
             });
 
             return 0;
         }
 
-        const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-            .setTitle("Section Suspension Issued.")
-            .setDescription(`${resMember.member} has been suspended from \`${sectionPicked.sectionName}\`.`)
+        const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "GREEN")
+            .setTitle("Section Suspension Removed.")
+            .setDescription(`You have unsuspended ${resMember.member} (${resMember.member.displayName}) from the`
+                + ` section: **\`${sectionPicked.sectionName}\`**`)
             .addField("Reason", StringUtil.codifyString(reason))
-            .addField("Duration", StringUtil.codifyString(parsedDuration?.formatted ?? "Indefinite"))
             .setTimestamp();
 
-        if (susRes.punishmentResolved)
-            embed.addField("Moderation ID", StringUtil.codifyString(susRes.moderationId!));
+        if (unsuspensionRes.punishmentLogged)
+            finalEmbed.addField("Moderation ID", StringUtil.codifyString(unsuspensionRes.moderationId!));
         else {
-            embed.addField(
+            finalEmbed.addField(
                 "Warning",
-                "Something went wrong when trying to save this punishment into the user's punishment history. The"
-                + " user is still suspended, though."
+                "Something went wrong when trying to save this into the user's punishment history. The user is"
+                + " still unmuted, though."
             );
         }
 
         await ctx.interaction.editReply({
             content: null,
-            embeds: [embed],
+            embeds: [finalEmbed],
             components: []
         });
 
