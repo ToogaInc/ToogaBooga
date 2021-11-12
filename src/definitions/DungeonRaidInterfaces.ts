@@ -581,6 +581,13 @@ export interface IRaidInfo {
          */
         modifiers: string[];
     }[];
+
+    /**
+     * All members that were in the raid VC when the AFK check ended.
+     *
+     * @type {string[]}
+     */
+    membersThatJoined: string[];
 }
 
 /**

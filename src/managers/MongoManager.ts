@@ -476,12 +476,10 @@ export namespace MongoManager {
                         useBotCompletions: true
                     }
                 },
-                evidenceWithManualVerif: {
-                    allowEvidenceWithManualVerif: false,
-                    messageToShow: ""
-                },
-                manualVerifyWhenOffline: {
-                    allowManualVerifyWhenOffline: false,
+                autoManualVerify: {
+                    forceManualVerify: false,
+                    maximumImages: 1,
+                    verifEmbedMsg: "",
                     messageToShow: ""
                 }
             },

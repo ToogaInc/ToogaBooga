@@ -53,11 +53,16 @@ export interface IVerificationProperties {
     checkRequirements: boolean;
 
     /**
-     * Whether to allow members to attach screenshots when getting manual verified.
+     * Whether to force all members to manual verification. When members need to manually verify through this, they
+     * will be asked for:
+     * - Their IGN.
+     * - Any supporting image(s), as specified by the administrators.
+     * Upon submission, the manual verification application will be sent with the applicable image(s), which will be
+     * stored in the storage channel.
      *
      * @type {object}
      */
-    evidenceWithManualVerif: {
+    autoManualVerify: {
         /**
          * The message to display to users when they want to attach evidence when getting manually verified.
          *
@@ -66,32 +71,25 @@ export interface IVerificationProperties {
         messageToShow: string;
 
         /**
-         * Whether to allow people to attach evidence with manual verification.
-         *
-         * @type {boolean}
-         */
-        allowEvidenceWithManualVerif: boolean;
-    };
-
-    /**
-     * Whether to allow members to manually verify when the API is down.
-     *
-     * @type {object}
-     */
-    manualVerifyWhenOffline: {
-        /**
-         * The message to display to users when they want to attach evidence when getting manually verified.
+         * The message to show on the verification embed.
          *
          * @type {string}
          */
-        messageToShow: string;
+        verifEmbedMsg: string;
 
         /**
-         * Whether to allow people to automatically manual verify when the API is down.
+         * The maximum number of images a person can send.
+         *
+         * @type {number}
+         */
+        maximumImages: number;
+
+        /**
+         * Whether to force all members to manual verification. This overrides `checkRequirements`.
          *
          * @type {boolean}
          */
-        allowManualVerifyWhenOffline: boolean;
+        forceManualVerify: boolean;
     };
 }
 

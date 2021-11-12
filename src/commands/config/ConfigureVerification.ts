@@ -138,8 +138,7 @@ export class ConfigureVerification extends BaseCommand {
     public async configVerification(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const verifConfig: IVerificationProperties = {
             checkRequirements: section.otherMajorConfig.verificationProperties.checkRequirements,
-            evidenceWithManualVerif: {...section.otherMajorConfig.verificationProperties.evidenceWithManualVerif},
-            manualVerifyWhenOffline: {...section.otherMajorConfig.verificationProperties.manualVerifyWhenOffline},
+            autoManualVerify: {...section.otherMajorConfig.verificationProperties.autoManualVerify},
             verifReq: {...section.otherMajorConfig.verificationProperties.verifReq},
             verificationSuccessMessage: section.otherMajorConfig.verificationProperties.verificationSuccessMessage,
             additionalVerificationInfo: section.otherMajorConfig.verificationProperties.additionalVerificationInfo
