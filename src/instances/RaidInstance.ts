@@ -215,11 +215,6 @@ export class RaidInstance {
     private static readonly UNLOCK_VC_ID: string = "unlock_vc";
     private static readonly PARSE_VC_ID: string = "parse_vc";
 
-    private static readonly ADD_COMPLETION: string = "add_completion";
-    private static readonly ADD_FAIL: string = "add_fail";
-    private static readonly REMOVE_COMPLETION: string = "remove_completion";
-    private static readonly REMOVE_FAIL: string = "remove_fail";
-
     private static readonly CP_PRE_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Start AFK Check")
@@ -276,26 +271,6 @@ export class RaidInstance {
             .setLabel("Parse Raid VC")
             .setEmoji(Emojis.PRINTER_EMOJI)
             .setCustomId(RaidInstance.PARSE_VC_ID)
-            .setStyle("PRIMARY"),
-        new MessageButton()
-            .setLabel("+1 Completion")
-            .setEmoji(Emojis.PLUS_EMOJI)
-            .setCustomId(RaidInstance.ADD_COMPLETION)
-            .setStyle("PRIMARY"),
-        new MessageButton()
-            .setLabel("-1 Completion")
-            .setEmoji(Emojis.MINUS_EMOJI)
-            .setCustomId(RaidInstance.REMOVE_COMPLETION)
-            .setStyle("PRIMARY"),
-        new MessageButton()
-            .setLabel("+1 Fail")
-            .setEmoji(Emojis.PLUS_EMOJI)
-            .setCustomId(RaidInstance.ADD_FAIL)
-            .setStyle("PRIMARY"),
-        new MessageButton()
-            .setLabel("-1 Fail")
-            .setEmoji(Emojis.MINUS_EMOJI)
-            .setCustomId(RaidInstance.REMOVE_FAIL)
             .setStyle("PRIMARY")
     ]);
 
@@ -380,10 +355,6 @@ export class RaidInstance {
 
     // Anyone that is a priority react that may need to be dragged in.
     private _peopleToAddToVc: Set<string> = new Set();
-
-    // For keeping track of chains
-    private _completed: number = 0;
-    private _failed: number = 0;
 
     /**
      * Creates a new `RaidInstance` object.
@@ -759,8 +730,6 @@ export class RaidInstance {
             location: raidInfo.location
         });
 
-        rm._completed = raidInfo.runStats.completed;
-        rm._failed = raidInfo.runStats.failed;
         rm._raidVc = raidVc;
         rm._afkCheckMsg = afkCheckMsg;
         rm._controlPanelMsg = controlPanelMsg;
@@ -1197,7 +1166,7 @@ export class RaidInstance {
 
             const otherFeedbackMsgs = allMsgs.filter(x => !x.author.bot);
             for (const [, feedbackMsg] of otherFeedbackMsgs) {
-                sb.append(`Feedback by ${feedbackMsg.author.tag} (${feedbackMsg.id})`).appendLine()
+                sb.append(`Feedback by ${feedbackMsg.author.tag} (${feedbackMsg.author.id})`).appendLine()
                     .append("=== BEGIN ===").appendLine()
                     .append(feedbackMsg.content).appendLine()
                     .append("=== END ===").appendLine(2);
@@ -1445,27 +1414,6 @@ export class RaidInstance {
                 activeRaids: {
                     vcId: this._raidVc.id
                 }
-            }
-        });
-        if (!res) return false;
-        this._guildDoc = res;
-        return true;
-    }
-
-    private async addRunStats(stat: {c: number; f: number;}): Promise<boolean> {
-        if (!this._raidVc || !this._addedToDb || this._raidStatus !== RaidStatus.IN_RUN)
-            return false;
-
-        this._completed += stat.c;
-        this._failed += stat.f;
-
-        const res = await MongoManager.updateAndFetchGuildDoc({
-            guildId: this._guild.id,
-            "activeRaids.vcId": this._raidVc.id
-        }, {
-            $inc: {
-                "activeRaids.$.runStats.completed": stat.c,
-                "activeRaids.$.runStats.failed": stat.f,
             }
         });
         if (!res) return false;
@@ -2017,13 +1965,6 @@ export class RaidInstance {
             .appendLine()
             .append(`⇨ Status: **\`${raidStatus}\`**`);
 
-        if (this._raidStatus === RaidStatus.IN_RUN) {
-            generalStatus.appendLine()
-                .append(`⇨ Completed: **\`${this._completed}\`**`)
-                .appendLine()
-                .append(`⇨ Failed: **\`${this._failed}\`**`);
-        }
-
         const controlPanelEmbed = new MessageEmbed()
             .setAuthor(`${this._leaderName}'s Control Panel - ${this._raidVc.name}`,
                 this._memberInit.user.displayAvatarURL())
@@ -2285,6 +2226,7 @@ export class RaidInstance {
                     content: `We no longer need ${itemDis}. You can still bring it along, though!`,
                     ephemeral: true
                 }).catch();
+                return;
             }
 
             const res = await RaidInstance.confirmReaction(i, this);
@@ -2714,30 +2656,6 @@ export class RaidInstance {
                 await this._controlPanelChannel.send({embeds: [embed]}).catch();
                 return;
             }
-
-            i.deferUpdate().catch();
-            switch (i.customId) {
-                case RaidInstance.ADD_COMPLETION: {
-                    await this.addRunStats({c: 1, f: 0});
-                    break;
-                }
-                case RaidInstance.REMOVE_COMPLETION: {
-                    if (this._completed > 0) {
-                        await this.addRunStats({c: -1, f: 0});
-                    }
-                    break;
-                }
-                case RaidInstance.ADD_FAIL: {
-                    await this.addRunStats({c: 0, f: 1});
-                    break;
-                }
-                case RaidInstance.REMOVE_FAIL: {
-                    if (this._failed > 0) {
-                        await this.addRunStats({c: 0, f: -1});
-                    }
-                    break;
-                }
-            }
         });
 
         return true;
@@ -2965,10 +2883,11 @@ export class RaidInstance {
 
     /**
      * Logs a run. This will begin an interactive process where the member that ended the run:
-     * - Selects the members that assisted or led in the raid.
-     * - Selects any key poppers and priority reactions
+     * - Selects the main leader.
+     * - Selects any key poppers.
      * - Selects success/failure of raid.
      * - Sends a screenshot of all the players that completed the raid (/who).
+     *
      * This will also log quotas, stats, and add points accordingly.
      *
      * @param {GuildMember} memberThatEnded The member that ended this run.
@@ -2976,35 +2895,8 @@ export class RaidInstance {
      */
     private async logRun(memberThatEnded: GuildMember): Promise<void> {
         const membersThatLed: GuildMember[] = [];
-        const membersThatAssisted: GuildMember[] = [];
         const membersKeyPoppers: PriorityLogInfo[] = [];
-        const membersPriority: PriorityLogInfo[] = [];
         const membersAtEnd: GuildMember[] = [];
-
-        const buttonsForStatusCheck = [
-            new MessageButton()
-                .setLabel("Success")
-                .setCustomId("success")
-                .setEmoji(Emojis.GREEN_CHECK_EMOJI)
-                .setStyle("SUCCESS"),
-            new MessageButton()
-                .setLabel("Failed")
-                .setCustomId("failed")
-                .setEmoji(Emojis.X_EMOJI)
-                .setStyle("DANGER")
-        ];
-
-        if (this._completed + this._failed === 0) {
-            buttonsForStatusCheck.push(
-                new MessageButton()
-                    .setLabel("Already Logged")
-                    .setCustomId("already_logged")
-                    .setEmoji(Emojis.PLUS_EMOJI)
-                    .setStyle("SECONDARY")
-            );
-        }
-
-        buttonsForStatusCheck.push(CANCEL_LOGGING_BUTTON);
 
         // 1) Validate number of completions
         const botMsg = await GlobalFgrUtilities.sendMsg(this._controlPanelChannel, {
@@ -3012,15 +2904,24 @@ export class RaidInstance {
                 MessageUtilities.generateBlankEmbed(memberThatEnded, "RED")
                     .setTitle(`Logging Run: ${this._dungeon.dungeonName}`)
                     .setDescription(
-                        this._completed + this._failed === 0
-                            ? "What was the run status of the __last__ dungeon that was completed?"
-                            : "What was the run status of the __last__ dungeon that was completed? If you already"
-                            + " logged the status of the last run through the `+1/-1 Completion/Fail` buttons, press"
-                            + " the `Already Logged` button."
+                        "What was the run status of the __last__ dungeon that was completed? If you did a chain, you"
+                        + " will need to manually log the other runs."
                     )
                     .setFooter(FOOTER_INFO_MSG)
             ],
-            components: AdvancedCollector.getActionRowsFromComponents(buttonsForStatusCheck)
+            components: AdvancedCollector.getActionRowsFromComponents([
+                new MessageButton()
+                    .setLabel("Success")
+                    .setCustomId("success")
+                    .setEmoji(Emojis.GREEN_CHECK_EMOJI)
+                    .setStyle("SUCCESS"),
+                new MessageButton()
+                    .setLabel("Failed")
+                    .setCustomId("failed")
+                    .setEmoji(Emojis.X_EMOJI)
+                    .setStyle("DANGER"),
+                CANCEL_LOGGING_BUTTON
+            ])
         });
 
         // No bot message = don't do logging
@@ -3044,21 +2945,211 @@ export class RaidInstance {
             return;
         }
 
-        if (runStatusRes.customId === "success") {
-            this._completed++;
-        }
-        else if (runStatusRes.customId === "failed") {
-            this._failed++;
+        const buttonsForSelectingMembers = AdvancedCollector.getActionRowsFromComponents([
+            new MessageButton()
+                .setLabel("Confirm")
+                .setEmoji(Emojis.GREEN_CHECK_EMOJI)
+                .setStyle("SUCCESS")
+                .setCustomId("confirm"),
+            new MessageButton()
+                .setLabel("Skip")
+                .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+                .setStyle("DANGER")
+                .setCustomId("skip"),
+            CANCEL_LOGGING_BUTTON
+        ]);
+
+        // 2) Get main leader.
+        let mainLeader: GuildMember | null = memberThatEnded;
+        while (true) {
+            await botMsg.edit({
+                embeds: [
+                    MessageUtilities.generateBlankEmbed(memberThatEnded, "RED")
+                        .setTitle(`Leader that Led: ${this._dungeon.dungeonName}`)
+                        .setDescription(
+                            "Who was the main leader in the __last__ run? Usually, the main leader is the"
+                            + " leader that led a majority of the run."
+                        )
+                        .addField(
+                            "Selected Main Leader",
+                            `${mainLeader} - \`${mainLeader.displayName}\``
+                        )
+                        .addField(
+                            "Instructions",
+                            "The selected main leader is shown above. To select a main leader, either type an in-game"
+                            + " name, Discord ID, or mention a person. Once you are satisfied with your choice,"
+                            + " press the **Confirm** button. If you don't want to log this run with *any* main"
+                            + " leader, select the **Skip** button."
+                        )
+                        .setFooter(FOOTER_INFO_MSG)
+                ],
+                components: buttonsForSelectingMembers
+            });
+
+            const memberToPick = await AdvancedCollector.startDoubleCollector<GuildMember | -1>({
+                cancelFlag: "-cancel",
+                deleteResponseMessage: true,
+                acknowledgeImmediately: true,
+                clearInteractionsAfterComplete: false,
+                deleteBaseMsgAfterComplete: false,
+                duration: 5 * 60 * 1000,
+                oldMsg: botMsg,
+                targetAuthor: memberThatEnded,
+                targetChannel: this._controlPanelChannel
+            }, async m => (await UserManager.resolveMember(this._guild, m.content ?? "", true))?.member ?? -1);
+
+            if (!memberToPick) {
+                botMsg.delete().catch();
+                return;
+            }
+
+            if (typeof memberToPick === "number") {
+                await botMsg.edit({
+                    embeds: [
+                        MessageUtilities.generateBlankEmbed(this._guild, "RED")
+                            .setTitle("Invalid Member Given")
+                            .setDescription("Please specify a valid member. This can either be a mention, ID, or IGN.")
+                            .setFooter("After 5 seconds, this message will ask again.")
+                    ],
+                    components: []
+                });
+
+                await MiscUtilities.stopFor(5 * 1000);
+                continue;
+            }
+
+            if (memberToPick instanceof MessageComponentInteraction) {
+                if (memberToPick.customId === "confirm") {
+                    break;
+                }
+
+                if (memberToPick.customId === "skip") {
+                    mainLeader = null;
+                    break;
+                }
+
+                if (memberToPick.customId === CANCEL_LOGGING_CUSTOM_ID) {
+                    botMsg.delete().catch();
+                    return;
+                }
+
+                continue;
+            }
+
+            mainLeader = memberToPick;
         }
 
-        // 2) Get all members that led.
+        // 3) Get key poppers
+        const allKeys = this._allEssentialOptions.filter(x => x.type === "KEY" || x.type === "NM_KEY");
+        for await (const [key, reactionInfo] of allKeys) {
+            let selectedMember: GuildMember | null = null;
+            while (true) {
+                await botMsg.edit({
+                    embeds: [
+                        MessageUtilities.generateBlankEmbed(memberThatEnded, "RED")
+                            .setTitle(`Logging Key Poppers: ${this._dungeon.dungeonName}`)
+                            .setDescription(
+                                `You are now logging the ${RaidInstance.getItemDisplay(reactionInfo)} popper for the `
+                                + " __last dungeon__ that was either completed or failed. If you need to log more than"
+                                + " one key, please manually do it by command."
+                            )
+                            .addField(
+                                "Selected Popper",
+                                selectedMember
+                                    ? `${selectedMember} - \`${selectedMember.displayName}\``
+                                    : "Not Selected."
+                            )
+                            .addField(
+                                "Instructions",
+                                "The popper for this key is shown above. To log the person that used this key for"
+                                + " the last dungeon in this run, either send their in-game name, Discord ID, or"
+                                + " mention them. You may alternatively select their IGN from the select menu below."
+                                + " If no one used this key for the last dungeon in this run (excluding Bis keys),"
+                                + " press the `Skip` button. Once you selected the correct member, press the"
+                                + " `Confirm` button."
+                            )
+                            .setFooter(FOOTER_INFO_MSG)
+                    ],
+                    components: buttonsForSelectingMembers
+                });
+
+                // TODO abstract this away
+                const memberToPick = await AdvancedCollector.startDoubleCollector<GuildMember | -1>({
+                    cancelFlag: "-cancel",
+                    deleteResponseMessage: true,
+                    acknowledgeImmediately: true,
+                    clearInteractionsAfterComplete: false,
+                    deleteBaseMsgAfterComplete: false,
+                    duration: 5 * 60 * 1000,
+                    oldMsg: botMsg,
+                    targetAuthor: memberThatEnded,
+                    targetChannel: this._controlPanelChannel
+                }, async m => (await UserManager.resolveMember(this._guild, m.content ?? "", true))?.member ?? -1);
+
+                if (!memberToPick) {
+                    botMsg.delete().catch();
+                    return;
+                }
+
+
+                if (typeof memberToPick === "number") {
+                    await botMsg.edit({
+                        embeds: [
+                            MessageUtilities.generateBlankEmbed(this._guild, "RED")
+                                .setTitle("Invalid Member Given")
+                                .setDescription("Please specify a valid member. This can either be a mention, ID, or IGN.")
+                                .setFooter("After 5 seconds, this message will ask again.")
+                        ],
+                        components: []
+                    });
+
+                    await MiscUtilities.stopFor(5 * 1000);
+                    continue;
+                }
+
+                if (memberToPick instanceof MessageComponentInteraction) {
+                    if (memberToPick.customId === "confirm") {
+                        break;
+                    }
+
+                    if (memberToPick.customId === "skip") {
+                        mainLeader = null;
+                        break;
+                    }
+
+                    if (memberToPick.customId === CANCEL_LOGGING_CUSTOM_ID) {
+                        botMsg.delete().catch();
+                        return;
+                    }
+
+                    continue;
+                }
+
+                selectedMember = memberToPick;
+            }
+
+            if (selectedMember) {
+                membersKeyPoppers.push({
+                    id: key,
+                    member: selectedMember
+                });
+            }
+        }
+
+        // 4) Get /who
+        await botMsg.edit({
+            embeds: [
+
+            ]
+        });
+
+        // TODO finish
     }
 }
 
 type PriorityLogInfo = {
     member: GuildMember;
     id: string;
-    amt: number;
 };
 
 enum RaidStatus {

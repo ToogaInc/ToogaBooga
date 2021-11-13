@@ -15,7 +15,7 @@ export namespace UserManager {
     /**
      * Attempts to resolve an IGN, Discord ID, or mention.
      * @param {Guild} guild The guild.
-     * @param {string} memberResolvable The member resolvable.
+     * @param {string} memberResolvable The member resolvable. This can either be an ID, mention, or IGN.
      * @param {boolean} [checkDb] Whether to check the database. If true, this will check the database for the
      * specified IGN.
      * @returns {Promise<IResolvedMember | null>} The member + other relevant information, if any. `null` if no such

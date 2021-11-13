@@ -856,8 +856,12 @@ export namespace VerifyManager {
             collector.stop();
             await Promise.all([
                 MongoManager.addIdNameToIdNameCollection(member, requestData.name),
-                member.roles.add(guildDoc.roles.verifiedRoleId).catch(),
-                member.setNickname(requestData.name, "Verified in the main section successfully.")
+                GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await member.roles.add(guildDoc.roles.verifiedRoleId);
+                }),
+                GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await member.setNickname(requestData.name, "Verified in the main section successfully.");
+                })
             ]);
 
             const finishedEmbed = MessageUtilities.generateBlankEmbed(member.guild, "GREEN")

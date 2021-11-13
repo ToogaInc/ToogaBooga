@@ -182,7 +182,7 @@ export class StartAfkCheck extends BaseCommand {
         }
 
         if (availableSections.length === 0) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "You cannot start a raid in any sections. Please make sure you have the appropriate"
                     + " permissions and that the section in particular has a configured AFK Check channel, control"
                     + " panel channel, and section verified role."

@@ -71,8 +71,8 @@ export class LogLedRun extends BaseCommand {
                 "Officer",
                 "Moderator"
             ],
-            guildOnly: false,
-            botOwnerOnly: true
+            guildOnly: true,
+            botOwnerOnly: false
         };
 
         super(cmi);
