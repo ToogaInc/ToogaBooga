@@ -141,20 +141,21 @@ export class LogLedRun extends BaseCommand {
         }
 
         // Grab all dungeons, ask which one to log
-        const allDungeons = ArrayUtilities.breakArrayIntoSubsets(
+        const allDungeons = DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons);
+        const subsets = ArrayUtilities.breakArrayIntoSubsets(
             DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons),
             25
         );
 
         const selectMenus: MessageSelectMenu[] = [];
         const uniqueId = StringUtil.generateRandomString(20);
-        for (let i = 0; i < Math.min(4, allDungeons.length); i++) {
+        for (let i = 0; i < Math.min(4, subsets.length); i++) {
             selectMenus.push(
                 new MessageSelectMenu()
                     .setCustomId(`${uniqueId}_${i}`)
                     .setMaxValues(1)
                     .setMinValues(1)
-                    .setOptions(allDungeons[i].map(y => {
+                    .setOptions(subsets[i].map(y => {
                         return {
                             label: y.dungeonName,
                             description: y.isBuiltIn ? "Built-In" : "Custom",
@@ -213,6 +214,7 @@ export class LogLedRun extends BaseCommand {
             return 0;
         }
 
+        const dungeonInfo = allDungeons.find(x => x.codeName === selectedDgn.values[0])!;
         const allRunResTypes: [number, LoggerManager.RunResult, QuotaLogType][] = [
             [completedRuns, LoggerManager.RunResult.Complete, "RunComplete"],
             [failedRuns, LoggerManager.RunResult.Failed, "RunFailed"],
@@ -226,7 +228,7 @@ export class LogLedRun extends BaseCommand {
 
             await LoggerManager.logDungeonLead(
                 memberToLogAs,
-                selectedDgn.values[0],
+                dungeonInfo.codeName,
                 runRes,
                 ct
             );
@@ -235,14 +237,14 @@ export class LogLedRun extends BaseCommand {
                 memberToLogAs,
                 ctx.guildDoc!,
                 quotaLogId,
-                selectedDgn.values[0]
+                dungeonInfo.codeName
             );
 
             if (bestQuotaRole) {
                 await QuotaManager.logQuota(
                     memberToLogAs,
                     bestQuotaRole,
-                    `${quotaLogId}:${selectedDgn.values[0]}`,
+                    `${quotaLogId}:${dungeonInfo.codeName}`,
                     ct
                 );
             }
@@ -251,8 +253,8 @@ export class LogLedRun extends BaseCommand {
         await ctx.interaction.editReply({
             components: [],
             content: new StringBuilder()
-                .append("Logging completed! As a reminder, you just logged the following runs for ")
-                .append(memberToLogAs.id === ctx.user.id ? "yourself" : memberToLogAs.toString())
+                .append(`Logging completed! As a reminder, you logged the following \`${dungeonInfo.dungeonName}\``)
+                .append("runs for ").append(memberToLogAs.id === ctx.user.id ? "yourself" : memberToLogAs.toString())
                 .append(":").appendLine()
                 .append(`- \`${completedRuns}\` Completions.`).appendLine()
                 .append(`- \`${assistedRuns}\` Assists.`).appendLine()

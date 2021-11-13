@@ -84,6 +84,7 @@ export namespace QuotaManager {
         }
 
         const role = await GuildFgrUtilities.fetchRole(guild, roleId);
+        // TODO this seems like a very poor idea on my part
         await guild.members.fetch();
         const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, oldQuotas.messageId);
         // Only care about quota actions worth points
