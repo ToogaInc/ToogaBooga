@@ -588,6 +588,27 @@ export interface IRaidInfo {
      * @type {string[]}
      */
     membersThatJoined: string[];
+
+    /**
+     * All runs stats.
+     *
+     * @type {object}
+     */
+    runStats: {
+        /**
+         * The number of completed raids.
+         *
+         * @type {number}
+         */
+        completed: number;
+
+        /**
+         * The number of failed raids.
+         *
+         * @type {number}
+         */
+        failed: number;
+    };
 }
 
 /**

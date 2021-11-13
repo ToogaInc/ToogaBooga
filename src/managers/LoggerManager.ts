@@ -8,7 +8,7 @@ import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilit
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
 
 export namespace LoggerManager {
-    enum RunResult {
+    export enum RunResult {
         Complete = "Completed",
         Failed = "Failed",
         Assist = "Assisted"

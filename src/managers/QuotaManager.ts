@@ -25,6 +25,7 @@ import {TimeUtilities} from "../utilities/TimeUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
+import {Emojis} from "../constants/Emojis";
 
 export namespace QuotaManager {
     const ALL_QUOTA_LOG_TYPES: QuotaLogType[] = [
@@ -83,6 +84,7 @@ export namespace QuotaManager {
         }
 
         const role = await GuildFgrUtilities.fetchRole(guild, roleId);
+        await guild.members.fetch();
         const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, oldQuotas.messageId);
         // Only care about quota actions worth points
         const quotaLogMap = new Collection<string, number>();
@@ -96,33 +98,49 @@ export namespace QuotaManager {
         const quotaPointMap = new Collection<string, {
             points: number;
             quotaBreakdown: {
-                [quotaType: string]: number;
+                [quotaType: string]: { pts: number; qty: number; breakdown: string[] };
             };
         }>();
 
+        if (role) {
+            for (const [id,] of role.members) {
+                quotaPointMap.set(id, {
+                    points: 0,
+                    quotaBreakdown: {}
+                });
+            }
+        }
+
         for (const logInfo of oldQuotas.quotaLog) {
+            if (!quotaPointMap.has(logInfo.userId)) {
+                quotaPointMap.set(logInfo.userId, {
+                    points: 0,
+                    quotaBreakdown: {}
+                });
+            }
+
             if (!quotaLogMap.has(logInfo.logType)) continue;
 
             const points = quotaLogMap.get(logInfo.logType)!;
-            const pointLogEntry = quotaPointMap.get(logInfo.userId);
+            const pointLogEntry = quotaPointMap.get(logInfo.userId)!;
 
-            if (pointLogEntry) {
-                pointLogEntry.points += points;
-                if (!pointLogEntry.quotaBreakdown[logInfo.logType]) {
-                    pointLogEntry.quotaBreakdown[logInfo.logType] = 1;
-                    continue;
-                }
-
-                pointLogEntry.quotaBreakdown[logInfo.logType]++;
+            pointLogEntry.points += points * logInfo.amount;
+            if (!pointLogEntry.quotaBreakdown[logInfo.logType]) {
+                pointLogEntry.quotaBreakdown[logInfo.logType] = {
+                    qty: logInfo.amount,
+                    pts: points * logInfo.amount,
+                    breakdown: [
+                        `\t\t\t[${TimeUtilities.getDateTime(logInfo.timeIssued)}] Logged ${logInfo.amount} QTY.`
+                    ]
+                };
                 continue;
             }
 
-            quotaPointMap.set(logInfo.userId, {
-                points: points,
-                quotaBreakdown: {
-                    [logInfo.logType]: 1
-                }
-            });
+            pointLogEntry.quotaBreakdown[logInfo.logType].qty += logInfo.amount;
+            pointLogEntry.quotaBreakdown[logInfo.logType].pts += points * logInfo.amount;
+            pointLogEntry.quotaBreakdown[logInfo.logType].breakdown.push(
+                `\t\t\t[${TimeUtilities.getDateTime(logInfo.timeIssued)}] Logged ${logInfo.amount} QTY.`
+            );
         }
 
         // Process it so it can be put in a text file
@@ -152,7 +170,7 @@ export namespace QuotaManager {
                     .appendLine();
             }
             else {
-                for (const [quotaType, num] of entries) {
+                for (const [quotaType, {pts, qty, breakdown}] of entries) {
                     // Need to look into quota types like `RunComplete:DUNGEON_ID` or `Parse`.
                     const logArr = quotaType.split(":");
                     if (logArr.length === 2) {
@@ -162,19 +180,34 @@ export namespace QuotaManager {
                             ? guildDoc.properties.customDungeons.find(x => x.codeName === logArr[1])?.dungeonName
                             : DUNGEON_DATA.find(x => x.codeName === logArr[1])?.dungeonName) ?? logArr[1];
 
-                        sb.append(`\t\t- ${logArr[0]} (${dungeonName}): ${num}`)
+                        sb.append(`\t\t- ${logArr[0]} (${dungeonName}): ${pts} PTS (${qty})`)
+                            .appendLine()
+                            .append(breakdown.join("\n"))
                             .appendLine();
                         continue;
                     }
 
-                    sb.append(`\t\t- ${quotaType}: ${num}`)
+                    sb.append(`\t\t- ${quotaType}: ${pts} PTS (${qty})`)
+                        .append(breakdown.join("\n"))
                         .appendLine();
                 }
             }
 
             arrStrArr.push(sb.toString().trim());
         }
+
         // If there's nothing to update, then we don't need to send inactive quota
+        const finalSummaryStr = new StringBuilder()
+            .append("================= QUOTA SUMMARY =================").appendLine()
+            .append(`- Start Time: ${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT`).appendLine()
+            .append(`- End Time: ${TimeUtilities.getDateTime(Date.now())} GMT`).appendLine()
+            .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine()
+            .append(`- Minimum Points Needed: ${oldQuotas.pointsNeeded}`).appendLine(2)
+            .append("================= POINT SUMMARY =================").appendLine()
+            .append(getPointListAsString(guildDoc, oldQuotas)).appendLine(2)
+            .append("================= MEMBER SUMMARY =================").appendLine()
+            .append(arrStrArr.join("\n"))
+            .toString();
         const storageChannel = await MongoManager.getStorageChannel(guild);
         const channelToUse = storageChannel ? storageChannel : quotaChannel;
         let urlToFile: string | null = null;
@@ -183,7 +216,7 @@ export namespace QuotaManager {
                 channelToUse,
                 {
                     files: [
-                        new MessageAttachment(Buffer.from(arrStrArr.join("\n"), "utf8"),
+                        new MessageAttachment(Buffer.from(finalSummaryStr, "utf8"),
                             `quota_${guild.id}_${roleId}_${Date.now()}.txt`)
                     ]
                 }
@@ -292,7 +325,8 @@ export namespace QuotaManager {
      * Finds the best possible quota for this person to log data in.
      * @param {GuildMember} member The member.
      * @param {IGuildInfo} guildDoc The guild document.
-     * @param {string} logType The log type.
+     * @param {string} logType The log type. If you are logging a run completion, failure, or assist, DO NOT include
+     * the dungeon ID.
      * @param {string} [dungeonId] The dungeon ID, if any. This is required if `logType` pertains to a dungeon type.
      * @return {string | null} The best role ID corresponding to the quota to log, if any. `null` otherwise.
      */
@@ -367,8 +401,12 @@ export namespace QuotaManager {
 
         let ptsEarned = 0;
         for (const l of quotaInfo.quotaLog) {
+            if (l.userId !== memberId) {
+                continue;
+            }
+
             // Inefficient, might need to find better way to do this
-            ptsEarned += quotaInfo.pointValues.find(x => x.key === l.logType)?.value ?? 0;
+            ptsEarned += (quotaInfo.pointValues.find(x => x.key === l.logType)?.value ?? 0) * l.amount;
         }
 
         return ptsEarned;
@@ -522,6 +560,30 @@ export namespace QuotaManager {
     }
 
     /**
+     * Gets the points that you can earn for a particular quota in a listed string format.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {IQuotaInfo} quotaInfo The quota to get point information for.
+     * @returns {string} The listed string format containing all points.
+     */
+    export function getPointListAsString(guildDoc: IGuildInfo, quotaInfo: IQuotaInfo): string {
+        return quotaInfo.pointValues.map(x => {
+            const {key, value} = x;
+            const logTypeDgnId = key.split(":");
+            const logType = logTypeDgnId[0];
+            if (key.startsWith("Run")) {
+                if (logTypeDgnId.length === 1) {
+                    return `- ${GeneralConstants.ALL_QUOTAS_KV[logType]} (All): ${value} PT`;
+                }
+
+                const dungeonName = DungeonUtilities.getDungeonInfo(guildDoc, logTypeDgnId[1])!.dungeonName;
+                return `${GeneralConstants.ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
+            }
+
+            return `${GeneralConstants.ALL_QUOTAS_KV[key]}: ${value} PT`;
+        }).join("\n");
+    }
+
+    /**
      * Generates a leaderboard embed for the specified quota.
      * @param {Guild} guild The guild.
      * @param {IGuildInfo} guildDoc The guild document.
@@ -543,29 +605,14 @@ export namespace QuotaManager {
         );
         const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - Date.now(), false);
 
-        const quotaPtDisplay = quotaInfo.pointValues.map(x => {
-            const {key, value} = x;
-            const logTypeDgnId = key.split(":");
-            const logType = logTypeDgnId[0];
-            if (key.startsWith("Run")) {
-                if (logTypeDgnId.length === 1) {
-                    return `- ${GeneralConstants.ALL_QUOTAS_KV[logType]} (All): ${value} PT`;
-                }
-
-                const dungeonName = DungeonUtilities.getDungeonInfo(guildDoc, logTypeDgnId[1])!.dungeonName;
-                return `${GeneralConstants.ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
-            }
-
-            return `${GeneralConstants.ALL_QUOTAS_KV[key]}: ${value} PT`;
-        }).join("\n");
-
+        const quotaPtDisplay = getPointListAsString(guildDoc, quotaInfo);
         const embed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
             .setTitle(`Active Quota: ${role.name}`)
             .setDescription(
                 new StringBuilder()
                     .append(`- Start Time: \`${TimeUtilities.getDateTime(startTime)} GMT\``).appendLine()
                     .append(`- End Time: \`${TimeUtilities.getDateTime(endTime)} GMT\``).appendLine()
-                    .append(`- Members w/ Role: \`${role?.members.size ?? "N/A"}\``).appendLine()
+                    .append(`- Members w/ Role: \`${role.members.size}\``).appendLine()
                     .append(`- Minimum Points Needed: \`${quotaInfo.pointsNeeded}\``).appendLine()
                     .append("__**Point Values**__")
                     .append(
@@ -608,7 +655,8 @@ export namespace QuotaManager {
                     ? `ID ${member}`
                     : member.displayName;
 
-                return `[${rank}] ${displayMember} - ${amt} PTS`;
+                const emojiStr = amt >= quotaInfo.pointsNeeded ? Emojis.GREEN_CHECK_EMOJI : "";
+                return `[${rank}] ${displayMember} - ${amt} PTS ${emojiStr}\n`;
             },
             1000
         );

@@ -147,6 +147,10 @@ export class OneLifeBot {
             new Cmds.StartAfkCheck()
         ]);
 
+        OneLifeBot.Commands.set("Logging", [
+            new Cmds.LogLedRun()
+        ]);
+
         OneLifeBot.JsonCommands = [];
         OneLifeBot.NameCommands = new Collection<string, Cmds.BaseCommand>();
         OneLifeBot.Rest = new REST({version: "9"}).setToken(config.tokens.botToken);

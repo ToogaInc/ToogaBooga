@@ -73,6 +73,22 @@ interface IKeyReactInfo {
     accidentCt: number;
 }
 
+const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
+    + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
+    + " interaction.";
+
+
+const CANCEL_LOGGING_CUSTOM_ID: string = "cancel_logging_id";
+
+const CANCEL_LOGGING_BUTTON: Readonly<MessageButton> = Object.freeze(
+    new MessageButton()
+        .setCustomId(CANCEL_LOGGING_CUSTOM_ID)
+        .setEmoji(Emojis.WASTEBIN_EMOJI)
+        .setLabel("Cancel Logging")
+        .setStyle("DANGER")
+);
+
+
 /**
  * This class represents a raid.
  */
@@ -199,6 +215,11 @@ export class RaidInstance {
     private static readonly UNLOCK_VC_ID: string = "unlock_vc";
     private static readonly PARSE_VC_ID: string = "parse_vc";
 
+    private static readonly ADD_COMPLETION: string = "add_completion";
+    private static readonly ADD_FAIL: string = "add_fail";
+    private static readonly REMOVE_COMPLETION: string = "remove_completion";
+    private static readonly REMOVE_FAIL: string = "remove_fail";
+
     private static readonly CP_PRE_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Start AFK Check")
@@ -255,6 +276,26 @@ export class RaidInstance {
             .setLabel("Parse Raid VC")
             .setEmoji(Emojis.PRINTER_EMOJI)
             .setCustomId(RaidInstance.PARSE_VC_ID)
+            .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("+1 Completion")
+            .setEmoji(Emojis.PLUS_EMOJI)
+            .setCustomId(RaidInstance.ADD_COMPLETION)
+            .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("-1 Completion")
+            .setEmoji(Emojis.MINUS_EMOJI)
+            .setCustomId(RaidInstance.REMOVE_COMPLETION)
+            .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("+1 Fail")
+            .setEmoji(Emojis.PLUS_EMOJI)
+            .setCustomId(RaidInstance.ADD_FAIL)
+            .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("-1 Fail")
+            .setEmoji(Emojis.MINUS_EMOJI)
+            .setCustomId(RaidInstance.REMOVE_FAIL)
             .setStyle("PRIMARY")
     ]);
 
@@ -322,7 +363,7 @@ export class RaidInstance {
     private readonly _earlyLocPointCost: number;
 
     // The members that are joining this raid.
-    private readonly _membersThatJoined: string[] = [];
+    private _membersThatJoined: GuildMember[] = [];
     private readonly _raidLogs: string[] = [];
 
     // Base feedback channel; for initial use only (this channel's parent is where other feedback channels should be
@@ -336,7 +377,13 @@ export class RaidInstance {
 
     // Whether this has already been added to the database
     private _addedToDb: boolean = false;
+
+    // Anyone that is a priority react that may need to be dragged in.
     private _peopleToAddToVc: Set<string> = new Set();
+
+    // For keeping track of chains
+    private _completed: number = 0;
+    private _failed: number = 0;
 
     /**
      * Creates a new `RaidInstance` object.
@@ -712,6 +759,8 @@ export class RaidInstance {
             location: raidInfo.location
         });
 
+        rm._completed = raidInfo.runStats.completed;
+        rm._failed = raidInfo.runStats.failed;
         rm._raidVc = raidVc;
         rm._afkCheckMsg = afkCheckMsg;
         rm._controlPanelMsg = controlPanelMsg;
@@ -725,12 +774,15 @@ export class RaidInstance {
             guild,
             raidInfo.otherChannels.logChannelId
         );
+        rm._membersThatJoined = raidInfo.membersThatJoined.map(x => GuildFgrUtilities.getCachedMember(guild, x))
+            .filter(x => x !== null) as GuildMember[];
 
         // Add early location entries.
         for await (const entry of raidInfo.earlyLocationReactions) {
             const member = await GuildFgrUtilities.fetchGuildMember(guild, entry.userId);
             if (!member) continue;
             await rm.addEarlyLocationReaction(member, entry.reactCodeName, entry.modifiers, false);
+            rm._peopleToAddToVc.add(member.id);
         }
 
         if (rm._raidStatus === RaidStatus.PRE_AFK_CHECK || rm._raidStatus === RaidStatus.AFK_CHECK) {
@@ -913,7 +965,7 @@ export class RaidInstance {
         ]);
 
         // Add all members that were in the VC at the time.
-        this._membersThatJoined.push(...Array.from(this._raidVc.members.values()).map(x => x.id));
+        await this.updateMembersArr();
 
         // End the collector since it's useless. We'll use it again though.
         this.stopAllIntervalsAndCollectors("AFK Check ended.");
@@ -1215,9 +1267,9 @@ export class RaidInstance {
 
     /**
      * Gets an array of members that was in VC at the time the raid started.
-     * @returns {string[]} The array of members.
+     * @returns {GuildMember[]} The array of members.
      */
-    public get membersThatJoinedVc(): string[] {
+    public get membersThatJoinedVc(): GuildMember[] {
         return this._membersThatJoined;
     }
 
@@ -1330,6 +1382,33 @@ export class RaidInstance {
     }
 
     /**
+     * Updates the members that were in the raid VC at the time the raid VC closed (i.e. when AFK check ended).
+     * @returns {Promise<boolean>} Whether this was successful.
+     * @private
+     */
+    private async updateMembersArr(): Promise<boolean> {
+        if (!this._raidVc || !this._addedToDb)
+            return false;
+
+        this._membersThatJoined = Array.from(this._raidVc.members.values());
+
+        // Update the location in the database.
+        const res = await MongoManager.updateAndFetchGuildDoc({
+            guildId: this._guild.id,
+            "activeRaids.vcId": this._raidVc.id
+        }, {
+            $set: {
+                "activeRaids.$.membersThatJoined": this._membersThatJoined.map(x => x.id)
+            }
+        });
+
+        if (!res)
+            return false;
+        this._guildDoc = res;
+        return true;
+    }
+
+    /**
      * Adds a raid object to the database. This should only be called once the AFK check has started.
      * @returns {Promise<boolean>} Whether this was successful.
      * @private
@@ -1366,6 +1445,27 @@ export class RaidInstance {
                 activeRaids: {
                     vcId: this._raidVc.id
                 }
+            }
+        });
+        if (!res) return false;
+        this._guildDoc = res;
+        return true;
+    }
+
+    private async addRunStats(stat: {c: number; f: number;}): Promise<boolean> {
+        if (!this._raidVc || !this._addedToDb || this._raidStatus !== RaidStatus.IN_RUN)
+            return false;
+
+        this._completed += stat.c;
+        this._failed += stat.f;
+
+        const res = await MongoManager.updateAndFetchGuildDoc({
+            guildId: this._guild.id,
+            "activeRaids.vcId": this._raidVc.id
+        }, {
+            $inc: {
+                "activeRaids.$.runStats.completed": stat.c,
+                "activeRaids.$.runStats.failed": stat.f,
             }
         });
         if (!res) return false;
@@ -1441,6 +1541,11 @@ export class RaidInstance {
             otherChannels: {
                 logChannelId: this._logChan?.id ?? "",
                 feedbackChannelId: this._thisFeedbackChan?.id ?? ""
+            },
+            membersThatJoined: [],
+            runStats: {
+                completed: 0,
+                failed: 0
             }
         };
 
@@ -1912,6 +2017,13 @@ export class RaidInstance {
             .appendLine()
             .append(`⇨ Status: **\`${raidStatus}\`**`);
 
+        if (this._raidStatus === RaidStatus.IN_RUN) {
+            generalStatus.appendLine()
+                .append(`⇨ Completed: **\`${this._completed}\`**`)
+                .appendLine()
+                .append(`⇨ Failed: **\`${this._failed}\`**`);
+        }
+
         const controlPanelEmbed = new MessageEmbed()
             .setAuthor(`${this._leaderName}'s Control Panel - ${this._raidVc.name}`,
                 this._memberInit.user.displayAvatarURL())
@@ -1968,20 +2080,21 @@ export class RaidInstance {
                 .append(`To use __this__ control panel, you **must** be in the **${this._raidVc.toString()}** voice `)
                 .append("channel.")
                 .appendLine(2)
-                .append(`⇨ **Press** the **\`End Raid \`** button if you want to end this raid. This will move `)
-                .append("everyone out if applicable and delete the raid VC.")
+                .append("⇨ **Press** the **`End Raid `** button if you want to end this raid.")
                 .appendLine()
-                .append(`⇨ **Press** the **\`Change Location\`** button if you want to change this raid's location. `)
-                .append("This will ask you for a new location and then forward that location to all early location ")
-                .append("people.")
+                .append("⇨ **Press** the **`Change Location`** button if you want to change this raid's location.")
                 .appendLine()
-                .append(`⇨ **Press** the **\`Lock VC\`** button if you want to lock the raid voice channel. `)
+                .append("⇨ **Press** the **`Lock VC`** button if you want to lock the raid voice channel.")
                 .appendLine()
-                .append(`⇨ **Press** the **\`Unlock VC\`** button if you want to unlock the raid voice channel. `)
+                .append("⇨ **Press** the **`Unlock VC`** button if you want to unlock the raid voice channel.")
                 .appendLine()
-                .append(`⇨ **Press** to the **\`Parse VC/Who\`** button if you want to parse a /who screenshot for `)
+                .append("⇨ **Press** to the **`Parse VC/Who`** button if you want to parse a /who screenshot for ")
                 .append("this run. You will be asked to provide a /who screenshot; please provide a cropped ")
-                .append("screenshot so only the /who results are shown.");
+                .append("screenshot so only the /who results are shown.")
+                .appendLine()
+                .append("⇨ **Press** the **`+1/-1 Completion/Fail`** button if you want to specify that you completed ")
+                .append("or failed a dungeon. This is useful if you are chaining multiple dungeons. You do not need ")
+                .append("to press these buttons if you are only running one dungeon.");
         }
 
         controlPanelEmbed
@@ -2001,20 +2114,32 @@ export class RaidInstance {
                 continue;
 
             const maximum = this._allEssentialOptions.get(codeName)!.earlyLocAmt;
+            if (peopleThatReacted.length === 0) {
+                cpFields.push(
+                    new StringBuilder()
+                        .append(`⇨ ${emoji} ${mappedAfkCheckOption.name}: \`0 / ${maximum}\``)
+                        .appendLine()
+                        .toString()
+                );
+                continue;
+            }
+
             cpFields.push(
                 new StringBuilder()
-                    .append(`⇨ ${emoji} ${mappedAfkCheckOption.name}: ${peopleThatReacted.length} / ${maximum}`)
+                    .append(`⇨ ${emoji} ${mappedAfkCheckOption.name}: \`${peopleThatReacted.length} / ${maximum}\``)
                     .appendLine()
                     .append(peopleThatReacted.map(x => `${x.member}: \`[${x.modifiers.join(", ")}]\``).join("\n"))
-                    .appendLine(2)
+                    .appendLine()
                     .toString()
             );
         }
 
         const nModReactInfoFields = ArrayUtilities.arrayToStringFields(cpFields, (_, elem) => elem);
-        for (const field of nModReactInfoFields)
-            controlPanelEmbed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
-
+        let title = "Priority Reaction Information";
+        for (const field of nModReactInfoFields) {
+            controlPanelEmbed.addField(title, field);
+            title = GeneralConstants.ZERO_WIDTH_SPACE;
+        }
         return controlPanelEmbed;
     }
 
@@ -2265,7 +2390,6 @@ export class RaidInstance {
         if (member.voice.channelId
             && member.voice.channelId !== this._raidVc.id
             && this._peopleToAddToVc.has(member.id)) {
-            this._peopleToAddToVc.delete(member.id);
             member.voice.setChannel(this._raidVc).catch();
             this.logEvent(
                 `${member.displayName} (${member.id}) has been added to the VC for being a priority react.`,
@@ -2366,7 +2490,7 @@ export class RaidInstance {
         if (!interaction.isButton() || !this._afkCheckMsg || this._raidStatus !== RaidStatus.IN_RUN)
             return;
 
-        if (!this.membersThatJoinedVc.includes(interaction.user.id)) {
+        if (this.membersThatJoinedVc.every(x => x.id !== interaction.user.id)) {
             await interaction.reply({
                 ephemeral: true,
                 content: "You didn't join this raid, so you can't be moved in at this time."
@@ -2589,6 +2713,30 @@ export class RaidInstance {
 
                 await this._controlPanelChannel.send({embeds: [embed]}).catch();
                 return;
+            }
+
+            i.deferUpdate().catch();
+            switch (i.customId) {
+                case RaidInstance.ADD_COMPLETION: {
+                    await this.addRunStats({c: 1, f: 0});
+                    break;
+                }
+                case RaidInstance.REMOVE_COMPLETION: {
+                    if (this._completed > 0) {
+                        await this.addRunStats({c: -1, f: 0});
+                    }
+                    break;
+                }
+                case RaidInstance.ADD_FAIL: {
+                    await this.addRunStats({c: 0, f: 1});
+                    break;
+                }
+                case RaidInstance.REMOVE_FAIL: {
+                    if (this._failed > 0) {
+                        await this.addRunStats({c: 0, f: -1});
+                    }
+                    break;
+                }
             }
         });
 
@@ -2813,7 +2961,105 @@ export class RaidInstance {
 
         this._raidLogs.push(`[${time}] ${event}`);
     }
+
+
+    /**
+     * Logs a run. This will begin an interactive process where the member that ended the run:
+     * - Selects the members that assisted or led in the raid.
+     * - Selects any key poppers and priority reactions
+     * - Selects success/failure of raid.
+     * - Sends a screenshot of all the players that completed the raid (/who).
+     * This will also log quotas, stats, and add points accordingly.
+     *
+     * @param {GuildMember} memberThatEnded The member that ended this run.
+     * @private
+     */
+    private async logRun(memberThatEnded: GuildMember): Promise<void> {
+        const membersThatLed: GuildMember[] = [];
+        const membersThatAssisted: GuildMember[] = [];
+        const membersKeyPoppers: PriorityLogInfo[] = [];
+        const membersPriority: PriorityLogInfo[] = [];
+        const membersAtEnd: GuildMember[] = [];
+
+        const buttonsForStatusCheck = [
+            new MessageButton()
+                .setLabel("Success")
+                .setCustomId("success")
+                .setEmoji(Emojis.GREEN_CHECK_EMOJI)
+                .setStyle("SUCCESS"),
+            new MessageButton()
+                .setLabel("Failed")
+                .setCustomId("failed")
+                .setEmoji(Emojis.X_EMOJI)
+                .setStyle("DANGER")
+        ];
+
+        if (this._completed + this._failed === 0) {
+            buttonsForStatusCheck.push(
+                new MessageButton()
+                    .setLabel("Already Logged")
+                    .setCustomId("already_logged")
+                    .setEmoji(Emojis.PLUS_EMOJI)
+                    .setStyle("SECONDARY")
+            );
+        }
+
+        buttonsForStatusCheck.push(CANCEL_LOGGING_BUTTON);
+
+        // 1) Validate number of completions
+        const botMsg = await GlobalFgrUtilities.sendMsg(this._controlPanelChannel, {
+            embeds: [
+                MessageUtilities.generateBlankEmbed(memberThatEnded, "RED")
+                    .setTitle(`Logging Run: ${this._dungeon.dungeonName}`)
+                    .setDescription(
+                        this._completed + this._failed === 0
+                            ? "What was the run status of the __last__ dungeon that was completed?"
+                            : "What was the run status of the __last__ dungeon that was completed? If you already"
+                            + " logged the status of the last run through the `+1/-1 Completion/Fail` buttons, press"
+                            + " the `Already Logged` button."
+                    )
+                    .setFooter(FOOTER_INFO_MSG)
+            ],
+            components: AdvancedCollector.getActionRowsFromComponents(buttonsForStatusCheck)
+        });
+
+        // No bot message = don't do logging
+        if (!botMsg) {
+            return;
+        }
+
+        const runStatusRes = await AdvancedCollector.startInteractionCollector({
+            acknowledgeImmediately: true,
+            clearInteractionsAfterComplete: false,
+            deleteBaseMsgAfterComplete: false,
+            duration: 5 * 60 * 1000,
+            oldMsg: botMsg,
+            targetAuthor: memberThatEnded,
+            targetChannel: this._controlPanelChannel
+        });
+
+        if (!runStatusRes || runStatusRes.customId === CANCEL_LOGGING_CUSTOM_ID) {
+            // TODO validate this better
+            botMsg.delete().catch();
+            return;
+        }
+
+        if (runStatusRes.customId === "success") {
+            this._completed++;
+        }
+        else if (runStatusRes.customId === "failed") {
+            this._failed++;
+        }
+
+        // 2) Get all members that led.
+    }
 }
+
+type PriorityLogInfo = {
+    member: GuildMember;
+    id: string;
+    amt: number;
+};
 
 enum RaidStatus {
     NOTHING,

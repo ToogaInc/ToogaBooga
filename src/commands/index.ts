@@ -29,6 +29,8 @@ export * from "./punishments/UnblacklistMember";
 export * from "./punishments/UnsuspendMember";
 export * from "./punishments/UnsuspendFromSection";
 
+export * from "./logging/LogLedRun";
+
 export * from "./owner/SendAnnouncement";
 
 export * from "./raid-leaders/StartAfkCheck";

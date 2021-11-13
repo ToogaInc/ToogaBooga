@@ -4,7 +4,6 @@ import {MongoManager} from "../../managers/MongoManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {OneLifeBot} from "../../OneLifeBot";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {SlashCommandBuilder} from "@discordjs/builders";
 
 export class SendAnnouncement extends BaseCommand {
     public constructor() {
@@ -32,17 +31,7 @@ export class SendAnnouncement extends BaseCommand {
             botOwnerOnly: true
         };
 
-        const builder = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        builder.addStringOption(option =>
-            option
-                .setName("announcement")
-                .setDescription("The message to send to every server that uses this bot.")
-                .setRequired(true)
-        );
-
-        super(cmi, builder);
+        super(cmi);
     }
 
     /**

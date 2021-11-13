@@ -190,7 +190,11 @@ export abstract class BaseCommand {
         else {
             this.data = new SlashCommandBuilder()
                 .setName(cmi.botCommandName)
-                .setDescription(cmi.description);
+                .setDescription(
+                    cmi.description.length > 100
+                        ? cmi.description.substring(0, 96) + "..."
+                        : cmi.description
+                );
 
             cmi.argumentInfo.filter(x => x.required).forEach(requiredArg => {
                 addArgument(this.data, requiredArg);
