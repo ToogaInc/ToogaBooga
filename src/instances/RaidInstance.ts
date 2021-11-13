@@ -2031,11 +2031,7 @@ export class RaidInstance {
                 .appendLine()
                 .append("⇨ **Press** to the **`Parse VC/Who`** button if you want to parse a /who screenshot for ")
                 .append("this run. You will be asked to provide a /who screenshot; please provide a cropped ")
-                .append("screenshot so only the /who results are shown.")
-                .appendLine()
-                .append("⇨ **Press** the **`+1/-1 Completion/Fail`** button if you want to specify that you completed ")
-                .append("or failed a dungeon. This is useful if you are chaining multiple dungeons. You do not need ")
-                .append("to press these buttons if you are only running one dungeon.");
+                .append("screenshot so only the /who results are shown.");
         }
 
         controlPanelEmbed
