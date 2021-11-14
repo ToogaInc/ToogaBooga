@@ -228,7 +228,12 @@ export class RaidInstance {
             .setLabel("Abort AFK Check")
             .setEmoji(Emojis.WASTEBIN_EMOJI)
             .setCustomId(RaidInstance.ABORT_AFK_ID)
-            .setStyle("DANGER")
+            .setStyle("DANGER"),
+        new MessageButton()
+            .setLabel("Set Location")
+            .setEmoji(Emojis.MAP_EMOJI)
+            .setCustomId(RaidInstance.SET_LOCATION_ID)
+            .setStyle("PRIMARY")
     ]);
 
     private static readonly CP_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
@@ -2008,7 +2013,10 @@ export class RaidInstance {
                 .append("verified before you do this.")
                 .appendLine()
                 .append(`⇨ **Press** the **\`Abort AFK Check\`** button if you want to end the AFK check __without__ `)
-                .append("starting a raid. Use this option if you don't have enough raiders or reactions.");
+                .append("starting a raid. Use this option if you don't have enough raiders or reactions.")
+                .appendLine()
+                .append(`⇨ **Press** the **\`Set Location\`** button if you want to change this raid's location. `)
+                .append("This will message everyone that is participating in this raid that has early location.");
         }
         else if (this._raidStatus === RaidStatus.AFK_CHECK) {
             descSb
@@ -2023,7 +2031,7 @@ export class RaidInstance {
                 .append(`⇨ **Press** the **\`Abort AFK Check\`** button if you want to end the AFK check __without__ `)
                 .append("starting a raid. Use this option if you don't have enough raiders or reactions.")
                 .appendLine()
-                .append(`⇨ **Press** the **\`Change Location\`** button if you want to change this raid's location. `)
+                .append(`⇨ **Press** the **\`Set Location\`** button if you want to change this raid's location. `)
                 .append("This will message everyone that is participating in this raid that has early location.");
         }
         else {
@@ -2035,15 +2043,15 @@ export class RaidInstance {
                 .append(`To use __this__ control panel, you **must** be in the **${this._raidVc.toString()}** voice `)
                 .append("channel.")
                 .appendLine(2)
-                .append("⇨ **Press** the **`End Raid `** button if you want to end this raid.")
+                .append("⇨ **Press** the **`End Raid`** button if you want to end this raid.")
                 .appendLine()
-                .append("⇨ **Press** the **`Change Location`** button if you want to change this raid's location.")
+                .append("⇨ **Press** the **`Set Location`** button if you want to change this raid's location.")
                 .appendLine()
-                .append("⇨ **Press** the **`Lock VC`** button if you want to lock the raid voice channel.")
+                .append("⇨ **Press** the **`Lock Raid VC`** button if you want to lock the raid voice channel.")
                 .appendLine()
-                .append("⇨ **Press** the **`Unlock VC`** button if you want to unlock the raid voice channel.")
+                .append("⇨ **Press** the **`Unlock Raid VC`** button if you want to unlock the raid voice channel.")
                 .appendLine()
-                .append("⇨ **Press** to the **`Parse VC/Who`** button if you want to parse a /who screenshot for ")
+                .append("⇨ **Press** to the **`Parse Raid VC`** button if you want to parse a /who screenshot for ")
                 .append("this run. You will be asked to provide a /who screenshot; please provide a cropped ")
                 .append("screenshot so only the /who results are shown.");
         }
@@ -2529,6 +2537,11 @@ export class RaidInstance {
 
                 if (i.customId === RaidInstance.ABORT_AFK_ID) {
                     this.endRaid(i.user).then();
+                    return;
+                }
+
+                if (i.customId === RaidInstance.SET_LOCATION_ID) {
+                    this.getNewLocation(i.user).then();
                     return;
                 }
             });
