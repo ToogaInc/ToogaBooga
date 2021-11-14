@@ -923,9 +923,11 @@ export namespace SuspensionManager {
         });
 
         // Now, add it to the suspension timer.
-        if (!SuspendedMembers.has(member.guild.id))
-            SuspendedMembers.set(member.guild.id, new Collection<string, ISuspendedUser>());
-        SuspendedMembers.get(member.guild.id)!.set(member.id, suspendedUserObj);
+        if (info.duration !== -1) {
+            if (!SuspendedMembers.has(member.guild.id))
+                SuspendedMembers.set(member.guild.id, new Collection<string, ISuspendedUser>());
+            SuspendedMembers.get(member.guild.id)!.set(member.id, suspendedUserObj);
+        }
 
         // Remove roles and log it
         const initPass = await GlobalFgrUtilities.tryExecuteAsync(() => {
@@ -1088,11 +1090,13 @@ export namespace SuspensionManager {
         });
 
         // Now, add it to the suspension timer.
-        if (!SectionSuspendedMembers.has(member.guild.id))
-            SectionSuspendedMembers.set(member.guild.id, new Collection<string, ISuspendedUser[]>());
-        if (!SectionSuspendedMembers.get(member.guild.id)!.has(info.section.uniqueIdentifier))
-            SectionSuspendedMembers.get(member.guild.id)!.set(info.section.uniqueIdentifier, []);
-        SectionSuspendedMembers.get(member.guild.id)!.get(info.section.uniqueIdentifier)!.push(suspendedUserObj);
+        if (info.duration !== -1) {
+            if (!SectionSuspendedMembers.has(member.guild.id))
+                SectionSuspendedMembers.set(member.guild.id, new Collection<string, ISuspendedUser[]>());
+            if (!SectionSuspendedMembers.get(member.guild.id)!.has(info.section.uniqueIdentifier))
+                SectionSuspendedMembers.get(member.guild.id)!.set(info.section.uniqueIdentifier, []);
+            SectionSuspendedMembers.get(member.guild.id)!.get(info.section.uniqueIdentifier)!.push(suspendedUserObj);
+        }
 
         // Remove roles and log it
         await member.roles.remove(info.section.roles.verifiedRoleId).catch();
@@ -1301,6 +1305,9 @@ export namespace MuteManager {
                 if (!mutedMember)
                     continue;
 
+                if (mutedInfo.timeEnd === -1)
+                    continue;
+
                 if (mutedInfo.timeEnd - Date.now() >= 0)
                     continue;
 
@@ -1394,9 +1401,12 @@ export namespace MuteManager {
         });
 
         // Now, add it to the timer.
-        if (!MutedMembers.has(member.guild.id))
-            MutedMembers.set(member.guild.id, []);
-        MutedMembers.get(member.guild.id)!.push(mutedUserObj);
+        if (info.duration !== -1) {
+            if (!MutedMembers.has(member.guild.id))
+                MutedMembers.set(member.guild.id, []);
+            MutedMembers.get(member.guild.id)!.push(mutedUserObj);
+        }
+
         await member.roles.add(mutedRole).catch();
 
         const r = await PunishmentManager.logPunishment(member, "Mute", {
