@@ -53,7 +53,10 @@ import {
 } from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {StartAfkCheck} from "../commands";
+import {LoggerManager} from "../managers/LoggerManager";
 import getFormattedTime = TimeUtilities.getFormattedTime;
+import RunResult = LoggerManager.RunResult;
+import {QuotaManager} from "../managers/QuotaManager";
 
 type ReactionInfoMore = IReactionInfo & {
     earlyLocAmt: number;
@@ -355,6 +358,10 @@ export class RaidInstance {
 
     // Anyone that is a priority react that may need to be dragged in.
     private _peopleToAddToVc: Set<string> = new Set();
+
+    // Anyone that is currently confirming their reaction with the bot.
+    // This is so we don't have double reactions
+    private _pplConfirmingReaction: Set<string> = new Set();
 
     /**
      * Creates a new `RaidInstance` object.
@@ -753,6 +760,12 @@ export class RaidInstance {
             await rm.addEarlyLocationReaction(member, entry.reactCodeName, entry.modifiers, false);
             rm._peopleToAddToVc.add(member.id);
         }
+
+        rm._afkCheckButtons.forEach(btn => {
+            if (!rm.stillNeedEssentialReact(btn.customId!)) {
+                btn.setDisabled(true);
+            }
+        });
 
         if (rm._raidStatus === RaidStatus.PRE_AFK_CHECK || rm._raidStatus === RaidStatus.AFK_CHECK) {
             rm.startControlPanelCollector();
@@ -1177,6 +1190,8 @@ export class RaidInstance {
                 this._thisFeedbackChan.delete()
             ]);
         }, 60 * 1000);
+
+        this.logRun(memberThatEnded).catch();
     }
 
     /**
@@ -1252,8 +1267,7 @@ export class RaidInstance {
         const reactInfo = this._allEssentialOptions.get(reactCodeName);
         if (!reactInfo) return false;
         // If allEssentialOptions has the key, so should this.
-        const pplWithEarlyLoc = this._pplWithEarlyLoc.get(reactCodeName)!;
-        return pplWithEarlyLoc.length < reactInfo.earlyLocAmt;
+        return this._pplWithEarlyLoc.get(reactCodeName)!.length < reactInfo.earlyLocAmt;
     }
 
     /**
@@ -1515,7 +1529,7 @@ export class RaidInstance {
      * @param {string} url The url to the screenshot.
      * @return {Promise<IParseResponse>} An object containing the parse results.
      */
-    public async parseScreenshot(url: string): Promise<IParseResponse> {
+    public async parseScreenshot(url: string): Promise<IParseResponse | null> {
         const toReturn: IParseResponse = {inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false};
         // No raid VC = no parse.
         if (!this._raidVc) return toReturn;
@@ -1536,7 +1550,7 @@ export class RaidInstance {
         });
 
         if (!data)
-            return toReturn;
+            return null;
 
         const parsedNames = data.names;
         if (parsedNames.length === 0) return toReturn;
@@ -2126,7 +2140,8 @@ export class RaidInstance {
                 }
 
                 await this._afkCheckMsg.edit({
-                    embeds: [this.getAfkCheckEmbed()!]
+                    embeds: [this.getAfkCheckEmbed()!],
+                    components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
                 }).catch();
             }, 4 * 1000);
 
@@ -2177,6 +2192,15 @@ export class RaidInstance {
 
         // Remember that interactions are all going to be in _allEssentialOptions
         this._afkCheckButtonCollector.on("collect", async i => {
+            if (this._pplConfirmingReaction.has(i.user.id)) {
+                i.reply({
+                    content: "You are in the process of confirming a reaction. If you accidentally dismissed the"
+                        + " confirmation message, you may need to wait 15 seconds before you can try again.",
+                    ephemeral: true
+                }).catch();
+                return;
+            }
+
             const memberThatResponded = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
             if (!memberThatResponded) {
                 i.reply({
@@ -2225,7 +2249,9 @@ export class RaidInstance {
                 return;
             }
 
+            this._pplConfirmingReaction.add(i.user.id);
             const res = await RaidInstance.confirmReaction(i, this);
+            this._pplConfirmingReaction.delete(i.user.id);
             if (!res) {
                 await i.editReply({
                     content: "You either did not respond to a question that was asked, or chose to cancel this"
@@ -2238,7 +2264,7 @@ export class RaidInstance {
 
             // Make sure we can actually give early location. It might have changed.
             if (!this.stillNeedEssentialReact(mapKey)) {
-                await i.reply({
+                await i.editReply({
                     content: reactInfo.type === "EARLY_LOCATION"
                         ? "Although you reacted with this button, you are not able to receive early location"
                         + " because someone else beat you to the last slot."
@@ -2604,6 +2630,15 @@ export class RaidInstance {
                     true
                 ).catch();
 
+                if (!parseSummary) {
+                    this.logEvent(
+                        "Parse failed; the API may not be functioning at this time.",
+                        true
+                    ).catch();
+
+                    return;
+                }
+
                 const inVcNotInRaidFields = parseSummary.isValid
                     ?
                     ArrayUtilities.arrayToStringFields(
@@ -2893,6 +2928,7 @@ export class RaidInstance {
         const membersThatLed: GuildMember[] = [];
         const membersKeyPoppers: PriorityLogInfo[] = [];
         const membersAtEnd: GuildMember[] = [];
+        const membersThatLeft: GuildMember[] = [];
 
         // 1) Validate number of completions
         const botMsg = await GlobalFgrUtilities.sendMsg(this._controlPanelChannel, {
@@ -2941,17 +2977,21 @@ export class RaidInstance {
             return;
         }
 
+        const isSuccess = runStatusRes.customId === "success";
+
+        const skipButton = new MessageButton()
+            .setLabel("Skip")
+            .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+            .setStyle("DANGER")
+            .setCustomId("skip");
+
         const buttonsForSelectingMembers = AdvancedCollector.getActionRowsFromComponents([
             new MessageButton()
                 .setLabel("Confirm")
                 .setEmoji(Emojis.GREEN_CHECK_EMOJI)
                 .setStyle("SUCCESS")
                 .setCustomId("confirm"),
-            new MessageButton()
-                .setLabel("Skip")
-                .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
-                .setStyle("DANGER")
-                .setCustomId("skip"),
+            skipButton,
             CANCEL_LOGGING_BUTTON
         ]);
 
@@ -3038,6 +3078,28 @@ export class RaidInstance {
         // 3) Get key poppers
         const allKeys = this._allEssentialOptions.filter(x => x.type === "KEY" || x.type === "NM_KEY");
         for await (const [key, reactionInfo] of allKeys) {
+            const possiblePoppers = this._pplWithEarlyLoc.get(key)!;
+            const selectMenus: MessageSelectMenu[] = [];
+            ArrayUtilities.breakArrayIntoSubsets(possiblePoppers, 25).forEach((subset, index) => {
+                selectMenus.push(
+                    new MessageSelectMenu()
+                        .setCustomId(`${key}-${index}`)
+                        .setMinValues(1)
+                        .setMaxValues(1)
+                        .setOptions(subset.map(x => {
+                            return {
+                                label: x.member.displayName,
+                                value: x.member.id,
+                                description: `Modifiers: [${x.modifiers.join(", ")}]`
+                            };
+                        }))
+                );
+            });
+
+            const components = buttonsForSelectingMembers.concat(
+                AdvancedCollector.getActionRowsFromComponents(selectMenus)
+            );
+
             let selectedMember: GuildMember | null = null;
             while (true) {
                 await botMsg.edit({
@@ -3066,10 +3128,9 @@ export class RaidInstance {
                             )
                             .setFooter(FOOTER_INFO_MSG)
                     ],
-                    components: buttonsForSelectingMembers
+                    components: components
                 });
 
-                // TODO abstract this away
                 const memberToPick = await AdvancedCollector.startDoubleCollector<GuildMember | -1>({
                     cancelFlag: "-cancel",
                     deleteResponseMessage: true,
@@ -3104,12 +3165,17 @@ export class RaidInstance {
                 }
 
                 if (memberToPick instanceof MessageComponentInteraction) {
+                    if (memberToPick.isSelectMenu()) {
+                        selectedMember = possiblePoppers.find(x => x.member.id === memberToPick.values[0])!.member;
+                        continue;
+                    }
+
                     if (memberToPick.customId === "confirm") {
                         break;
                     }
 
                     if (memberToPick.customId === "skip") {
-                        mainLeader = null;
+                        selectedMember = null;
                         break;
                     }
 
@@ -3127,25 +3193,177 @@ export class RaidInstance {
             if (selectedMember) {
                 membersKeyPoppers.push({
                     id: key,
-                    member: selectedMember
+                    member: selectedMember,
+                    name: reactionInfo.name
                 });
             }
         }
 
-        // 4) Get /who
-        await botMsg.edit({
-            embeds: [
+        // 4) Get /who if success
+        // Otherwise, give everyone in the VC a fail
+        if (isSuccess) {
+            await botMsg.edit({
+                embeds: [
+                    MessageUtilities.generateBlankEmbed(memberThatEnded, "RED")
+                        .setTitle(`Logging Run: ${this._dungeon.dungeonName}`)
+                        .setDescription(
+                            "Please send a screenshot containing the `/who` results from the completion of the"
+                            + " dungeon. If you don't have a `/who` screenshot, press the `Skip` button. Your"
+                            + " screenshot should be an image, not a link to one."
+                        )
+                        .addField(
+                            "Warning",
+                            "The person that ended the run should be the same person that took this /who screenshot."
+                        )
+                        .setFooter(FOOTER_INFO_MSG)
+                ],
+                components: AdvancedCollector.getActionRowsFromComponents([
+                    skipButton
+                ])
+            });
 
+            let attachment: MessageAttachment | null = null;
+            const resObj = await AdvancedCollector.startDoubleCollector<Message>({
+                oldMsg: botMsg,
+                cancelFlag: "cancel",
+                targetChannel: this._controlPanelChannel,
+                targetAuthor: memberThatEnded,
+                deleteBaseMsgAfterComplete: false,
+                deleteResponseMessage: false,
+                duration: 5 * 60 * 1000,
+                acknowledgeImmediately: true,
+                clearInteractionsAfterComplete: false
+            }, (m: Message) => {
+                if (m.attachments.size === 0)
+                    return;
+
+                // Images have a height property, non-images don't.
+                const imgAttachment = m.attachments.find(x => x.height !== null);
+                if (!imgAttachment) {
+                    m.delete().catch();
+                    return;
+                }
+
+                attachment = imgAttachment;
+                return m;
+            });
+
+            if (!resObj) {
+                botMsg.delete().catch();
+                return;
+            }
+
+            if (resObj instanceof Message && attachment) {
+                const data = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    const res = await RealmSharperWrapper.parseWhoScreenshotOnly(attachment!.url);
+                    return res ? res : null;
+                });
+
+                resObj.delete().catch();
+                if (data && data.names.length > 0) {
+                    for (const memberThatJoined of this._membersThatJoined) {
+                        const names = UserManager.getAllNames(memberThatJoined.displayName, true);
+                        // If we can find at least one name (in the person's display name) that is also in the
+                        // /who, then give them credit
+                        if (data.names.some(x => names.includes(x.toLowerCase()))) {
+                            membersAtEnd.push(memberThatJoined);
+                            continue;
+                        }
+
+                        membersThatLeft.push(memberThatJoined);
+                    }
+                }
+                else {
+                    await botMsg.edit({
+                        embeds: [
+                            MessageUtilities.generateBlankEmbed(memberThatEnded, "RED")
+                                .setTitle(`Logging Run: ${this._dungeon.dungeonName}`)
+                                .setDescription(
+                                    "It appears that the parsing API isn't up, or the screenshot that you provided"
+                                    + " is not valid. In either case, this step has been skipped."
+                                )
+                                .setFooter("This will move to the next step in 5 seconds.")
+                        ]
+                    });
+
+                    await MiscUtilities.stopFor(5 * 1000);
+                }
+            }
+        }
+        else {
+            membersThatLeft.push(...this._membersThatJoined);
+        }
+
+        // 5) Log everything
+        let dungeonId = this._dungeon.codeName;
+        if (!this._dungeon.isBuiltIn) {
+            const otherId = (this._dungeon as ICustomDungeonInfo).logFor;
+            if (otherId) {
+                dungeonId = otherId;
+            }
+        }
+
+        if (mainLeader) {
+            await LoggerManager.logDungeonLead(
+                mainLeader,
+                dungeonId,
+                isSuccess ? RunResult.Complete : RunResult.Failed,
+                1
+            );
+
+            const quotaToUse = QuotaManager.findBestQuotaToAdd(
+                mainLeader,
+                this._guildDoc,
+                isSuccess ? "RunComplete" : "RunFailed",
+                dungeonId
+            );
+
+            if (quotaToUse) {
+                await QuotaManager.logQuota(
+                    mainLeader,
+                    quotaToUse,
+                    isSuccess ? `RunComplete:${dungeonId}` : `RunFailed:${dungeonId}`,
+                    1
+                );
+            }
+        }
+        await Promise.all(membersKeyPoppers.map(x => LoggerManager.logKeyUse(x.member, x.id, 1)));
+        await Promise.all(membersThatLeft.map(x => LoggerManager.logDungeonRun(x, dungeonId, false, 1)));
+        await Promise.all(membersAtEnd.map(x => LoggerManager.logDungeonRun(x, dungeonId, true, 1)));
+
+        await botMsg.edit({
+            components: [],
+            embeds: [
+                MessageUtilities.generateBlankEmbed(this._guild, "RED")
+                    .setTitle("Logging Successful")
+                    .setDescription(`Your \`${this._dungeon.dungeonName}\` run was successfully logged.`)
+                    .addField(
+                        "Logging Summary",
+                        new StringBuilder()
+                            .append(`- Main Leader: ${mainLeader ?? "N/A"}`).appendLine()
+                            .append(membersKeyPoppers.map(x => `- ${x.name}: ${x.member}`).join("\n"))
+                            .appendLine()
+                            .append(`- Completed: ${membersAtEnd.length}`).appendLine()
+                            .append(`- Failed: ${membersThatLeft.length}`)
+                            .toString()
+                    )
+                    .addField(
+                        "Next Step(s)",
+                        "If you did more dungeons in this raid (i.e. this was a chain), you will need to manually"
+                        + " log the *other* runs that were led. Note that you also need to log assisting raid leaders"
+                        + " for all runs that were completed in this raid (including this one).\n\nAlso, be sure to"
+                        + " log any keys that were popped along with any priority reactions so those that brought"
+                        + " the key and/or priority reactions can be rewarded, if applicable."
+                    )
             ]
         });
-
-        // TODO finish
     }
 }
 
 type PriorityLogInfo = {
     member: GuildMember;
     id: string;
+    name: string;
 };
 
 enum RaidStatus {
