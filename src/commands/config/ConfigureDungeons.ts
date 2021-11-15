@@ -1219,7 +1219,7 @@ export class ConfigureDungeons extends BaseCommand {
     private static cloneDungeonForCustom(dgn: IDungeonInfo): ICustomDungeonInfo {
         return {
             bossLinks: dgn.bossLinks.slice(),
-            codeName: `${dgn.codeName}:${Date.now()}:${StringUtil.generateRandomString(5)}`,
+            codeName: `[[${dgn.codeName}:${Date.now()}:${StringUtil.generateRandomString(5)}]]`,
             dungeonCategory: dgn.dungeonCategory,
             dungeonColors: dgn.dungeonColors.slice(),
             dungeonName: dgn.dungeonName,
