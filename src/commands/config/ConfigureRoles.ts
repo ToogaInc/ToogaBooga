@@ -13,7 +13,7 @@ import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtili
 import getCachedRole = GuildFgrUtilities.getCachedRole;
 import {Emojis} from "../../constants/Emojis";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {FilterQuery} from "mongodb";
+import {Filter} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import hasCachedRole = GuildFgrUtilities.hasCachedRole;
@@ -819,7 +819,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             }
 
             // Case 2: Role
-            const query: FilterQuery<IGuildInfo> = section.isMainSection
+            const query: Filter<IGuildInfo> = section.isMainSection
                 ? {guildId: guild.id}
                 : {guildId: guild.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
             const keySetter = section.isMainSection

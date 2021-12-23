@@ -23,7 +23,7 @@ import {
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
-import {FilterQuery, UpdateQuery} from "mongodb";
+import {Filter, UpdateFilter} from "mongodb";
 import {TimedResult, TimedStatus} from "../../definitions/Types";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
@@ -346,10 +346,10 @@ export class ConfigureVerification extends BaseCommand {
                     break;
                 }
                 case "save": {
-                    const filterQuery: FilterQuery<IGuildInfo> = section.isMainSection
+                    const filterQuery: Filter<IGuildInfo> = section.isMainSection
                         ? {guildId: ctx.guild!.id}
                         : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
-                    const updateQuery: UpdateQuery<IGuildInfo> = section.isMainSection
+                    const updateQuery: UpdateFilter<IGuildInfo> = section.isMainSection
                         ? {$set: {"otherMajorConfig.verificationProperties": verifConfig}}
                         : {$set: {"guildSections.$.otherMajorConfig.verificationProperties": verifConfig}};
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);
@@ -365,10 +365,10 @@ export class ConfigureVerification extends BaseCommand {
                     return;
                 }
                 case "send": {
-                    const filterQuery: FilterQuery<IGuildInfo> = section.isMainSection
+                    const filterQuery: Filter<IGuildInfo> = section.isMainSection
                         ? {guildId: ctx.guild!.id}
                         : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
-                    const updateQuery: UpdateQuery<IGuildInfo> = section.isMainSection
+                    const updateQuery: UpdateFilter<IGuildInfo> = section.isMainSection
                         ? {$set: {"otherMajorConfig.verificationProperties": verifConfig}}
                         : {$set: {"guildSections.$.otherMajorConfig.verificationProperties": verifConfig}};
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);

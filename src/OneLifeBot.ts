@@ -6,13 +6,12 @@ import {
     VoiceState
 } from "discord.js";
 import {MongoManager} from "./managers/MongoManager";
-import * as assert from "assert";
 import axios, {AxiosInstance} from "axios";
 import * as Cmds from "./commands";
 import {onGuildCreateEvent, onInteractionEvent, onReadyEvent, onVoiceStateEvent} from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
-import {APIApplicationCommandOption, Routes} from "discord-api-types/v9";
+import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -55,12 +54,7 @@ export class OneLifeBot {
      *
      * @type {object[]}
      */
-    public static JsonCommands: {
-        name: string;
-        description: string;
-        options: APIApplicationCommandOption[];
-        default_permission: boolean | undefined;
-    }[];
+    public static JsonCommands: RESTPostAPIApplicationCommandsJSONBody[];
 
     public static Rest: REST;
 
@@ -155,7 +149,7 @@ export class OneLifeBot {
         OneLifeBot.NameCommands = new Collection<string, Cmds.BaseCommand>();
         OneLifeBot.Rest = new REST({version: "9"}).setToken(config.tokens.botToken);
         for (const command of Array.from(OneLifeBot.Commands.values()).flat()) {
-            OneLifeBot.JsonCommands.push(command.data.toJSON());
+            OneLifeBot.JsonCommands.push(command.data.toJSON() as RESTPostAPIApplicationCommandsJSONBody);
 
             if (command.data.name !== command.commandInfo.botCommandName)
                 throw new Error(`Names not matched: "${command.data.name}" - "${command.commandInfo.botCommandName}"`);
@@ -218,8 +212,6 @@ export class OneLifeBot {
             idNameColName: this.config.database.collectionNames.idNameCollection,
             unclaimedBlName: this.config.database.collectionNames.unclaimedBlCollection
         });
-        // make sure the database is connected
-        assert(MongoManager.isConnected());
         // logs into the bot
         await this._bot.login(this._config.tokens.botToken);
     }

@@ -1,4 +1,4 @@
-import {ObjectID} from "mongodb";
+import {ObjectId} from "mongodb";
 import {
     IAfkCheckProperties,
     IRaidChannels,
@@ -16,7 +16,7 @@ import {
 import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
 import {MainLogType, MainOnlyModLogType, QuotaLogType, SectionLogType, SectionModLogType} from "./Types";
 
-export interface IBaseDocument<T = ObjectID> {
+export interface IBaseDocument<T = ObjectId> {
     _id: T;
 }
 

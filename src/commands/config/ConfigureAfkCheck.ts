@@ -24,7 +24,7 @@ import {GeneralConstants} from "../../constants/GeneralConstants";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {FilterQuery, UpdateQuery} from "mongodb";
+import {Filter, UpdateFilter} from "mongodb";
 
 export class ConfigureAfkCheck extends BaseCommand {
     public static readonly MAX_PERMS_SET: number = 15;
@@ -606,10 +606,10 @@ export class ConfigureAfkCheck extends BaseCommand {
                     break;
                 }
                 case "save": {
-                    const filterQuery: FilterQuery<IGuildInfo> = section.isMainSection
+                    const filterQuery: Filter<IGuildInfo> = section.isMainSection
                         ? {guildId: ctx.guild!.id}
                         : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
-                    const updateQuery: UpdateQuery<IGuildInfo> = section.isMainSection
+                    const updateQuery: UpdateFilter<IGuildInfo> = section.isMainSection
                         ? {$set: {"otherMajorConfig.afkCheckProperties": newAfkCheckProps}}
                         : {$set: {"guildSections.$.otherMajorConfig.afkCheckProperties": newAfkCheckProps}};
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);

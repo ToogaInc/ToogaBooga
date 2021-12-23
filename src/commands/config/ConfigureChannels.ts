@@ -12,7 +12,7 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
-import {FilterQuery} from "mongodb";
+import {Filter} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {IGuildInfo, ISectionInfo} from "../../definitions";
 import {Emojis} from "../../constants/Emojis";
@@ -449,7 +449,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             }
 
             // Case 2: Channel
-            const query: FilterQuery<IGuildInfo> = section.isMainSection
+            const query: Filter<IGuildInfo> = section.isMainSection
                 ? {guildId: ctx.guild!.id}
                 : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
             const newArr = section.isMainSection
@@ -743,7 +743,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             }
 
             // Case 2: Channel
-            const query: FilterQuery<IGuildInfo> = section.isMainSection
+            const query: Filter<IGuildInfo> = section.isMainSection
                 ? {guildId: guild.id}
                 : {guildId: guild.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
             const keySetter = section.isMainSection

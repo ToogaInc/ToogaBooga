@@ -1,6 +1,6 @@
 import {Collection, GuildMember} from "discord.js";
 import {MongoManager} from "./MongoManager";
-import {FilterQuery, UpdateQuery} from "mongodb";
+import {Filter, UpdateFilter} from "mongodb";
 import {IGuildInfo, IUserInfo} from "../definitions";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
 import {DUNGEON_DATA} from "../constants/DungeonData";
@@ -83,8 +83,8 @@ export namespace LoggerManager {
         if (userDocToUse.discordId !== member.id)
             return;
 
-        let filterQuery: FilterQuery<IUserInfo>;
-        let updateQuery: UpdateQuery<IUserInfo>;
+        let filterQuery: Filter<IUserInfo>;
+        let updateQuery: UpdateFilter<IUserInfo>;
         if (userDocToUse.loggedInfo.some(x => x.key === id)) {
             filterQuery = {
                 discordId: member.id,

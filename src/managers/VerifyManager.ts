@@ -111,20 +111,28 @@ export namespace VerifyManager {
      * @param {ISectionInfo} section The section where verification will occur.
      */
     export async function verifyInteraction(i: Interaction, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
-        if (!i.isButton()) return;
+        if (!i.isButton()) {
+            return;
+        }
 
-        await i.deferUpdate();
-        if (!i.guild) return;
+        if (!i.guild) {
+            await i.deferUpdate();
+            return;
+        }
 
         const member = await GuildFgrUtilities.fetchGuildMember(i.guild, i.user.id);
-        if (!member) return;
+        if (!member) {
+            await i.deferUpdate();
+            return;
+        }
 
         // Check if the verified role exists.
         const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
 
         // No verified role = no go. Or, if the person is verified, no need for them to get verified.
-        if (!verifiedRole || GuildFgrUtilities.memberHasCachedRole(member, verifiedRole.id))
+        if (!verifiedRole || GuildFgrUtilities.memberHasCachedRole(member, verifiedRole.id)) {
             return;
+        }
 
         // Get logging channels ready
         const loggingChannels = section.isMainSection
@@ -178,6 +186,7 @@ export namespace VerifyManager {
             section.channels.verification.manualVerificationChannelId
         );
 
+        await i.deferUpdate();
         verify(member, guildDoc, section, {
             manualVerify: manualVerifyChannel,
             verifyStart: verifyStartChannel,

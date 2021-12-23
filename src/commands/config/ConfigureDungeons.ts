@@ -30,7 +30,7 @@ import {OneLifeBot} from "../../OneLifeBot";
 import {MongoManager} from "../../managers/MongoManager";
 import {DUNGEON_DATA} from "../../constants/DungeonData";
 import {entryFunction, sendOrEditBotMsg} from "./common/ConfigCommon";
-import {FilterQuery, UpdateQuery} from "mongodb";
+import {Filter, UpdateFilter} from "mongodb";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 
 enum ValidatorResult {
@@ -253,8 +253,8 @@ export class ConfigureDungeons extends BaseCommand {
                     return;
                 }
 
-                let filterQuery: FilterQuery<IGuildInfo>;
-                let updateQuery: UpdateQuery<IGuildInfo>;
+                let filterQuery: Filter<IGuildInfo>;
+                let updateQuery: UpdateFilter<IGuildInfo>;
                 if (res[0].isMainSection) {
                     filterQuery = {guildId: ctx.guild!.id};
                     updateQuery = {
@@ -1498,6 +1498,7 @@ export class ConfigureDungeons extends BaseCommand {
     /**
      * Configures a generic setting. Similar in nature to `configReactions` but allows for multiple different
      * options at the expense of extreme customizability.
+     * @typedef T The option types.
      * @param {ICommandContext} ctx The command context.
      * @param {Message} botMsg The bot message.
      * @param {T[]} cOptions The current options that are set.

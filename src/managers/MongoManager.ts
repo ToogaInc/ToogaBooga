@@ -1,4 +1,4 @@
-import {Collection as MCollection, FilterQuery, MongoClient, ObjectID, UpdateQuery} from "mongodb";
+import {Collection as MCollection, Filter, MongoClient, ObjectId, UpdateFilter} from "mongodb";
 import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {UserManager} from "./UserManager";
@@ -40,22 +40,13 @@ export namespace MongoManager {
     }
 
     /**
-     * Whether the program is connected to MongoDB.
-     *
-     * @return {boolean} Whether the program is connected to MongoDB.
-     */
-    export function isConnected(): boolean {
-        return ThisMongoClient !== null;
-    }
-
-    /**
      * Gets the Mongo client, if connected.
      *
      * @returns {MongoClient} The client.
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getMongoClient(): MongoClient {
-        if (ThisMongoClient === null || !ThisMongoClient.isConnected())
+        if (!ThisMongoClient)
             throw new ReferenceError("MongoClient null. Use connect method first.");
 
         return ThisMongoClient;
@@ -68,7 +59,7 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getIdNameCollection(): MCollection<IIdNameInfo> {
-        if (IdNameCollection === null || ThisMongoClient === null || !ThisMongoClient.isConnected())
+        if (!IdNameCollection || !ThisMongoClient)
             throw new ReferenceError("IdNameCollection null. Use connect method first.");
 
         return IdNameCollection;
@@ -81,7 +72,7 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getGuildCollection(): MCollection<IGuildInfo> {
-        if (GuildCollection === null || ThisMongoClient === null || !isConnected())
+        if (GuildCollection === null || ThisMongoClient === null)
             throw new ReferenceError("GuildCollection null. Use connect method first.");
 
         return GuildCollection;
@@ -94,7 +85,7 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getUserCollection(): MCollection<IUserInfo> {
-        if (UserCollection === null || ThisMongoClient === null || !isConnected())
+        if (!UserCollection || !ThisMongoClient)
             throw new ReferenceError("UserCollection null. Use connect method first.");
 
         return UserCollection;
@@ -106,7 +97,7 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getBotCollection(): MCollection<IBotInfo> {
-        if (BotCollection === null || ThisMongoClient === null || !isConnected())
+        if (!BotCollection || !ThisMongoClient)
             throw new ReferenceError("BotCollection null.");
 
         return BotCollection;
@@ -118,7 +109,7 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the program isn't connected to the MongoDB instance.
      */
     export function getUnclaimedBlacklistCollection(): MCollection<IUnclaimedBlacklistInfo> {
-        if (UnclaimedBlacklistCollection === null || ThisMongoClient === null || !isConnected())
+        if (!UnclaimedBlacklistCollection || !ThisMongoClient)
             throw new ReferenceError("UnclaimedBlacklistCollection null.");
 
         return UnclaimedBlacklistCollection;
@@ -131,13 +122,10 @@ export namespace MongoManager {
      * @returns {Promise<boolean>} Whether the instance is connected.
      */
     export async function connect(config: IDbConfiguration): Promise<boolean> {
-        if (ThisMongoClient && isConnected())
+        if (ThisMongoClient)
             return true;
 
-        const mongoDbClient: MongoClient = new MongoClient(config.dbUrl, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        });
+        const mongoDbClient: MongoClient = new MongoClient(config.dbUrl);
 
         ThisMongoClient = await mongoDbClient.connect();
         UserCollection = ThisMongoClient
@@ -221,16 +209,13 @@ export namespace MongoManager {
      * @throws {ReferenceError} If the Mongo instance isn't connected.
      */
     export async function addIdNameToIdNameCollection(member: GuildMember, ign?: string): Promise<IIdNameInfo | null> {
-        if (IdNameCollection === null)
-            throw new ReferenceError("IDNameCollection null. Use connect method first.");
-
         // No IGN specified means we're just adding an ID/Name identifier without a name
         if (!ign) {
             const possIdEntries = await findIdInIdNameCollection(member.id);
-            // No such entries means we can add
+            // If no entry is found, then we can add
             if (possIdEntries.length === 0) {
-                const t = await IdNameCollection.insertOne(getDefaultIdNameObj(member.id));
-                return t.ops.length === 0 ? null : t.ops[0];
+                const t = await getIdNameCollection().insertOne(getDefaultIdNameObj(member.id));
+                return getIdNameCollection().findOne({_id: t.insertedId});
             }
 
             return possIdEntries[0];
@@ -244,14 +229,14 @@ export namespace MongoManager {
         // There are three cases to consider.
         // Case 1: No entries found.
         if (idEntries.length === 0 && ignEntries.length === 0) {
-            const t = await IdNameCollection.insertOne(getDefaultIdNameObj(member.id, ign));
-            return t.ops.length === 0 ? null : t.ops[0];
+            const t = await getIdNameCollection().insertOne(getDefaultIdNameObj(member.id, ign));
+            return getIdNameCollection().findOne({_id: t.insertedId});
         }
 
         // Case 2: ID found, IGN not.
         // In this case, we can simply push the name into the names array.
         if (idEntries.length > 0 && ignEntries.length === 0) {
-            const r = await IdNameCollection.findOneAndUpdate({currentDiscordId: idEntries[0].currentDiscordId}, {
+            const r = await getIdNameCollection().findOneAndUpdate({currentDiscordId: idEntries[0].currentDiscordId}, {
                 $push: {
                     rotmgNames: {
                         lowercaseIgn: ign.toLowerCase(),
@@ -266,7 +251,7 @@ export namespace MongoManager {
         // In this case, we need to also modify the ID of the document found in the UserManager doc.
         if (idEntries.length === 0 && ignEntries.length > 0) {
             const oldDiscordId = ignEntries[0].currentDiscordId;
-            const oldDoc = await IdNameCollection.findOneAndUpdate({
+            const oldDoc = await getIdNameCollection().findOneAndUpdate({
                 "rotmgNames.lowercaseIgn": ign.toLowerCase()
             }, {
                 $set: {
@@ -312,7 +297,7 @@ export namespace MongoManager {
             newObj.pastDiscordIds.push(...entry.pastDiscordIds);
         }
 
-        await IdNameCollection.deleteMany({
+        await getIdNameCollection().deleteMany({
             $or: [
                 {
                     currentDiscordId: {
@@ -326,13 +311,14 @@ export namespace MongoManager {
                 }
             ]
         });
-        const addedDocArr = await IdNameCollection.insertOne(newObj);
+        const insertRes = await getIdNameCollection().insertOne(newObj);
+        const doc = await getIdNameCollection().findOne({_id: insertRes.insertedId});
 
-        if (addedDocArr.ops.length === 0)
+        if (!doc)
             return null;
 
         // And now create a new User document.
-        const filterQuery: FilterQuery<IUserInfo>[] = [];
+        const filterQuery: Filter<IUserInfo>[] = [];
         const searchedIds = new Set<string>();
         for (const entry of allEntries) {
             if (searchedIds.has(entry.currentDiscordId))
@@ -344,13 +330,14 @@ export namespace MongoManager {
             searchedIds.add(entry.currentDiscordId);
         }
 
-        // Get all relevant documents.
+        // Get all relevant user stats documents.
         const foundDocs = await getUserCollection().find({
             $or: filterQuery
         }).toArray();
 
+        // If no user stat documents are found, then we're done merging
         if (foundDocs.length === 0)
-            return addedDocArr.ops[0];
+            return doc;
 
         const userDoc = getDefaultUserConfig(member.id, ign);
         const allNotes: string[] = [];
@@ -398,7 +385,7 @@ export namespace MongoManager {
 
         // And add the new user document.
         await getUserCollection().insertOne(userDoc);
-        return addedDocArr.ops[0];
+        return doc;
     }
 
     /**
@@ -510,7 +497,7 @@ export namespace MongoManager {
      */
     export function getDefaultGuildConfig(guildId: string): IGuildInfo {
         return {
-            _id: new ObjectID(),
+            _id: new ObjectId(),
             activeRaids: [],
             manualVerificationEntries: [],
             channels: {
@@ -584,7 +571,7 @@ export namespace MongoManager {
      */
     export function getDefaultUserConfig(userId: string, ign?: string): IUserInfo {
         return {
-            _id: new ObjectID(),
+            _id: new ObjectId(),
             details: {moderationHistory: [], universalNotes: "", guildNotes: []},
             discordId: userId,
             loggedInfo: []
@@ -599,7 +586,7 @@ export namespace MongoManager {
      */
     export function getDefaultIdNameObj(userId: string, ign?: string): IIdNameInfo {
         return {
-            _id: new ObjectID(),
+            _id: new ObjectId(),
             rotmgNames: ign ? [{lowercaseIgn: ign.toLowerCase(), ign: ign}] : [],
             currentDiscordId: userId,
             pastDiscordIds: [],
@@ -653,8 +640,10 @@ export namespace MongoManager {
         const docs = await getUserCollection().find({discordId: userId}).toArray();
         if (docs.length === 0) {
             const insertRes = await getUserCollection().insertOne(getDefaultUserConfig(userId));
-            if (insertRes.ops.length > 0)
-                return insertRes.ops[0];
+            const doc = await getUserCollection().findOne({_id: insertRes.insertedId});
+            if (doc) {
+                return doc;
+            }
 
             throw new Error(`Insert failed: ${userId}`);
         }
@@ -678,9 +667,10 @@ export namespace MongoManager {
         const docs = await getGuildCollection().find({guildId: id}).toArray();
         if (docs.length === 0) {
             const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(id));
-            if (insertRes.ops.length > 0) {
-                CachedGuildCollection.set(id, insertRes.ops[0]);
-                return insertRes.ops[0];
+            const doc = await getGuildCollection().findOne({_id: insertRes.insertedId});
+            if (doc) {
+                CachedGuildCollection.set(id, doc);
+                return doc;
             }
 
             throw new Error(`Insert failed: ${id}`);
@@ -693,12 +683,12 @@ export namespace MongoManager {
     /**
      * Equivalent to `findOneAndUpdate`, but this provides a cleaner way to get the guild document. This
      * will automatically set `returnDocument` to `true`. Additionally, this updates the cached guild document.
-     * @param {FilterQuery<IGuildInfo>} filter The filter query.
-     * @param {UpdateQuery<IGuildInfo>} update The update query.
+     * @param {Filter<IGuildInfo>} filter The filter query.
+     * @param {UpdateFilter<IGuildInfo>} update The update query.
      * @return {Promise<IGuildInfo | null>} The new guild document, if any.
      */
-    export async function updateAndFetchGuildDoc(filter: FilterQuery<IGuildInfo>,
-                                                 update: UpdateQuery<IGuildInfo>): Promise<IGuildInfo | null> {
+    export async function updateAndFetchGuildDoc(filter: Filter<IGuildInfo>,
+                                                 update: UpdateFilter<IGuildInfo>): Promise<IGuildInfo | null> {
         const res = await getGuildCollection().findOneAndUpdate(filter, update, {
             returnDocument: "after"
         });
@@ -713,6 +703,7 @@ export namespace MongoManager {
     /**
      * Validates that a field exists in a guild document. If the field does exist, nothing happens. Otherwise, the
      * field is set with the specified default value. Make sure to update the cache manually.
+     * @typedef T The default value type.
      * @param {string} guildId The guild ID.
      * @param {string} property The field, or property, to check.
      * @param {T} defaultValue The default value if the field doesn't exist.
