@@ -90,10 +90,60 @@ export interface IDungeonOverrideInfo {
      * @type {object}
      */
     roleRequirement: string[];
+
+    /**
+     * Any modifiers that are permitted for this dungeon. This array should contain the modifier IDs.
+     *
+     * @type {string[]}
+     */
+    allowedModifiers: string[];
 }
 
 /**
- * An interface representing a dungeon that can be used for AFK checks and headcounts.
+ * An interface representing a dungeon modifier.
+ */
+export interface IDungeonModifier {
+    /**
+     * The modifier name.
+     *
+     * @type {string}
+     */
+    modifierName: string;
+
+    /**
+     * The maximum level for this dungeon modifier.
+     *
+     * @type {number}
+     */
+    maxLevel: number;
+
+    /**
+     * Description for this modifier.
+     *
+     * @type {string}
+     */
+    description: string;
+
+    /**
+     * The modifier ID.
+     *
+     * @type {string}
+     */
+    modifierId: string;
+
+    /**
+     * Whether this should be presented as one of the "default" modifiers to show. If a dungeon doesn't have any
+     * custom modifiers set, this default list will be applied.
+     *
+     * @type {boolean}
+     */
+    defaultDisplay: boolean;
+}
+
+/**
+ * An interface representing a dungeon that can be used for AFK checks and headcounts. Note that this interface
+ * represents a built-in dungeon, one that cannot be customized by a user unless that user overrides or clones this
+ * dungeon.
  */
 export interface IDungeonInfo {
     /**
@@ -235,6 +285,13 @@ export interface ICustomDungeonInfo extends IDungeonInfo {
      * @type {object}
      */
     roleRequirement: string[];
+
+    /**
+     * Any modifiers that are permitted for this dungeon. This array should contain the modifier IDs.
+     *
+     * @type {string[]}
+     */
+    allowedModifiers: string[];
 
     /**
      * Allows the user to set which dungeon should be logged in place of this dungeon. This will be a dungeon ID

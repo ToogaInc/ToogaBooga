@@ -57,18 +57,13 @@ import {LoggerManager} from "../managers/LoggerManager";
 import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
 import {QuotaManager} from "../managers/QuotaManager";
+import {DUNGEON_MODIFIERS, HIGHEST_MODIFIER_LEVEL} from "../constants/DungeonModifiers";
 
 type ReactionInfoMore = IReactionInfo & {
     earlyLocAmt: number;
     isCustomReaction: boolean;
     builtInEmoji?: EmojiIdentifierResolvable;
 };
-
-interface IDungeonModifier {
-    modifierName: string;
-    maxLevel: number;
-    description: string;
-}
 
 interface IKeyReactInfo {
     mapKey: keyof IMappedAfkCheckReactions;
@@ -96,111 +91,6 @@ const CANCEL_LOGGING_BUTTON: Readonly<MessageButton> = Object.freeze(
  * This class represents a raid.
  */
 export class RaidInstance {
-    public static readonly HIGHEST_MODIFIER_LEVEL: number = 4;
-    public static readonly DUNGEON_MODIFIERS: IDungeonModifier[] = [
-        {
-            modifierName: "Agent of Oryx",
-            description: "Boss can drop Agent of Oryx Shards.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Bis",
-            description: "Boss will drop a portal to the same dungeon.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Bored Minions",
-            description: "Minions’ projectiles have x% less lifetime.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Bulky Minions",
-            description: "Minions have x% more HP.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Chef",
-            description: "Boss has a x% chance of dropping a food item.",
-            maxLevel: 1
-        },
-
-        {
-            modifierName: "Colorful",
-            description: "Boss always drops a Color Dye.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Dimitus",
-            description: "Dimitus will appear after the Boss is defeated.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Dull Minions",
-            description: "Minions’ projectiles travel x% slower.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Elite Boss",
-            description: "Boss enemies have x% more HP.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Energized Minions",
-            description: "Minions’ projectiles have x% more lifetime.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Feeble Boss",
-            description: "Boss enemies have x% less DEF.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Feeble Minions",
-            description: "Minions have x% less DEF.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Ferocious Boss",
-            description: "Boss enemies deal x% more DMG.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Ferocious Minions",
-            description: "Minions deal x% more DMG.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Generous",
-            description: "Boss always drops a Quest Chest.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Guaranteed Stat Potion",
-            description: "Boss enemies will always drop a Stat Potion.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Keen Minions",
-            description: "Minions’ projectiles travel x% faster.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Lazy Minions",
-            description: "Minions attack x% slower.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Mystery Stat Potion",
-            description: "Boss always drops a Mystery Stat Potion.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Noble Boss",
-            description: "After completion Oryx’s Court dungeons will spawn.",
-            maxLevel: 1
-        }
-    ];
-
     /**
      * A collection of active AFK checks and raids. The key is the AFK check message ID and the value is the raid
      * manager object.
@@ -2752,7 +2642,7 @@ export class RaidInstance {
                 .setMinValues(0)
                 .setMaxValues(4)
                 .setCustomId(`${uniqueIdentifier}_select`);
-            for (const modifier of RaidInstance.DUNGEON_MODIFIERS) {
+            for (const modifier of DUNGEON_MODIFIERS) {
                 selectMenu.addOptions({
                     description: modifier.description,
                     label: modifier.modifierName,
@@ -2813,7 +2703,7 @@ export class RaidInstance {
             if (!modifierRes.isSelectMenu())
                 return null;
 
-            const selectedModifiers = RaidInstance.DUNGEON_MODIFIERS
+            const selectedModifiers = DUNGEON_MODIFIERS
                 .filter(x => modifierRes.values.includes(x.modifierName));
 
             const returnObj: IKeyReactInfo = {mapKey: mapKey, modifiers: [], accidentCt: 0};
@@ -2825,7 +2715,7 @@ export class RaidInstance {
                 .setCustomId(accidentCustomId)
                 .setStyle("DANGER");
 
-            for (let i = 0; i < RaidInstance.HIGHEST_MODIFIER_LEVEL; i++) {
+            for (let i = 0; i < HIGHEST_MODIFIER_LEVEL; i++) {
                 numButtons.push(
                     new MessageButton()
                         .setLabel((i + 1).toString())
@@ -2842,8 +2732,9 @@ export class RaidInstance {
                 }
 
                 const buttonsToUse: MessageButton[] = [cancelButton, accidentButton];
-                for (let i = 0; i < modifier.maxLevel; i++)
+                for (let i = 0; i < modifier.maxLevel; i++) {
                     buttonsToUse.push(numButtons[i]);
+                }
 
                 await interaction.editReply({
                     content: `What **level** is the **${modifier.modifierName}** modifier? If you want to cancel this,`

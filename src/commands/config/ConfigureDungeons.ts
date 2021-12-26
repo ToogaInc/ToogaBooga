@@ -32,6 +32,7 @@ import {DUNGEON_DATA} from "../../constants/DungeonData";
 import {entryFunction, sendOrEditBotMsg} from "./common/ConfigCommon";
 import {Filter, UpdateFilter} from "mongodb";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
+import {DEFAULT_MODIFIERS} from "../../constants/DungeonModifiers";
 
 enum ValidatorResult {
     // Success = ValidationReturnType#res is not null
@@ -300,7 +301,8 @@ export class ConfigureDungeons extends BaseCommand {
                     nitroEarlyLocationLimit: -1,
                     vcLimit: -1,
                     pointCost: 0,
-                    roleRequirement: []
+                    roleRequirement: [],
+                    allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
                 } as IDungeonOverrideInfo));
                 return;
             }
@@ -578,7 +580,8 @@ export class ConfigureDungeons extends BaseCommand {
                 name: ""
             },
             roleRequirement: [],
-            vcLimit: -1
+            vcLimit: -1,
+            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
         };
 
         const embed = new MessageEmbed();
@@ -1235,7 +1238,8 @@ export class ConfigureDungeons extends BaseCommand {
             pointCost: 0,
             vcLimit: -1,
             roleRequirement: [],
-            logFor: null
+            logFor: null,
+            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
         } as ICustomDungeonInfo;
     }
 
