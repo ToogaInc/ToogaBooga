@@ -22,6 +22,7 @@ import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {Emojis} from "../../constants/Emojis";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
+import {canManageRaidsIn} from "../../instances/Common";
 
 type DungeonSelectionType = {
     section: ISectionInfo;
@@ -119,7 +120,7 @@ export class StartAfkCheck extends BaseCommand {
         // Get all sections that the member can lead in
         const allRolePerms = MongoManager.getAllConfiguredRoles(ctx.guildDoc!);
         for (const section of allSections) {
-            if (!RaidInstance.canManageRaidsIn(section, ctx.member!, ctx.guildDoc!))
+            if (!canManageRaidsIn(section, ctx.member!, ctx.guildDoc!))
                 continue;
 
             const dungeons: IDungeonInfo[] = [];

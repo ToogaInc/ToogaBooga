@@ -32,7 +32,7 @@ import {DUNGEON_DATA} from "../../constants/DungeonData";
 import {entryFunction, sendOrEditBotMsg} from "./common/ConfigCommon";
 import {Filter, UpdateFilter} from "mongodb";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
-import {DEFAULT_MODIFIERS} from "../../constants/DungeonModifiers";
+import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../../constants/DungeonModifiers";
 
 enum ValidatorResult {
     // Success = ValidationReturnType#res is not null
@@ -97,7 +97,7 @@ export class ConfigureDungeons extends BaseCommand {
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-        
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -619,6 +619,10 @@ export class ConfigureDungeons extends BaseCommand {
             .setLabel("Role Requirements")
             .setCustomId("role_requirements")
             .setStyle("PRIMARY");
+        const configModifiers = new MessageButton()
+            .setLabel("Configure Modifiers")
+            .setCustomId("config_modifiers")
+            .setStyle("PRIMARY");
 
         let dgnToOverrideInfo: IDungeonInfo | null = null;
 
@@ -682,6 +686,7 @@ export class ConfigureDungeons extends BaseCommand {
             nitroLimitButton,
             vcLimitButton,
             roleReqButton,
+            configModifiers,
             saveButton
         );
 
@@ -728,6 +733,12 @@ export class ConfigureDungeons extends BaseCommand {
                 "Configure Reactions",
                 "Click on the `Configure Reactions` button to add, remove, or modify reactions for this dungeon. You"
                 + " can set priority and non-priority reactions here for this dungeon."
+            );
+
+            embed.addField(
+                "Configure Modifiers",
+                "Click on the `Configure Modifiers` button to add, remove, or modify what modifiers are allowed for"
+                + " this dungeon."
             );
 
             if (isCustomDungeon(cDungeon)) {
@@ -1209,9 +1220,147 @@ export class ConfigureDungeons extends BaseCommand {
                     cDungeon.roleRequirement = newRoleReqs.map(x => x.id);
                     break;
                 }
+                case "config_modifiers": {
+                    const res = await this.configModifiers(
+                        ctx,
+                        botMsg,
+                        isCustomDungeon(cDungeon)
+                            ? cDungeon.dungeonName
+                            : DUNGEON_DATA.find(x => x.codeName === cDungeon.codeName)!.dungeonName, cDungeon
+                    );
+
+                    if (!res) {
+                        await this.dispose(ctx, botMsg);
+                        return;
+                    }
+
+                    cDungeon.allowedModifiers = res;
+                    break;
+                }
             }
         }
     }
+
+    /**
+     * Configures the modifiers for this dungeon.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     * @param {string} dungeonName The name of the dungeon.
+     * @param {ICustomDungeonInfo | IDungeonOverrideInfo} dgn The dungeon.
+     * @returns {Promise<string[] | null>} The modifiers, if any. `null` if this timed out.
+     * @private
+     */
+    // TODO generalize this function
+    private async configModifiers(ctx: ICommandContext, botMsg: Message, dungeonName: string,
+                                  dgn: ICustomDungeonInfo | IDungeonOverrideInfo): Promise<string[] | null> {
+        const embed = new MessageEmbed()
+            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setTitle(`**Filter Dungeon Modifiers:** ${dungeonName}`)
+            .setDescription(
+                new StringBuilder()
+                    .append("Below is a list of all modifiers that server members can volunteer. You can choose what")
+                    .append(" modifiers are viable for this particular dungeon and then let members pick from those")
+                    .append(" modifiers only. Please follow the directions below:")
+                    .appendLine(2)
+                    .append("- Type either one number (e.g. `5`), a series of numbers separated by a space or comma")
+                    .append(" (e.g. `1, 5, 10 12, 19`), or a number range (e.g. 1-10). If the modifier corresponding")
+                    .append(" to the number is selected, it will be deselected; otherwise, it will be selected.")
+                    .appendLine()
+                    .append("- Press the **Back** button if you want to go back to the previous page without saving ")
+                    .append(" your changes.").appendLine()
+                    .append("- Press the **Cancel** button if you want to cancel this process completely.").appendLine()
+                    .append("- Press the **Save** button to save your changes. __Make sure you do this!__")
+                    .toString()
+            );
+
+        const allModifiers = DUNGEON_MODIFIERS.map(x => {
+            return {
+                modifierName: x.modifierName,
+                modifierId: x.modifierId,
+                allow: dgn.allowedModifiers.includes(x.modifierId)
+            };
+        });
+
+        while (true) {
+            const fields = ArrayUtilities.arrayToStringFields(
+                allModifiers,
+                (i, elem) => {
+                    const emojiToUse = elem.allow
+                        ? `${Emojis.GREEN_CHECK_EMOJI} `
+                        : "";
+                    return `\`[${i + 1}]\` ${emojiToUse} ${elem.modifierName}\n`;
+                }
+            );
+
+            embed.fields = [];
+            for (const field of fields) {
+                embed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field, true);
+            }
+
+            await botMsg.edit({
+                embeds: [embed],
+                components: AdvancedCollector.getActionRowsFromComponents([
+                    new MessageButton()
+                        .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
+                        .setCustomId("back")
+                        .setLabel("Back")
+                        .setStyle("DANGER"),
+                    new MessageButton()
+                        .setEmoji(Emojis.X_EMOJI)
+                        .setCustomId("cancel")
+                        .setLabel("Cancel")
+                        .setStyle("DANGER"),
+                    new MessageButton()
+                        .setEmoji(Emojis.PENCIL_EMOJI)
+                        .setCustomId("save")
+                        .setLabel("Save")
+                        .setStyle("SUCCESS"),
+                ])
+            });
+
+            const res = await AdvancedCollector.startDoubleCollector<number[]>({
+                cancelFlag: null,
+                deleteResponseMessage: true,
+                targetChannel: ctx.channel,
+                acknowledgeImmediately: true,
+                clearInteractionsAfterComplete: false,
+                deleteBaseMsgAfterComplete: false,
+                duration: 60 * 1000,
+                targetAuthor: ctx.user,
+                oldMsg: botMsg
+            }, m => StringUtil.parseNumbers(m.content));
+
+            if (!res)
+                return null;
+
+            if (res instanceof MessageComponentInteraction) {
+                switch (res.customId) {
+                    case "back":
+                        return dgn.allowedModifiers;
+                    case "cancel":
+                        return null;
+                    case "save":
+                        return allModifiers.filter(x => x.allow).map(x => x.modifierName);
+                }
+
+                continue;
+            }
+
+            if (Array.isArray(res)) {
+                if (res.length === 0)
+                    continue;
+
+                for (const n of res) {
+                    const tempIdx = n - 1;
+                    if (tempIdx < 0 || tempIdx >= allModifiers.length)
+                        continue;
+
+                    allModifiers[tempIdx].allow = !allModifiers[tempIdx].allow;
+                }
+            }
+        }
+    }
+
 
     /**
      * Clones a dungeon, creating a custom dungeon in the process.

@@ -30,7 +30,6 @@ import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {DUNGEON_DATA} from "../constants/DungeonData";
-import {StringUtil} from "../utilities/StringUtilities";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -41,14 +40,11 @@ import {Emojis} from "../constants/Emojis";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {UserManager} from "../managers/UserManager";
 import {
-    IAfkCheckReaction,
     ICustomDungeonInfo,
-    IDungeonInfo,
+    IDungeonInfo, IDungeonModifier,
     IGuildInfo,
-    IMappedAfkCheckReactions,
     IRaidInfo,
     IRaidOptions,
-    IReactionInfo,
     ISectionInfo
 } from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
@@ -57,19 +53,8 @@ import {LoggerManager} from "../managers/LoggerManager";
 import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
 import {QuotaManager} from "../managers/QuotaManager";
-import {DUNGEON_MODIFIERS, HIGHEST_MODIFIER_LEVEL} from "../constants/DungeonModifiers";
-
-type ReactionInfoMore = IReactionInfo & {
-    earlyLocAmt: number;
-    isCustomReaction: boolean;
-    builtInEmoji?: EmojiIdentifierResolvable;
-};
-
-interface IKeyReactInfo {
-    mapKey: keyof IMappedAfkCheckReactions;
-    modifiers: string[];
-    accidentCt: number;
-}
+import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/DungeonModifiers";
+import {confirmReaction, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
@@ -200,7 +185,7 @@ export class RaidInstance {
     // value is an object containing the roles needed.
     private readonly _earlyLocToRole: Collection<string, Role[]>;
 
-    // The guild document.
+    // The guild doc.
     private _guildDoc: IGuildInfo;
     // The location.
     private _location: string;
@@ -258,6 +243,9 @@ export class RaidInstance {
     // This is so we don't have double reactions
     private _pplConfirmingReaction: Set<string> = new Set();
 
+    // All modifiers that we should be referring to.
+    private readonly _modifiersToUse: readonly IDungeonModifier[];
+
     /**
      * Creates a new `RaidInstance` object.
      * @param {GuildMember} memberInit The member that initiated this raid.
@@ -281,6 +269,7 @@ export class RaidInstance {
         this._guildDoc = guildDoc;
         this._raidSection = section;
         this._membersThatJoined = [];
+        this._modifiersToUse = DEFAULT_MODIFIERS;
 
         this._logChan = null;
         this._thisFeedbackChan = null;
@@ -314,7 +303,7 @@ export class RaidInstance {
         );
 
         // Which essential reacts are we going to use.
-        const reactions = RaidInstance.getReactions(dungeon, guildDoc);
+        const reactions = getReactions(dungeon, guildDoc);
 
         // This defines the number of people that gets early location via NITRO only.
         let numEarlyLoc: number = -2;
@@ -337,12 +326,23 @@ export class RaidInstance {
 
             if (dgnOverride && dgnOverride.pointCost)
                 costForEarlyLoc = dgnOverride.pointCost;
+
+            if (dgnOverride && dgnOverride.allowedModifiers) {
+                this._modifiersToUse = dgnOverride.allowedModifiers.map(x => {
+                    return DUNGEON_MODIFIERS.find(modifier => modifier.modifierId === x);
+                }).filter(x => x) as IDungeonModifier[];
+            }
         }
         else {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
             numEarlyLoc = (dungeon as ICustomDungeonInfo).nitroEarlyLocationLimit;
             costForEarlyLoc = (dungeon as ICustomDungeonInfo).pointCost;
+            if ((dungeon as ICustomDungeonInfo).allowedModifiers) {
+                this._modifiersToUse = (dungeon as ICustomDungeonInfo).allowedModifiers.map(x => {
+                    return DUNGEON_MODIFIERS.find(modifier => modifier.modifierId === x);
+                }).filter(x => x) as IDungeonModifier[];
+            }
         }
 
         this._earlyLocPointCost = costForEarlyLoc;
@@ -453,91 +453,6 @@ export class RaidInstance {
 
             this._afkCheckButtons.push(button);
         }
-    }
-
-    /**
-     * Gets all relevant reactions. This accounts for overrides as well.
-     * @param {IDungeonInfo} dungeon The dungeon.
-     * @param {IGuildInfo} guildDoc The guild document.
-     * @return {Collection<string, IReactionInfo & {earlyLocAmt: number; isCustom: boolean;}>} The collection of
-     * reactions. The key is the mapping key and the value is the reaction information (along with the number of
-     * early locations.
-     */
-    public static getReactions(
-        dungeon: IDungeonInfo,
-        guildDoc: IGuildInfo
-    ): Collection<string, ReactionInfoMore> {
-        const reactions = new Collection<string, ReactionInfoMore>();
-
-        // Define a local function that will check both MappedAfkCheckReactions & customReactions for reactions.
-        function findAndAddReaction(reaction: IAfkCheckReaction): void {
-            // Is the reaction key in MappedAfkCheckReactions? If so, it's as simple as grabbing that data.
-            if (reaction.mapKey in MAPPED_AFK_CHECK_REACTIONS) {
-                const obj = MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey];
-                if (obj.emojiInfo.isCustom && !GlobalFgrUtilities.hasCachedEmoji(obj.emojiInfo.identifier))
-                    return;
-
-                reactions.set(reaction.mapKey, {
-                    ...obj,
-                    earlyLocAmt: reaction.maxEarlyLocation,
-                    isCustomReaction: false
-                });
-                return;
-            }
-
-            // Is the reaction key associated with a custom emoji? If so, grab that as well. 
-            const customEmoji = guildDoc.properties.customReactions.find(x => x.key === reaction.mapKey);
-            if (customEmoji) {
-                if (customEmoji.value.emojiInfo.isCustom
-                    && !GlobalFgrUtilities.hasCachedEmoji(customEmoji.value.emojiInfo.identifier))
-                    return;
-
-                reactions.set(reaction.mapKey, {
-                    ...customEmoji.value,
-                    earlyLocAmt: reaction.maxEarlyLocation,
-                    isCustomReaction: true
-                });
-            }
-        }
-
-        // If the dungeon is base or derived base, we need to check for dungeon overrides. 
-        if (dungeon.isBuiltIn) {
-            // Check if we need to deal with any dungeon overrides. 
-            const overrideIdx = guildDoc.properties.dungeonOverride.findIndex(x => x.codeName === dungeon.codeName);
-
-            if (overrideIdx !== -1) {
-                // We need to deal with overrides. In this case, go through every reaction defined in the override
-                // info and add them to the collection of reactions.
-                const overrideInfo = guildDoc.properties.dungeonOverride[overrideIdx];
-
-                for (const reaction of overrideInfo.keyReactions.concat(overrideInfo.otherReactions)) {
-                    findAndAddReaction(reaction);
-                }
-
-                // We don't need to check anything else.
-                return reactions;
-            }
-
-            // Otherwise, we 100% know that this is the base dungeon with no random custom emojis.
-            // Get all keys + reactions
-            for (const key of dungeon.keyReactions.concat(dungeon.otherReactions)) {
-                reactions.set(key.mapKey, {
-                    ...MAPPED_AFK_CHECK_REACTIONS[key.mapKey],
-                    earlyLocAmt: key.maxEarlyLocation,
-                    isCustomReaction: false
-                });
-            }
-
-            return reactions;
-        }
-
-        // Otherwise, this is a fully custom dungeon so we can simply just combine all reactions into one array and
-        // process that.
-        for (const r of dungeon.keyReactions.concat(dungeon.otherReactions)) {
-            findAndAddReaction(r);
-        }
-
-        return reactions;
     }
 
     /**
@@ -1497,60 +1412,6 @@ export class RaidInstance {
     }
 
     /**
-     * Checks whether a person can manage raids in the specified section. The section must have a control panel and
-     * AFK check channel defined, the person must have at least one leader role, and the channels must be under a
-     * category.
-     * @param {ISectionInfo} section The section in question.
-     * @param {GuildMember} member The member in question.
-     * @param {IGuildInfo} guildInfo The guild document.
-     * @return {boolean} Whether the person can manage raids in the specified section.
-     * @static
-     */
-    public static canManageRaidsIn(section: ISectionInfo, member: GuildMember, guildInfo: IGuildInfo): boolean {
-        const guild = member.guild;
-
-        // Verified role doesn't exist.
-        if (!GuildFgrUtilities.hasCachedRole(guild, section.roles.verifiedRoleId))
-            return false;
-
-        // Control panel does not exist.
-        if (!GuildFgrUtilities.hasCachedChannel(guild, section.channels.raids.controlPanelChannelId))
-            return false;
-
-        // AFK check does not exist.
-        if (!GuildFgrUtilities.hasCachedChannel(guild, section.channels.raids.afkCheckChannelId))
-            return false;
-
-        const cpCategory = GuildFgrUtilities.getCachedChannel<TextChannel>(
-            guild,
-            section.channels.raids.controlPanelChannelId
-        )!;
-
-        const acCategory = GuildFgrUtilities.getCachedChannel<TextChannel>(
-            guild,
-            section.channels.raids.afkCheckChannelId
-        )!;
-
-        // AFK check and/or control panel do not have categories.
-        if (!cpCategory.parent || !acCategory.parent)
-            return false;
-
-        // Categories are not the same.
-        if (cpCategory.parent.id !== acCategory.parent.id)
-            return false;
-
-        return [
-            section.roles.leaders.sectionVetLeaderRoleId,
-            section.roles.leaders.sectionLeaderRoleId,
-            section.roles.leaders.sectionAlmostLeaderRoleId,
-            guildInfo.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            guildInfo.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-            guildInfo.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
-            guildInfo.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
-        ].some(x => GuildFgrUtilities.memberHasCachedRole(member, x));
-    }
-
-    /**
      * Gets the relevant permissions for this AFK check.
      * @param {boolean} isNormalAfk Whether the permissions are for a regular AFK check. Use false if using for
      * post/pre-AFK check.
@@ -2148,7 +2009,7 @@ export class RaidInstance {
             }
 
             this._pplConfirmingReaction.add(i.user.id);
-            const res = await RaidInstance.confirmReaction(i, this);
+            const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse);
             this._pplConfirmingReaction.delete(i.user.id);
             if (!res) {
                 await i.editReply({
@@ -2604,202 +2465,6 @@ export class RaidInstance {
     }
 
     /**
-     * Gets the item display.
-     * @param {ReactionInfoMore} reactInfo More reaction information.
-     * @returns {string} The item display.
-     */
-    public static getItemDisplay(reactInfo: ReactionInfoMore): string {
-        return `${GlobalFgrUtilities.getNormalOrCustomEmoji(reactInfo) ?? ""} **\`${reactInfo.name}\`**`.trim();
-    }
-
-    /**
-     * Confirms the key reacts. This asks the person what modifiers the key has.
-     * @param {MessageComponentInteraction} interaction The interactions.
-     * @param {RaidInstance} raidInstance The raid instance.
-     * @param {boolean} [isAfk] Whether this is an AFK check. If this is not an AFk check, then only the key checker
-     * will be invoked.
-     * @returns {Promise<IKeyReactInfo | null>} The reaction result, if any.
-     */
-    public static async confirmReaction(
-        interaction: MessageComponentInteraction,
-        raidInstance: RaidInstance,
-        isAfk: boolean = true
-    ): Promise<IKeyReactInfo | null> {
-        if (!interaction.guild)
-            return null;
-
-        const member = await GuildFgrUtilities.fetchGuildMember(interaction.guild, interaction.user.id);
-        if (!member)
-            return null;
-
-        const mapKey = interaction.customId;
-        const reactInfo = raidInstance._allEssentialOptions.get(mapKey)!;
-        const itemDisplay = RaidInstance.getItemDisplay(reactInfo);
-        const uniqueIdentifier = StringUtil.generateRandomString(20);
-
-        if (reactInfo.type === "KEY") {
-            const selectMenu = new MessageSelectMenu()
-                .setMinValues(0)
-                .setMaxValues(4)
-                .setCustomId(`${uniqueIdentifier}_select`);
-            for (const modifier of DUNGEON_MODIFIERS) {
-                selectMenu.addOptions({
-                    description: modifier.description,
-                    label: modifier.modifierName,
-                    value: modifier.modifierName
-                });
-            }
-
-            const noModifierId = `${uniqueIdentifier}_no_modifier`;
-            const cancelModId = `${uniqueIdentifier}_cancel_mods`;
-            const cancelButton = new MessageButton()
-                .setLabel("Cancel")
-                .setStyle("DANGER")
-                .setCustomId(cancelModId);
-
-            await interaction.reply({
-                ephemeral: true,
-                content: `You pressed the ${itemDisplay} button. What modifiers does this key have? You have two`
-                    + " minutes to answer this question. **Lying about what modifiers your key has may result in"
-                    + " consequences**; thus, it is important that you be careful when selecting what modifiers your"
-                    + " key has.\n"
-                    + "- If you have **multiple** keys, please specify the modifiers for **one** of your keys and"
-                    + " message the raid leader the modifiers of the remaining key.\n"
-                    + "- If you do not have any modifiers, please press the **No Modifier** button.\n"
-                    + "- If you did not mean to press this button, please press the **Cancel** button.",
-                components: AdvancedCollector.getActionRowsFromComponents([
-                    selectMenu,
-                    new MessageButton()
-                        .setLabel("No Modifier")
-                        .setStyle("PRIMARY")
-                        .setCustomId(noModifierId),
-                    cancelButton
-                ])
-            });
-
-            const modifierRes = await AdvancedCollector.startInteractionEphemeralCollector({
-                targetChannel: interaction.channel!,
-                duration: 2 * 60 * 1000,
-                targetAuthor: interaction.user,
-                acknowledgeImmediately: true
-            }, uniqueIdentifier);
-
-            if (!modifierRes) {
-                await interaction.editReply({
-                    content: "You did not respond to this question in time.",
-                    components: []
-                });
-
-                return null;
-            }
-
-            if (modifierRes.isButton()) {
-                return modifierRes.customId === noModifierId
-                    ? {mapKey: mapKey, modifiers: [], accidentCt: 0}
-                    : null;
-            }
-
-            // Should never hit
-            if (!modifierRes.isSelectMenu())
-                return null;
-
-            const selectedModifiers = DUNGEON_MODIFIERS
-                .filter(x => modifierRes.values.includes(x.modifierName));
-
-            const returnObj: IKeyReactInfo = {mapKey: mapKey, modifiers: [], accidentCt: 0};
-            // Define all possible buttons, don't construct new buttons for each modifier
-            const numButtons: MessageButton[] = [];
-            const accidentCustomId = `${uniqueIdentifier}_accident`;
-            const accidentButton = new MessageButton()
-                .setLabel("Accident")
-                .setCustomId(accidentCustomId)
-                .setStyle("DANGER");
-
-            for (let i = 0; i < HIGHEST_MODIFIER_LEVEL; i++) {
-                numButtons.push(
-                    new MessageButton()
-                        .setLabel((i + 1).toString())
-                        .setCustomId(`${uniqueIdentifier}_${(i + 1)}`)
-                        .setStyle("PRIMARY")
-                );
-            }
-
-            // ask for individual levels.
-            for (const modifier of selectedModifiers) {
-                if (modifier.maxLevel === 1) {
-                    returnObj.modifiers.push(modifier.modifierName);
-                    continue;
-                }
-
-                const buttonsToUse: MessageButton[] = [cancelButton, accidentButton];
-                for (let i = 0; i < modifier.maxLevel; i++) {
-                    buttonsToUse.push(numButtons[i]);
-                }
-
-                await interaction.editReply({
-                    content: `What **level** is the **${modifier.modifierName}** modifier? If you want to cancel this,`
-                        + " press the **Cancel** button. If you mistakenly specified this modifier, press the"
-                        + " **Accident** button.",
-                    components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
-                });
-
-                const levelRes = await AdvancedCollector.startInteractionEphemeralCollector({
-                    targetChannel: interaction.channel!,
-                    duration: 2 * 60 * 1000,
-                    targetAuthor: interaction.user,
-                    acknowledgeImmediately: true
-                }, uniqueIdentifier);
-
-                if (!levelRes) return null;
-
-                if (levelRes.customId === accidentCustomId) {
-                    returnObj.accidentCt++;
-                    continue;
-                }
-
-                if (levelRes.customId === cancelModId)
-                    return null;
-
-                returnObj.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
-            }
-
-            return returnObj;
-        }
-        else if (!isAfk)
-            return null;
-
-        if (reactInfo.type === "EARLY_LOCATION")
-            return {mapKey: mapKey, modifiers: [], accidentCt: 0};
-
-        // Ask the member if they're willing to actually bring said priority item
-        const contentDisplay = new StringBuilder()
-            .append(`You pressed the ${itemDisplay} button.`)
-            .appendLine(2)
-            .append(`Please confirm that you will bring ${itemDisplay} to the raid by pressing `)
-            .append("the **Yes** button. If you **do not** plan on bring said selection, then please press **No** ")
-            .append("or don't respond.")
-            .appendLine(2)
-            .append("You have **15** seconds to select an option. Failure to respond will result in an ")
-            .append("automatic **no**.")
-            .toString();
-
-        const [, response] = await AdvancedCollector.askBoolFollowUp({
-            interaction: interaction,
-            time: 15 * 1000,
-            contentToSend: {
-                content: contentDisplay.toString()
-            },
-            channel: interaction.channel as TextChannel
-        });
-
-        // Response of "no" or failure to respond implies no.
-        if (!response)
-            return null;
-
-        return {mapKey: mapKey, modifiers: [], accidentCt: 0};
-    }
-
-    /**
      * Logs an event. This will store the event in an array containing all events and optionally send the event to
      * the logging channel.
      * @param {string} event The event.
@@ -3011,9 +2676,9 @@ export class RaidInstance {
                         MessageUtilities.generateBlankEmbed(memberThatEnded, "RED")
                             .setTitle(`Logging Key Poppers: ${this._dungeon.dungeonName}`)
                             .setDescription(
-                                `You are now logging the ${RaidInstance.getItemDisplay(reactionInfo)} popper for the `
-                                + " __last dungeon__ that was either completed or failed. If you need to log more than"
-                                + " one key, please manually do it by command."
+                                `You are now logging the ${getItemDisplay(reactionInfo)} popper for the __last`
+                                + " dungeon__ that was either completed or failed. If you need to log more than one"
+                                + " key, please manually do it by command."
                             )
                             .addField(
                                 "Selected Popper",
