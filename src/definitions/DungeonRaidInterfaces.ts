@@ -669,6 +669,88 @@ export interface IRaidInfo {
 }
 
 /**
+ * An interface that represents a headcount.
+ */
+export interface IHeadcountInfo {
+    /**
+     * The dungeon code/identifier.
+     *
+     * @type {string}
+     */
+    dungeonCodeName: string;
+
+    /**
+     * The member that started this headcount.
+     *
+     * @type {string}
+     */
+    memberInit: string;
+
+    /**
+     * The raid channels. We use this in case the channels were changed.
+     *
+     * @type {IRaidChannels}
+     */
+    raidChannels: Omit<IRaidChannels, "leaderFeedbackChannelId" | "raidHistChannelId">;
+
+    /**
+     * The headcount message.
+     *
+     * @type {string}
+     */
+    headcountMessageId: string;
+
+    /**
+     * The control panel message.
+     *
+     * @type {string}
+     */
+    controlPanelMessageId: string;
+
+    /**
+     * The headcount status. This is either `1` (Headcount In Progress) or `2` (Headcount Ended, Pending User Result).
+     *
+     * @type {number}
+     */
+    status: number;
+
+    /**
+     * The section where this AFK check or raid is being done.
+     *
+     * @type {string}
+     */
+    sectionIdentifier: string;
+
+    /**
+     * The early location reactions. For headcounts, this is only the key reactions.
+     *
+     * @type {object}
+     */
+    earlyLocationReactions: {
+        /**
+         * The user ID.
+         *
+         * @type {string}
+         */
+        userId: string;
+
+        /**
+         * The reaction code.
+         *
+         * @type {string}
+         */
+        reactCodeName: string;
+
+        /**
+         * Modifiers, if any, for this reaction.
+         *
+         * @type {string[]}
+         */
+        modifiers: string[];
+    }[];
+}
+
+/**
  * An interface that represents the additional options to be used for this raid.
  */
 export interface IRaidOptions {

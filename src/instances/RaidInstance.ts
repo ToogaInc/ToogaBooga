@@ -48,13 +48,12 @@ import {
     ISectionInfo
 } from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
-import {StartAfkCheck} from "../commands";
 import {LoggerManager} from "../managers/LoggerManager";
 import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
 import {QuotaManager} from "../managers/QuotaManager";
 import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/DungeonModifiers";
-import {confirmReaction, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
+import {confirmReaction, controlPanelCollectorFilter, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
@@ -327,7 +326,7 @@ export class RaidInstance {
             if (dgnOverride && dgnOverride.pointCost)
                 costForEarlyLoc = dgnOverride.pointCost;
 
-            if (dgnOverride && dgnOverride.allowedModifiers) {
+            if (dgnOverride?.allowedModifiers) {
                 this._modifiersToUse = dgnOverride.allowedModifiers.map(x => {
                     return DUNGEON_MODIFIERS.find(modifier => modifier.modifierId === x);
                 }).filter(x => x) as IDungeonModifier[];
@@ -737,11 +736,11 @@ export class RaidInstance {
         ).catch();
 
         // Update the database so it is clear that we are in raid mode.
+        await this.setRaidStatus(RaidStatus.IN_RUN);
         this.stopAllIntervalsAndCollectors();
         this.startIntervals();
         this.startControlPanelCollector();
         this.startAfkCheckCollector();
-        await this.setRaidStatus(RaidStatus.IN_RUN);
 
         // Lock the VC as well.
         await Promise.all([
@@ -1394,7 +1393,9 @@ export class RaidInstance {
     public async cleanUpRaid(): Promise<void> {
         this.stopAllIntervalsAndCollectors();
         // Step 1: Remove from ActiveRaids collection
-        RaidInstance.ActiveRaids.delete(this._afkCheckMsg!.id);
+        if (this._afkCheckMsg) {
+            RaidInstance.ActiveRaids.delete(this._afkCheckMsg.id);
+        }
 
         await Promise.all([
             // Step 2: Remove the raid object. We don't need it anymore.
@@ -1558,42 +1559,6 @@ export class RaidInstance {
                 .toString()
         });
         return true;
-    }
-
-    /**
-     * A collector that should be used for the control panel.
-     * @param {User} u The user.
-     * @return {Promise<boolean>} Whether the collector is satisfied with the given variables.
-     * @private
-     */
-    private async controlPanelCollectorFilter(u: User): Promise<boolean> {
-        if (u.bot) return false;
-
-        const member = await GuildFgrUtilities.fetchGuildMember(this._guild, u.id);
-        if (!member || !this._raidVc)
-            return false;
-
-        const neededRoles: string[] = [
-            // This section's leader roles
-            this._raidSection.roles.leaders.sectionLeaderRoleId,
-            this._raidSection.roles.leaders.sectionAlmostLeaderRoleId,
-            this._raidSection.roles.leaders.sectionVetLeaderRoleId,
-
-            // Universal leader roles
-            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
-            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId
-        ];
-
-        const customPermData = this._guildDoc.properties.customCmdPermissions
-            .find(x => x.key === StartAfkCheck.START_AFK_CMD_CODE);
-        // If you can start an AFK check, you should be able to manipulate control panel.
-        if (customPermData && !customPermData.value.useDefaultRolePerms)
-            neededRoles.push(...customPermData.value.rolePermsNeeded);
-
-        return neededRoles.some(x => GuildFgrUtilities.memberHasCachedRole(member, x))
-            || member.permissions.has("ADMINISTRATOR");
     }
 
     /**
@@ -1807,8 +1772,7 @@ export class RaidInstance {
                 .append("screenshot so only the /who results are shown.");
         }
 
-        controlPanelEmbed
-            .setDescription(descSb.toString());
+        controlPanelEmbed.setDescription(descSb.toString());
 
         // Display reactions properly
         const cpFields: string[] = [];
@@ -1997,8 +1961,7 @@ export class RaidInstance {
             }
 
             // Item display for future use
-            const itemDis = `${GlobalFgrUtilities.getNormalOrCustomEmoji(reactInfo) ?? ""} **\`${reactInfo.name}\`**`;
-
+            const itemDis = getItemDisplay(reactInfo);
             // If we no longer need this anymore, then notify them
             if (!this.stillNeedEssentialReact(mapKey)) {
                 i.reply({
@@ -2255,7 +2218,7 @@ export class RaidInstance {
         if (this._raidStatus === RaidStatus.NOTHING) return false;
 
         this._controlPanelReactionCollector = this._controlPanelMsg.createMessageComponentCollector({
-            filter: i => this.controlPanelCollectorFilter(i.user)
+            filter: controlPanelCollectorFilter(this._guildDoc, this._raidSection, this._guild)
             // Infinite time
         });
 

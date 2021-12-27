@@ -138,7 +138,8 @@ export class OneLifeBot {
         ]);
 
         OneLifeBot.Commands.set("Raid Leaders", [
-            new Cmds.StartAfkCheck()
+            new Cmds.StartAfkCheck(),
+            new Cmds.StartHeadcount()
         ]);
 
         OneLifeBot.Commands.set("Logging", [

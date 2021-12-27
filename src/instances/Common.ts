@@ -1,6 +1,6 @@
 import {
-    Collection,
-    EmojiIdentifierResolvable, GuildMember,
+    Collection, CollectorFilter,
+    EmojiIdentifierResolvable, Guild, GuildMember,
     MessageButton,
     MessageComponentInteraction,
     MessageSelectMenu,
@@ -21,6 +21,9 @@ import {HIGHEST_MODIFIER_LEVEL} from "../constants/DungeonModifiers";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import {StartAfkCheck} from "../commands";
+import {DefinedRole} from "../definitions/Types";
+import {MiscUtilities} from "../utilities/MiscUtilities";
 
 export type ReactionInfoMore = IReactionInfo & {
     earlyLocAmt: number;
@@ -62,6 +65,7 @@ export async function confirmReaction(
     const itemDisplay = getItemDisplay(reactInfo);
     const uniqueIdentifier = StringUtil.generateRandomString(20);
 
+    // TODO account for case where no modifiers are configured
     if (reactInfo.type === "KEY") {
         const selectMenu = new MessageSelectMenu()
             .setMinValues(0)
@@ -344,7 +348,6 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo,
 }
 
 
-
 /**
  * Checks whether a person can manage raids in the specified section. The section must have a control panel and
  * AFK check channel defined, the person must have at least one leader role, and the channels must be under a
@@ -400,7 +403,6 @@ export function canManageRaidsIn(section: ISectionInfo, member: GuildMember, gui
 }
 
 
-
 /**
  * Gets the item display.
  * @param {ReactionInfoMore} reactInfo More reaction information.
@@ -408,4 +410,75 @@ export function canManageRaidsIn(section: ISectionInfo, member: GuildMember, gui
  */
 export function getItemDisplay(reactInfo: ReactionInfoMore): string {
     return `${GlobalFgrUtilities.getNormalOrCustomEmoji(reactInfo) ?? ""} **\`${reactInfo.name}\`**`.trim();
+}
+
+
+/**
+ * A collector that should be used for the control panel.
+ * @param {IGuildInfo} guildDoc The guild document.
+ * @param {ISectionInfo} section The section where the raid is being held.
+ * @param {Guild} guild The guild.
+ * @returns {CollectorFilter} The collector filter to use.
+ */
+export function controlPanelCollectorFilter(guildDoc: IGuildInfo, section: ISectionInfo,
+                                            guild: Guild): CollectorFilter<[MessageComponentInteraction]> {
+    return async (i) => {
+        if (i.user.bot) return false;
+
+        const member = await GuildFgrUtilities.fetchGuildMember(guild, i.user.id);
+        if (!member)
+            return false;
+
+        const neededRoles: string[] = [
+            // This section's leader roles
+            section.roles.leaders.sectionLeaderRoleId,
+            section.roles.leaders.sectionAlmostLeaderRoleId,
+            section.roles.leaders.sectionVetLeaderRoleId,
+
+            // Universal leader roles
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId
+        ];
+
+        const customPermData = guildDoc.properties.customCmdPermissions
+            .find(x => x.key === StartAfkCheck.START_AFK_CMD_CODE);
+        // If you can start an AFK check, you should be able to manipulate control panel.
+        if (customPermData && !customPermData.value.useDefaultRolePerms)
+            neededRoles.push(...customPermData.value.rolePermsNeeded);
+
+        return neededRoles.some(x => GuildFgrUtilities.memberHasCachedRole(member, x))
+            || member.permissions.has("ADMINISTRATOR");
+    }
+}
+
+/**
+ * Checks whether the person has the correct permissions to raid in this particular dungeon.
+ * @param {string[] | undefined} roleReqs The role requirements.
+ * @param {GuildMember} member The member.
+ * @param {Collection<DefinedRole, string[]>} roleCol The role collection.
+ * @return {boolean} Whether the person can run a raid in this dungeon.
+ */
+export function hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMember,
+    roleCol: Collection<DefinedRole, string[]>): boolean {
+    if (!roleReqs || roleReqs.length === 0)
+        return true;
+
+    for (const role of roleReqs) {
+        if (GuildFgrUtilities.memberHasCachedRole(member, role))
+            return true;
+
+        if (!MiscUtilities.isDefinedRole(role))
+            continue;
+
+        const roleArr = roleCol.get(role);
+        if (!roleArr)
+            continue;
+
+        if (roleArr.some(x => GuildFgrUtilities.memberHasCachedRole(member, x)))
+            return true;
+    }
+
+    return false;
 }

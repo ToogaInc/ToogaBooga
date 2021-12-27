@@ -499,6 +499,7 @@ export namespace MongoManager {
         return {
             _id: new ObjectId(),
             activeRaids: [],
+            activeHeadcounts: [],
             manualVerificationEntries: [],
             channels: {
                 storageChannelId: "",

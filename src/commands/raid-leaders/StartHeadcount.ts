@@ -1,4 +1,4 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
+import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {MongoManager} from "../../managers/MongoManager";
 import {IDungeonInfo, ISectionInfo} from "../../definitions";
 import {
@@ -9,16 +9,15 @@ import {
     TextChannel
 } from "discord.js";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {RaidInstance} from "../../instances/RaidInstance";
 import {DUNGEON_DATA} from "../../constants/DungeonData";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {Emojis} from "../../constants/Emojis";
-import {SlashCommandBuilder} from "@discordjs/builders";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {canManageRaidsIn, hasPermsToRaid} from "../../instances/Common";
+import {HeadcountInstance} from "../../instances/HeadcountInstance";
 
 type DungeonSelectionType = {
     section: ISectionInfo;
@@ -29,46 +28,25 @@ type DungeonSelectionType = {
     omittedDungeons: IDungeonInfo[];
 };
 
-export class StartAfkCheck extends BaseCommand {
-    public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
+export class StartHeadcount extends BaseCommand {
+    public static readonly START_HC_CMD_CODE: string = "HEADCOUNT_START";
 
     public constructor() {
-        const cmi: ICommandInfo = {
-            cmdCode: StartAfkCheck.START_AFK_CMD_CODE,
-            formalCommandName: "Start AFK Check Command",
-            botCommandName: "startafkcheck",
-            description: "Starts a wizard that can be used to start an AFK check.",
+        super({
+            cmdCode: StartHeadcount.START_HC_CMD_CODE,
+            formalCommandName: "Start Headcount Command",
+            botCommandName: "startheadcount",
+            description: "Starts a wizard that can be used to start a headcount.",
             commandCooldown: 8 * 1000,
             generalPermissions: [],
             botPermissions: [],
             rolePermissions: ["RaidLeader", "AlmostRaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
-            argumentInfo: [
-                {
-                    displayName: "Location",
-                    argName: "location",
-                    desc: "The location for this raid.",
-                    required: false,
-                    example: ["usw right"],
-                    type: ArgumentType.String,
-                    prettyType: "String"
-                }
-            ],
+            argumentInfo: [],
             guildOnly: true,
             botOwnerOnly: false,
             allowMultipleExecutionByUser: false,
             guildConcurrencyLimit: 2
-        };
-
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => o
-            .setName("location")
-            .setDescription("The location for this raid. You can change this later.")
-            .setRequired(false)
-        );
-
-        super(cmi, scb);
+        });
     }
 
     /**
@@ -150,7 +128,7 @@ export class StartAfkCheck extends BaseCommand {
 
         if (availableSections.length === 0) {
             await ctx.interaction.editReply({
-                content: "You cannot start a raid in any sections. Please make sure you have the appropriate"
+                content: "You cannot start a headcount in any sections. Please make sure you have the appropriate"
                     + " permissions and that the section in particular has a configured AFK Check channel, control"
                     + " panel channel, and section verified role."
             });
@@ -185,7 +163,7 @@ export class StartAfkCheck extends BaseCommand {
             ]);
 
             await ctx.interaction.editReply({
-                content: "Please select the section that you want to start your raid in. You have a minute and a"
+                content: "Please select the section that you want to start your headcount in. You have a minute and a"
                     + " half to choose. If you do not want to start a raid at this time, select the **Cancel** option.",
                 components: [new MessageActionRow().addComponents(selectMenu)]
             });
@@ -194,7 +172,7 @@ export class StartAfkCheck extends BaseCommand {
                 targetAuthor: ctx.user,
                 acknowledgeImmediately: false,
                 targetChannel: ctx.channel,
-                duration: 1.5 * 60 * 1000
+                duration:  60 * 1000
             }, identifier);
 
             if (!res || !res.isSelectMenu()) {
@@ -247,8 +225,8 @@ export class StartAfkCheck extends BaseCommand {
         if (sectionToUse.omittedDungeons.length > 0) {
             askDgnEmbed.addField(
                 "Omitted Dungeon",
-                "You are not able to lead in the following dungeons due to not having the necessary role(s)."
-                + StringUtil.codifyString(
+                "You are not able to start a headcount in the following dungeons due to not having the necessary"
+                + " role(s)." + StringUtil.codifyString(
                     sectionToUse.omittedDungeons
                         .map(x => `- ${x.dungeonName} (${x.isBuiltIn ? "Built-In" : "Custom"})`)
                         .join("\n")
@@ -296,14 +274,12 @@ export class StartAfkCheck extends BaseCommand {
         const dungeonToUse = sectionToUse.dungeons.find(x => x.codeName === selectedDgn.values[0])!;
 
         // Step 4: Start it
-        const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, {
-            location: location ?? ""
-        });
+        const hc = HeadcountInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse);
 
-        if (!rm) {
+        if (!hc) {
             await ctx.interaction.editReply({
                 components: [],
-                content: "An unknown error occurred when trying to create an AFK Check instance. Please try again"
+                content: "An unknown error occurred when trying to create a headcount instance. Please try again"
                     + " later or report this issue to a developer.",
                 embeds: []
             });
@@ -312,10 +288,11 @@ export class StartAfkCheck extends BaseCommand {
 
         await ctx.interaction.editReply({
             components: [],
-            content: `An AFK Check has been started. See ${sectionToUse.afkCheckChan} and ${sectionToUse.cpChan}`,
+            content: `A headcount has been started. See ${sectionToUse.afkCheckChan} and ${sectionToUse.cpChan}`,
             embeds: []
         });
-        rm.startPreAfkCheck().then();
+
+        hc.startHeadcount().then();
         return 0;
     }
 }
