@@ -376,7 +376,7 @@ export class HeadcountInstance {
      * @private
      */
     private startIntervals(): boolean {
-        if (!this._headcountButtonCollector || !this._controlPanelMsg) return false;
+        if (!this._headcountMsg || !this._controlPanelMsg) return false;
         if (this._intervalsAreRunning || this._headcountStatus !== HeadcountStatus.HEADCOUNT_IN_PROGRESS) return false;
         this._intervalsAreRunning = true;
 
@@ -446,7 +446,7 @@ export class HeadcountInstance {
     public async endHeadcount(): Promise<void> {
         // No raid VC means we haven't started AFK check.
         if (!this._headcountMsg || !this._controlPanelMsg
-            || this._headcountStatus !== HeadcountStatus.HEADCOUNT_FINISHED)
+            || this._headcountStatus === HeadcountStatus.HEADCOUNT_FINISHED)
             return;
 
         // Update the database so it is clear that we are in raid mode.
@@ -879,9 +879,8 @@ export class HeadcountInstance {
      */
     private startHeadcountCollector(): boolean {
         if (!this._headcountMsg) return false;
-        if (!this._headcountButtonCollector) return false;
+        if (this._headcountButtonCollector) return false;
         if (this._headcountStatus !== HeadcountStatus.HEADCOUNT_IN_PROGRESS) return false;
-
         this._headcountButtonCollector = this._headcountMsg.createMessageComponentCollector({
             filter: i => !i.user.bot && this._allEssentialOptions.has(i.customId),
             time: this._raidSection.otherMajorConfig.afkCheckProperties.afkCheckTimeout

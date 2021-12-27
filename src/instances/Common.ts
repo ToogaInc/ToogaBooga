@@ -12,7 +12,7 @@ import {
     IDungeonModifier,
     IGuildInfo,
     IMappedAfkCheckReactions,
-    IReactionInfo, ISectionInfo, ReactionType
+    IReactionInfo, ISectionInfo
 } from "../definitions";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
@@ -252,14 +252,10 @@ export async function confirmReaction(
  * Gets all relevant reactions for this dungeon. This accounts for overrides as well.
  * @param {IDungeonInfo} dungeon The dungeon.
  * @param {IGuildInfo} guildDoc The guild document.
- * @param {ReactionType[]} [filterBy] What specific reactions to get. This should be used if you only want a
- * particular set of reactions (e.g. only key reactions). If this isn't specified, then all reactions will be
- * considered.
  * @return {Collection<string, ReactionInfoMore>} The collection of reactions. The key is the mapping key and
  * the value is the reaction information (along with the number of early locations).
  */
-export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo,
-                             filterBy?: ReactionType[]): Collection<string, ReactionInfoMore> {
+export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo): Collection<string, ReactionInfoMore> {
     const reactions = new Collection<string, ReactionInfoMore>();
 
     // Define a local function that will check both MappedAfkCheckReactions & customReactions for reactions.
@@ -268,10 +264,6 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo,
         if (reaction.mapKey in MAPPED_AFK_CHECK_REACTIONS) {
             const obj = MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey];
             if (obj.emojiInfo.isCustom && !GlobalFgrUtilities.hasCachedEmoji(obj.emojiInfo.identifier)) {
-                return;
-            }
-
-            if (!filterBy?.includes(obj.type)) {
                 return;
             }
 
@@ -288,10 +280,6 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo,
         if (customEmoji) {
             if (customEmoji.value.emojiInfo.isCustom
                 && !GlobalFgrUtilities.hasCachedEmoji(customEmoji.value.emojiInfo.identifier)) {
-                return;
-            }
-
-            if (!filterBy?.includes(customEmoji.value.type)) {
                 return;
             }
 
@@ -324,10 +312,6 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo,
         // Otherwise, we 100% know that this is the base dungeon with no random custom emojis.
         // Get all keys + reactions
         for (const key of dungeon.keyReactions.concat(dungeon.otherReactions)) {
-            if (!filterBy?.includes(MAPPED_AFK_CHECK_REACTIONS[key.mapKey].type)) {
-                continue;
-            }
-
             reactions.set(key.mapKey, {
                 ...MAPPED_AFK_CHECK_REACTIONS[key.mapKey],
                 earlyLocAmt: key.maxEarlyLocation,

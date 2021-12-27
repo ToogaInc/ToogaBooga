@@ -509,7 +509,22 @@ export class ConfigureDungeons extends BaseCommand {
         if (origDungeon.keyReactions.length !== dgnOverride.keyReactions.length)
             return false;
 
-        // TODO very brute force, find better way
+        // Check modifiers
+        if (DEFAULT_MODIFIERS.length !== dgnOverride.allowedModifiers.length) {
+            return false;
+        }
+
+        const a = [...DEFAULT_MODIFIERS.map(x => x.modifierId)];
+        const b = [...dgnOverride.allowedModifiers];
+        a.sort();
+        b.sort();
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) {
+                return false;
+            }
+        }
+
+        // Check reactions
         let numEq = 0;
         for (const oR of origDungeon.otherReactions) {
             const testVal = dgnOverride.otherReactions
@@ -1226,7 +1241,8 @@ export class ConfigureDungeons extends BaseCommand {
                         botMsg,
                         isCustomDungeon(cDungeon)
                             ? cDungeon.dungeonName
-                            : DUNGEON_DATA.find(x => x.codeName === cDungeon.codeName)!.dungeonName, cDungeon
+                            : DUNGEON_DATA.find(x => x.codeName === cDungeon.codeName)!.dungeonName,
+                        cDungeon
                     );
 
                     if (!res) {
@@ -1340,7 +1356,7 @@ export class ConfigureDungeons extends BaseCommand {
                     case "cancel":
                         return null;
                     case "save":
-                        return allModifiers.filter(x => x.allow).map(x => x.modifierName);
+                        return allModifiers.filter(x => x.allow).map(x => x.modifierId);
                 }
 
                 continue;
