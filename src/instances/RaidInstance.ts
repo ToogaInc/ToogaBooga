@@ -1281,7 +1281,9 @@ export class RaidInstance {
                 if (sentMsgTo.includes(obj.member.id))
                     return;
                 sentMsgTo.push(obj.member.id);
-                await obj.member.send(msgOpt).catch();
+                await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await obj.member.send(msgOpt);
+                });
             });
         }
     }

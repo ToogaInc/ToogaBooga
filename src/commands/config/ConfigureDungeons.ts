@@ -1385,20 +1385,18 @@ export class ConfigureDungeons extends BaseCommand {
      * @private
      */
     private static cloneDungeonForCustom(dgn: IDungeonInfo): ICustomDungeonInfo {
+        // Deep clone of everything
         return {
-            bossLinks: dgn.bossLinks.slice(),
+            bossLinks: dgn.bossLinks.map(x => {return {...x}}),
             codeName: `[[${dgn.codeName}:${Date.now()}:${StringUtil.generateRandomString(5)}]]`,
             dungeonCategory: dgn.dungeonCategory,
             dungeonColors: dgn.dungeonColors.slice(),
             dungeonName: dgn.dungeonName,
             isBuiltIn: false,
-            keyReactions: dgn.keyReactions.slice(),
-            otherReactions: dgn.otherReactions.slice(),
+            keyReactions: dgn.keyReactions.map(x => {return {...x}}),
+            otherReactions: dgn.otherReactions.map(x => {return {...x}}),
             portalEmojiId: dgn.portalEmojiId,
-            portalLink: {
-                url: dgn.portalLink.url,
-                name: dgn.portalLink.name
-            },
+            portalLink: {...dgn.portalLink},
             nitroEarlyLocationLimit: -1,
             pointCost: 0,
             vcLimit: -1,
