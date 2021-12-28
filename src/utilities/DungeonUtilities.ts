@@ -18,7 +18,7 @@ import {MongoManager} from "../managers/MongoManager";
  */
 export namespace DungeonUtilities {
     /**
-     * Removes any dead reactions or links from all dungeons.
+     * Removes any dead reactions or links from all dungeons. This also fixes quota issues.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {Guild} guild The guild.
      * @return {Promise<IGuildInfo | null>} The guild document containing the new dungeons.
@@ -102,13 +102,36 @@ export namespace DungeonUtilities {
             customDungeons.push(customDungeon);
         }));
 
+        // Check quotas
+        guildDoc.quotas.quotaInfo.forEach(q => {
+            const idxToRemove: number[] = [];
+            for (let i = 0; i < q.pointValues.length; i++) {
+                const v = q.pointValues[i].key.split(":");
+                if (v.length === 1) {
+                    continue;
+                }
+
+                const dungeon = getDungeonInfo(guildDoc, v[1]);
+                if (!dungeon) {
+                    idxToRemove.push(i);
+                }
+            }
+
+            idxToRemove.sort((a, b) => b - a);
+            for (const idx of idxToRemove) {
+                changed = true;
+                q.pointValues.splice(idx, 1);
+            }
+        });
+
         console.assert(overriddenDungeons.length === guildDoc.properties.dungeonOverride.length);
         console.assert(customDungeons.length === guildDoc.properties.customDungeons.length);
 
         return changed ? await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
             $set: {
                 "properties.customDungeons": customDungeons,
-                "properties.dungeonOverride": overriddenDungeons
+                "properties.dungeonOverride": overriddenDungeons,
+                "quotas.quotaInfo": guildDoc.quotas.quotaInfo
             }
         }) : guildDoc;
     }

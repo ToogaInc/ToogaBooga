@@ -26,7 +26,7 @@ export namespace GlobalFgrUtilities {
      */
     export async function openDirectMessage(targetUser: User): Promise<DMChannel | null> {
         try {
-            return targetUser.createDM();
+            return await targetUser.createDM();
         } catch (e) {
             return null;
         }

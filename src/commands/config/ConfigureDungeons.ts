@@ -336,8 +336,8 @@ export class ConfigureDungeons extends BaseCommand {
                     botMsg,
                     ctx.guildDoc!.properties.customDungeons,
                     {
-                        nameOfPrompt: "Modify Base Dungeon",
-                        descOfPrompt: "Select a base dungeon that you want to modify."
+                        nameOfPrompt: "Modify Custom Dungeon",
+                        descOfPrompt: "Select a custom dungeon that you want to modify."
                     }
                 ) as ICustomDungeonInfo | null;
 
@@ -355,8 +355,8 @@ export class ConfigureDungeons extends BaseCommand {
                     botMsg,
                     ctx.guildDoc!.properties.customDungeons,
                     {
-                        nameOfPrompt: "Delete Base Dungeon",
-                        descOfPrompt: "Select a base dungeon that you want to delete. Once you select a dungeon, it"
+                        nameOfPrompt: "Delete Custom Dungeon",
+                        descOfPrompt: "Select a custom dungeon that you want to delete. Once you select a dungeon, it"
                             + " will be removed forever (there is __no__ confirmation)."
                     }
                 ) as ICustomDungeonInfo | null;
@@ -374,6 +374,7 @@ export class ConfigureDungeons extends BaseCommand {
                     }
                 });
 
+                ctx.guildDoc = await DungeonUtilities.fixDungeons(ctx.guildDoc!, ctx.guild!);
                 await this.mainMenu(ctx, botMsg);
                 return;
             }
@@ -845,7 +846,7 @@ export class ConfigureDungeons extends BaseCommand {
                         : "properties.dungeonOverride";
 
                     if (dungeon) {
-                        await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
                             $pull: {
                                 [operationOnStr]: {
                                     codeName: cDungeon.codeName
@@ -1297,6 +1298,15 @@ export class ConfigureDungeons extends BaseCommand {
             };
         });
 
+        let allowedCount = allModifiers.filter(x => x.allow).length;
+        if (allowedCount > 25) {
+            allModifiers.forEach(m => {
+                m.allow = false;
+            });
+
+            allowedCount = 0;
+        }
+
         while (true) {
             const fields = ArrayUtilities.arrayToStringFields(
                 allModifiers,
@@ -1308,6 +1318,7 @@ export class ConfigureDungeons extends BaseCommand {
                 }
             );
 
+            embed.setFooter(`${allowedCount}/25 Modifiers Selected.`);
             embed.fields = [];
             for (const field of fields) {
                 embed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field, true);
@@ -1371,7 +1382,17 @@ export class ConfigureDungeons extends BaseCommand {
                     if (tempIdx < 0 || tempIdx >= allModifiers.length)
                         continue;
 
+                    allowedCount += allModifiers[tempIdx].allow ? -1 : 1;
                     allModifiers[tempIdx].allow = !allModifiers[tempIdx].allow;
+                }
+
+                for (let i = allModifiers.length - 1; i >= 0 && allowedCount > 25; i--) {
+                    if (!allModifiers[i].allow) {
+                        continue;
+                    }
+
+                    allModifiers[i].allow = false;
+                    allowedCount--;
                 }
             }
         }
@@ -1387,14 +1408,20 @@ export class ConfigureDungeons extends BaseCommand {
     private static cloneDungeonForCustom(dgn: IDungeonInfo): ICustomDungeonInfo {
         // Deep clone of everything
         return {
-            bossLinks: dgn.bossLinks.map(x => {return {...x}}),
+            bossLinks: dgn.bossLinks.map(x => {
+                return {...x};
+            }),
             codeName: `[[${dgn.codeName}:${Date.now()}:${StringUtil.generateRandomString(5)}]]`,
             dungeonCategory: dgn.dungeonCategory,
             dungeonColors: dgn.dungeonColors.slice(),
             dungeonName: dgn.dungeonName,
             isBuiltIn: false,
-            keyReactions: dgn.keyReactions.map(x => {return {...x}}),
-            otherReactions: dgn.otherReactions.map(x => {return {...x}}),
+            keyReactions: dgn.keyReactions.map(x => {
+                return {...x};
+            }),
+            otherReactions: dgn.otherReactions.map(x => {
+                return {...x};
+            }),
             portalEmojiId: dgn.portalEmojiId,
             portalLink: {...dgn.portalLink},
             nitroEarlyLocationLimit: -1,

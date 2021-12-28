@@ -576,12 +576,16 @@ export namespace QuotaManager {
                     return `- ${GeneralConstants.ALL_QUOTAS_KV[logType]} (All): ${value} PT`;
                 }
 
-                const dungeonName = DungeonUtilities.getDungeonInfo(guildDoc, logTypeDgnId[1])!.dungeonName;
+                const dungeonName = DungeonUtilities.getDungeonInfo(guildDoc, logTypeDgnId[1])?.dungeonName;
+                if (!dungeonName) {
+                    return "";
+                }
+
                 return `${GeneralConstants.ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
             }
 
             return `${GeneralConstants.ALL_QUOTAS_KV[key]}: ${value} PT`;
-        }).join("\n");
+        }).filter(x => x).join("\n");
     }
 
     /**

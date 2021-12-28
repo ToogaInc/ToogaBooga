@@ -2,13 +2,20 @@ import {IConfiguration} from "./definitions";
 import {
     Client,
     Collection, Guild,
-    Interaction,
+    Interaction, Message,
     VoiceState
 } from "discord.js";
 import {MongoManager} from "./managers/MongoManager";
 import axios, {AxiosInstance} from "axios";
 import * as Cmds from "./commands";
-import {onGuildCreateEvent, onInteractionEvent, onReadyEvent, onVoiceStateEvent} from "./events";
+import {
+    onErrorEvent,
+    onGuildCreateEvent,
+    onInteractionEvent,
+    onMessageEvent,
+    onReadyEvent,
+    onVoiceStateEvent
+} from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
 import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
@@ -193,6 +200,8 @@ export class OneLifeBot {
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
         this._bot.on("guildCreate", async (g: Guild) => onGuildCreateEvent(g));
         this._bot.on("voiceStateUpdate", async (o: VoiceState, n: VoiceState) => onVoiceStateEvent(o, n));
+        this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
+        this._bot.on("error", async (e: Error) => onErrorEvent(e));
         this._eventsIsStarted = true;
     }
 

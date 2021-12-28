@@ -1,4 +1,5 @@
 import {
+    BaseMessageComponent,
     Collection, CollectorFilter,
     EmojiIdentifierResolvable, Guild, GuildMember,
     MessageButton,
@@ -65,7 +66,6 @@ export async function confirmReaction(
     const itemDisplay = getItemDisplay(reactInfo);
     const uniqueIdentifier = StringUtil.generateRandomString(20);
 
-    // TODO account for case where no modifiers are configured
     if (reactInfo.type === "KEY") {
         const selectMenu = new MessageSelectMenu()
             .setMinValues(0)
@@ -87,20 +87,23 @@ export async function confirmReaction(
             .setStyle("DANGER")
             .setCustomId(cancelModId);
 
-        await interaction.reply({
-            ephemeral: true,
-            content: `You pressed the ${itemDisplay} button. What modifiers does this key have? *Select all that`
-                + " apply*. Please note that *not all modifiers* will be listed; if you have at least one"
-                + " modifier that is listed in the select menu below, select it. If none of the modifiers that"
-                + " you have are listed in the select menu, then press the **None Listed** button. You have two"
-                + " minutes to answer this question. **Lying about what modifiers your key has may result in"
-                + " consequences**; thus, it is important that you be careful when selecting what modifiers your"
-                + " key has.\n"
-                + "- If you have **multiple** keys, please specify the modifiers for **one** of your keys and"
-                + " message the raid leader the modifiers of the remaining key.\n"
-                + "- If you do not have any modifiers, please press the **No Modifier** button.\n"
-                + "- If you did not mean to press this button, please press the **Cancel** button.",
-            components: AdvancedCollector.getActionRowsFromComponents([
+        const sb = new StringBuilder()
+            .append(`You pressed the ${itemDisplay} button.`);
+        const buttons: BaseMessageComponent[] = [];
+
+        if (modifiers.length > 0) {
+            sb.append("What modifiers does this key have? *Select all that apply*. Please note that *not all")
+                .append(" modifiers* will be listed; if you have at least one modifier that is listed in the select")
+                .append(" menu below, select it. If none of the modifiers that you have are listed in the select menu,")
+                .append(" then press the **None Listed** button. You have two minutes to answer this question. **Lying")
+                .append(" about what modifiers your key has may result in consequences**; thus, it is important that")
+                .append(" you be careful when selecting what modifiers your key has.").appendLine()
+                .append("- If you have **multiple** keys, please specify the modifiers for **one** of your keys and")
+                .append(" message the raid leader the modifiers of the remaining key.").appendLine()
+                .append("- If you do not have any modifiers, please press the **No Modifier** button.").appendLine()
+                .append("- If you did not mean to press this button, please press the **Cancel** button.");
+
+            buttons.push(
                 selectMenu,
                 new MessageButton()
                     .setLabel("No Modifier")
@@ -109,9 +112,37 @@ export async function confirmReaction(
                 new MessageButton()
                     .setLabel("None Listed")
                     .setStyle("PRIMARY")
-                    .setCustomId(noneListedId),
-                cancelButton
-            ])
+                    .setCustomId(noneListedId)
+            );
+        }
+        else {
+            sb.append("Please confirm that you are bringing this key by selecting the option that applies to *one* of")
+                .append(" your key(s).").appendLine()
+                .append("- Press the **Confirm** button to confirm that you want to use this key for this raid.")
+                .appendLine()
+                .append("- Press the **Confirm w/ Modifiers** button to confirm that you want to use this key for")
+                .append(" this raid, and that your key has at least one modifier.")
+                .appendLine()
+                .append("- Press the **Cancel** button to cancel this process (e.g. if you accidentally pressed this")
+                .append(" button.");
+
+            buttons.push(
+                new MessageButton()
+                    .setLabel("Confirm")
+                    .setStyle("PRIMARY")
+                    .setCustomId(noModifierId),
+                new MessageButton()
+                    .setLabel("Confirm w/ Modifiers")
+                    .setStyle("PRIMARY")
+                    .setCustomId(noneListedId)
+            );
+        }
+
+        buttons.push(cancelButton);
+        await interaction.reply({
+            ephemeral: true,
+            content: sb.toString(),
+            components: AdvancedCollector.getActionRowsFromComponents(buttons)
         });
 
         const modifierRes = await AdvancedCollector.startInteractionEphemeralCollector({
@@ -136,7 +167,7 @@ export async function confirmReaction(
                     return {mapKey, modifiers: [], accidentCt: 0};
                 }
                 case noneListedId: {
-                    return {mapKey, modifiers: ["N/A"], accidentCt: 0};
+                    return {mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0};
                 }
                 default: {
                     return null;
