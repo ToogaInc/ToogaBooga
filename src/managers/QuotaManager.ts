@@ -576,7 +576,7 @@ export namespace QuotaManager {
                     return `- ${GeneralConstants.ALL_QUOTAS_KV[logType]} (All): ${value} PT`;
                 }
 
-                const dungeonName = DungeonUtilities.getDungeonInfo(guildDoc, logTypeDgnId[1])?.dungeonName;
+                const dungeonName = DungeonUtilities.getDungeonInfo(logTypeDgnId[1], guildDoc)?.dungeonName;
                 if (!dungeonName) {
                     return "";
                 }

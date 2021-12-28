@@ -784,7 +784,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         portalEmojiId: "561248700828090388",
         keyReactions: [
             {
-                mapKey: "LAIR_OF_SHAITAN_KEY",
+                mapKey: "LAIR_OF_SHAITANS_KEY",
                 maxEarlyLocation: 15
             }
         ],

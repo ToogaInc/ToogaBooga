@@ -1,8 +1,9 @@
 import {CommonRegex} from "../constants/CommonRegex";
-import {Guild, GuildMember} from "discord.js";
+import {Guild, GuildMember, User} from "discord.js";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "./MongoManager";
 import {IIdNameInfo, IUserInfo} from "../definitions";
+import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
 interface IResolvedMember {
     member: GuildMember;
@@ -10,7 +11,63 @@ interface IResolvedMember {
     userDoc: IUserInfo | null;
 }
 
+interface IResolvedUser {
+    user: User;
+    idNameDoc: IIdNameInfo | null;
+}
+
 export namespace UserManager {
+    /**
+     * Resolves a user.
+     * @param {string} userResolvable The user resolvable. This can either be an ID, mention, or IGN.
+     * @returns {Promise<IResolvedUser | null>} The resolved user, if found.
+     */
+    export async function resolveUser(userResolvable: string): Promise<IResolvedUser | null> {
+        /**
+         * Gets the user object and corresponding document from the database.
+         * @param {string} id The ID.
+         * @returns {Promise<IResolvedUser | null>} The resolved user, if any.
+         */
+        async function getUserFromId(id: string): Promise<IResolvedUser | null> {
+            console.assert(CommonRegex.ONLY_NUMBERS.test(id));
+            const user = await GlobalFgrUtilities.fetchUser(id);
+            const docs = await MongoManager.findIdInIdNameCollection(id);
+            return user ? {
+                user,
+                idNameDoc: docs.length === 0 ? null : docs[0]
+            } : null;
+        }
+
+        // ID
+        if (CommonRegex.ONLY_NUMBERS.test(userResolvable)) {
+            return getUserFromId(userResolvable);
+        }
+
+        // Mention
+        if (CommonRegex.USER_MENTION.test(userResolvable)) {
+            const parsedMention = userResolvable.match(CommonRegex.USER_MENTION);
+            if (!parsedMention) {
+                return null;
+            }
+
+            return getUserFromId(parsedMention[1]);
+        }
+
+        // IGN
+        if (CommonRegex.ONLY_LETTERS.test(userResolvable)) {
+            const possDocs = await MongoManager.findNameInIdNameCollection(userResolvable);
+            if (possDocs.length === 0) {
+                return null;
+            }
+
+            const doc = possDocs[0];
+            const user = await GlobalFgrUtilities.fetchUser(doc.currentDiscordId);
+            return user ? {user, idNameDoc: doc} : null;
+        }
+
+        // No other choices.
+        return null;
+    }
 
     /**
      * Attempts to resolve an IGN, Discord ID, or mention.

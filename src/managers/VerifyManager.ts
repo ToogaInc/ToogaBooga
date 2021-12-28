@@ -1576,7 +1576,7 @@ export namespace VerifyManager {
             if (verifProps.verifReq.graveyardSummary.useBotCompletions) {
                 for (const entry of verifProps.verifReq.graveyardSummary.botCompletions) {
                     if (entry.value === 0) continue;
-                    const dgnInfo = DungeonUtilities.getDungeonInfo(guildDoc, entry.key);
+                    const dgnInfo = DungeonUtilities.getDungeonInfo(entry.key, guildDoc);
                     if (!dgnInfo) continue;
                     sb.append(`- ${entry.value} ${dgnInfo.dungeonName} Completion Logged.`).appendLine();
                 }
@@ -1790,7 +1790,7 @@ export namespace VerifyManager {
 
                 let allPassed = true;
                 for (const [dgnId, amt] of loggedInfo) {
-                    const dgnInfo = DungeonUtilities.getDungeonInfo(guildDoc, dgnId);
+                    const dgnInfo = DungeonUtilities.getDungeonInfo(dgnId, guildDoc);
                     if (!dgnInfo)
                         continue;
 

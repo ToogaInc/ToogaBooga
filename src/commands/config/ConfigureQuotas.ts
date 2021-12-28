@@ -850,7 +850,7 @@ export class ConfigureQuotas extends BaseCommand {
                             : tempS;
                     }
 
-                    const dungeonName = DungeonUtilities.getDungeonInfo(ctx.guildDoc!, logTypeAndDgnId[1])!.dungeonName;
+                    const dungeonName = DungeonUtilities.getDungeonInfo(logTypeAndDgnId[1], ctx.guildDoc!)!.dungeonName;
                     const s = `${GeneralConstants.ALL_QUOTAS_KV[logType]} (${dungeonName}): \`${elem.value}\` Points\n`;
                     return i === currIdx
                         ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${s}`

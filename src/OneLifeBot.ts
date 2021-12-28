@@ -109,6 +109,10 @@ export class OneLifeBot {
             new Cmds.Help()
         ]);
 
+        OneLifeBot.Commands.set("General", [
+            new Cmds.GetStats()
+        ]);
+
         OneLifeBot.Commands.set("Staff", [
             new Cmds.FindPunishment(),
             new Cmds.CheckBlacklist(),

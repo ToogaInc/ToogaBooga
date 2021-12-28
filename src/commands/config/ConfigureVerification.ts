@@ -1022,7 +1022,7 @@ export class ConfigureVerification extends BaseCommand {
                                    dungeonReq: IDungeonReq): Promise<TimedResult<IDungeonReq>> {
         const newDungeonReq: IDungeonReq = {
             botCompletions: dungeonReq.botCompletions
-                .filter(x => !!DungeonUtilities.getDungeonInfo(ctx.guildDoc!, x.key))
+                .filter(x => !!DungeonUtilities.getDungeonInfo(x.key, ctx.guildDoc!))
                 .map(x => {
                     return {...x};
                 }),
@@ -1081,7 +1081,7 @@ export class ConfigureVerification extends BaseCommand {
             const fields = ArrayUtilities.arrayToStringFields(
                 newDungeonReq.botCompletions,
                 (i, elem) => {
-                    const dgn = DungeonUtilities.getDungeonInfo(ctx.guildDoc!, newDungeonReq.botCompletions[i].key)!;
+                    const dgn = DungeonUtilities.getDungeonInfo(newDungeonReq.botCompletions[i].key, ctx.guildDoc!)!;
                     return i === selectedIdx
                         ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${dgn.dungeonName}: \`${elem.value}\`\n`
                         : `${dgn.dungeonName}: \`${elem.value}\`\n`;

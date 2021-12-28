@@ -111,7 +111,7 @@ export namespace DungeonUtilities {
                     continue;
                 }
 
-                const dungeon = getDungeonInfo(guildDoc, v[1]);
+                const dungeon = getDungeonInfo(v[1], guildDoc);
                 if (!dungeon) {
                     idxToRemove.push(i);
                 }
@@ -138,14 +138,14 @@ export namespace DungeonUtilities {
 
     /**
      * Gets the dungeon object from the code name.
-     * @param {IGuildInfo} guildDoc The guild document.
      * @param {string} codeName The dungeon code name, or unique identifier.
+     * @param {IGuildInfo} [guildDoc] The guild document, if any.
      * @return {IDungeonInfo | ICustomDungeonInfo | null} The dungeon object.
      */
-    export function getDungeonInfo(guildDoc: IGuildInfo,
-                                   codeName: string): IDungeonInfo | ICustomDungeonInfo | null {
+    export function getDungeonInfo(codeName: string,
+                                   guildDoc?: IGuildInfo | null): IDungeonInfo | ICustomDungeonInfo | null {
         return isCustomDungeon(codeName)
-            ? guildDoc.properties.customDungeons.find(x => x.codeName === codeName) ?? null
+            ? guildDoc?.properties.customDungeons.find(x => x.codeName === codeName) ?? null
             : DUNGEON_DATA.find(x => x.codeName === codeName) ?? null;
     }
 

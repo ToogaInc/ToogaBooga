@@ -7,5 +7,6 @@ export async function onMessageEvent(msg: Message): Promise<void> {
         return;
     }
 
+    // TODO modmail support needed
     await ModmailManager.initiateModmailContact(msg.author, msg);
 }

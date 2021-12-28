@@ -1,9 +1,8 @@
-import {Collection, GuildMember} from "discord.js";
+import {Collection, GuildMember, User} from "discord.js";
 import {MongoManager} from "./MongoManager";
 import {Filter, UpdateFilter} from "mongodb";
 import {IGuildInfo, IUserInfo} from "../definitions";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
-import {DUNGEON_DATA} from "../constants/DungeonData";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
 
@@ -25,6 +24,9 @@ export namespace LoggerManager {
         "FUNGAL_CAVERN_KEY"
     ];
 
+    export type DungeonLedType = Collection<string, { completed: number; failed: number; assisted: number; }>;
+    export type DungeonRunType = Collection<string, { completed: number; failed: number; }>;
+
     interface IUserStats {
         /**
          * The keys that were used. The key for this collection is the guild ID; the value is a collection where the
@@ -38,13 +40,13 @@ export namespace LoggerManager {
          * The dungeons that this person did. The key for this collection is the guild ID; the value is a collection
          * where the key is the dungeon name (not ID) and the value is the number completed/failed.
          */
-        dungeonRuns: Collection<string, Collection<string, { completed: number; failed: number; }>>;
+        dungeonRuns: Collection<string, DungeonRunType>;
 
         /**
          * The dungeons that this person led. The key for this collection is the guild ID; the value is a collection
          * where the key is the dungeon name (not ID) and the value is the number completed/failed/assisted.
          */
-        dungeonsLed: Collection<string, Collection<string, { completed: number; failed: number; assisted: number; }>>;
+        dungeonsLed: Collection<string, DungeonLedType>;
 
         /**
          * The points that this person has.
@@ -217,14 +219,15 @@ export namespace LoggerManager {
 
     /**
      * Gets this person's stats.
-     * @param {GuildMember} member The member.
+     * @param {GuildMember} user The user.
      * @param {string} [guildId] The guild ID. If specified, this will only grab the stats associated with this guild.
      * @returns {Promise<LoggerManager.IUserStats | null>} The result, if any.
      */
-    export async function getStats(member: GuildMember, guildId?: string): Promise<IUserStats | null> {
-        const userDoc = await MongoManager.getOrCreateUserDoc(member.id);
-        if (!userDoc)
+    export async function getStats(user: User, guildId?: string): Promise<IUserStats | null> {
+        const userDoc = await MongoManager.getUserCollection().findOne({discordId: user.id});
+        if (!userDoc) {
             return null;
+        }
 
         const stats: IUserStats = {
             keyUse: new Collection<string, Collection<string, number>>(),
@@ -244,7 +247,7 @@ export namespace LoggerManager {
             ? await MongoManager.getOrCreateGuildDoc(guildId, true)
             : null;
         const logInfoToProcess = guildId
-            ? userDoc.loggedInfo.filter(x => x.key.startsWith(guildId))
+            ? userDoc.loggedInfo.filter(x => x.key.includes(guildId))
             : userDoc.loggedInfo;
 
         for (const {key, value} of logInfoToProcess) {
@@ -282,9 +285,7 @@ export namespace LoggerManager {
                 }
                 case "L": {
                     // Lead dungeon flag
-                    const dgnName = guildDoc?.properties.customDungeons.find(x => x.codeName === vId)?.dungeonName
-                        ?? DUNGEON_DATA.find(x => x.codeName === vId)?.dungeonName
-                        ?? null;
+                    const dgnName = DungeonUtilities.getDungeonInfo(vId, guildDoc)?.dungeonName;
 
                     if (!dgnName)
                         break;
@@ -320,9 +321,7 @@ export namespace LoggerManager {
                 }
                 case "R": {
                     // Dungeon completion/failed flag
-                    const dgnName = DungeonUtilities.isCustomDungeon(vId)
-                        ? guildDoc?.properties.customDungeons.find(x => x.codeName === vId)?.dungeonName
-                        : DUNGEON_DATA.find(x => x.codeName === vId)?.dungeonName;
+                    const dgnName = DungeonUtilities.getDungeonInfo(vId, guildDoc)?.dungeonName;
 
                     if (!dgnName)
                         break;

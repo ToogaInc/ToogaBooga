@@ -35,3 +35,5 @@ export * from "./owner/SendAnnouncement";
 
 export * from "./raid-leaders/StartAfkCheck";
 export * from "./raid-leaders/StartHeadcount";
+
+export * from "./general/GetStats";
