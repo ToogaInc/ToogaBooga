@@ -169,7 +169,7 @@ export class FindPunishment extends BaseCommand {
                     `The moderation ID of the resolution is: ${StringUtil.codifyString(pInfo.resolved.actionId)}`
                 );
             }
-            else {
+            else if (pInfo.moderationType !== "Warn") {
                 embed.addField(
                     "Punishment Not Resolved",
                     "This punishment has not been resolved; it is still ongoing."
