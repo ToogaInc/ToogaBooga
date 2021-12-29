@@ -18,9 +18,9 @@ import {
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {HIGHEST_MODIFIER_LEVEL} from "../constants/DungeonModifiers";
+import {HIGHEST_MODIFIER_LEVEL} from "../constants/dungeons/DungeonModifiers";
 import {StringBuilder} from "../utilities/StringBuilder";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
+import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {StartAfkCheck} from "../commands";
 import {DefinedRole} from "../definitions/Types";

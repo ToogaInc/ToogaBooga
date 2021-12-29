@@ -3,7 +3,6 @@ import {
     BaseMessageComponent,
     ColorResolvable,
     GuildMember,
-    MessageButton,
     MessageEmbed
 } from "discord.js";
 import {UserManager} from "../../managers/UserManager";
@@ -16,9 +15,10 @@ import {OneLifeBot} from "../../OneLifeBot";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
 import getDateTime = TimeUtilities.getDateTime;
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import {ButtonConstants} from "../../constants/ButtonConstants";
 
 export class FindPerson extends BaseCommand {
     public constructor() {
@@ -157,14 +157,14 @@ export class FindPerson extends BaseCommand {
         // Final result
         if (!targetMember) {
             const failEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-                .setTitle(`Find Query Failed: **${ignQuery}**`)
+                .setTitle(`Find Query Failed: **${ignQuery ?? idQuery}**`)
                 .setTimestamp();
             if (nameIdRes) {
                 const guilds = OneLifeBot.BotInstance.client.guilds.cache
                     .filter(x => x.members.cache.has(nameIdRes!.currentDiscordId));
 
                 failEmbed.setDescription(
-                    `**\`${ignQuery}\`** could not be found in this server, but has verified with this bot.`
+                    `**\`${ignQuery ?? idQuery}\`** could not be found in this server, but has verified with this bot.`
                 );
 
                 if (nameIdRes.rotmgNames.length > 0) {
@@ -183,7 +183,7 @@ export class FindPerson extends BaseCommand {
                 );
             }
             else {
-                failEmbed.setDescription(`**\`${ignQuery}\`** was not found in this server.`);
+                failEmbed.setDescription(`**\`${ignQuery ?? idQuery}\`** was not found in this server.`);
             }
 
             await ctx.interaction.reply({
@@ -204,7 +204,7 @@ export class FindPerson extends BaseCommand {
 
         const warnDisplay = userNameIds.length > 0
             ? userNameIds[0].rotmgNames.length === 0
-                ? "`" + Emojis.WARNING_EMOJI + "`"
+                ? "`" + EmojiConstants.WARNING_EMOJI + "`"
                 : ""
             : "";
         const successEmbed = MessageUtilities.generateBlankEmbed(targetMember, "GREEN")
@@ -417,20 +417,11 @@ export class FindPerson extends BaseCommand {
             const stopId = uniqueId + "_stop";
             const backId = uniqueId + "_back";
             const components: BaseMessageComponent[] = [
-                new MessageButton()
-                    .setStyle("SECONDARY")
-                    .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
-                    .setLabel("Previous Page")
+                AdvancedCollector.cloneButton(ButtonConstants.PREVIOUS_BUTTON)
                     .setCustomId(backId),
-                new MessageButton()
-                    .setStyle("DANGER")
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setLabel("Stop Interaction")
+                AdvancedCollector.cloneButton(ButtonConstants.STOP_BUTTON)
                     .setCustomId(stopId),
-                new MessageButton()
-                    .setStyle("SECONDARY")
-                    .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
-                    .setLabel("Next Page")
+                AdvancedCollector.cloneButton(ButtonConstants.NEXT_BUTTON)
                     .setCustomId(nextId)
             ];
 

@@ -27,16 +27,16 @@ import {
 } from "discord.js";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
+import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
 import {MessageUtilities} from "../utilities/MessageUtilities";
-import {DUNGEON_DATA} from "../constants/DungeonData";
+import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {OneLifeBot} from "../OneLifeBot";
-import {Emojis} from "../constants/Emojis";
+import {EmojiConstants} from "../constants/EmojiConstants";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {UserManager} from "../managers/UserManager";
 import {
@@ -52,23 +52,15 @@ import {LoggerManager} from "../managers/LoggerManager";
 import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
 import {QuotaManager} from "../managers/QuotaManager";
-import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/DungeonModifiers";
+import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/DungeonModifiers";
 import {confirmReaction, controlPanelCollectorFilter, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
+import {ButtonConstants} from "../constants/ButtonConstants";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
     + " interaction.";
 
 
-const CANCEL_LOGGING_CUSTOM_ID: string = "cancel_logging_id";
-
-const CANCEL_LOGGING_BUTTON: Readonly<MessageButton> = Object.freeze(
-    new MessageButton()
-        .setCustomId(CANCEL_LOGGING_CUSTOM_ID)
-        .setEmoji(Emojis.WASTEBIN_EMOJI)
-        .setLabel("Cancel Logging")
-        .setStyle("DANGER")
-);
 
 
 /**
@@ -95,17 +87,17 @@ export class RaidInstance {
     private static readonly CP_PRE_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Start AFK Check")
-            .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+            .setEmoji(EmojiConstants.LONG_RIGHT_TRIANGLE_EMOJI)
             .setCustomId(RaidInstance.START_AFK_CHECK_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Abort AFK Check")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
+            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
             .setCustomId(RaidInstance.ABORT_AFK_ID)
             .setStyle("DANGER"),
         new MessageButton()
             .setLabel("Set Location")
-            .setEmoji(Emojis.MAP_EMOJI)
+            .setEmoji(EmojiConstants.MAP_EMOJI)
             .setCustomId(RaidInstance.SET_LOCATION_ID)
             .setStyle("PRIMARY")
     ]);
@@ -113,17 +105,17 @@ export class RaidInstance {
     private static readonly CP_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Start Raid")
-            .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+            .setEmoji(EmojiConstants.LONG_RIGHT_TRIANGLE_EMOJI)
             .setCustomId(RaidInstance.START_RAID_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Abort AFK Check")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
+            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
             .setCustomId(RaidInstance.ABORT_AFK_ID)
             .setStyle("DANGER"),
         new MessageButton()
             .setLabel("Set Location")
-            .setEmoji(Emojis.MAP_EMOJI)
+            .setEmoji(EmojiConstants.MAP_EMOJI)
             .setCustomId(RaidInstance.SET_LOCATION_ID)
             .setStyle("PRIMARY")
     ]);
@@ -131,27 +123,27 @@ export class RaidInstance {
     private static readonly CP_RAID_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("End Raid")
-            .setEmoji(Emojis.RED_SQUARE_EMOJI)
+            .setEmoji(EmojiConstants.RED_SQUARE_EMOJI)
             .setCustomId(RaidInstance.END_RAID_ID)
             .setStyle("DANGER"),
         new MessageButton()
             .setLabel("Set Location")
-            .setEmoji(Emojis.MAP_EMOJI)
+            .setEmoji(EmojiConstants.MAP_EMOJI)
             .setCustomId(RaidInstance.SET_LOCATION_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Lock Raid VC")
-            .setEmoji(Emojis.LOCK_EMOJI)
+            .setEmoji(EmojiConstants.LOCK_EMOJI)
             .setCustomId(RaidInstance.LOCK_VC_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Unlock Raid VC")
-            .setEmoji(Emojis.UNLOCK_EMOJI)
+            .setEmoji(EmojiConstants.UNLOCK_EMOJI)
             .setCustomId(RaidInstance.UNLOCK_VC_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Parse Raid VC")
-            .setEmoji(Emojis.PRINTER_EMOJI)
+            .setEmoji(EmojiConstants.PRINTER_EMOJI)
             .setCustomId(RaidInstance.PARSE_VC_ID)
             .setStyle("PRIMARY")
     ]);
@@ -373,12 +365,12 @@ export class RaidInstance {
                 earlyLocAmt: section.otherMajorConfig.afkCheckProperties.pointUserLimit,
                 isCustomReaction: false,
                 emojiInfo: {
-                    identifier: Emojis.TICKET_EMOJI,
+                    identifier: EmojiConstants.TICKET_EMOJI,
                     isCustom: false
                 },
                 name: "Points",
                 type: "EARLY_LOCATION",
-                builtInEmoji: Emojis.TICKET_EMOJI
+                builtInEmoji: EmojiConstants.TICKET_EMOJI
             });
         }
 
@@ -603,7 +595,7 @@ export class RaidInstance {
         this._raidStatus = RaidStatus.PRE_AFK_CHECK;
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
         const [vc, logChannel] = await Promise.all([
-            this._guild.channels.create(`${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
+            this._guild.channels.create(`${EmojiConstants.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
                 type: "GUILD_VOICE",
                 userLimit: this._vcLimit,
                 permissionOverwrites: this.getPermissionsForRaidVc(false),
@@ -696,7 +688,7 @@ export class RaidInstance {
         // However, we forcefully edit the embeds.
         await Promise.all([
             this._raidVc.edit({
-                name: `${Emojis.UNLOCK_EMOJI} ${this._leaderName}'s Raid`
+                name: `${EmojiConstants.UNLOCK_EMOJI} ${this._leaderName}'s Raid`
             }),
             this._afkCheckMsg.edit({
                 content: "@here An AFK Check is currently ongoing.",
@@ -748,7 +740,7 @@ export class RaidInstance {
                 "CONNECT": false
             }).catch(),
             this._raidVc.edit({
-                name: `${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`,
+                name: `${EmojiConstants.LOCK_EMOJI} ${this._leaderName}'s Raid`,
                 position: this._raidVc.parent?.children.filter(x => x.type === "GUILD_VOICE")
                     .map(x => x.position).sort((a, b) => b - a)[0] ?? 0,
                 permissionOverwrites: this.getPermissionsForRaidVc(false)
@@ -849,7 +841,7 @@ export class RaidInstance {
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageButton()
                     .setCustomId(`reconnect_${this._afkCheckMsg.id}`)
-                    .setEmoji(Emojis.INBOX_EMOJI)
+                    .setEmoji(EmojiConstants.INBOX_EMOJI)
                     .setLabel("Reconnect")
                     .setStyle("SUCCESS")
             ])
@@ -868,8 +860,8 @@ export class RaidInstance {
                             .appendLine()
                             .append(`You can leave feedback for ${member ?? this._memberInit} here by doing the`)
                             .append(" following:").appendLine()
-                            .append(`- React to **this** message with either a ${Emojis.LONG_UP_ARROW_EMOJI},`)
-                            .append(` ${Emojis.LONG_SIDEWAYS_ARROW_EMOJI}, or ${Emojis.LONG_DOWN_ARROW_EMOJI} to`)
+                            .append(`- React to **this** message with either a ${EmojiConstants.LONG_UP_ARROW_EMOJI},`)
+                            .append(` ${EmojiConstants.LONG_SIDEWAYS_ARROW_EMOJI}, or ${EmojiConstants.LONG_DOWN_ARROW_EMOJI} to`)
                             .append(" indicate this leader's performance.")
                             .appendLine()
                             .append("- You can also send feedback messages in this channel directly. Keep in mind that")
@@ -885,9 +877,9 @@ export class RaidInstance {
         });
 
         AdvancedCollector.reactFaster(feedbackMsg, [
-            Emojis.LONG_DOWN_ARROW_EMOJI,
-            Emojis.LONG_SIDEWAYS_ARROW_EMOJI,
-            Emojis.LONG_UP_ARROW_EMOJI
+            EmojiConstants.LONG_DOWN_ARROW_EMOJI,
+            EmojiConstants.LONG_SIDEWAYS_ARROW_EMOJI,
+            EmojiConstants.LONG_UP_ARROW_EMOJI
         ]);
 
         await this.setThisFeedbackChannel(feedbackChannel);
@@ -976,9 +968,9 @@ export class RaidInstance {
             if (botMsg) {
                 const m = await botMsg.fetch();
                 const [upvotes, noPref, downvotes] = await Promise.all([
-                    m.reactions.cache.get(Emojis.LONG_UP_ARROW_EMOJI)?.fetch(),
-                    m.reactions.cache.get(Emojis.LONG_SIDEWAYS_ARROW_EMOJI)?.fetch(),
-                    m.reactions.cache.get(Emojis.LONG_DOWN_ARROW_EMOJI)?.fetch()
+                    m.reactions.cache.get(EmojiConstants.LONG_UP_ARROW_EMOJI)?.fetch(),
+                    m.reactions.cache.get(EmojiConstants.LONG_SIDEWAYS_ARROW_EMOJI)?.fetch(),
+                    m.reactions.cache.get(EmojiConstants.LONG_DOWN_ARROW_EMOJI)?.fetch()
                 ]);
 
                 if (upvotes) sb.append(`- Upvotes      : ${upvotes.count - 1}`).appendLine();
@@ -1514,7 +1506,7 @@ export class RaidInstance {
         const descSb = new StringBuilder()
             .append(`Please type the **new location** for the raid with VC: ${this._raidVc.name}. `)
             .append("The location will be sent to every person that has reacted with an early location reaction. ")
-            .append(`To cancel this process, simply react to the ${Emojis.X_EMOJI} emoji.`)
+            .append(`To cancel this process, simply react to the ${EmojiConstants.X_EMOJI} emoji.`)
             .appendLine()
             .appendLine()
             .append("You have one minute to perform this action. After one minute has passed, this process will ")
@@ -1534,11 +1526,7 @@ export class RaidInstance {
             msgOptions: {
                 embeds: [askLocEmbed],
                 components: AdvancedCollector.getActionRowsFromComponents([
-                    new MessageButton()
-                        .setLabel("Cancel")
-                        .setEmoji(Emojis.X_EMOJI)
-                        .setCustomId("cancel")
-                        .setStyle("DANGER")
+                    ButtonConstants.CANCEL_BUTTON
                 ])
             },
             deleteBaseMsgAfterComplete: true,
@@ -2479,14 +2467,14 @@ export class RaidInstance {
                 new MessageButton()
                     .setLabel("Success")
                     .setCustomId("success")
-                    .setEmoji(Emojis.GREEN_CHECK_EMOJI)
+                    .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI)
                     .setStyle("SUCCESS"),
                 new MessageButton()
                     .setLabel("Failed")
                     .setCustomId("failed")
-                    .setEmoji(Emojis.X_EMOJI)
+                    .setEmoji(EmojiConstants.X_EMOJI)
                     .setStyle("DANGER"),
-                CANCEL_LOGGING_BUTTON
+                ButtonConstants.CANCEL_LOGGING_BUTTON
             ])
         });
 
@@ -2505,7 +2493,7 @@ export class RaidInstance {
             targetChannel: this._controlPanelChannel
         });
 
-        if (!runStatusRes || runStatusRes.customId === CANCEL_LOGGING_CUSTOM_ID) {
+        if (!runStatusRes || runStatusRes.customId === ButtonConstants.CANCEL_LOGGING_ID) {
             // TODO validate this better
             botMsg.delete().catch();
             return;
@@ -2515,18 +2503,18 @@ export class RaidInstance {
 
         const skipButton = new MessageButton()
             .setLabel("Skip")
-            .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+            .setEmoji(EmojiConstants.LONG_RIGHT_TRIANGLE_EMOJI)
             .setStyle("DANGER")
             .setCustomId("skip");
 
         const buttonsForSelectingMembers = AdvancedCollector.getActionRowsFromComponents([
             new MessageButton()
                 .setLabel("Confirm")
-                .setEmoji(Emojis.GREEN_CHECK_EMOJI)
+                .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI)
                 .setStyle("SUCCESS")
                 .setCustomId("confirm"),
             skipButton,
-            CANCEL_LOGGING_BUTTON
+            ButtonConstants.CANCEL_BUTTON
         ]);
 
         // 2) Get main leader.
@@ -2598,7 +2586,7 @@ export class RaidInstance {
                     break;
                 }
 
-                if (memberToPick.customId === CANCEL_LOGGING_CUSTOM_ID) {
+                if (memberToPick.customId === ButtonConstants.CANCEL_LOGGING_ID) {
                     botMsg.delete().catch();
                     return;
                 }
@@ -2713,7 +2701,7 @@ export class RaidInstance {
                         break;
                     }
 
-                    if (memberToPick.customId === CANCEL_LOGGING_CUSTOM_ID) {
+                    if (memberToPick.customId === ButtonConstants.CANCEL_LOGGING_ID) {
                         botMsg.delete().catch();
                         return;
                     }

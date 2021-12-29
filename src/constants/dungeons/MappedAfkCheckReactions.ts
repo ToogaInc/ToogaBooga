@@ -1,12 +1,12 @@
-import {IMappedAfkCheckReactions} from "../definitions";
-import {Emojis} from "./Emojis";
+import {IMappedAfkCheckReactions} from "../../definitions";
+import {EmojiConstants} from "../EmojiConstants";
 
 export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
     NITRO: {
         type: "EARLY_LOCATION",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.NITRO_EMOJI
+            identifier: EmojiConstants.NITRO_EMOJI
         },
         name: "Nitro"
     },
@@ -15,7 +15,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.ROGUE
+            identifier: EmojiConstants.ROGUE
         },
         name: "Rogue"
     },
@@ -23,7 +23,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.ARCHER
+            identifier: EmojiConstants.ARCHER
         },
         name: "Archer"
     },
@@ -31,7 +31,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.WIZARD
+            identifier: EmojiConstants.WIZARD
         },
         name: "Wizard"
     },
@@ -39,7 +39,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.PRIEST
+            identifier: EmojiConstants.PRIEST
         },
         name: "Priest"
     },
@@ -47,7 +47,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.WARRIOR
+            identifier: EmojiConstants.WARRIOR
         },
         name: "Warrior"
     },
@@ -55,7 +55,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.KNIGHT
+            identifier: EmojiConstants.KNIGHT
         },
         name: "Knight"
     },
@@ -63,7 +63,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.PALADIN
+            identifier: EmojiConstants.PALADIN
         },
         name: "Paladin"
     },
@@ -71,7 +71,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.ASSASSIN
+            identifier: EmojiConstants.ASSASSIN
         },
         name: "Assassin"
     },
@@ -79,7 +79,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.NECROMANCER
+            identifier: EmojiConstants.NECROMANCER
         },
         name: "Necromancer"
     },
@@ -87,7 +87,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.HUNTRESS
+            identifier: EmojiConstants.HUNTRESS
         },
         name: "Huntress"
     },
@@ -95,7 +95,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.MYSTIC
+            identifier: EmojiConstants.MYSTIC
         },
         name: "Mystic"
     },
@@ -103,7 +103,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.TRICKSTER
+            identifier: EmojiConstants.TRICKSTER
         },
         name: "Trickster"
     },
@@ -111,7 +111,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.SORCERER
+            identifier: EmojiConstants.SORCERER
         },
         name: "Sorcerer"
     },
@@ -119,7 +119,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.NINJA
+            identifier: EmojiConstants.NINJA
         },
         name: "Ninja"
     },
@@ -127,7 +127,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.SAMURAI
+            identifier: EmojiConstants.SAMURAI
         },
         name: "Samurai"
     },
@@ -135,7 +135,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.BARD
+            identifier: EmojiConstants.BARD
         },
         name: "Bard"
     },
@@ -144,7 +144,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.PARALYZE
+            identifier: EmojiConstants.PARALYZE
         },
         name: "Paralyze"
     },
@@ -152,7 +152,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.STUN
+            identifier: EmojiConstants.STUN
         },
         name: "Stun"
     },
@@ -160,7 +160,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.SLOW
+            identifier: EmojiConstants.SLOW
         },
         name: "Slow"
     },
@@ -168,7 +168,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.DAZE
+            identifier: EmojiConstants.DAZE
         },
         name: "Daze"
     },
@@ -176,7 +176,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "STATUS_EFFECT",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.ARMOR_BREAK
+            identifier: EmojiConstants.ARMOR_BREAK
         },
         name: "Armor Break"
     },
@@ -184,7 +184,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "CLASS",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.RUSHING_CLASS
+            identifier: EmojiConstants.RUSHING_CLASS
         },
         name: "Rushing Class"
     },
@@ -193,7 +193,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "ITEM",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.MSEAL
+            identifier: EmojiConstants.MSEAL
         },
         name: "Marble Seal"
     },
@@ -201,7 +201,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "ITEM",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.SCHOLAR_SEAL
+            identifier: EmojiConstants.SCHOLAR_SEAL
         },
         name: "Scholar Seal"
     },
@@ -209,7 +209,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "ITEM",
         emojiInfo: {
             isCustom: true,
-            identifier: Emojis.BRAIN_PRISM
+            identifier: EmojiConstants.BRAIN_PRISM
         },
         name: "Brain of the Golem"
     },

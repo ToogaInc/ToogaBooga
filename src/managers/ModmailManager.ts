@@ -16,15 +16,15 @@ import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {MessageUtilities} from "../utilities/MessageUtilities";
-import {Emojis} from "../constants/Emojis";
+import {EmojiConstants} from "../constants/EmojiConstants";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {StringUtil} from "../utilities/StringUtilities";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {GeneralConstants} from "../constants/GeneralConstants";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {IModmailThread, IModmailThreadMessage, IGuildInfo} from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
+import {ButtonConstants} from "../constants/ButtonConstants";
 
 export namespace ModmailManager {
     // Key: person responding to modmail.
@@ -39,29 +39,29 @@ export namespace ModmailManager {
     const ReplyActionRow: MessageActionRow = new MessageActionRow()
         .addComponents(new MessageButton()
             .setLabel("Reply")
-            .setEmoji(Emojis.CLIPBOARD_EMOJI)
+            .setEmoji(EmojiConstants.CLIPBOARD_EMOJI)
             .setStyle("PRIMARY")
             .setCustomId(MODMAIL_REPLY_ID));
 
     const ModmailGeneralActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Reply")
-            .setEmoji(Emojis.CLIPBOARD_EMOJI)
+            .setEmoji(EmojiConstants.CLIPBOARD_EMOJI)
             .setStyle("PRIMARY")
             .setCustomId(MODMAIL_REPLY_ID),
         new MessageButton()
             .setLabel("Delete")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
+            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
             .setStyle("DANGER")
             .setCustomId(MODMAIL_DELETE_ID),
         new MessageButton()
             .setLabel("Blacklist")
-            .setEmoji(Emojis.DENIED_EMOJI)
+            .setEmoji(EmojiConstants.DENIED_EMOJI)
             .setStyle("DANGER")
             .setCustomId(MODMAIL_BLACKLIST_ID),
         new MessageButton()
             .setLabel("Convert to Thread")
-            .setEmoji(Emojis.REDIRECT_EMOJI)
+            .setEmoji(EmojiConstants.REDIRECT_EMOJI)
             .setStyle("PRIMARY")
             .setCustomId(MODMAIL_CREATE_ID)
     ]);
@@ -69,17 +69,17 @@ export namespace ModmailManager {
     const ModmailThreadActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Reply")
-            .setEmoji(Emojis.CLIPBOARD_EMOJI)
+            .setEmoji(EmojiConstants.CLIPBOARD_EMOJI)
             .setStyle("PRIMARY")
             .setCustomId(MODMAIL_REPLY_ID),
         new MessageButton()
             .setLabel("End Thread")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
+            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
             .setStyle("DANGER")
             .setCustomId(MODMAIL_DELETE_ID),
         new MessageButton()
             .setLabel("Blacklist")
-            .setEmoji(Emojis.DENIED_EMOJI)
+            .setEmoji(EmojiConstants.DENIED_EMOJI)
             .setStyle("DANGER")
             .setCustomId(MODMAIL_BLACKLIST_ID)
     ]);
@@ -87,17 +87,13 @@ export namespace ModmailManager {
     const ModmailResponseEmbedActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Send")
-            .setEmoji(Emojis.CLIPBOARD_EMOJI)
+            .setEmoji(EmojiConstants.CLIPBOARD_EMOJI)
             .setStyle("PRIMARY")
             .setCustomId("send"),
-        new MessageButton()
-            .setLabel("Cancel")
-            .setEmoji(Emojis.X_EMOJI)
-            .setStyle("DANGER")
-            .setCustomId("cancel"),
+        ButtonConstants.CANCEL_BUTTON,
         new MessageButton()
             .setLabel("Set Anonymity")
-            .setEmoji(Emojis.EYES_EMOJI)
+            .setEmoji(EmojiConstants.EYES_EMOJI)
             .setStyle("PRIMARY")
             .setCustomId("anon")
     ]);
@@ -129,7 +125,7 @@ export namespace ModmailManager {
                             + "want to send this message?")
                         .setFooter("Modmail Confirmation")
                 ],
-                components: GeneralConstants.YES_NO_ACTION_BUTTONS
+                components: ButtonConstants.YES_NO_ACTION_BUTTONS
             });
 
             const confirmSend = await AdvancedCollector.startInteractionCollector({
@@ -170,11 +166,11 @@ export namespace ModmailManager {
         )!;
         // Check if the person is blacklisted from using modmail.
         if (guildDoc.moderation.blacklistedModmailUsers.some(x => x.affectedUser.id === author.id)) {
-            await msg.react(Emojis.DENIED_EMOJI).catch();
+            await msg.react(EmojiConstants.DENIED_EMOJI).catch();
             return;
         }
         // And then tell the user that we sent it.
-        await msg.react(Emojis.MAIL_EMOJI).catch();
+        await msg.react(EmojiConstants.MAIL_EMOJI).catch();
 
         // Now let's deal with actually sending it.
         // First, process all attachments.
@@ -253,7 +249,7 @@ export namespace ModmailManager {
 
         modMailEmbed
             .setFooter(`${author.id} • Modmail Message`)
-            .setTitle(`${Emojis.X_EMOJI} Modmail Entry`);
+            .setTitle(`${EmojiConstants.X_EMOJI} Modmail Entry`);
         if (attachments.length() !== 0)
             modMailEmbed.addField("Attachments", attachments.toString());
 
@@ -369,12 +365,12 @@ export namespace ModmailManager {
             .appendLine()
             .append(`⇒ **Thread Creation Time:** ${TimeUtilities.getDateTime(createdTime)}`);
         const reactionSb = new StringBuilder()
-            .append(`⇒ React with ${Emojis.CLIPBOARD_EMOJI} to send a message. You may also use the \`;respond\` `)
+            .append(`⇒ React with ${EmojiConstants.CLIPBOARD_EMOJI} to send a message. You may also use the \`;respond\` `)
             .append("command.")
             .appendLine()
-            .append(`⇒ React with ${Emojis.RED_SQUARE_EMOJI} to close this thread.`)
+            .append(`⇒ React with ${EmojiConstants.RED_SQUARE_EMOJI} to close this thread.`)
             .appendLine()
-            .append(`⇒ React with ${Emojis.DENIED_EMOJI} to modmail blacklist the author of this modmail.`);
+            .append(`⇒ React with ${EmojiConstants.DENIED_EMOJI} to modmail blacklist the author of this modmail.`);
 
         const baseMsgEmbed = MessageUtilities.generateBlankEmbed(targetMember.user)
             .setTitle(`Modmail Thread ⇒ ${targetMember.user.tag}`)
@@ -434,7 +430,7 @@ export namespace ModmailManager {
             .setTimestamp();
 
         if (!msgResult)
-            replyRecordsEmbed.addField(`${Emojis.WARNING_EMOJI} Error`, "Something went wrong when trying to send" +
+            replyRecordsEmbed.addField(`${EmojiConstants.WARNING_EMOJI} Error`, "Something went wrong when trying to send" +
                 " this modmail message. The recipient has either blocked the bot or prevented server members from" +
                 " DMing him/her.");
 
@@ -538,11 +534,11 @@ export namespace ModmailManager {
 
         // Create the base message.
         const reactionInfo = new StringBuilder()
-            .append(`⇒ React to ${Emojis.CLIPBOARD_EMOJI} to send a message.`)
+            .append(`⇒ React to ${EmojiConstants.CLIPBOARD_EMOJI} to send a message.`)
             .appendLine()
-            .append(`⇒ React to ${Emojis.RED_SQUARE_EMOJI} to close this thread.`)
+            .append(`⇒ React to ${EmojiConstants.RED_SQUARE_EMOJI} to close this thread.`)
             .appendLine()
-            .append(`⇒ React to ${Emojis.DENIED_EMOJI} to modmail blacklist the author of this modmail thread.`);
+            .append(`⇒ React to ${EmojiConstants.DENIED_EMOJI} to modmail blacklist the author of this modmail thread.`);
         const baseMsgEmbed = MessageUtilities.generateBlankEmbed(authorOfModmail.user)
             .setTitle(`Modmail Thread ⇒ ${authorOfModmail.user.tag}`)
             .setDescription(description.toString())
@@ -569,7 +565,7 @@ export namespace ModmailManager {
         if (attachmentsIndex !== -1)
             firstMsgEmbed.addField("Attachments", originalMmMsg.embeds[0].fields[attachmentsIndex].value);
         const firstMsg = await threadChannel.send({embeds: [firstMsgEmbed]});
-        await firstMsg.react(Emojis.CLIPBOARD_EMOJI).catch();
+        await firstMsg.react(EmojiConstants.CLIPBOARD_EMOJI).catch();
 
         const threadInfo: IModmailThread = {
             initiatorId: authorOfModmail.id,
@@ -632,7 +628,7 @@ export namespace ModmailManager {
             .setFooter("Confirmation");
         await origMmMessage.edit({
             embeds: [confirmBlacklistEmbed],
-            components: GeneralConstants.YES_NO_ACTION_BUTTONS
+            components: ButtonConstants.YES_NO_ACTION_BUTTONS
         }).catch();
         const result = await AdvancedCollector.startInteractionCollector({
             targetChannel: origMmMessage.channel as TextChannel,
@@ -725,7 +721,7 @@ export namespace ModmailManager {
             .setDescription("Are you sure you want to delete this modmail message?");
         await message.edit({
             embeds: [askDeleteEmbed],
-            components: GeneralConstants.YES_NO_ACTION_BUTTONS
+            components: ButtonConstants.YES_NO_ACTION_BUTTONS
         }).catch();
         const deleteResp = await AdvancedCollector.startInteractionCollector({
             targetChannel: message.channel as TextChannel,
@@ -794,7 +790,7 @@ export namespace ModmailManager {
             .setTimestamp();
 
         if (!sentMsg) {
-            replyRecordsEmbed.addField(`${Emojis.WARNING_EMOJI} Error.`, "Something went wrong when trying to send" +
+            replyRecordsEmbed.addField(`${EmojiConstants.WARNING_EMOJI} Error.`, "Something went wrong when trying to send" +
                 " this modmail message. The recipient has either blocked the bot or prevented server members from" +
                 " DMing him/her.");
         }
@@ -923,7 +919,7 @@ export namespace ModmailManager {
                     }
                 }
 
-                modmailEmbed.setTitle(`${Emojis.GREEN_CHECK_EMOJI} Modmail Entry`)
+                modmailEmbed.setTitle(`${EmojiConstants.GREEN_CHECK_EMOJI} Modmail Entry`)
                     .setColor("GREEN")
                     .setFooter(`${threadInfo.originalModmailMessageId} • Modmail Message`);
                 await oldModmailMessage.edit({embeds: [modmailEmbed], components: ModmailGeneralActionRows}).catch();
@@ -1125,7 +1121,7 @@ export namespace ModmailManager {
         }
 
         const timeStr = TimeUtilities.getDateTime();
-        const tempLastResp = `${responder} (${timeStr}) ${addLogStr} ${sentMsg ? "" : Emojis.WARNING_EMOJI}`;
+        const tempLastResp = `${responder} (${timeStr}) ${addLogStr} ${sentMsg ? "" : EmojiConstants.WARNING_EMOJI}`;
         if (oldEmbed.fields[lastRespLastIdx].value === "None.")
             oldEmbed.fields[lastRespLastIdx].value = tempLastResp;
         else {
@@ -1136,7 +1132,7 @@ export namespace ModmailManager {
         }
 
         await originalMmMsg.edit({
-            embeds: [oldEmbed.setTitle(`${Emojis.GREEN_CHECK_EMOJI} Modmail Entry`).setColor("GREEN")],
+            embeds: [oldEmbed.setTitle(`${EmojiConstants.GREEN_CHECK_EMOJI} Modmail Entry`).setColor("GREEN")],
             components: ModmailGeneralActionRows
         }).catch();
     }
@@ -1191,10 +1187,7 @@ export namespace ModmailManager {
             msgOptions: {
                 embeds: [askForGuildEmbed],
                 components: AdvancedCollector.getActionRowsFromComponents([
-                    new MessageButton()
-                        .setStyle("DANGER")
-                        .setLabel("Cancel")
-                        .setCustomId("cancel")
+                    ButtonConstants.CANCEL_BUTTON
                 ])
             },
             deleteResponseMessage: true,
@@ -1228,14 +1221,14 @@ export namespace ModmailManager {
             .append("When you are finished, simply send it here. You will have 10 minutes. You are not able to ")
             .append("send images or attachments directly.")
             .appendLine()
-            .append(`⇒ React to ${Emojis.GREEN_CHECK_EMOJI} once you are satisfied with your response above.`)
+            .append(`⇒ React to ${EmojiConstants.GREEN_CHECK_EMOJI} once you are satisfied with your response above.`)
             .appendLine()
-            .append(`⇒ React to ${Emojis.X_EMOJI} to cancel this process.`)
+            .append(`⇒ React to ${EmojiConstants.X_EMOJI} to cancel this process.`)
             .appendLine()
-            .append(`⇒ React to ${Emojis.EYES_EMOJI} to show or hide your identity.`);
+            .append(`⇒ React to ${EmojiConstants.EYES_EMOJI} to show or hide your identity.`);
 
         return MessageUtilities.generateBlankEmbed(responder.user)
-            .setTitle(`${Emojis.CLIPBOARD_EMOJI} Your Response`)
+            .setTitle(`${EmojiConstants.CLIPBOARD_EMOJI} Your Response`)
             .setDescription(resp === "" ? "N/A" : resp)
             .setFooter("Modmail Response System")
             .addField("Instructions", instructionsStr.toString())

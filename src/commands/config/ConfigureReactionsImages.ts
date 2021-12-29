@@ -7,7 +7,7 @@ import {
     MessageSelectMenu,
     TextChannel
 } from "discord.js";
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
@@ -23,6 +23,7 @@ import * as Stream from "stream";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
 import {TimedResult, TimedStatus} from "../../definitions/Types";
 import {sendOrEditBotMsg} from "./common/ConfigCommon";
+import {ButtonConstants} from "../../constants/ButtonConstants";
 
 type ReactionDetailedType = {
     type: ReactionType;
@@ -31,11 +32,6 @@ type ReactionDetailedType = {
 };
 
 export class ConfigureReactionsImages extends BaseCommand {
-    private static CANCEL_BUTTON: MessageButton = new MessageButton()
-        .setStyle("DANGER")
-        .setLabel("Cancel")
-        .setCustomId("cancel");
-
     public static ALL_REACTION_TYPES: ReactionDetailedType[] = [
         {
             type: "KEY",
@@ -118,8 +114,8 @@ export class ConfigureReactionsImages extends BaseCommand {
             .setTitle("Dungeon Configuration Command")
             .setDescription("Here, you will be able to manage reactions (for AFK checks) and images.")
             .addField(
-                "Exit",
-                "Click on the `Exit` button to exit this process."
+                "Quit",
+                "Click on the `Quit` button to exit this process."
             )
             .addField(
                 "Manage Reactions",
@@ -131,11 +127,7 @@ export class ConfigureReactionsImages extends BaseCommand {
             );
 
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Exit")
-                .setCustomId("exit")
-                .setStyle("DANGER")
-                .setEmoji(Emojis.X_EMOJI),
+            ButtonConstants.QUIT_BUTTON,
             new MessageButton()
                 .setLabel("Manage Reactions")
                 .setCustomId("reactions")
@@ -167,7 +159,7 @@ export class ConfigureReactionsImages extends BaseCommand {
         }
 
         switch (selectedButton.customId) {
-            case "exit": {
+            case ButtonConstants.QUIT_ID: {
                 await this.dispose(ctx, botMsg);
                 break;
             }
@@ -221,49 +213,25 @@ export class ConfigureReactionsImages extends BaseCommand {
             return;
         }
 
-        const addButton = new MessageButton()
-            .setEmoji(Emojis.PLUS_EMOJI)
-            .setStyle("PRIMARY")
-            .setLabel("Add Image")
-            .setCustomId("add_image");
-        const removeButton = new MessageButton()
-            .setEmoji(Emojis.MINUS_EMOJI)
-            .setStyle("DANGER")
-            .setLabel("Remove Image")
-            .setCustomId("remove_image");
-        const upButton = new MessageButton()
-            .setEmoji(Emojis.UP_TRIANGLE_EMOJI)
-            .setLabel("Up")
-            .setCustomId("up")
-            .setStyle("PRIMARY");
-        const downButton = new MessageButton()
-            .setEmoji(Emojis.DOWN_TRIANGLE_EMOJI)
-            .setLabel("Down")
-            .setCustomId("down")
-            .setStyle("PRIMARY");
+        const upButton = AdvancedCollector.cloneButton(ButtonConstants.UP_BUTTON);
+        const downButton = AdvancedCollector.cloneButton(ButtonConstants.DOWN_BUTTON);
+        const addButton = AdvancedCollector.cloneButton(ButtonConstants.ADD_BUTTON);
+        const removeButton = AdvancedCollector.cloneButton(ButtonConstants.REMOVE_BUTTON);
         const changeButton = new MessageButton()
             .setStyle("PRIMARY")
             .setLabel("Change Name")
-            .setCustomId("change_name");
+            .setCustomId("change_name")
+            .setEmoji(EmojiConstants.PENCIL_EMOJI);
 
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setStyle("DANGER")
-                .setLabel("Go Back")
-                .setCustomId("go_back"),
+            ButtonConstants.BACK_BUTTON,
             upButton,
             downButton,
             addButton,
             removeButton,
             changeButton ,
-            new MessageButton()
-                .setStyle("SUCCESS")
-                .setLabel("Save")
-                .setCustomId("save"),
-            new MessageButton()
-                .setStyle("DANGER")
-                .setLabel("Quit")
-                .setCustomId("quit")
+            ButtonConstants.SAVE_BUTTON,
+            ButtonConstants.QUIT_BUTTON
         ];
 
         const selectedImages = ctx.guildDoc!.properties.approvedCustomImages.slice();
@@ -274,7 +242,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                 new StringBuilder()
                     .append("Here, you can add or remove images. These images can be used to further customize your")
                     .append(" custom AFK checks.").appendLine(2)
-                    .append(`The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected image.`)
+                    .append(`The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected image.`)
                     .appendLine()
                     .append("- You can move this arrow up or down by either pressing the Up/Down button, or by using")
                     .append(" the jump (`j`) command. For example, to move the arrow down 2, send `j 2`. To move the")
@@ -282,7 +250,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     .appendLine()
                     .append("- To change the name of this image, press the **Change Name** button.")
                     .appendLine()
-                    .append("- You can also delete the selected image by pressing the **Remove Image** button.")
+                    .append("- You can also delete the selected image by pressing the **Remove** button.")
                     .appendLine(2)
                     .append("Once you are done, you can either __Save__ your changes, or go __Back__ to the previous")
                     .append(" page without saving your changes.")
@@ -290,7 +258,6 @@ export class ConfigureReactionsImages extends BaseCommand {
             );
 
         let currentIdx = 0;
-
 
         while (true) {
             changeButton.setDisabled(selectedImages.length === 0);
@@ -304,7 +271,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                 selectedImages,
                 (i, elem) => {
                     return i === currentIdx
-                        ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${elem.name} [Image](${elem.url})`
+                        ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${elem.name} [Image](${elem.url})`
                         : `${elem.name}`;
                 }
             );
@@ -334,11 +301,11 @@ export class ConfigureReactionsImages extends BaseCommand {
             }
 
             switch (res.customId) {
-                case "go_back": {
+                case ButtonConstants.BACK_ID: {
                     await this.mainMenu(ctx, botMsg);
                     return;
                 }
-                case "add_image": {
+                case ButtonConstants.ADD_ID: {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
@@ -349,7 +316,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                                     + " time, press the **Cancel** button.")
                         ],
                         components: AdvancedCollector.getActionRowsFromComponents([
-                            ConfigureReactionsImages.CANCEL_BUTTON
+                            ButtonConstants.CANCEL_BUTTON
                         ])
                     });
 
@@ -413,7 +380,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     });
                     break;
                 }
-                case "remove_image": {
+                case ButtonConstants.REMOVE_ID: {
                     selectedImages.splice(currentIdx, 1);
                     if (selectedImages.length === 0)
                         currentIdx = 0;
@@ -435,7 +402,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     selectedImages[currentIdx].name = r.value!;
                     break;
                 }
-                case "save": {
+                case ButtonConstants.SAVE_ID: {
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
                         $set: {
                             "properties.approvedCustomImages": selectedImages
@@ -444,15 +411,15 @@ export class ConfigureReactionsImages extends BaseCommand {
                     await this.mainMenu(ctx, botMsg);
                     return;
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     await this.dispose(ctx, botMsg);
                     return;
                 }
-                case "up": {
+                case ButtonConstants.UP_ID: {
                     currentIdx = (currentIdx + selectedImages.length - 1) % selectedImages.length;
                     break;
                 }
-                case "down": {
+                case ButtonConstants.DOWN_ID: {
                     currentIdx++;
                     currentIdx %= selectedImages.length;
                     break;
@@ -492,7 +459,7 @@ export class ConfigureReactionsImages extends BaseCommand {
             await botMsg.edit({
                 embeds: [embed],
                 components: AdvancedCollector.getActionRowsFromComponents([
-                    ConfigureReactionsImages.CANCEL_BUTTON
+                    ButtonConstants.CANCEL_BUTTON
                 ])
             });
 
@@ -526,27 +493,10 @@ export class ConfigureReactionsImages extends BaseCommand {
      */
     private async manageReactions(ctx: ICommandContext, botMsg: Message): Promise<void> {
         const currentReactions = ctx.guildDoc!.properties.customReactions.slice();
-
-        const addButton = new MessageButton()
-            .setEmoji(Emojis.PLUS_EMOJI)
-            .setStyle("PRIMARY")
-            .setLabel("Add Reaction")
-            .setCustomId("add_reaction");
-        const removeButton = new MessageButton()
-            .setEmoji(Emojis.MINUS_EMOJI)
-            .setStyle("DANGER")
-            .setLabel("Remove Reaction")
-            .setCustomId("remove_reaction");
-        const upButton = new MessageButton()
-            .setEmoji(Emojis.UP_TRIANGLE_EMOJI)
-            .setLabel("Up")
-            .setCustomId("up")
-            .setStyle("PRIMARY");
-        const downButton = new MessageButton()
-            .setEmoji(Emojis.DOWN_TRIANGLE_EMOJI)
-            .setLabel("Down")
-            .setCustomId("down")
-            .setStyle("PRIMARY");
+        const upButton = AdvancedCollector.cloneButton(ButtonConstants.UP_BUTTON);
+        const downButton = AdvancedCollector.cloneButton(ButtonConstants.DOWN_BUTTON);
+        const addButton = AdvancedCollector.cloneButton(ButtonConstants.ADD_BUTTON);
+        const removeButton = AdvancedCollector.cloneButton(ButtonConstants.REMOVE_BUTTON);
         const changeEmojiBtn = new MessageButton()
             .setStyle("PRIMARY")
             .setLabel("Change Emoji")
@@ -557,24 +507,15 @@ export class ConfigureReactionsImages extends BaseCommand {
             .setCustomId("change_name");
 
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setStyle("DANGER")
-                .setLabel("Go Back")
-                .setCustomId("go_back"),
+            ButtonConstants.BACK_BUTTON,
             upButton,
             downButton,
             addButton,
             removeButton,
             changeEmojiBtn,
             changeNameBtn,
-            new MessageButton()
-                .setStyle("SUCCESS")
-                .setLabel("Save")
-                .setCustomId("save"),
-            new MessageButton()
-                .setStyle("DANGER")
-                .setLabel("Quit")
-                .setCustomId("quit")
+            ButtonConstants.SAVE_BUTTON,
+            ButtonConstants.QUIT_BUTTON
         ];
 
         const embed = new MessageEmbed()
@@ -585,7 +526,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     .append("Here, you can add, remove, or modify reactions. You can use these reactions for your AFK")
                     .append(" checks. Note that each reaction __must__ have an emoji associated with it or it will")
                     .append(" not be recognized by the bot as being a valid reaction.").appendLine(2)
-                    .append(`The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected reaction.`)
+                    .append(`The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected reaction.`)
                     .appendLine()
                     .append("- You can move this arrow up or down by either pressing the Up/Down button, or by using")
                     .append(" the jump (`j`) command. For example, to move the arrow down 2, send `j 2`. To move the")
@@ -594,9 +535,9 @@ export class ConfigureReactionsImages extends BaseCommand {
                     .append("- You can either change the name of the reaction *or* change the emoji used to represent")
                     .append(" this reaction; in either case, just press the corresponding button.")
                     .appendLine()
-                    .append("- You can also delete the selected reaction by pressing the **Remove Reaction** button.")
+                    .append("- You can also delete the selected reaction by pressing the **Remove** button.")
                     .appendLine()
-                    .append("Otherwise, you can add an emoji; press the **Add Reaction**.")
+                    .append("Otherwise, you can add an emoji; press the **Add**.")
                     .appendLine(2)
                     .append("Once you are done, you can either __Save__ your changes, or go __Back__ to the previous")
                     .append(" page without saving your changes.")
@@ -615,7 +556,7 @@ export class ConfigureReactionsImages extends BaseCommand {
             await botMsg.edit({
                 embeds: [emojiEmbed],
                 components: AdvancedCollector.getActionRowsFromComponents([
-                    ConfigureReactionsImages.CANCEL_BUTTON
+                    ButtonConstants.CANCEL_BUTTON
                 ])
             });
 
@@ -678,7 +619,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                 (i, elem) => {
                     const sb = new StringBuilder();
                     if (i === selectedIdx)
-                        sb.append(Emojis.RIGHT_TRIANGLE_EMOJI).append(" ");
+                        sb.append(EmojiConstants.RIGHT_TRIANGLE_EMOJI).append(" ");
                     sb.append(elem.value.name)
                         .append(" ")
                         .append(GlobalFgrUtilities.getNormalOrCustomEmoji(elem.value) ?? "(No Emoji)")
@@ -713,11 +654,11 @@ export class ConfigureReactionsImages extends BaseCommand {
             }
 
             switch (res.customId) {
-                case "go_back": {
+                case ButtonConstants.BACK_ID: {
                     await this.mainMenu(ctx, botMsg);
                     return;
                 }
-                case "add_reaction": {
+                case ButtonConstants.ADD_ID: {
                     const newEmoji = await getEmojiForReaction();
 
                     if (newEmoji.status === TimedStatus.TIMED_OUT) {
@@ -760,7 +701,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                         ],
                         components: AdvancedCollector.getActionRowsFromComponents([
                             selectMenu,
-                            ConfigureReactionsImages.CANCEL_BUTTON
+                            ButtonConstants.CANCEL_BUTTON
                         ])
                     });
 
@@ -792,7 +733,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     });
                     break;
                 }
-                case "remove_reaction": {
+                case ButtonConstants.REMOVE_ID: {
                     currentReactions.splice(selectedIdx, 1);
                     selectedIdx %= currentReactions.length;
                     break;
@@ -824,7 +765,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     currentReactions[selectedIdx].value.name = r.value!;
                     break;
                 }
-                case "save": {
+                case ButtonConstants.SAVE_ID: {
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
                         $set: {
                             "properties.customReactions": currentReactions
@@ -833,15 +774,15 @@ export class ConfigureReactionsImages extends BaseCommand {
                     await this.mainMenu(ctx, botMsg);
                     return;
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     await this.dispose(ctx, botMsg);
                     return;
                 }
-                case "up": {
+                case ButtonConstants.UP_ID: {
                     selectedIdx = (selectedIdx + currentReactions.length - 1) % currentReactions.length;
                     break;
                 }
-                case "down": {
+                case ButtonConstants.DOWN_ID: {
                     selectedIdx++;
                     selectedIdx %= currentReactions.length;
                     break;

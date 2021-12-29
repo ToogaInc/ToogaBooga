@@ -6,7 +6,7 @@ import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {Collection} from "discord.js";
 import DungeonLedType = LoggerManager.DungeonLedType;
 import DungeonRanType = LoggerManager.DungeonRunType;
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 
 export class GetStats extends BaseCommand {
     public constructor() {
@@ -74,7 +74,10 @@ export class GetStats extends BaseCommand {
             await ctx.interaction.reply({
                 content: query === ctx.user.id
                     ? "You do not have anything logged under your account."
-                    : `No stats were found for ${mStr}.`
+                    : `No stats were found for ${mStr}.`,
+                allowedMentions: {
+                    users: []
+                }
             });
             return -1;
         }
@@ -145,7 +148,7 @@ export class GetStats extends BaseCommand {
 
         if (ctx.guild && !showAll) {
             embed.setTitle(`Stats for **${user.tag}** in **${ctx.guild!}**`)
-                .setDescription(`${Emojis.TICKET_EMOJI} Points: ${stats.points.get(ctx.guild.id) ?? 0}`);
+                .setDescription(`${EmojiConstants.TICKET_EMOJI} Points: ${stats.points.get(ctx.guild.id) ?? 0}`);
 
             const dungeonsLed = stats.dungeonsLed.get(ctx.guild.id);
             if (dungeonsLed) {

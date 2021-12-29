@@ -20,12 +20,12 @@ import {MessageUtilities} from "../utilities/MessageUtilities";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {IGuildInfo, IQuotaInfo} from "../definitions";
-import {DUNGEON_DATA} from "../constants/DungeonData";
+import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
-import {Emojis} from "../constants/Emojis";
+import {EmojiConstants} from "../constants/EmojiConstants";
 
 export namespace QuotaManager {
     const ALL_QUOTA_LOG_TYPES: QuotaLogType[] = [
@@ -660,7 +660,7 @@ export namespace QuotaManager {
                     ? `ID ${member}`
                     : member.displayName;
 
-                const emojiStr = amt >= quotaInfo.pointsNeeded ? Emojis.GREEN_CHECK_EMOJI : "";
+                const emojiStr = amt >= quotaInfo.pointsNeeded ? EmojiConstants.GREEN_CHECK_EMOJI : "";
                 return `[${rank}] ${displayMember} - ${amt} PTS ${emojiStr}\n`;
             },
             1000

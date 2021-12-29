@@ -1,7 +1,22 @@
 import {GeneralConstants} from "../constants/GeneralConstants";
-import {Snowflake} from "discord.js";
+import {
+    GuildMember,
+    Message,
+    MessageOptions,
+    MessageSelectMenu,
+    MessageSelectOptionData,
+    Snowflake,
+    TextChannel
+} from "discord.js";
 import {CommonRegex} from "../constants/CommonRegex";
 import {DefinedRole} from "../definitions/Types";
+import {IGuildInfo, ISectionInfo} from "../definitions";
+import {MongoManager} from "../managers/MongoManager";
+import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
+import {MessageUtilities} from "./MessageUtilities";
+import {StringBuilder} from "./StringBuilder";
+import {AdvancedCollector} from "./collectors/AdvancedCollector";
+import {ButtonConstants} from "../constants/ButtonConstants";
 
 export namespace MiscUtilities {
     /**
@@ -76,5 +91,129 @@ export namespace MiscUtilities {
         // g -> shift 8 right, keep bits 0-8        (num >> 8) & 0b1111_1111
         // b -> no need to shift, keep bits 0-8     num & 0b1111_1111
         return [(num >> 16) & 0b1111_1111, (num >> 8) & 0b1111_1111, num & 0b1111_1111];
+    }
+
+    /**
+     * Asks a user for the section that he/she wants to perform an action on. This will send a message and then
+     * either deletes the message once the question is asked or returns the message for later use.
+     * @param {IGuildInfo} guildDb The guild document.
+     * @param {GuildMember} member The member asking.
+     * @param {TextChannel} channel The channel where this occurred.
+     * @param {string} desc The description (i.e. instructions) to post.
+     * @return {Promise<ISectionInfo | null>} The section, if any. Null otherwise.
+     */
+    export async function getSectionQuery(guildDb: IGuildInfo, member: GuildMember, channel: TextChannel,
+                                          desc: string): Promise<[ISectionInfo, Message | null] | null> {
+        const allSections = MongoManager.getAllSections(guildDb);
+        const selectOptions: MessageSelectOptionData[] = allSections
+            .map(x => {
+                const role = GuildFgrUtilities.getCachedRole(member.guild, x.roles.verifiedRoleId);
+                return {
+                    label: x.sectionName,
+                    description: role?.name ?? "No Member Role.",
+                    value: x.uniqueIdentifier
+                };
+            });
+
+        const msgOptions: MessageOptions = {
+            embeds: [
+                MessageUtilities.generateBlankEmbed(member, "RANDOM")
+                    .setTitle("Select Section")
+                    .setDescription(new StringBuilder(desc)
+                        .appendLine().appendLine()
+                        .append("If you wish to cancel this process, please press the `Cancel` button.").toString())
+                    .setFooter("Section Selector")
+            ],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                new MessageSelectMenu()
+                    .addOptions(...selectOptions)
+                    .setCustomId("section_selector")
+                    .setMinValues(1)
+                    .setMaxValues(1),
+                ButtonConstants.CANCEL_BUTTON
+            ])
+        };
+
+        const askMsg = await channel.send(msgOptions);
+        const result = await AdvancedCollector.startInteractionCollector({
+            targetChannel: channel,
+            targetAuthor: member,
+            acknowledgeImmediately: true,
+            deleteBaseMsgAfterComplete: false,
+            duration: 60 * 1000,
+            oldMsg: askMsg,
+            clearInteractionsAfterComplete: true
+        });
+
+        // Button = guaranteed to be a button.
+        if (!result || !result.isSelectMenu()) {
+            askMsg.delete().catch();
+            return null;
+        }
+
+        return [allSections.find(x => x.uniqueIdentifier === result.values[0])!, askMsg.deleted ? null : askMsg];
+    }
+
+    /**
+     * Asks a user for the section that he/she wants to perform an action on. If no `msgOptions` is specified, then
+     * this will keep the original message content.
+     * @param {IGuildInfo} guildDb The guild document.
+     * @param {GuildMember} member The member asking.
+     * @param {Message} message The message to use. This will edit the message, but not delete it.
+     * @param {MessageOptions} [msgOptions] The message options. If specified, the bot will edit the given message
+     * with whatever is contained here. Do not include any components.
+     * @return {Promise<ISectionInfo | null>} The section, if any. Null otherwise.
+     */
+    export async function getSectionWithInitMsg(
+        guildDb: IGuildInfo,
+        member: GuildMember,
+        message: Message,
+        msgOptions?: Omit<MessageOptions, "components">
+    ): Promise<ISectionInfo | null> {
+        const allSections = MongoManager.getAllSections(guildDb);
+        const selectOptions: MessageSelectOptionData[] = allSections
+            .map(x => {
+                const role = GuildFgrUtilities.getCachedRole(member.guild, x.roles.verifiedRoleId);
+                return {
+                    label: x.sectionName,
+                    description: role?.name ?? "No Member Role.",
+                    value: x.uniqueIdentifier
+                };
+            });
+
+        const components = AdvancedCollector.getActionRowsFromComponents([
+            new MessageSelectMenu()
+                .addOptions(...selectOptions)
+                .setCustomId("section_selector")
+                .setMinValues(1)
+                .setMaxValues(1),
+            ButtonConstants.CANCEL_BUTTON
+        ]);
+        let o: MessageOptions;
+        if (msgOptions) {
+            o = msgOptions;
+            o.components = components;
+        }
+        else {
+            o = MessageUtilities.getMessageOptionsFromMessage(message, components);
+        }
+
+        await message.edit(o).catch();
+        const result = await AdvancedCollector.startInteractionCollector({
+            targetChannel: message.channel as TextChannel,
+            targetAuthor: member,
+            acknowledgeImmediately: true,
+            deleteBaseMsgAfterComplete: false,
+            duration: 60 * 1000,
+            oldMsg: message,
+            clearInteractionsAfterComplete: false
+        });
+
+        // Button = guaranteed to be a button.
+        if (!result || !result.isSelectMenu()) {
+            message.delete().catch();
+            return null;
+        }
+        return allSections.find(x => x.uniqueIdentifier === result.values[0])!;
     }
 }

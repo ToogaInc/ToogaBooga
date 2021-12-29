@@ -1,4 +1,4 @@
-import {IDungeonModifier} from "../definitions";
+import {IDungeonModifier} from "../../definitions";
 
 export const HIGHEST_MODIFIER_LEVEL: number = 5;
 

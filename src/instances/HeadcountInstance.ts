@@ -13,15 +13,15 @@ import {
     IGuildInfo, IHeadcountInfo,
     ISectionInfo
 } from "../definitions";
-import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/DungeonModifiers";
+import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/DungeonModifiers";
 import {UserManager} from "../managers/UserManager";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {confirmReaction, controlPanelCollectorFilter, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
-import {DUNGEON_DATA} from "../constants/DungeonData";
+import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {Emojis} from "../constants/Emojis";
+import {EmojiConstants} from "../constants/EmojiConstants";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {GeneralConstants} from "../constants/GeneralConstants";
@@ -43,12 +43,12 @@ export class HeadcountInstance {
     private static readonly HEADCOUNT_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("End Headcount")
-            .setEmoji(Emojis.STOP_SIGN_EMOJI)
+            .setEmoji(EmojiConstants.STOP_SIGN_EMOJI)
             .setCustomId(HeadcountInstance.END_HEADCOUNT_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Abort Headcount")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
+            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
             .setCustomId(HeadcountInstance.ABORT_HEADCOUNT_ID)
             .setStyle("DANGER")
     ]);
@@ -56,12 +56,12 @@ export class HeadcountInstance {
     private static readonly END_HEADCOUNT_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Convert to AFK Check")
-            .setEmoji(Emojis.RIGHT_TRIANGLE_EMOJI)
+            .setEmoji(EmojiConstants.RIGHT_TRIANGLE_EMOJI)
             .setCustomId(HeadcountInstance.CONVERT_TO_AFK_CHECK_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Delete Headcount")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
+            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
             .setCustomId(HeadcountInstance.DELETE_HEADCOUNT_ID)
             .setStyle("DANGER")
     ]);
@@ -244,12 +244,12 @@ export class HeadcountInstance {
                 .setCustomId("interested")
                 .setLabel("Interested")
                 .setStyle("PRIMARY")
-                .setEmoji(Emojis.GREEN_CHECK_EMOJI)
+                .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI)
         );
 
         this._allEssentialOptions.set("interested", {
             earlyLocAmt: 0,
-            emojiInfo: {identifier: Emojis.GREEN_CHECK_EMOJI, isCustom: false},
+            emojiInfo: {identifier: EmojiConstants.GREEN_CHECK_EMOJI, isCustom: false},
             isCustomReaction: false,
             name: "Interested",
             type: "UTILITY"
@@ -533,7 +533,7 @@ export class HeadcountInstance {
         }
 
         const l = this._pplWithEarlyLoc.get("interested")!.length;
-        earlyReactInfo.unshift(`- ${Emojis.GREEN_CHECK_EMOJI} ${l} People Interested.`);
+        earlyReactInfo.unshift(`- ${EmojiConstants.GREEN_CHECK_EMOJI} ${l} People Interested.`);
 
         if (earlyReactInfo.length > 0) {
             afkCheckEmbed.addField("Reaction Status", earlyReactInfo.join("\n"));

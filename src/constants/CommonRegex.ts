@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 export namespace CommonRegex {
     /**
      * Use this Regex to test if a string contains ONLY letters.

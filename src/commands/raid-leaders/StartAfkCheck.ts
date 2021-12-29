@@ -3,22 +3,21 @@ import {MongoManager} from "../../managers/MongoManager";
 import {IDungeonInfo, ISectionInfo} from "../../definitions";
 import {
     MessageActionRow,
-    MessageButton,
     MessageSelectMenu,
     Role,
     TextChannel
 } from "discord.js";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {RaidInstance} from "../../instances/RaidInstance";
-import {DUNGEON_DATA} from "../../constants/DungeonData";
+import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {Emojis} from "../../constants/Emojis";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {canManageRaidsIn, hasPermsToRaid} from "../../instances/Common";
+import {ButtonConstants} from "../../constants/ButtonConstants";
 
 type DungeonSelectionType = {
     section: ISectionInfo;
@@ -268,10 +267,7 @@ export class StartAfkCheck extends BaseCommand {
             embeds: [askDgnEmbed],
             components: AdvancedCollector.getActionRowsFromComponents([
                 ...selectMenus,
-                new MessageButton()
-                    .setStyle("DANGER")
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setLabel("Cancel")
+                AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
                     .setCustomId(`${uIdentifier}_cancel`)
             ])
         });

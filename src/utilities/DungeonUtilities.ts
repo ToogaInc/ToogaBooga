@@ -6,8 +6,8 @@ import {
     IGuildInfo,
     IReactionInfo
 } from "../definitions";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
-import {DUNGEON_DATA} from "../constants/DungeonData";
+import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
+import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {Guild} from "discord.js";
 import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";

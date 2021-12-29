@@ -2,7 +2,7 @@ import {Collection, GuildMember, User} from "discord.js";
 import {MongoManager} from "./MongoManager";
 import {Filter, UpdateFilter} from "mongodb";
 import {IGuildInfo, IUserInfo} from "../definitions";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
+import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
 

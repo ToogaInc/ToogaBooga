@@ -8,40 +8,20 @@ import {
     TextChannel
 } from "discord.js";
 import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
-import {Emojis} from "../../../constants/Emojis";
+import {EmojiConstants} from "../../../constants/EmojiConstants";
 import {StringBuilder} from "../../../utilities/StringBuilder";
 import {IGuildInfo, ISectionInfo} from "../../../definitions";
 import {ICommandContext} from "../../BaseCommand";
 import {GuildFgrUtilities} from "../../../utilities/fetch-get-request/GuildFgrUtilities";
-import {InteractivityHelper} from "../../../utilities/InteractivityHelper";
 import {MiscUtilities} from "../../../utilities/MiscUtilities";
+import {ButtonConstants} from "../../../constants/ButtonConstants";
 
 export const DB_CONFIG_BUTTONS: MessageButton[] = [
-    new MessageButton()
-        .setLabel("Back")
-        .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
-        .setCustomId("back")
-        .setStyle("PRIMARY"),
-    new MessageButton()
-        .setLabel("Up")
-        .setEmoji(Emojis.UP_TRIANGLE_EMOJI)
-        .setCustomId("up")
-        .setStyle("PRIMARY"),
-    new MessageButton()
-        .setLabel("Down")
-        .setEmoji(Emojis.DOWN_TRIANGLE_EMOJI)
-        .setCustomId("down")
-        .setStyle("PRIMARY"),
-    new MessageButton()
-        .setLabel("Reset")
-        .setEmoji(Emojis.WASTEBIN_EMOJI)
-        .setCustomId("reset")
-        .setStyle("PRIMARY"),
-    new MessageButton()
-        .setLabel("Quit")
-        .setEmoji(Emojis.X_EMOJI)
-        .setCustomId("quit")
-        .setStyle("PRIMARY")
+    ButtonConstants.BACK_BUTTON,
+    ButtonConstants.UP_BUTTON,
+    ButtonConstants.DOWN_BUTTON,
+    ButtonConstants.RESET_BUTTON,
+    ButtonConstants.QUIT_BUTTON
 ];
 
 export const DB_CONFIG_ACTION_ROW: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents(DB_CONFIG_BUTTONS);
@@ -49,7 +29,7 @@ export const DB_CONFIG_ACTION_ROW: MessageActionRow[] = AdvancedCollector.getAct
 export const DATABASE_CONFIG_DESCRIPTION: string = new StringBuilder()
     .append("Here, you will be able to edit the following options. Keep the following in mind when you do so.")
     .appendLine()
-    .append(`- The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the **currently** selected option. `)
+    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the **currently** selected option. `)
     .appendLine()
     .append("- To move up or down the list of options, simply **press** the UP/DOWN buttons. If there are ")
     .append("too many options, you can use the jump (`j`) command. For example, to move the arrow down 2, ")
@@ -171,7 +151,7 @@ export async function entryFunction(ctx: ICommandContext, botMsg: Message | null
     let selectedSection: ISectionInfo;
     let newBotMsg: Message;
     if (botMsg) {
-        const queryResult = await InteractivityHelper.getSectionWithInitMsg(
+        const queryResult = await MiscUtilities.getSectionWithInitMsg(
             ctx.guildDoc!,
             member,
             botMsg,
@@ -185,7 +165,7 @@ export async function entryFunction(ctx: ICommandContext, botMsg: Message | null
         selectedSection = queryResult;
     }
     else {
-        const queryResult = await InteractivityHelper.getSectionQuery(
+        const queryResult = await MiscUtilities.getSectionQuery(
             ctx.guildDoc!,
             ctx.member!,
             ctx.channel as TextChannel,
@@ -233,11 +213,7 @@ export async function askInput<T>(ctx: ICommandContext, botMsg: Message, msgOpti
     await botMsg.edit({
         ...msgOptions,
         components: AdvancedCollector.getActionRowsFromComponents([
-            new MessageButton()
-                .setLabel("Back")
-                .setStyle("DANGER")
-                .setCustomId("back")
-                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
+            ButtonConstants.BACK_BUTTON
         ])
     });
 

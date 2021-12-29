@@ -2,17 +2,17 @@ import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseC
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {UserManager} from "../../managers/UserManager";
 import {MongoManager} from "../../managers/MongoManager";
-import {MessageButton, MessageSelectMenu} from "discord.js";
-import {DUNGEON_DATA} from "../../constants/DungeonData";
+import {MessageSelectMenu} from "discord.js";
+import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {Emojis} from "../../constants/Emojis";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {LoggerManager} from "../../managers/LoggerManager";
 import {QuotaManager} from "../../managers/QuotaManager";
 import {QuotaLogType} from "../../definitions/Types";
+import {ButtonConstants} from "../../constants/ButtonConstants";
 
 export class LogLedRun extends BaseCommand {
     public constructor() {
@@ -189,11 +189,7 @@ export class LogLedRun extends BaseCommand {
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 ...selectMenus,
-                new MessageButton()
-                    .setStyle("DANGER")
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setLabel("Cancel")
-                    .setCustomId(`${uniqueId}_cancel`)
+                ButtonConstants.CANCEL_BUTTON
             ])
         });
 

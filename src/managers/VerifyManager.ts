@@ -25,12 +25,13 @@ import {
 } from "../definitions";
 import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {Emojis} from "../constants/Emojis";
+import {EmojiConstants} from "../constants/EmojiConstants";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {ModmailManager} from "./ModmailManager";
 import {UserManager} from "./UserManager";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
 import {LoggerManager} from "./LoggerManager";
+import {ButtonConstants} from "../constants/ButtonConstants";
 
 export namespace VerifyManager {
     const CANCEL_ID: string = "cancel";
@@ -364,10 +365,7 @@ export namespace VerifyManager {
                         .setStyle("DANGER")
                         .setLabel("Skip")
                         .setCustomId("skip"),
-                    new MessageButton()
-                        .setStyle("DANGER")
-                        .setLabel("Cancel")
-                        .setCustomId("cancel")
+                    ButtonConstants.CANCEL_BUTTON
                 ])
             });
             const selectedOption = await AdvancedCollector.startInteractionCollector({
@@ -632,7 +630,7 @@ export namespace VerifyManager {
                         ).setFooter("Verification Process Expires")
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
-                                `${Emojis.WARNING_EMOJI} Verification Issues`,
+                                `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
                                 "Your verification code was not found in your RealmEye profile's description."
                             )
                     ],
@@ -681,7 +679,7 @@ export namespace VerifyManager {
                         ).setFooter("Verification Process Expires")
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
-                                `${Emojis.WARNING_EMOJI} Verification Issues`,
+                                `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
                                 "Something went wrong when trying to get your RealmEye profile's **name history.**"
                                 + " Make sure anyone can view your profile's name history. If this issue persists,"
                                 + " please **stop** the verification process and contact a staff member for assistance."
@@ -820,7 +818,7 @@ export namespace VerifyManager {
                         ).setFooter("Verification Process Expires")
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
-                                `${Emojis.WARNING_EMOJI} Verification Issues`,
+                                `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
                                 "Something went wrong when fully reviewing your profile. Please resolve these issues"
                                 + " and try again.\n"
                                 + checkRes.taIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n")

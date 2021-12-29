@@ -1,6 +1,3 @@
-import {MessageActionRow, MessageButton} from "discord.js";
-import {Emojis} from "./Emojis";
-import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {IPermAllowDeny} from "../definitions";
 import {DefinedRole} from "../definitions/Types";
 
@@ -206,19 +203,6 @@ export namespace GeneralConstants {
             allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK", "MUTE_MEMBERS", "DEAFEN_MEMBERS", "MOVE_MEMBERS", "STREAM"],
             deny: []
         }
-    ]);
-
-    export const YES_NO_ACTION_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
-        new MessageButton()
-            .setCustomId("yes")
-            .setStyle("SUCCESS")
-            .setEmoji(Emojis.GREEN_CHECK_EMOJI)
-            .setLabel("Yes"),
-        new MessageButton()
-            .setCustomId("no")
-            .setStyle("DANGER")
-            .setEmoji(Emojis.X_EMOJI)
-            .setLabel("No")
     ]);
 
     export const GITHUB_URL: string = "https://github.com/ewang2002/OneLifeBot/";

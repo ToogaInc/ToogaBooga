@@ -16,7 +16,7 @@ import {
 import {MessageUtilities} from "../MessageUtilities";
 import {StringBuilder} from "../StringBuilder";
 import {GuildFgrUtilities} from "../fetch-get-request/GuildFgrUtilities";
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import {GlobalFgrUtilities} from "../fetch-get-request/GlobalFgrUtilities";
 import {StringUtil} from "../StringUtilities";
 
@@ -313,12 +313,12 @@ export namespace AdvancedCollector {
             .setCustomId(id + "yes")
             .setLabel("Yes")
             .setStyle("SUCCESS")
-            .setEmoji(Emojis.GREEN_CHECK_EMOJI);
+            .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI);
         const noButton = new MessageButton()
             .setCustomId(id + "no")
             .setLabel("No")
             .setStyle("DANGER")
-            .setEmoji(Emojis.X_EMOJI);
+            .setEmoji(EmojiConstants.X_EMOJI);
         const actionRow = new MessageActionRow()
             .addComponents(yesButton, noButton);
 
@@ -640,17 +640,39 @@ export namespace AdvancedCollector {
         return rows;
     }
 
-    /*
-    export function getActionRowsFromButtons(buttons: MessageButton[]): MessageActionRow[] {
-        const rows: MessageActionRow[] = [];
-        for (let i = 0; i < buttons.length; i += 5) {
-            const actionRow = new MessageActionRow();
-            for (let j = 0; j < 5 && i + j < buttons.length; j++)
-                actionRow.addComponents(buttons[i + j]);
-
-            rows.push(actionRow);
+    /**
+     * Clones a `MessageButton`.
+     * @param {Readonly<MessageButton>} button The button to clone.
+     * @returns {MessageButton} The cloned button.
+     */
+    export function cloneButton(button: Readonly<MessageButton>): MessageButton {
+        const newButton = new MessageButton();
+        if (button.style) {
+            newButton.setStyle(button.style);
         }
 
-        return rows;
-    }*/
+        if (button.label) {
+            newButton.setLabel(button.label);
+        }
+
+        if (button.emoji) {
+            if (button.emoji.name) {
+                newButton.setEmoji(button.emoji.name);
+            }
+            else if (button.emoji.id) {
+                newButton.setEmoji(button.emoji.id);
+            }
+        }
+
+        if (button.customId) {
+            newButton.setCustomId(button.customId);
+        }
+
+        if (button.url) {
+            newButton.setURL(button.url);
+        }
+
+        newButton.setDisabled(button.disabled);
+        return newButton;
+    }
 }

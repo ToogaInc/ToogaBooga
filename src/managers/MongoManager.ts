@@ -3,7 +3,7 @@ import {OneLifeBot} from "../OneLifeBot";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {UserManager} from "./UserManager";
 import {Collection, Collection as DCollection, Guild, GuildMember, TextChannel} from "discord.js";
-import {DUNGEON_DATA} from "../constants/DungeonData";
+import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {
     IBotInfo,
     IGuildInfo,

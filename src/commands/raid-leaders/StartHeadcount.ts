@@ -3,21 +3,20 @@ import {MongoManager} from "../../managers/MongoManager";
 import {IDungeonInfo, ISectionInfo} from "../../definitions";
 import {
     MessageActionRow,
-    MessageButton,
     MessageSelectMenu,
     Role,
     TextChannel
 } from "discord.js";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {DUNGEON_DATA} from "../../constants/DungeonData";
+import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {Emojis} from "../../constants/Emojis";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {canManageRaidsIn, hasPermsToRaid} from "../../instances/Common";
 import {HeadcountInstance} from "../../instances/HeadcountInstance";
+import {ButtonConstants} from "../../constants/ButtonConstants";
 
 type DungeonSelectionType = {
     section: ISectionInfo;
@@ -246,11 +245,7 @@ export class StartHeadcount extends BaseCommand {
             embeds: [askDgnEmbed],
             components: AdvancedCollector.getActionRowsFromComponents([
                 ...selectMenus,
-                new MessageButton()
-                    .setStyle("DANGER")
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setLabel("Cancel")
-                    .setCustomId(`${uIdentifier}_cancel`)
+                ButtonConstants.CANCEL_BUTTON
             ])
         });
 

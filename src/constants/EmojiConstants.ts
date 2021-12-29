@@ -1,4 +1,6 @@
-export namespace Emojis {
+// noinspection JSUnusedGlobalSymbols
+
+export namespace EmojiConstants {
     export const NUMERICAL_EMOJIS: string[] = [
         "1⃣",
         "2⃣",
@@ -94,6 +96,6 @@ export namespace Emojis {
     export const SCHOLAR_SEAL: string = "678792068935450634";
     export const BRAIN_PRISM: string = "708927848076935218";
 
-    // otherButtons
+    // other reactions
     export const NITRO_EMOJI: string = "706246225200152656";
 }
