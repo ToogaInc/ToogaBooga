@@ -28,6 +28,15 @@ import {DungeonUtilities} from "../utilities/DungeonUtilities";
 import {EmojiConstants} from "../constants/EmojiConstants";
 
 export namespace QuotaManager {
+    export const ALL_QUOTAS_KV: { [key: string]: string } = {
+        "Parse": "Parse",
+        "ManualVerify": "Manual Verify",
+        "PunishmentIssued": "Punishment Issued",
+        "RunComplete": "Run Complete",
+        "RunAssist": "Run Assist",
+        "RunFailed": "Run Failed"
+    };
+
     const ALL_QUOTA_LOG_TYPES: QuotaLogType[] = [
         "RunAssist",
         "RunComplete",
@@ -573,7 +582,7 @@ export namespace QuotaManager {
             const logType = logTypeDgnId[0];
             if (key.startsWith("Run")) {
                 if (logTypeDgnId.length === 1) {
-                    return `- ${GeneralConstants.ALL_QUOTAS_KV[logType]} (All): ${value} PT`;
+                    return `- ${ALL_QUOTAS_KV[logType]} (All): ${value} PT`;
                 }
 
                 const dungeonName = DungeonUtilities.getDungeonInfo(logTypeDgnId[1], guildDoc)?.dungeonName;
@@ -581,10 +590,10 @@ export namespace QuotaManager {
                     return "";
                 }
 
-                return `${GeneralConstants.ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
+                return `${ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
             }
 
-            return `${GeneralConstants.ALL_QUOTAS_KV[key]}: ${value} PT`;
+            return `${ALL_QUOTAS_KV[key]}: ${value} PT`;
         }).filter(x => x).join("\n");
     }
 

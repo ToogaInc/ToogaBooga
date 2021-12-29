@@ -1,4 +1,3 @@
-import {GeneralConstants} from "../constants/GeneralConstants";
 import {
     GuildMember,
     Message,
@@ -17,6 +16,7 @@ import {MessageUtilities} from "./MessageUtilities";
 import {StringBuilder} from "./StringBuilder";
 import {AdvancedCollector} from "./collectors/AdvancedCollector";
 import {ButtonConstants} from "../constants/ButtonConstants";
+import {PermsConstants} from "../constants/PermsConstants";
 
 export namespace MiscUtilities {
     /**
@@ -47,7 +47,7 @@ export namespace MiscUtilities {
      * @return {role is DefinedRole} Whether the string is a `DefinedRole`.
      */
     export function isDefinedRole(role: string): role is DefinedRole {
-        return (GeneralConstants.ROLE_ORDER as string[]).includes(role);
+        return (PermsConstants.ROLE_ORDER as string[]).includes(role);
     }
 
     /**

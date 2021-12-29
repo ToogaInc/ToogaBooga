@@ -1,6 +1,5 @@
 import {Collection as MCollection, Filter, MongoClient, ObjectId, UpdateFilter} from "mongodb";
 import {OneLifeBot} from "../OneLifeBot";
-import {GeneralConstants} from "../constants/GeneralConstants";
 import {UserManager} from "./UserManager";
 import {Collection, Collection as DCollection, Guild, GuildMember, TextChannel} from "discord.js";
 import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
@@ -18,6 +17,7 @@ import {
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {DefinedRole} from "../definitions/Types";
 import {StringUtil} from "../utilities/StringUtilities";
+import {PermsConstants} from "../constants/PermsConstants";
 
 export namespace MongoManager {
     export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();
@@ -395,12 +395,12 @@ export namespace MongoManager {
      */
     function getOtherMajorConfigObj(): IOtherMajorConfig {
         const generalAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
-        GeneralConstants.DEFAULT_AFK_CHECK_PERMISSIONS.forEach(permObj => {
+        PermsConstants.DEFAULT_AFK_CHECK_PERMISSIONS.forEach(permObj => {
             generalAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
         });
 
         const prePostAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
-        const tempPerms = GeneralConstants.DEFAULT_AFK_CHECK_PERMISSIONS.slice();
+        const tempPerms = PermsConstants.DEFAULT_AFK_CHECK_PERMISSIONS.slice();
         // Using .slice to make a copy of this array.
         // Get everyone role and don't allow everyone to connect
         tempPerms[0].deny = ["VIEW_CHANNEL", "SPEAK", "STREAM", "CONNECT"];
@@ -871,53 +871,53 @@ export namespace MongoManager {
         }
 
         const roleCollection = new Collection<DefinedRole, string[]>();
-        roleCollection.set(GeneralConstants.MODERATOR_ROLE, []);
+        roleCollection.set(PermsConstants.MODERATOR_ROLE, []);
         if (guildDoc.roles.staffRoles.moderation.moderatorRoleId) {
-            roleCollection.get(GeneralConstants.MODERATOR_ROLE)!.push(
+            roleCollection.get(PermsConstants.MODERATOR_ROLE)!.push(
                 guildDoc.roles.staffRoles.moderation.moderatorRoleId
             );
         }
 
-        roleCollection.set(GeneralConstants.HEAD_LEADER_ROLE, allHrl);
+        roleCollection.set(PermsConstants.HEAD_LEADER_ROLE, allHrl);
 
-        roleCollection.set(GeneralConstants.OFFICER_ROLE, []);
+        roleCollection.set(PermsConstants.OFFICER_ROLE, []);
         if (guildDoc.roles.staffRoles.moderation.officerRoleId) {
-            roleCollection.get(GeneralConstants.OFFICER_ROLE)!.push(
+            roleCollection.get(PermsConstants.OFFICER_ROLE)!.push(
                 guildDoc.roles.staffRoles.moderation.officerRoleId
             );
         }
 
-        roleCollection.set(GeneralConstants.VETERAN_LEADER_ROLE, allVrl);
-        roleCollection.set(GeneralConstants.LEADER_ROLE, allRl);
+        roleCollection.set(PermsConstants.VETERAN_LEADER_ROLE, allVrl);
+        roleCollection.set(PermsConstants.LEADER_ROLE, allRl);
 
-        roleCollection.set(GeneralConstants.SECURITY_ROLE, []);
+        roleCollection.set(PermsConstants.SECURITY_ROLE, []);
         if (guildDoc.roles.staffRoles.moderation.securityRoleId) {
-            roleCollection.get(GeneralConstants.SECURITY_ROLE)!.push(
+            roleCollection.get(PermsConstants.SECURITY_ROLE)!.push(
                 guildDoc.roles.staffRoles.moderation.securityRoleId
             );
         }
 
-        roleCollection.set(GeneralConstants.ALMOST_LEADER_ROLE, allArl);
+        roleCollection.set(PermsConstants.ALMOST_LEADER_ROLE, allArl);
 
-        roleCollection.set(GeneralConstants.HELPER_ROLE, []);
+        roleCollection.set(PermsConstants.HELPER_ROLE, []);
         if (guildDoc.roles.staffRoles.moderation.helperRoleId) {
-            roleCollection.get(GeneralConstants.HELPER_ROLE)!.push(
+            roleCollection.get(PermsConstants.HELPER_ROLE)!.push(
                 guildDoc.roles.staffRoles.moderation.helperRoleId
             );
         }
 
-        roleCollection.set(GeneralConstants.TEAM_ROLE, []);
+        roleCollection.set(PermsConstants.TEAM_ROLE, []);
         if (guildDoc.roles.staffRoles.teamRoleId) {
-            roleCollection.get(GeneralConstants.TEAM_ROLE)!.push(
+            roleCollection.get(PermsConstants.TEAM_ROLE)!.push(
                 guildDoc.roles.staffRoles.teamRoleId
             );
         }
 
-        roleCollection.set(GeneralConstants.MEMBER_ROLE, allVerified);
+        roleCollection.set(PermsConstants.MEMBER_ROLE, allVerified);
 
-        roleCollection.set(GeneralConstants.SUSPENDED_ROLE, []);
+        roleCollection.set(PermsConstants.SUSPENDED_ROLE, []);
         if (guildDoc.roles.suspendedRoleId) {
-            roleCollection.get(GeneralConstants.SUSPENDED_ROLE)!.push(
+            roleCollection.get(PermsConstants.SUSPENDED_ROLE)!.push(
                 guildDoc.roles.suspendedRoleId
             );
         }

@@ -55,6 +55,7 @@ import {QuotaManager} from "../managers/QuotaManager";
 import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/DungeonModifiers";
 import {confirmReaction, controlPanelCollectorFilter, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
 import {ButtonConstants} from "../constants/ButtonConstants";
+import {PermsConstants} from "../constants/PermsConstants";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
@@ -1420,65 +1421,65 @@ export class RaidInstance {
         const permsToReturn: OverwriteResolvable[] = [
             {
                 id: this._guild!.roles.everyone.id,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.EVERYONE_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.EVERYONE_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.EVERYONE_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.EVERYONE_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.verifiedRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.MEMBER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.MEMBER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.securityRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.SECURITY_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.SECURITY_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.officerRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.OFFICER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.OFFICER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.moderatorRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.MODERATOR_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.MODERATOR_ROLE)?.value.deny
             },
             // Universal leader roles start here.
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.ALMOST_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.ALMOST_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.HEAD_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.HEAD_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.VETERAN_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.VETERAN_LEADER_ROLE)?.value.deny
             },
             // Section leader roles start here
             {
                 id: this._raidSection.roles.leaders.sectionAlmostLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.ALMOST_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.ALMOST_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionVetLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.VETERAN_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.VETERAN_LEADER_ROLE)?.value.deny
             }
         ].filter(y => GuildFgrUtilities.hasCachedRole(this._guild, y.id)
             && ((y.allow && y.allow.length !== 0) || (y.deny && y.deny.length !== 0)));

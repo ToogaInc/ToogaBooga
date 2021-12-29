@@ -20,12 +20,12 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {TimedResult, TimedStatus} from "../../definitions/Types";
-import {GeneralConstants} from "../../constants/GeneralConstants";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
 import {Filter, UpdateFilter} from "mongodb";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import {PermsConstants} from "../../constants/PermsConstants";
 
 export class ConfigureAfkCheck extends BaseCommand {
     public static readonly MAX_PERMS_SET: number = 15;
@@ -803,7 +803,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                                 .setMinValues(1)
                                 .setMaxValues(1)
                                 .setCustomId("select")
-                                .addOptions(GeneralConstants.ROLE_ORDER.map(x => {
+                                .addOptions(PermsConstants.ROLE_ORDER.map(x => {
                                     return {
                                         value: x,
                                         label: x

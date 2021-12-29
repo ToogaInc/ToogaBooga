@@ -13,7 +13,6 @@ import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilitie
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {StringUtil} from "../utilities/StringUtilities";
-import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {PrivateApiDefinitions as PAD} from "../private-api/PrivateApiDefinitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -34,7 +33,121 @@ import {LoggerManager} from "./LoggerManager";
 import {ButtonConstants} from "../constants/ButtonConstants";
 
 export namespace VerifyManager {
-    const CANCEL_ID: string = "cancel";
+    export const NUMBER_OF_STATS: number = 8;
+    export const SHORT_STAT_TO_LONG: { [s: string]: [string, string] } = {
+        "att": ["attack", "Attack"],
+        "def": ["defense", "Defense"],
+        "spd": ["speed", "Speed"],
+        "dex": ["dexterity", "Dexterity"],
+        "vit": ["vitality", "Vitality"],
+        "wis": ["wisdom", "Wisdom"],
+        "hp": ["health", "Health"],
+        "mp": ["magic", "Magic"]
+    };
+
+    export const LONG_STAT_TO_SHORT: { [s: string]: string } = {
+        "attack": "att",
+        "defense": "def",
+        "speed": "spd",
+        "dexterity": "dex",
+        "vitality": "vit",
+        "wisdom": "wis",
+        "health": "hp",
+        "magic": "mp"
+    };
+
+    export const GY_HIST_TO_DISPLAY: { [s: string]: string } = {
+        "Lost Halls completed": "Lost Halls",
+        "Voids completed": "Voids",
+        "Cultist Hideouts completed": "Cultist Hideouts",
+        "Nests completed2": "Nests",
+        "Shatters completed1": "Shatters",
+        "Tombs completed": "Tomb of the Ancients",
+        "Ocean Trenches completed": "Ocean Trenches",
+        "Parasite chambers completed4": "Parasite Chambers",
+        "Lairs of Shaitan completed4": "Lair of Shaitans",
+        "Puppet Master's Encores completed4": "Puppet Master's Encores",
+        "Cnidarian Reefs completed": "Cnidarian Reefs",
+        "Secluded Thickets completed": "Secluded Thickets",
+        "Cursed Libraries completed": "Cursed Libraries",
+        "Fungal Caverns completed": "Fungal Caverns",
+        "Crystal Caverns completed": "Crystal Caverns",
+        "Lairs of Draconis (hard mode) completed2": "Lair of Draconis (Hard)",
+        "Lairs of Draconis (easy mode) completed1": "Lair of Draconis (Easy)",
+        "Mountain Temples completed2": "Mountain Temples",
+        "Crawling Depths completed1": "Crawling Depths",
+        "Woodland Labyrinths completed1": "Woodland Labyrinths",
+        "Deadwater Docks completed1": "Deadwater Docks",
+        "Ice Caves completed1": "Ice Cave",
+        "Bella Donnas completed3": "Belladonna's Gardens",
+        "Davy Jones's Lockers completed1": "Davy Jones' Lockers",
+        "Battle for the Nexuses completed1": "Battle of the Nexus",
+        "Candyland Hunting Grounds completed": "Candyland Hunting Grounds",
+        "Puppet Master's Theatres completed1": "Puppet Master's Theatres",
+        "Toxic Sewers completed1": "Toxic Sewers",
+        "Haunted Cemeteries completed1": "Haunted Cemetaries",
+        "Mad Labs completed1": "Mad Labs",
+        "Abysses of Demons completed": "Abyss of Demons",
+        "Manors of the Immortals completed": "Manor of the Immortals",
+        "Ancient Ruins completed": "Ancient Ruins",
+        "Undead Lairs completed": "Undead Lairs",
+        "Sprite Worlds completed": "Sprite Worlds",
+        "Snake Pits completed": "Snake Pits",
+        "Caves of a Thousand Treasures completed1": "Cave of a Thousand Treasures",
+        "Magic Woods completed": "Magic Woods",
+        "Hives completed1": "Hives",
+        "Spider Dens completed": "Spider Dens",
+        "Forbidden Jungles completed": "Forbidden Jungles",
+        "Forest Mazes completed1": "Forest Mazes",
+        "Pirate Caves completed": "Pirate Caves"
+    };
+
+    export const DISPLAY_TO_GY_HIST: { [s: string]: string } = {
+        "Lost Halls": "Lost Halls completed",
+        "Voids": "Voids completed",
+        "Cultist Hideouts": "Cultist Hideouts completed",
+        "Nests": "Nests completed2",
+        "Shatters": "Shatters completed1",
+        "Tomb of the Ancients": "Tombs completed",
+        "Ocean Trenches": "Ocean Trenches completed",
+        "Parasite Chambers": "Parasite chambers completed4",
+        "Lair of Shaitans": "Lairs of Shaitan completed4",
+        "Puppet Master's Encores": "Puppet Master's Encores completed4",
+        "Cnidarian Reefs": "Cnidarian Reefs completed",
+        "Secluded Thickets": "Secluded Thickets completed",
+        "Cursed Libraries": "Cursed Libraries completed",
+        "Fungal Caverns": "Fungal Caverns completed",
+        "Crystal Caverns": "Crystal Caverns completed",
+        "Lair of Draconis (Hard)": "Lairs of Draconis (hard mode) completed2",
+        "Lair of Draconis (Easy)": "Lairs of Draconis (easy mode) completed1",
+        "Mountain Temples": "Mountain Temples completed2",
+        "Crawling Depths": "Crawling Depths completed1",
+        "Woodland Labyrinths": "Woodland Labyrinths completed1",
+        "Deadwater Docks": "Deadwater Docks completed1",
+        "Ice Cave": "Ice Caves completed1",
+        "Belladonna's Gardens": "Bella Donnas completed3",
+        "Davy Jones' Lockers": "Davy Jones's Lockers completed1",
+        "Battle of the Nexus": "Battle for the Nexuses completed1",
+        "Candyland Hunting Grounds": "Candyland Hunting Grounds completed",
+        "Puppet Master's Theatres": "Puppet Master's Theatres completed1",
+        "Toxic Sewers": "Toxic Sewers completed1",
+        "Haunted Cemetaries": "Haunted Cemeteries completed1",
+        "Mad Labs": "Mad Labs completed1",
+        "Abyss of Demons": "Abysses of Demons completed",
+        "Manor of the Immortals": "Manors of the Immortals completed",
+        "Ancient Ruins": "Ancient Ruins completed",
+        "Undead Lairs": "Undead Lairs completed",
+        "Sprite Worlds": "Sprite Worlds completed",
+        "Snake Pits": "Snake Pits completed",
+        "Cave of a Thousand Treasures": "Caves of a Thousand Treasures completed1",
+        "Magic Woods": "Magic Woods completed",
+        "Hives": "Hives completed1",
+        "Spider Dens": "Spider Dens completed",
+        "Forbidden Jungles": "Forbidden Jungles completed",
+        "Forest Mazes": "Forest Mazes completed1",
+        "Pirate Caves": "Pirate Caves completed"
+    };
+    
     const CHECK_PROFILE_ID: string = "check_profile";
     const NO_MANUAL_VERIFY_ID: string = "deny";
     const MANUAL_VERIFY_ID: string = "manual_verify";
@@ -50,10 +163,6 @@ export namespace VerifyManager {
         .setLabel("Check Profile")
         .setCustomId(CHECK_PROFILE_ID)
         .setStyle("PRIMARY");
-    const CANCEL_PROFILE_CHECK_BUTTON = new MessageButton()
-        .setLabel("Cancel")
-        .setCustomId(CANCEL_ID)
-        .setStyle("DANGER");
     const NO_MANUAL_VERIFY_BUTTON = new MessageButton()
         .setLabel("Deny Manual Verify")
         .setCustomId(NO_MANUAL_VERIFY_ID)
@@ -394,7 +503,7 @@ export namespace VerifyManager {
                 userDocToUse = userDocs[0];
             }
 
-            if (selectedOption.isButton() && selectedOption.customId === "cancel") {
+            if (selectedOption.isButton() && selectedOption.customId === ButtonConstants.CANCEL_ID) {
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} has stopped the verification process. This occurred when the person was `
                         + "asked to either use an existing name or provide a new name."
@@ -507,7 +616,7 @@ export namespace VerifyManager {
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 CHECK_PROFILE_BUTTON,
-                CANCEL_PROFILE_CHECK_BUTTON
+                ButtonConstants.CANCEL_BUTTON
             ])
         });
 
@@ -522,7 +631,7 @@ export namespace VerifyManager {
 
         collector.on("collect", async i => {
             await i.deferUpdate();
-            if (i.customId === "cancel") {
+            if (i.customId === ButtonConstants.CANCEL_ID) {
                 await verifKit.msg!.edit({
                     embeds: [
                         MessageUtilities.generateBlankEmbed(member.guild, "RED")
@@ -636,7 +745,7 @@ export namespace VerifyManager {
                     ],
                     components: AdvancedCollector.getActionRowsFromComponents([
                         CHECK_PROFILE_BUTTON,
-                        CANCEL_PROFILE_CHECK_BUTTON
+                        ButtonConstants.CANCEL_BUTTON
                     ])
                 });
 
@@ -687,7 +796,7 @@ export namespace VerifyManager {
                     ],
                     components: AdvancedCollector.getActionRowsFromComponents([
                         CHECK_PROFILE_BUTTON,
-                        CANCEL_PROFILE_CHECK_BUTTON
+                        ButtonConstants.CANCEL_BUTTON
                     ])
                 });
 
@@ -826,7 +935,7 @@ export namespace VerifyManager {
                     ],
                     components: AdvancedCollector.getActionRowsFromComponents([
                         CHECK_PROFILE_BUTTON,
-                        CANCEL_PROFILE_CHECK_BUTTON
+                        ButtonConstants.CANCEL_BUTTON
                     ])
                 });
                 const r = await GlobalFgrUtilities.sendMsg(member, {
@@ -1544,7 +1653,7 @@ export namespace VerifyManager {
                 const numNeeded = verifProps.verifReq.characters.statsNeeded[i];
                 if (numNeeded === 0)
                     continue;
-                sb.append(`- ${numNeeded} ${i}/${GeneralConstants.NUMBER_OF_STATS} Characters`)
+                sb.append(`- ${numNeeded} ${i}/${NUMBER_OF_STATS} Characters`)
                     .append(checkPastDeaths ? " (Past Deaths Allowed)." : ".").appendLine();
             }
         }
@@ -1562,7 +1671,7 @@ export namespace VerifyManager {
                     sb.append("- Exaltations is Public.").appendLine();
                     added = true;
                 }
-                const displayedVersion = GeneralConstants.SHORT_STAT_TO_LONG[stat][1];
+                const displayedVersion = SHORT_STAT_TO_LONG[stat][1];
                 sb.append(`- ${numNeeded} ${displayedVersion} Exaltations.`).appendLine();
             }
 
@@ -1588,7 +1697,7 @@ export namespace VerifyManager {
                         sb.append("- Graveyard History is Public.").appendLine();
                         added = true;
                     }
-                    const display = GeneralConstants.GY_HIST_TO_DISPLAY[entry.key];
+                    const display = GY_HIST_TO_DISPLAY[entry.key];
                     sb.append(`- ${entry.value} ${display} Completions.`).appendLine();
                 }
             }
@@ -1761,7 +1870,7 @@ export namespace VerifyManager {
                 const missingStats = new StringBuilder();
                 for (let i = 0; i < neededStats.length; i++) {
                     if (neededStats[i] <= 0) continue;
-                    missingStats.append(`- Need ${neededStats[i]} ${i}/${GeneralConstants.NUMBER_OF_STATS}s`)
+                    missingStats.append(`- Need ${neededStats[i]} ${i}/${NUMBER_OF_STATS}s`)
                         .appendLine();
                 }
 
@@ -1830,8 +1939,8 @@ export namespace VerifyManager {
                 }
                 else {
                     for (const gyStat of verifReq.graveyardSummary.realmEyeCompletions) {
-                        if (!(gyStat.key in GeneralConstants.DISPLAY_TO_GY_HIST)) continue;
-                        const gyHistKey = GeneralConstants.DISPLAY_TO_GY_HIST[gyStat.key];
+                        if (!(gyStat.key in DISPLAY_TO_GY_HIST)) continue;
+                        const gyHistKey = DISPLAY_TO_GY_HIST[gyStat.key];
                         const data = gyHist.properties.find(x => x.achievement === gyHistKey);
                         // Doesn't qualify because dungeon doesn't exist.
                         if (!data) {
@@ -1876,7 +1985,7 @@ export namespace VerifyManager {
                 // We use this variable to keep track of each stat and corresponding exaltations needed.
                 // neededExalt will have keys "att" "spd" "hp" etc
                 const neededExalt: { [s: string]: number } = {};
-                for (const d of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
+                for (const d of Object.keys(SHORT_STAT_TO_LONG))
                     neededExalt[d] = verifReq.exaltations.minimum[d];
 
                 if (verifReq.exaltations.onOneChar) {
@@ -1887,7 +1996,7 @@ export namespace VerifyManager {
                             if (!entry.exaltationStats.hasOwnProperty(longStat))
                                 continue;
 
-                            const shortenedStat = GeneralConstants.LONG_STAT_TO_SHORT[longStat];
+                            const shortenedStat = LONG_STAT_TO_SHORT[longStat];
                             if (neededExalt[shortenedStat] - entry.exaltationStats[longStat] > 0) {
                                 passed = false;
                                 break;
@@ -1912,7 +2021,7 @@ export namespace VerifyManager {
                             if (!entry.exaltationStats.hasOwnProperty(longStat))
                                 continue;
 
-                            const shortenedStat = GeneralConstants.LONG_STAT_TO_SHORT[longStat];
+                            const shortenedStat = LONG_STAT_TO_SHORT[longStat];
                             neededExalt[shortenedStat] -= entry.exaltationStats[longStat];
                         }
                     }
@@ -1931,7 +2040,7 @@ export namespace VerifyManager {
                     }
                     else {
                         for (const statNotFulfilled of notMetExaltations) {
-                            const statName = GeneralConstants.SHORT_STAT_TO_LONG[statNotFulfilled];
+                            const statName = SHORT_STAT_TO_LONG[statNotFulfilled];
                             issuesExaltations.append(`- Need ${neededExalt[statNotFulfilled]} ${statName[1]}`)
                                 .append(" Exaltations.")
                                 .appendLine();

@@ -780,20 +780,20 @@ export class ConfigureQuotas extends BaseCommand {
                     const logTypeAndDgnId = elem.key.split(":");
                     const logType = logTypeAndDgnId[0];
                     if (logTypeAndDgnId.length === 1) {
-                        const tempS = `${GeneralConstants.ALL_QUOTAS_KV[logType]} (All): \`${elem.value}\` Points\n`;
+                        const tempS = `${QuotaManager.ALL_QUOTAS_KV[logType]} (All): \`${elem.value}\` Points\n`;
                         return i === currIdx
                             ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${tempS}`
                             : tempS;
                     }
 
                     const dungeonName = DungeonUtilities.getDungeonInfo(logTypeAndDgnId[1], ctx.guildDoc!)!.dungeonName;
-                    const s = `${GeneralConstants.ALL_QUOTAS_KV[logType]} (${dungeonName}): \`${elem.value}\` Points\n`;
+                    const s = `${QuotaManager.ALL_QUOTAS_KV[logType]} (${dungeonName}): \`${elem.value}\` Points\n`;
                     return i === currIdx
                         ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${s}`
                         : s;
                 }
 
-                const mainS = `${GeneralConstants.ALL_QUOTAS_KV[elem.key]}: \`${elem.value}\` Points\n`;
+                const mainS = `${QuotaManager.ALL_QUOTAS_KV[elem.key]}: \`${elem.value}\` Points\n`;
                 return i === currIdx
                     ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${mainS}`
                     : mainS;

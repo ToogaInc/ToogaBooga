@@ -29,9 +29,9 @@ import {GeneralConstants} from "../../constants/GeneralConstants";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
-import SHORT_STAT_TO_LONG = GeneralConstants.SHORT_STAT_TO_LONG;
 import {VerifyManager} from "../../managers/VerifyManager";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import SHORT_STAT_TO_LONG = VerifyManager.SHORT_STAT_TO_LONG;
 
 export class ConfigureVerification extends BaseCommand {
     public static GUILD_RANKS: string[] = [

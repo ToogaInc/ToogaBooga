@@ -9,13 +9,13 @@ import {
     User
 } from "discord.js";
 import {OneLifeBot} from "../OneLifeBot";
-import {GeneralConstants} from "../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {IGuildInfo} from "../definitions";
 import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {MongoManager} from "../managers/MongoManager";
+import {PermsConstants} from "../constants/PermsConstants";
 
 export interface ICommandContext {
     /**
@@ -385,7 +385,7 @@ export abstract class BaseCommand {
         // Best way to handle this is to simply delete any entries in roleCollection that isn't allowed
         // And then add the IDs later.
         // Begin by getting rid of any roles from the collection that aren't needed at all.
-        for (const r of GeneralConstants.ROLE_ORDER) {
+        for (const r of PermsConstants.ROLE_ORDER) {
             if (rolePerms.includes(r)) continue;
             roleCollection.delete(r);
         }
