@@ -1,5 +1,11 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {GuildMember} from "discord.js";
+import {
+    BaseMessageComponent,
+    ColorResolvable,
+    GuildMember,
+    MessageButton,
+    MessageEmbed
+} from "discord.js";
 import {UserManager} from "../../managers/UserManager";
 import {MongoManager} from "../../managers/MongoManager";
 import {IIdNameInfo} from "../../definitions";
@@ -8,13 +14,18 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {OneLifeBot} from "../../OneLifeBot";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
+import getDateTime = TimeUtilities.getDateTime;
+import {ArrayUtilities} from "../../utilities/ArrayUtilities";
+import {Emojis} from "../../constants/Emojis";
+import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
+import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class FindPerson extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
             cmdCode: "FIND_PERSON",
             formalCommandName: "Find Person/User",
-            botCommandName: "find",
+            botCommandName: "finduser",
             description: "Finds a person given their IGN.",
             rolePermissions: [
                 "Team",
@@ -36,6 +47,15 @@ export class FindPerson extends BaseCommand {
                     prettyType: "String",
                     required: true,
                     example: ["Darkmattr", "Opre"]
+                },
+                {
+                    displayName: "Extra Details",
+                    argName: "extra_details",
+                    desc: "Whether to show extra information, if available. Default is false.",
+                    type: ArgumentType.Boolean,
+                    prettyType: "Boolean",
+                    required: false,
+                    example: ["True", "False"]
                 }
             ],
             generalPermissions: [],
@@ -52,6 +72,7 @@ export class FindPerson extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        const showExtraDetails = ctx.interaction.options.getBoolean("extra_details", false) ?? false;
         const query = ctx.interaction.options.getString("ign", true);
         let targetMember: GuildMember | null = null;
 
@@ -65,7 +86,6 @@ export class FindPerson extends BaseCommand {
 
         // If it doesn't, try searching for this member
         if (!targetMember) {
-            // TODO does `search` take case into account here?
             const results = await ctx.guild!.members.search({
                 query: query,
                 // Bigger limit because this checks both usernames and nicknames, when all we want to check is
@@ -136,39 +156,88 @@ export class FindPerson extends BaseCommand {
         }
 
         // Member found
-        const [userNameId, userDoc] = await Promise.all([
+        const [userNameIds, userDoc] = await Promise.all([
             MongoManager.findIdInIdNameCollection(targetMember.id),
             MongoManager.getUserCollection().findOne({discordId: targetMember.id})
         ]);
 
+        if (userNameIds.length > 1) {
+            console.warn(`${targetMember.id} - ${userNameIds.length}`);
+        }
+
+        const warnDisplay = userNameIds.length > 0
+            ? userNameIds[0].rotmgNames.length === 0
+                ? "`" + Emojis.WARNING_EMOJI + "`"
+                : ""
+            : "";
         const successEmbed = MessageUtilities.generateBlankEmbed(targetMember, "GREEN")
             .setTitle(`Find Query Success: **${query}**`)
             .setTimestamp()
+            .setThumbnail(targetMember.user.displayAvatarURL())
             .setDescription(
                 new StringBuilder()
+                    .append("__Basic Profile Information__").appendLine()
                     .append(`- ID: ${targetMember.id}`).appendLine()
                     .append(`- Tag: ${targetMember.user.tag}`).appendLine()
                     .append(`- Mention: ${targetMember}`).appendLine()
+                    .append(`- In ID Database: ${userNameIds.length > 0 ? "Yes" : "No"} ${warnDisplay}`).appendLine()
+                    .append(`- In User Database: ${userDoc ? "Yes" : "No"}`).appendLine()
                     .toString()
-            ).addField(
-                "Highest Role",
-                targetMember.roles.highest.toString(),
-                true
-            ).addField(
-                "Voice Channel",
-                targetMember.voice.channel?.toString() ?? "None",
-                true
-            ).addField(
-                "Joined Server",
-                StringUtil.codifyString(
-                    targetMember.joinedTimestamp
-                        ? `${TimeUtilities.getDateTime(targetMember.joinedTimestamp)} GMT`
-                        : "N/A"
-                )
-            ).addField(
-                "Joined Discord",
-                StringUtil.codifyString(TimeUtilities.getDateTime(targetMember.user.createdTimestamp))
             );
+
+        if (userNameIds.length > 0) {
+            const id = userNameIds[0];
+            successEmbed.addField(
+                "ID Information",
+                new StringBuilder()
+                    .append(`Past Name(s): \`${id.pastRealmNames.length}\``).appendLine()
+                    .append(`Past ID(s): \`${id.pastDiscordIds.length}\``).appendLine()
+                    .append(`Connected ID: \`${id.currentDiscordId}\``).appendLine()
+                    .append(`Connected Name(s): ${StringUtil.codifyString(
+                        `[${id.rotmgNames.map(x => x.ign).join(", ")}]`
+                    )}`).toString()
+            );
+
+            if (showExtraDetails) {
+                const pNamesDisplay = ArrayUtilities.breakArrayIntoSubsets(
+                    id.pastRealmNames.map(x => `- \`${x.ign}\` (To ${getDateTime(x.toDate)} GMT)`),
+                    5
+                );
+
+                const pIdDisplay = ArrayUtilities.breakArrayIntoSubsets(
+                    id.pastDiscordIds.map(x => `- \`${x.oldId}\` (To ${getDateTime(x.toDate)} GMT)`),
+                    5
+                );
+
+                for (const pastName of pNamesDisplay) {
+                    successEmbed.addField("Past Name(s)", pastName.join("\n"), true);
+                }
+
+                for (const pastId of pIdDisplay) {
+                    successEmbed.addField("Past ID(s)", pastId.join("\n"), true);
+                }
+            }
+        }
+
+        successEmbed.addField(
+            "Highest Role",
+            targetMember.roles.highest.toString(),
+            true
+        ).addField(
+            "Voice Channel",
+            targetMember.voice.channel?.toString() ?? "None",
+            true
+        ).addField(
+            "Joined Server",
+            StringUtil.codifyString(
+                targetMember.joinedTimestamp
+                    ? `${TimeUtilities.getDateTime(targetMember.joinedTimestamp)} GMT`
+                    : "N/A"
+            )
+        ).addField(
+            "Joined Discord",
+            StringUtil.codifyString(TimeUtilities.getDateTime(targetMember.user.createdTimestamp))
+        );
 
         if (userDoc) {
             const gNote = userDoc.details.guildNotes.find(x => x.key === ctx.guild!.id);
@@ -177,7 +246,7 @@ export class FindPerson extends BaseCommand {
 
             successEmbed.addField(
                 "Suspension Information",
-                StringUtil.codifyString(suspendInfo ? `Yes; Mod. ID: ${suspendInfo.actionId}` : "No.")
+                StringUtil.codifyString(suspendInfo ? `Yes; Mod. ID: ${suspendInfo.actionId}` : "None.")
             );
 
             if (!suspendInfo) {
@@ -221,9 +290,173 @@ export class FindPerson extends BaseCommand {
             }
         }
 
+        if (userDoc && ctx.guildDoc && ctx.guild) {
+            const thisGuildPunishmentHist = userDoc.details.moderationHistory.filter(x => x.guildId === ctx.guild!.id);
+            if (thisGuildPunishmentHist.length === 0) {
+                await ctx.interaction.reply({
+                    embeds: [successEmbed]
+                });
+                return 0;
+            }
+
+            const displayModHist: MessageEmbed[] = thisGuildPunishmentHist.map((x, i) => {
+                let colorToUse: ColorResolvable;
+                if (x.moderationType === "Warn") {
+                    colorToUse = "YELLOW";
+                }
+                else {
+                    colorToUse = x.resolved ? "GREEN" : "RED";
+                }
+
+                let expiresAtDisplay: string = "Indefinite.";
+                if (x.expiresAt && x.expiresAt !== -1) {
+                    expiresAtDisplay = `${getDateTime(x.expiresAt)} GMT`;
+                }
+
+                const embed = MessageUtilities.generateBlankEmbed(targetMember!, colorToUse)
+                    .setTitle(`Punishment Information: ${x.moderationType}`)
+                    .setDescription(
+                        new StringBuilder()
+                            .append("__**User Information**__").appendLine()
+                            .append(`- User Nickname: ${x.affectedUser.name ?? "N/A"}`).appendLine()
+                            .append(`- Discord ID: ${x.affectedUser.id ?? "N/A"}`).appendLine()
+                            .appendLine()
+                            .append("__**Moderator Information**__").appendLine()
+                            .append(`- Moderator IGN: ${x.moderator.name}`).appendLine()
+                            .append(`- Moderator Tag: ${x.moderator.tag}`).appendLine()
+                            .append(`- Moderator ID: ${x.moderator.id}`).appendLine()
+                            .toString()
+                    )
+                    .addField(
+                        "Moderation ID",
+                        StringUtil.codifyString(x.actionId)
+                    )
+                    .addField(
+                        "Issued At",
+                        StringUtil.codifyString(`${getDateTime(x.issuedAt)} GMT`),
+                        true
+                    )
+                    .addField(
+                        "Expires At",
+                        StringUtil.codifyString(expiresAtDisplay),
+                        true
+                    )
+                    .addField(
+                        "Reason",
+                        StringUtil.codifyString(x.reason)
+                    )
+                    .setTimestamp();
+
+                if (x.resolved) {
+                    const s = StringUtil.codifyString(
+                        `${x.resolved.moderator.name ? x.resolved.moderator.name : "N/A"}`
+                        + ` (ID ${x.resolved.moderator.id})`
+                    );
+                    embed.addField(
+                        "Punishment Resolution",
+                        new StringBuilder()
+                            .append(`__Resolved By:__ ${s}`)
+                            .append(`__Time:__ ${StringUtil.codifyString(`${getDateTime(x.resolved.issuedAt)} GMT`)}`)
+                            .append(`__Resolution Reason:__ ${StringUtil.codifyString(x.resolved.reason)}`)
+                            .append(`__Resolution ID:__ ${StringUtil.codifyString(x.resolved.actionId)}`)
+                            .toString()
+                    );
+                }
+                else if (x.moderationType !== "Warn") {
+                    embed.addField(
+                        "Punishment Not Resolved",
+                        "This punishment has not been resolved; it is still ongoing."
+                    );
+                }
+
+                embed.setFooter(`Page ${i + 2}/${thisGuildPunishmentHist.length + 1}`);
+                return embed;
+            });
+
+            displayModHist.unshift(successEmbed.setFooter(`Page 1/${thisGuildPunishmentHist.length + 1}`));
+
+            const uniqueId = StringUtil.generateRandomString(20);
+            const nextId = uniqueId + "_next";
+            const stopId = uniqueId + "_stop";
+            const backId = uniqueId + "_back";
+            const components: BaseMessageComponent[] = [
+                new MessageButton()
+                    .setStyle("SECONDARY")
+                    .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
+                    .setLabel("Previous Page")
+                    .setCustomId(backId),
+                new MessageButton()
+                    .setStyle("DANGER")
+                    .setEmoji(Emojis.X_EMOJI)
+                    .setLabel("Stop Interaction")
+                    .setCustomId(stopId),
+                new MessageButton()
+                    .setStyle("SECONDARY")
+                    .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+                    .setLabel("Next Page")
+                    .setCustomId(nextId)
+            ];
+
+            await ctx.interaction.reply({
+                embeds: [successEmbed],
+                components: AdvancedCollector.getActionRowsFromComponents(components)
+            });
+
+            const collector = ctx.channel.createMessageComponentCollector({
+                filter: i => i.customId.startsWith(uniqueId) && i.user.id === ctx.user.id,
+                time: 10 * 1000
+            });
+
+            let currPage = 0;
+            collector.on("collect", async i => {
+                await i.deferUpdate();
+
+                switch (i.customId) {
+                    case nextId: {
+                        if (currPage === displayModHist.length - 1) {
+                            break;
+                        }
+
+                        currPage++;
+                        break;
+                    }
+                    case backId: {
+                        if (currPage === 0) {
+                            break;
+                        }
+
+                        currPage--;
+                        break;
+                    }
+                    case stopId: {
+                        collector.stop("stopped");
+                        return;
+                    }
+                }
+
+                await ctx.interaction.editReply({
+                    embeds: [displayModHist[currPage]],
+                    components: AdvancedCollector.getActionRowsFromComponents(components)
+                });
+            });
+
+            collector.on("end", async (_, r) => {
+                // Possible that someone might delete the message before this triggers.
+                await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await ctx.interaction.editReply({
+                        embeds: [successEmbed],
+                        components: []
+                    });
+                });
+            });
+
+            return 0;
+        }
+
         await ctx.interaction.reply({
             embeds: [successEmbed]
         });
+
         return 0;
     }
 }

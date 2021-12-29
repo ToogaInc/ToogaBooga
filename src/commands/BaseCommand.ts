@@ -373,8 +373,7 @@ export abstract class BaseCommand {
 
     /**
      * Gets all roles that are needed in order to run this command.
-     * @param {string[]} rolePerms The role permissions. If role inclusion is enabled for the command, there must
-     * only be one role.
+     * @param {string[]} rolePerms The role permissions.
      * @param {IGuildInfo} guildDoc The guild document.
      * @return {string[]} All role IDs that can be used to satisfy the requirement.
      * @private

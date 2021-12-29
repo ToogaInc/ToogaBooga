@@ -55,7 +55,9 @@ export class GetStats extends BaseCommand {
         const showAll = ctx.interaction.options.getBoolean("show_all", false) ?? false;
         const mStr = ctx.interaction.options.getString("member", false);
         const query = mStr ?? ctx.user.id;
-        const resMember = await UserManager.resolveUser(query);
+        const resMember = ctx.guild
+            ? await UserManager.resolveMember(ctx.guild, query, true)
+            : await UserManager.resolveUser(query);
         if (!resMember) {
             await ctx.interaction.reply({
                 content: `Something went wrong when trying to find ${query === ctx.user.id ? "your profile" : query}.`
@@ -64,7 +66,10 @@ export class GetStats extends BaseCommand {
             return -1;
         }
 
-        const stats = await LoggerManager.getStats(resMember.user, ctx.guild?.id);
+        const user = "member" in resMember
+            ? resMember.member.user
+            : resMember.user;
+        const stats = await LoggerManager.getStats(user, ctx.guild?.id);
         if (!stats) {
             await ctx.interaction.reply({
                 content: query === ctx.user.id
@@ -74,7 +79,7 @@ export class GetStats extends BaseCommand {
             return -1;
         }
 
-        const embed = MessageUtilities.generateBlankEmbed(resMember.user, "RANDOM")
+        const embed = MessageUtilities.generateBlankEmbed(user, "RANDOM")
             .setTimestamp()
             .setFooter("C = Completed; F = Failed; A = Assisted.");
 
@@ -139,7 +144,7 @@ export class GetStats extends BaseCommand {
         };
 
         if (ctx.guild && !showAll) {
-            embed.setTitle(`Stats for **${resMember.user.tag}** in **${ctx.guild!}**`)
+            embed.setTitle(`Stats for **${user.tag}** in **${ctx.guild!}**`)
                 .setDescription(`${Emojis.TICKET_EMOJI} Points: ${stats.points.get(ctx.guild.id) ?? 0}`);
 
             const dungeonsLed = stats.dungeonsLed.get(ctx.guild.id);
@@ -158,7 +163,7 @@ export class GetStats extends BaseCommand {
             }
         }
         else {
-            embed.setTitle(`Stats for **${resMember.user.tag}**`)
+            embed.setTitle(`Stats for **${user.tag}**`)
                 .setDescription("Please note that custom dungeons and keys are not shown here.");
 
             const dungeonsLed: DungeonLedType = new Collection();
