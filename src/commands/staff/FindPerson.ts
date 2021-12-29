@@ -41,12 +41,21 @@ export class FindPerson extends BaseCommand {
             argumentInfo: [
                 {
                     displayName: "In-Game Name",
-                    argName: "ign",
-                    desc: "The member to look up.",
+                    argName: "with_ign",
+                    desc: "The member to look up by IGN.",
                     type: ArgumentType.String,
                     prettyType: "String",
-                    required: true,
+                    required: false,
                     example: ["Darkmattr", "Opre"]
+                },
+                {
+                    displayName: "Discord ID",
+                    argName: "with_id",
+                    desc: "The member to look up by ID.",
+                    type: ArgumentType.String,
+                    prettyType: "String",
+                    required: false,
+                    example: ["613793967871492131"]
                 },
                 {
                     displayName: "Extra Details",
@@ -73,61 +82,89 @@ export class FindPerson extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const showExtraDetails = ctx.interaction.options.getBoolean("extra_details", false) ?? false;
-        const query = ctx.interaction.options.getString("ign", true);
-        let targetMember: GuildMember | null = null;
-
-        // Does the cache have this person?
-        const cachedResult = ctx.guild!.members.cache.find(x => {
-            return UserManager.getAllNames(x.displayName, true).includes(query.toLowerCase());
-        });
-
-        if (cachedResult)
-            targetMember = cachedResult;
-
-        // If it doesn't, try searching for this member
-        if (!targetMember) {
-            const results = await ctx.guild!.members.search({
-                query: query,
-                // Bigger limit because this checks both usernames and nicknames, when all we want to check is
-                // nicknames
-                limit: 10
+        const ignQuery = ctx.interaction.options.getString("with_ign", false);
+        const idQuery = ctx.interaction.options.getString("with_id", false);
+        if (!ignQuery && !idQuery) {
+            await ctx.interaction.reply({
+                content: "You must specify either an IGN or ID.",
+                ephemeral: true
             });
 
+            return -1;
+        }
 
-            if (results.size > 0) {
-                for (const [id, member] of results) {
-                    const splitName = UserManager.getAllNames(member.displayName);
-                    if (splitName.some(x => x.toLowerCase() === query.toLowerCase())) {
-                        targetMember = member;
-                        break;
+        let targetMember: GuildMember | null = null;
+        let nameIdRes: IIdNameInfo | null = null;
+
+        if (ignQuery) {
+            // Does the cache have this person?
+            const cachedResult = ctx.guild!.members.cache.find(x => {
+                return UserManager.getAllNames(x.displayName, true).includes(ignQuery.toLowerCase());
+            });
+
+            if (cachedResult)
+                targetMember = cachedResult;
+
+            // If it doesn't, try searching for this member
+            if (!targetMember) {
+                const results = await ctx.guild!.members.search({
+                    query: ignQuery,
+                    // Bigger limit because this checks both usernames and nicknames, when all we want to check is
+                    // nicknames
+                    limit: 10
+                });
+
+
+                if (results.size > 0) {
+                    for (const [id, member] of results) {
+                        const splitName = UserManager.getAllNames(member.displayName);
+                        if (splitName.some(x => x.toLowerCase() === ignQuery.toLowerCase())) {
+                            targetMember = member;
+                            break;
+                        }
                     }
                 }
             }
-        }
 
-        // If this doesn't work, try searching in the database
-        let nameIdRes: IIdNameInfo | null = null;
-        if (!targetMember) {
-            const dbRes = await MongoManager.findNameInIdNameCollection(query);
-            if (dbRes.length > 0) {
-                nameIdRes = dbRes[0];
-                const member = await ctx.guild!.members.fetch(dbRes[0].currentDiscordId);
-                if (member)
-                    targetMember = member;
+            // If this doesn't work, try searching in the database
+            if (!targetMember) {
+                const dbRes = await MongoManager.findNameInIdNameCollection(ignQuery);
+                if (dbRes.length > 0) {
+                    nameIdRes = dbRes[0];
+                    const member = await ctx.guild!.members.fetch(dbRes[0].currentDiscordId);
+                    if (member)
+                        targetMember = member;
+                }
+            }
+        }
+        else {
+            const cachedResult = ctx.guild!.members.cache.get(idQuery!);
+            if (cachedResult) {
+                targetMember = cachedResult;
+            }
+
+            if (!targetMember) {
+                const dbRes = await MongoManager.findIdInIdNameCollection(idQuery!);
+                if (dbRes.length > 0) {
+                    nameIdRes = dbRes[0];
+                    const member = await ctx.guild!.members.fetch(dbRes[0].currentDiscordId);
+                    if (member)
+                        targetMember = member;
+                }
             }
         }
 
         // Final result
         if (!targetMember) {
             const failEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-                .setTitle(`Find Query Failed: **${query}**`)
+                .setTitle(`Find Query Failed: **${ignQuery}**`)
                 .setTimestamp();
             if (nameIdRes) {
                 const guilds = OneLifeBot.BotInstance.client.guilds.cache
                     .filter(x => x.members.cache.has(nameIdRes!.currentDiscordId));
 
                 failEmbed.setDescription(
-                    `**\`${query}\`** could not be found in this server, but has verified with this bot.`
+                    `**\`${ignQuery}\`** could not be found in this server, but has verified with this bot.`
                 );
 
                 if (nameIdRes.rotmgNames.length > 0) {
@@ -146,7 +183,7 @@ export class FindPerson extends BaseCommand {
                 );
             }
             else {
-                failEmbed.setDescription(`**\`${query}\`** was not found in this server.`);
+                failEmbed.setDescription(`**\`${ignQuery}\`** was not found in this server.`);
             }
 
             await ctx.interaction.reply({
@@ -171,7 +208,7 @@ export class FindPerson extends BaseCommand {
                 : ""
             : "";
         const successEmbed = MessageUtilities.generateBlankEmbed(targetMember, "GREEN")
-            .setTitle(`Find Query Success: **${query}**`)
+            .setTitle(`Find Query Success: **${ignQuery ?? idQuery}**`)
             .setTimestamp()
             .setThumbnail(targetMember.user.displayAvatarURL())
             .setDescription(
@@ -345,7 +382,7 @@ export class FindPerson extends BaseCommand {
                         "Reason",
                         StringUtil.codifyString(x.reason)
                     )
-                    .setTimestamp();
+                    .setTimestamp(x.issuedAt);
 
                 if (x.resolved) {
                     const s = StringUtil.codifyString(
@@ -404,7 +441,7 @@ export class FindPerson extends BaseCommand {
 
             const collector = ctx.channel.createMessageComponentCollector({
                 filter: i => i.customId.startsWith(uniqueId) && i.user.id === ctx.user.id,
-                time: 10 * 1000
+                time: 3 * 60 * 1000
             });
 
             let currPage = 0;
