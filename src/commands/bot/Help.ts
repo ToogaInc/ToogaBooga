@@ -48,7 +48,9 @@ export class Help extends BaseCommand {
             if (command) {
                 const cmdHelpEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "GREEN")
                     .setTitle(`Command Help: **${command.commandInfo.formalCommandName}**`)
-                    .setFooter(`Server Context: ${ctx.guild?.name ?? "Direct Message"}`)
+                    .setFooter({
+                        text: `Server Context: ${ctx.guild?.name ?? "Direct Message"}`
+                    })
                     .setDescription(command.commandInfo.description)
                     .addField("Command Code", StringUtil.codifyString(command.commandInfo.botCommandName))
                     .addField(
@@ -136,7 +138,9 @@ export class Help extends BaseCommand {
 
         const helpEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "GREEN")
             .setTitle("Command List")
-            .setFooter(`Server Context: ${ctx.guild?.name ?? "Direct Messages"}`)
+            .setFooter({
+                text: `Server Context: ${ctx.guild?.name ?? "Direct Messages"}`
+            })
             .setDescription(
                 showCmdHelp
                     ? `The command, \`${cmdName}\`, could not be found. Try looking through the list below.`

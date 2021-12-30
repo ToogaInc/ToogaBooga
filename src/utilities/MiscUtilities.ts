@@ -122,7 +122,7 @@ export namespace MiscUtilities {
                     .setDescription(new StringBuilder(desc)
                         .appendLine().appendLine()
                         .append("If you wish to cancel this process, please press the `Cancel` button.").toString())
-                    .setFooter("Section Selector")
+                    .setFooter({text: "Section Selector"})
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageSelectMenu()
@@ -151,7 +151,7 @@ export namespace MiscUtilities {
             return null;
         }
 
-        return [allSections.find(x => x.uniqueIdentifier === result.values[0])!, askMsg.deleted ? null : askMsg];
+        return [allSections.find(x => x.uniqueIdentifier === result.values[0])!, askMsg];
     }
 
     /**

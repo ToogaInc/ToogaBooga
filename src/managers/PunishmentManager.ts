@@ -304,13 +304,17 @@ export namespace PunishmentManager {
             .addField("Moderator", modStr)
             .addField("Reason", StringUtil.codifyString(entry.reason))
             .setTimestamp()
-            .setFooter(`Mod. ID: ${entry.actionId}`);
+            .setFooter({
+                text: `Mod. ID: ${entry.actionId}`
+            });
 
         const toSendToUserEmbed = MessageUtilities.generateBlankEmbed(details.guild, isAddingPunishment ? "RED" : "GREEN")
             .addField("Moderator", modStr)
             .addField("Reason", StringUtil.codifyString(entry.reason))
             .setTimestamp()
-            .setFooter(`Mod. ID: ${entry.actionId}`);
+            .setFooter({
+                text: `Mod. ID: ${entry.actionId}`
+            });
 
         if (!isAddingPunishment) {
             logToChanEmbed.addField(

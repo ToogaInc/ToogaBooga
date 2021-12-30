@@ -9,7 +9,7 @@ import {
     MessageOptions, MessageSelectMenu,
     PartialTextBasedChannelFields,
     PermissionResolvable,
-    Role, TextBasedChannels,
+    Role, TextBasedChannel,
     TextChannel,
     User
 } from "discord.js";
@@ -27,7 +27,7 @@ export namespace AdvancedCollector {
     const MAX_ACTION_ROWS: number = 5;
 
     interface ICollectorBaseArgument {
-        readonly targetChannel: TextBasedChannels;
+        readonly targetChannel: TextBasedChannel;
         readonly targetAuthor: User | GuildMember;
         readonly duration: number;
 
@@ -245,8 +245,8 @@ export namespace AdvancedCollector {
             });
 
             msgCollector.on("collect", async (c: Message) => {
-                if (options.deleteResponseMessage && !c.deleted)
-                    await GlobalFgrUtilities.tryExecuteAsync(() => c.delete());
+                if (options.deleteResponseMessage)
+                    await MessageUtilities.tryDelete(c);
 
                 if (cancelFlag && cancelFlag.toLowerCase() === c.content.toLowerCase()) {
                     interactionCollector.stop();
@@ -358,17 +358,17 @@ export namespace AdvancedCollector {
                                 intervalTime: number = 550): void {
         intervalTime = Math.max(550, intervalTime);
         let i: number = 0;
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
             if (i < reactions.length) {
-                if (msg.deleted) {
+                if (!(await MessageUtilities.tryReact(msg, reactions[i]))) {
                     clearInterval(interval);
                     return;
                 }
-
-                msg.react(reactions[i]).catch();
             }
-            else
+            else {
                 clearInterval(interval);
+            }
+
             i++;
         }, intervalTime);
     }

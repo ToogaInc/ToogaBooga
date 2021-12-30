@@ -4,7 +4,7 @@ import {
     MessageActionRow,
     MessageButton, MessageComponentInteraction,
     MessageOptions,
-    TextBasedChannels,
+    TextBasedChannel,
     TextChannel
 } from "discord.js";
 import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
@@ -182,13 +182,13 @@ export async function entryFunction(ctx: ICommandContext, botMsg: Message | null
 
 /**
  * Sends, or edits, the bot message.
- * @param {TextBasedChannels} channel The channel.
+ * @param {TextBasedChannel} channel The channel.
  * @param {Message | null} botMsg The bot message object, if any.
  * @param {MessageOptions} opt The message options.
  * @return {Promise<Message>} The now-existing bot message object.
  */
 export async function sendOrEditBotMsg(
-    channel: TextBasedChannels,
+    channel: TextBasedChannel,
     botMsg: Message | null,
     opt: MessageOptions
 ): Promise<Message> {

@@ -641,7 +641,7 @@ export namespace QuotaManager {
                     .toString()
             )
             .setTimestamp()
-            .setFooter("Leaderboard Updated Every 30 Seconds. Last Updated:");
+            .setFooter({text: "Leaderboard Updated Every 30 Seconds. Last Updated:"});
 
         if (quotaInfo.quotaLog.length === 0)
             return embed;

@@ -406,11 +406,13 @@ export class FindPerson extends BaseCommand {
                     );
                 }
 
-                embed.setFooter(`Page ${i + 2}/${thisGuildPunishmentHist.length + 1}`);
+                embed.setFooter({
+                    text: `Page ${i + 2}/${thisGuildPunishmentHist.length + 1}`
+                });
                 return embed;
             });
 
-            displayModHist.unshift(successEmbed.setFooter(`Page 1/${thisGuildPunishmentHist.length + 1}`));
+            displayModHist.unshift(successEmbed.setFooter({text: `Page 1/${thisGuildPunishmentHist.length + 1}`}));
 
             const uniqueId = StringUtil.generateRandomString(20);
             const nextId = uniqueId + "_next";

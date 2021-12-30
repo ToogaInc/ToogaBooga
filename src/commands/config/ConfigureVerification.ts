@@ -32,6 +32,7 @@ import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {VerifyManager} from "../../managers/VerifyManager";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import SHORT_STAT_TO_LONG = VerifyManager.SHORT_STAT_TO_LONG;
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 export class ConfigureVerification extends BaseCommand {
     public static GUILD_RANKS: string[] = [
@@ -42,7 +43,7 @@ export class ConfigureVerification extends BaseCommand {
     ];
 
     public static MAX_DUNGEON_REQS: number = 8;
-    
+
     public constructor() {
         super({
             cmdCode: "CONFIG_VERIFICATION",
@@ -64,7 +65,7 @@ export class ConfigureVerification extends BaseCommand {
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-        
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -85,7 +86,7 @@ export class ConfigureVerification extends BaseCommand {
         botMsg = await sendOrEditBotMsg(ctx.channel, botMsg, {
             embeds: [
                 new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Select Section")
                     .setDescription(
                         "Please select the section that you want to configure verification for. If you don't want to"
@@ -123,7 +124,7 @@ export class ConfigureVerification extends BaseCommand {
         }
 
         await this.configVerification(ctx, botMsg, allSections.find(x => x.uniqueIdentifier === selected.values[0])!)
-            ;
+        ;
     }
 
     /**
@@ -175,7 +176,7 @@ export class ConfigureVerification extends BaseCommand {
         ];
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Configure Verification: **${section.sectionName}**`)
             .setDescription(
                 new StringBuilder()
@@ -280,7 +281,7 @@ export class ConfigureVerification extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Additional Verification Info Message")
                                     .setDescription("Please type the message that you want people to see when they"
                                         + " try to verify. Your message can be up to 1010 characters in length. When"
@@ -310,7 +311,7 @@ export class ConfigureVerification extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Verification Success Info Message")
                                     .setDescription("Please type the message that you want people to see when they"
                                         + " successfully verify. You can use this to tell raiders how the server"
@@ -375,16 +376,12 @@ export class ConfigureVerification extends BaseCommand {
                     }
 
                     const verifEmbed = new MessageEmbed()
-                        .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                        .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                         .setTitle(
                             section.isMainSection
                                 ? `Server Verification: **${ctx.guild!.name}**`
                                 : `Section Verification: **${section.sectionName}**`
-                        ).setFooter(
-                            section.isMainSection
-                                ? "Server Verification"
-                                : "Section Verification"
-                        );
+                        ).setFooter({text: section.isMainSection ? "Server Verification" : "Section Verification"});
 
                     const requirements = VerifyManager.getVerificationRequirements(ctx.guildDoc!, verifConfig);
                     const descSb = new StringBuilder();
@@ -454,7 +451,7 @@ export class ConfigureVerification extends BaseCommand {
         };
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configuring Verification Requirements")
             .setDescription(
                 new StringBuilder()
@@ -614,7 +611,7 @@ export class ConfigureVerification extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Set Guild Rank")
                                 .setDescription(
                                     "Please select the minimum guild rank needed to verify in this section by"
@@ -670,7 +667,7 @@ export class ConfigureVerification extends BaseCommand {
                         await botMsg.edit({
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Specify Guild Rank Restriction")
                                     .setDescription(
                                         "Please specify the restriction that should be made with the rank that you just"
@@ -726,7 +723,7 @@ export class ConfigureVerification extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Minimum Rank")
                                     .setDescription("Please type a number between 0 and 85. If you don't want to set"
                                         + " a rank, press the **Back** button.")
@@ -755,7 +752,7 @@ export class ConfigureVerification extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Minimum Alive Fame")
                                     .setDescription("Please type a number that is at least 0. If you don't want to"
                                         + " set the amount of alive fame for this requirement, press the **Back**"
@@ -782,7 +779,7 @@ export class ConfigureVerification extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Set Guild Name")
                                 .setDescription(
                                     "Please type the guild that the person must be in to get verified in this"
@@ -889,7 +886,7 @@ export class ConfigureVerification extends BaseCommand {
 
         const buttons: MessageButton[] = ConfigureVerification.getButtons(oneCharButton);
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configure Exaltation Requirement")
             .setDescription(
                 new StringBuilder()
@@ -1032,7 +1029,7 @@ export class ConfigureVerification extends BaseCommand {
         ];
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configure Dungeon Requirements")
             .setDescription(
                 new StringBuilder()
@@ -1144,7 +1141,7 @@ export class ConfigureVerification extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Add Dungeon Requirement")
                                 .setDescription(
                                     "Please select a dungeon that you want to add to the list of dungeon"
@@ -1234,7 +1231,7 @@ export class ConfigureVerification extends BaseCommand {
 
         const buttons: MessageButton[] = ConfigureVerification.getButtons(checkPastDeathsButton);
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configure Character Requirement")
             .setDescription(
                 new StringBuilder()
@@ -1360,8 +1357,8 @@ export class ConfigureVerification extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

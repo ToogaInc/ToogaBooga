@@ -218,7 +218,7 @@ export class StartHeadcount extends BaseCommand {
             .setTitle(`${sectionToUse.section.sectionName}: Select Dungeon`)
             .setDescription("Please select a dungeon from the dropdown menu(s) below. If you want to cancel this,"
                 + " press the **Cancel** button.")
-            .setFooter("You have 1 minute and 30 seconds to select a dungeon.")
+            .setFooter({text: "You have 1 minute and 30 seconds to select a dungeon."})
             .setTimestamp();
 
         if (sectionToUse.omittedDungeons.length > 0) {

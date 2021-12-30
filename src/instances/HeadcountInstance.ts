@@ -498,7 +498,7 @@ export class HeadcountInstance {
         if (this._headcountStatus === HeadcountStatus.NOTHING) return null;
 
         const afkCheckEmbed = new MessageEmbed()
-            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Headcount.`)
+            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Headcount.`})
             .setTimestamp()
             .setColor(
                 this._dungeon.dungeonColors.length === 0
@@ -542,19 +542,24 @@ export class HeadcountInstance {
         // If headcount is finished, just let them know.
         if (this._headcountStatus === HeadcountStatus.HEADCOUNT_FINISHED) {
             afkCheckEmbed
-                .setAuthor("The headcount has been ended.", this._memberInit.user.displayAvatarURL())
+                .setAuthor({
+                    name: "The headcount has been ended.",
+                    iconURL: this._memberInit.user.displayAvatarURL()
+                })
                 .setDescription("This headcount is now over. Please wait for the raid leader.");
             return afkCheckEmbed;
         }
 
         afkCheckEmbed
-            .setAuthor(`${this._leaderName} has started a ${this._dungeon.dungeonName} AFK check.`,
-                this._memberInit.user.displayAvatarURL())
+            .setAuthor({
+                name: `${this._leaderName} has started a ${this._dungeon.dungeonName} AFK check.`,
+                iconURL: this._memberInit.user.displayAvatarURL()
+            })
             .setDescription(
-            "If you are interested in joining this raid, if it occurs, press the **`Interested`** button. If you"
-            + " have any key(s) and would like to pop, press the corresponding buttons/reactions. Otherwise,"
-            + " react with your class/gear choices."
-        );
+                "If you are interested in joining this raid, if it occurs, press the **`Interested`** button. If you"
+                + " have any key(s) and would like to pop, press the corresponding buttons/reactions. Otherwise,"
+                + " react with your class/gear choices."
+            );
 
         return afkCheckEmbed;
     }
@@ -568,10 +573,14 @@ export class HeadcountInstance {
         if (this._headcountStatus === HeadcountStatus.NOTHING) return null;
 
         const controlPanelEmbed = new MessageEmbed()
-            .setAuthor(`${this._leaderName}'s Control Panel`,
-                this._memberInit.user.displayAvatarURL())
+            .setAuthor({
+                name: `${this._leaderName}'s Control Panel`,
+                iconURL: this._memberInit.user.displayAvatarURL()
+            })
             .setTitle(`**${this._dungeon.dungeonName}** Headcount.`)
-            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`)
+            .setFooter({
+                text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`
+            })
             .setTimestamp()
             .setColor(this._dungeon.dungeonColors.length === 0
                 ? [255, 255, 255]

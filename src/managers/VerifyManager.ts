@@ -147,7 +147,7 @@ export namespace VerifyManager {
         "Forest Mazes": "Forest Mazes completed1",
         "Pirate Caves": "Pirate Caves completed"
     };
-    
+
     const CHECK_PROFILE_ID: string = "check_profile";
     const NO_MANUAL_VERIFY_ID: string = "deny";
     const MANUAL_VERIFY_ID: string = "manual_verify";
@@ -459,7 +459,7 @@ export namespace VerifyManager {
                             + " select a name that you want to use to verify with this server. If you want to use a"
                             + " name that isn't listed, simply press the **Skip** button."
                         )
-                        .setFooter("Respond By")
+                        .setFooter({text: "Respond By"})
                         .setTimestamp(Date.now() + 2 * 60 * 1000)
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([
@@ -528,7 +528,7 @@ export namespace VerifyManager {
                             "Cancel Process",
                             "To cancel the verification process, simply type **`-cancel`**."
                         )
-                        .setFooter("Respond By")
+                        .setFooter({text: "Respond By"})
                         .setTimestamp(Date.now() + 2 * 60 * 1000)
                 ]
             });
@@ -582,7 +582,7 @@ export namespace VerifyManager {
                                 + " user. You will need to resolve this issue by messaging a staff member for"
                                 + " assistance. If you want to verify with a different in-game name, please"
                                 + " restart the verification process.")
-                            .setFooter("Verification Process Stopped.")
+                            .setFooter({text: "Verification Process Stopped."})
                     ]
                 }).catch();
 
@@ -611,7 +611,7 @@ export namespace VerifyManager {
         await verifKit.msg.edit({
             embeds: [
                 getVerifEmbed(member, nameToVerify, code, guildDoc, guildDoc.otherMajorConfig.verificationProperties)
-                    .setFooter("Verification Process Expires")
+                    .setFooter({text: "Verification Process Expires"})
                     .setTimestamp(timeStarted + 20 * 60 * 1000)
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
@@ -736,7 +736,7 @@ export namespace VerifyManager {
                             code,
                             guildDoc,
                             guildDoc.otherMajorConfig.verificationProperties
-                        ).setFooter("Verification Process Expires")
+                        ).setFooter({text: "Verification Process Expires"})
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
                                 `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
@@ -785,7 +785,7 @@ export namespace VerifyManager {
                             code,
                             guildDoc,
                             guildDoc.otherMajorConfig.verificationProperties
-                        ).setFooter("Verification Process Expires")
+                        ).setFooter({text: "Verification Process Expires"})
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
                                 `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
@@ -851,7 +851,7 @@ export namespace VerifyManager {
                                     + " blacklist with the server staff. When doing so, please give them the"
                                     + " moderation ID associated with your blacklist (shown below)."
                                 )
-                                .setFooter(`Mod. ID: ${blacklistEntry.actionId}`)
+                                .setFooter({text: `Mod. ID: ${blacklistEntry.actionId}`})
                                 .setTimestamp()
                         ],
                         components: []
@@ -924,7 +924,7 @@ export namespace VerifyManager {
                             code,
                             guildDoc,
                             guildDoc.otherMajorConfig.verificationProperties
-                        ).setFooter("Verification Process Expires")
+                        ).setFooter({text: "Verification Process Expires"})
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
                                 `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
@@ -982,7 +982,7 @@ export namespace VerifyManager {
 
             const finishedEmbed = MessageUtilities.generateBlankEmbed(member.guild, "GREEN")
                 .setTitle(`**${member.guild.name}**: Guild Verification Successful`)
-                .setFooter("Verification Completed At")
+                .setFooter({text: "Verification Completed At"})
                 .setTimestamp();
             if (guildDoc.otherMajorConfig.verificationProperties.verificationSuccessMessage) {
                 finishedEmbed.setDescription(
@@ -1199,7 +1199,7 @@ export namespace VerifyManager {
                 + " **Keep in mind** that you will not be able to verify in this server or section until your"
                 + " manual verification results come back, and you will **not** be able to stop this process."
             )
-            .setFooter("Respond By:")
+            .setFooter({text: "Respond By:"})
             .setTimestamp(Date.now() + 2 * 60 * 1000);
 
         const [m, , dmChannel] = await Promise.all([
@@ -1481,7 +1481,7 @@ export namespace VerifyManager {
                             : `**${member.guild.name}**: ${section.sectionName} Section Verification Denied`
                     )
                     .setTimestamp()
-                    .setFooter("Manual Verification Request Denied.")
+                    .setFooter({text: "Manual Verification Request Denied."})
                     .setDescription(
                         "Your manual verification request was **denied**. If you have any questions regarding why"
                         + " your request was denied, please message a staff member or send a modmail."
@@ -1595,7 +1595,7 @@ export namespace VerifyManager {
                 .append("Please complete the following steps. If you do not want to complete verification at this ")
                 .append("time, press the **Cancel** button.")
                 .toString())
-            .setFooter("You have 15 minutes to complete this process.")
+            .setFooter({text: "You have 15 minutes to complete this process."})
             .addField(
                 "1. Verification Code",
                 new StringBuilder().append(`Your verification code is: ${StringUtil.codifyString(code)}`)

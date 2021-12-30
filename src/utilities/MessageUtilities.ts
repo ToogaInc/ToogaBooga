@@ -1,5 +1,7 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {
-    ColorResolvable,
+    ColorResolvable, EmojiIdentifierResolvable,
     Guild,
     GuildMember, Message, MessageActionRow,
     MessageEmbed,
@@ -7,8 +9,60 @@ import {
     PartialTextBasedChannelFields, User
 } from "discord.js";
 import {MiscUtilities} from "./MiscUtilities";
+import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
 
 export namespace MessageUtilities {
+    /**
+     * Attempts to delete a message. This function should be used instead of the general `Message#delete()` method
+     * when there is a possibility that a message (that is being edited/tracked constantly) may already be deleted,
+     * e.g. due to an incompetent user.
+     *
+     * Note that using the general method when a message is deleted will result in the bot crashing due to an
+     * `Unknown Message` error. This method prevents the crashing behavior.
+     * @param {Message} m The message to delete.
+     */
+    export async function tryDelete(m: Message): Promise<void> {
+        await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            await m.delete();
+        });
+    }
+
+    /**
+     * Attempts to edit a message. This function should be used instead of the general `Message#edit()` method when
+     * there is a possibility that a message (that is being edited/tracked constantly) may already be deleted, e.g.
+     * due to an incompetent user.
+     *
+     * Note that using the general method when a message is deleted will result in the bot crashing due to an
+     * `Unknown Message` error. This method prevents the crashing behavior.
+     * @param {Message} m The message to edit.
+     * @param {MessageOptions} w The contents to edit the message with.
+     * @returns {Promise<boolean>} Whether the message editing was successful.
+     */
+    export async function tryEdit(m: Message, w: MessageOptions): Promise<boolean> {
+        return await GlobalFgrUtilities.tryExecuteAsync<boolean>(async () => {
+            await m.edit(w);
+            return true;
+        }) ?? false;
+    }
+
+    /**
+     * Attempts to react to a message. This function should be used instead of the general `Message#react()` method
+     * when there is a possibility that a message (that is being edited/tracked constantly) may already be deleted, e.g.
+     * due to an incompetent user.
+     *
+     * Note that using the general method when a message is deleted will result in the bot crashing due to an
+     * `Unknown Message` error. This method prevents the crashing behavior.
+     * @param {Message} m The message to edit.
+     * @param {EmojiIdentifierResolvable} e The emoji to react with.
+     * @returns {Promise<boolean>} Whether the message editing was successful.
+     */
+    export async function tryReact(m: Message, e: EmojiIdentifierResolvable): Promise<boolean> {
+        return await GlobalFgrUtilities.tryExecuteAsync<boolean>(async () => {
+            await m.react(e);
+            return true;
+        }) ?? false;
+    }
+
     /**
      * Sends a message to a channel, automatically taking care of deletion of this message.
      * @param {MessageOptions} info The message content to send.
@@ -35,13 +89,13 @@ export namespace MessageUtilities {
                                        color: ColorResolvable = "RANDOM"): MessageEmbed {
         const embed = new MessageEmbed().setTimestamp().setColor(color);
         if (obj instanceof User)
-            embed.setAuthor(obj.tag, obj.displayAvatarURL());
+            embed.setAuthor({name: obj.tag, iconURL: obj.displayAvatarURL()});
         else if (obj instanceof GuildMember)
-            embed.setAuthor(obj.displayName, obj.user.displayAvatarURL());
+            embed.setAuthor({name: obj.displayName, iconURL: obj.user.displayAvatarURL()});
         else {
             const icon = obj.iconURL();
-            if (icon) embed.setAuthor(obj.name, icon);
-            else embed.setAuthor(obj.name);
+            if (icon) embed.setAuthor({name: obj.name, iconURL: icon});
+            else embed.setAuthor({name: obj.name});
         }
 
         return embed;

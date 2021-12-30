@@ -5,7 +5,7 @@ import {
     GuildMember,
     PermissionString,
     Role,
-    TextBasedChannels,
+    TextBasedChannel,
     User
 } from "discord.js";
 import {OneLifeBot} from "../OneLifeBot";
@@ -49,9 +49,9 @@ export interface ICommandContext {
     /**
      * The channel where this command was executed.
      *
-     * @type {TextBasedChannels}
+     * @type {TextBasedChannel}
      */
-    channel: TextBasedChannels;
+    channel: TextBasedChannel;
 
     /**
      * The interaction that led to this command.

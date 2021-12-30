@@ -19,6 +19,7 @@ import {EmojiConstants} from "../../constants/EmojiConstants";
 import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 import {MainLogType, SectionLogType} from "../../definitions/Types";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 enum ChannelCategoryType {
     Raiding,
@@ -286,10 +287,10 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         ];
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Channel** Configuration Main Menu`)
             .setDescription(`Please select the appropriate option.\n\n${currentConfiguration}`)
-            .setFooter(`ID: ${section.uniqueIdentifier}`)
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
             .addField(
                 "Go Back",
                 "Click on the `Back` button to go back to the section selection embed. You can choose a new"
@@ -387,12 +388,12 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
         let selectedIdx = 0;
         const embedToDisplay = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Logging** Configuration`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
         while (true) {
             embedToDisplay.fields = [];
-            embedToDisplay.setFooter("Either mention the channel or provide a valid channel ID.");
+            embedToDisplay.setFooter({text: "Either mention the channel or provide a valid channel ID."});
             for (let i = 0; i < logIds.length; i++) {
                 const channelId = (
                     section.isMainSection
@@ -546,10 +547,10 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Channel** Configuration ⇒ Base Channels`)
             .setDescription(`Select the button corresponding to the channel group you want to edit.\n\n${curConf}`)
-            .setFooter(`ID: ${section.uniqueIdentifier}`)
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
             .addField(
                 "Back",
                 "Click on the `Back` button to go back to the main menu."
@@ -656,8 +657,8 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 
@@ -676,13 +677,13 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
         let selected = 0;
         const embedToDisplay = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Channel** Configuration ⇒ Base Channels ⇒ ${group}`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
 
         while (true) {
             embedToDisplay.fields = [];
-            embedToDisplay.setFooter(getInstructions(entries[selected].configTypeOrInstructions));
+            embedToDisplay.setFooter({text: getInstructions(entries[selected].configTypeOrInstructions)});
             for (let i = 0; i < entries.length; i++) {
                 const currSet: TextChannel | null = GuildFgrUtilities.getCachedChannel<TextChannel>(
                     guild,

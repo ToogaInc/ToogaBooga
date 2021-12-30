@@ -85,7 +85,7 @@ export class CheckBlacklist extends BaseCommand {
                 StringUtil.codifyString(`${TimeUtilities.getDateTime(blInfo.issuedAt)} GMT`)
             )
             .addField("Blacklist Reason", StringUtil.codifyString(blInfo.reason))
-            .setFooter(`Moderation ID: ${blInfo.actionId}`);
+            .setFooter({text: `Moderation ID: ${blInfo.actionId}`});
 
         if (blInfo.evidence.length > 0) {
             let i = 1;

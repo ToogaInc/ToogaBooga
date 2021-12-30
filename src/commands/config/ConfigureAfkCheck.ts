@@ -26,6 +26,7 @@ import {TimeUtilities} from "../../utilities/TimeUtilities";
 import {Filter, UpdateFilter} from "mongodb";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {PermsConstants} from "../../constants/PermsConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 export class ConfigureAfkCheck extends BaseCommand {
     public static readonly MAX_PERMS_SET: number = 15;
@@ -83,7 +84,7 @@ export class ConfigureAfkCheck extends BaseCommand {
         botMsg = await sendOrEditBotMsg(ctx.channel, botMsg, {
             embeds: [
                 new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Select Section")
                     .setDescription(
                         "Please select the section that you want to configure the AFK check system for. If you don't"
@@ -196,7 +197,7 @@ export class ConfigureAfkCheck extends BaseCommand {
         ];
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Configure AFK Check Settings: **${section.sectionName}**`)
             .setDescription(
                 new StringBuilder()
@@ -307,7 +308,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Section VC Limit")
                                     .setDescription(
                                         "Here, you can set the section default raid VC limit. If a dungeon doesn't"
@@ -343,7 +344,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Point User Limit")
                                     .setDescription(
                                         "Here, you can set how many people can redeem points to gain priority access"
@@ -379,7 +380,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Nitro User Limit")
                                     .setDescription(
                                         "Here, you can set how many people can gain priority access to raids in this"
@@ -416,7 +417,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set AFK Check Message")
                                     .setDescription(
                                         "Here, you can set the message that will be displayed on AFK checks in this"
@@ -449,7 +450,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Post-AFK Check Message")
                                     .setDescription(
                                         "Here, you can set the message that will be displayed on AFK checks in this"
@@ -481,7 +482,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Early Location Message")
                                     .setDescription(
                                         "Here, you can set the message that will be shown to people when they react"
@@ -515,7 +516,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set AFK Check Expiration Time")
                                     .setDescription(
                                         "Here, you can set how long AFK checks last in this section. The lowest time"
@@ -700,7 +701,7 @@ export class ConfigureAfkCheck extends BaseCommand {
             .toString();
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Modifying Permissions: **${permType}**`);
 
         let currentRoleIdx = 0;
@@ -784,7 +785,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Add Role")
                                 .setDescription(
                                     "Here, you will be able to add a role that you can then configure permissions"
@@ -926,8 +927,8 @@ export class ConfigureAfkCheck extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

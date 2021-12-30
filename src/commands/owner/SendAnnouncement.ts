@@ -47,7 +47,7 @@ export class SendAnnouncement extends BaseCommand {
             .setTitle("Message from OneLife Developers")
             .setDescription(args.value as string)
             .setTimestamp()
-            .setAuthor("OneLife", OneLifeBot.BotInstance.client.user?.displayAvatarURL());
+            .setAuthor({name: "OneLife", iconURL: OneLifeBot.BotInstance.client.user?.displayAvatarURL()});
 
         let numServersSent = 0;
         for await (const guildDoc of allGuildDocs) {

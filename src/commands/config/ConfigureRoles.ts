@@ -20,6 +20,7 @@ import hasCachedRole = GuildFgrUtilities.hasCachedRole;
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 enum DisplayFilter {
     Moderation = (1 << 0),
@@ -332,10 +333,10 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         ];
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Role** Configuration Main Menu`)
             .setDescription(`Please select the appropriate option.\n\n${currentConfiguration}`)
-            .setFooter(`ID: ${section.uniqueIdentifier}`)
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
             .addField(
                 "Go Back",
                 "Click on the `Back` button to go back to the section selection embed. You can choose a new section"
@@ -590,8 +591,8 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 
@@ -604,7 +605,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         const guild = ctx.guild!;
 
         const embedToDisplay = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setDescription(
                 "Here, you will have the ability to modify what __custom__ (i.e. not built-in) roles are *staff*"
                 + " roles. Members will receive the Team role when they receive a staff role and will lose the"
@@ -743,12 +744,12 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
         let selected = 0;
         const embedToDisplay = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Role** Configuration ⇒ ${group}`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
         while (true) {
             embedToDisplay.fields = [];
-            embedToDisplay.setFooter(getInstructions(entries[selected].configTypeOrInstructions));
+            embedToDisplay.setFooter({text: getInstructions(entries[selected].configTypeOrInstructions)});
             for (let i = 0; i < entries.length; i++) {
                 const currSet: Role | null = getCachedRole(
                     guild,

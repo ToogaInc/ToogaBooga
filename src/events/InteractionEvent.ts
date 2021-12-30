@@ -178,10 +178,8 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     // Get corresponding channel.
     const channel = interaction.channel;
     if (!channel || !channel.isText() || channel instanceof NewsChannel) return;
-    const [resolvedChannel, guildDoc] = await Promise.all([
-        channel.fetch(),
-        MongoManager.getOrCreateGuildDoc(guild.id, true)
-    ]);
+    const resolvedChannel = await channel.fetch();
+    const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
 
     // If this is happening in control panel, don't process it
     const allControlPanelChannels = [

@@ -25,6 +25,7 @@ import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUti
 import {QuotaManager} from "../../managers/QuotaManager";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 type QuotaAddResult = {
     quotaType: QuotaLogType;
@@ -116,7 +117,7 @@ export class ConfigureQuotas extends BaseCommand {
         const seconds = resetInfo.time % 100;
         const timeReset = `${Math.floor(resetInfo.time / 100)}:${seconds < 10 ? "0" + seconds.toString() : seconds}`;
         const embed: MessageEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Quota Configuration Command")
             .setDescription(
                 "Here, you will be able to configure quotas for one or more roles. Select the appropriate option to"
@@ -187,7 +188,7 @@ export class ConfigureQuotas extends BaseCommand {
             await botMsg!.edit({
                 embeds: [
                     new MessageEmbed()
-                        .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                        .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                         .setTitle("Select Quota")
                         .setDescription(
                             new StringBuilder()
@@ -248,7 +249,7 @@ export class ConfigureQuotas extends BaseCommand {
                 await botMsg!.edit({
                     embeds: [
                         new MessageEmbed()
-                            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                             .setTitle("Specify Day of Week for Reset")
                             .setDescription(
                                 "Select the day of the week that you want all quotas to reset at via the"
@@ -291,7 +292,7 @@ export class ConfigureQuotas extends BaseCommand {
                 await botMsg!.edit({
                     embeds: [
                         new MessageEmbed()
-                            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                             .setTitle("Specify Time for Reset")
                             .setDescription(
                                 new StringBuilder()
@@ -450,7 +451,7 @@ export class ConfigureQuotas extends BaseCommand {
         });
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Quota Configuration")
             .setDescription(
                 new StringBuilder()
@@ -549,7 +550,7 @@ export class ConfigureQuotas extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Role for Quota")
                                     .setDescription(
                                         `Current Role: ${role ?? "Not Set"}\n\nPlease mention, or type the ID of, the`
@@ -589,7 +590,7 @@ export class ConfigureQuotas extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Channel for Quota")
                                     .setDescription(
                                         `Current Channel: ${channel ?? "Not Set"}\n\nPlease mention, or type the ID of,`
@@ -626,7 +627,7 @@ export class ConfigureQuotas extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Minimum Points Needed for Quota")
                                     .setDescription(
                                         `Current Minimum Points: ${quotaToEdit.pointsNeeded}\n\nType a positive number`
@@ -719,7 +720,7 @@ export class ConfigureQuotas extends BaseCommand {
                 : DUNGEON_DATA.some(dgn => dgn.codeName === logAndId[1]);
         });
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Modify Point Values")
             .setDescription(
                 new StringBuilder()
@@ -875,8 +876,9 @@ export class ConfigureQuotas extends BaseCommand {
                                 }
                             }
                         }
-                            // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
-                        // types that does have a specific dungeon
+
+                        // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
+                        // types w/ said specific dungeon
                         else {
                             for (let i = ptsToUse.length - 1; i >= 0; i--) {
                                 if (ptsToUse[i].key.startsWith(runType) && ptsToUse[i].key.includes(":")) {
@@ -1011,7 +1013,7 @@ export class ConfigureQuotas extends BaseCommand {
         await botMsg.edit({
             embeds: [
                 new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Add New Quota Rule")
                     .setDescription(
                         "Please select, from the select menu, the quota rule that you want to add to this quota. If"
@@ -1072,7 +1074,7 @@ export class ConfigureQuotas extends BaseCommand {
             await botMsg.edit({
                 embeds: [
                     new MessageEmbed()
-                        .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                        .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                         .setTitle("Select Dungeon")
                         .setDescription(
                             "Please select **one** dungeon from the list of dungeons below. Afterwards, you will"
@@ -1110,7 +1112,7 @@ export class ConfigureQuotas extends BaseCommand {
         await botMsg.edit({
             embeds: [
                 new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Select Value")
                     .setDescription(
                         "Please type a  __positive whole number__ between 1 and 500 (inclusive). This will represent"
@@ -1154,8 +1156,8 @@ export class ConfigureQuotas extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

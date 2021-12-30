@@ -1167,13 +1167,15 @@ export namespace ModmailManager {
         if (guildsToChoose.length === 1) return guildsToChoose[0];
 
         const askForGuildEmbed = new MessageEmbed()
-            .setAuthor(user.tag, user.displayAvatarURL())
+            .setAuthor({name: user.tag, iconURL: user.displayAvatarURL()})
             .setTitle("Select Server")
             .setDescription("The message sent above will be sent to a designated server of your choice. Please " +
                 "select the server by typing the number corresponding to the server that you want to. To cancel, " +
                 "please type `cancel`.")
             .setColor("RANDOM")
-            .setFooter(`${guildsToChoose.length} Servers.`);
+            .setFooter({
+                text: `${guildsToChoose.length} Servers.`
+            });
         const arrFieldsContent: string[] = ArrayUtilities.arrayToStringFields<[Guild, IGuildInfo]>(
             guildsToChoose,
             (i, elem) => `\`[${i + 1}]\` ${elem[0].name}\n`

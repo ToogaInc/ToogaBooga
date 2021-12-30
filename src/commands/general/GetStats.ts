@@ -84,7 +84,7 @@ export class GetStats extends BaseCommand {
 
         const embed = MessageUtilities.generateBlankEmbed(user, "RANDOM")
             .setTimestamp()
-            .setFooter("C = Completed; F = Failed; A = Assisted.");
+            .setFooter({text: "C = Completed; F = Failed; A = Assisted."});
 
         /**
          * Prettifies the dungeon led statistics, putting it into the embed.

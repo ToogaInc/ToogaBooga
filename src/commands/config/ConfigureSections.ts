@@ -19,6 +19,7 @@ import {MongoManager} from "../../managers/MongoManager";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
 import {ISectionInfo} from "../../definitions";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 // Type that defines the values for the new section
 type SectionCreateType = [string | null, Role | null, TextChannel | null, TextChannel | null, TextChannel | null];
@@ -174,7 +175,7 @@ export class ConfigureSections extends BaseCommand {
         descSb.append("Please select the appropriate option.");
 
         const embed: MessageEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Section Manager Command")
             .setDescription(descSb.toString())
             .addField(
@@ -252,8 +253,8 @@ export class ConfigureSections extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 
@@ -277,7 +278,7 @@ export class ConfigureSections extends BaseCommand {
         await botMsg.edit({
             embeds: [
                 new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Select Section")
                     .setDescription(
                         "Please select a section that you want to manage. If you want to go back, press the **Back**" 
@@ -354,10 +355,10 @@ export class ConfigureSections extends BaseCommand {
         ];
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] Section Manager`)
             .setDescription("Please select an option.")
-            .setFooter(`ID: ${section.uniqueIdentifier}`)
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
             .addField(
                 "Go Back",
                 "Click on the `Go Back` button to go back to the main menu."
@@ -424,13 +425,13 @@ export class ConfigureSections extends BaseCommand {
      */
     private async renameSection(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const displayEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] Rename Section`)
             .setDescription("Please send a message containing the new name for this section. This must be at least 1"
                 + " character long and at most 30 characters long, and must not conflict with another section's"
                 + " name. If you don't want to rename this section at this time, click the **Go Back** button. If"
                 + " you want to quit, press the **Quit** button.")
-            .setFooter(`ID: ${section.uniqueIdentifier}`);
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`});
 
         await botMsg.edit({
             embeds: [displayEmbed],
@@ -486,10 +487,10 @@ export class ConfigureSections extends BaseCommand {
      */
     private async deleteSection(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const displayEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] Delete Section?`)
             .setDescription("Are you sure you want to delete this section? Once completed, you cannot reverse this.")
-            .setFooter(`ID: ${section.uniqueIdentifier}`);
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`});
 
         await botMsg.edit({
             embeds: [displayEmbed],
@@ -531,7 +532,7 @@ export class ConfigureSections extends BaseCommand {
      */
     private async createSection(ctx: ICommandContext, botMsg: Message): Promise<void> {
         const baseEmbed: MessageEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("**Create Section**")
             .setDescription(
                 new StringBuilder()

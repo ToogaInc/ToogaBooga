@@ -88,7 +88,7 @@ export class FindPunishment extends BaseCommand {
 
         // Bot owner can see guild name in footer
         if (OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id)) {
-            embed.setFooter(`Guild Name/ID: ${guild?.name ?? pInfo.guildId}`);
+            embed.setFooter({text: `Guild Name/ID: ${guild?.name ?? pInfo.guildId}`});
         }
 
         const punishmentObj = pInfo.resolved?.actionId === punishmentId

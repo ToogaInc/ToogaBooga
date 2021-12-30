@@ -1,18 +1,13 @@
 # OneLife
 
-An open-source [Realm of the Mad God](https://www.realmofthemadgod.com/) designed for advanced cross-verification,
+An open-source [Realm of the Mad God](https://www.realmofthemadgod.com/) designed for cross-verification,
 moderation, and raid management.
-
-The name comes from how Realm of the Mad God is a perma-death game; that is, once you die, you need to rebuild your 
-character entirely. In this sense, you have *one life*. 
 
 ## Purpose
 
 The main purpose of this bot is to simplify verification and raid management in any Realm Discord server. This bot,
 which represents a huge overhaul of [ZeroRaidBot](https://github.com/ewang2002/ZeroRaidBot), is designed with
 customization in mind.
-
-Unlike Zero, this bot is **not** affiliated with any major Discord servers.
 
 ## Technologies
 
@@ -40,7 +35,7 @@ documentation includes a setup guide and information about how you can get suppo
 
 
 ## Other Projects
-These are some other peojcts that you might be interested in.
+These are some other projects that you might be interested in.
 
 - [ZeroRaidBot](https://github.com/ewang2002/ZeroRaidBot) - The original open-source bot that I created. This project is
   in maintenance mode, though I may revisit it when I have time; I will only fix bugs and update dependencies as needed.

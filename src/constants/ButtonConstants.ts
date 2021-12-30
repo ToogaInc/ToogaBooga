@@ -75,7 +75,7 @@ export namespace ButtonConstants {
         .setLabel("Remove")
         .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
         .setCustomId(REMOVE_ID)
-        .setStyle("PRIMARY");
+        .setStyle("DANGER");
 
     export const PREVIOUS_ID: string = "previous";
     export const PREVIOUS_BUTTON: Readonly<MessageButton> = new MessageButton()

@@ -62,8 +62,6 @@ const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"
     + " interaction.";
 
 
-
-
 /**
  * This class represents a raid.
  */
@@ -770,9 +768,11 @@ export class RaidInstance {
                 this._dungeon.dungeonColors.length === 0
                     ? [255, 255, 255]
                     : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
-            ).setAuthor(`${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
-                this._memberInit.user.displayAvatarURL())
-            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Raid`)
+            ).setAuthor({
+                name: `${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
+                iconURL: this._memberInit.user.displayAvatarURL()
+            })
+            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Raid`})
             .setTimestamp()
             .setDescription(
                 member
@@ -1515,7 +1515,7 @@ export class RaidInstance {
         const askLocEmbed: MessageEmbed = MessageUtilities.generateBlankEmbed(this._memberInit, "GREEN")
             .setTitle(`Setting New Location: ${this._raidVc.name}`)
             .setDescription(descSb.toString())
-            .setFooter(`${this._guild.name} - AFK Check`)
+            .setFooter({text: `${this._guild.name} - AFK Check`})
             .setTimestamp();
 
         const res = await AdvancedCollector.startDoubleCollector<string>({
@@ -1603,10 +1603,12 @@ export class RaidInstance {
                 : "Raid";
 
         const afkCheckEmbed = new MessageEmbed()
-            .setAuthor(`${this._leaderName} has started a ${this._dungeon.dungeonName} AFK check.`,
-                this._memberInit.user.displayAvatarURL())
+            .setAuthor({
+                name: `${this._leaderName} has started a ${this._dungeon.dungeonName} AFK check.`,
+                iconURL: this._memberInit.user.displayAvatarURL()
+            })
             .setDescription(descSb.toString())
-            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: ${raidStatus}.`)
+            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: ${raidStatus}.`})
             .setTimestamp()
             .setColor(
                 this._dungeon.dungeonColors.length === 0
@@ -1692,10 +1694,12 @@ export class RaidInstance {
             .append(`⇨ Status: **\`${raidStatus}\`**`);
 
         const controlPanelEmbed = new MessageEmbed()
-            .setAuthor(`${this._leaderName}'s Control Panel - ${this._raidVc.name}`,
-                this._memberInit.user.displayAvatarURL())
+            .setAuthor({
+                name: `${this._leaderName}'s Control Panel - ${this._raidVc.name}`,
+                iconURL: this._memberInit.user.displayAvatarURL()
+            })
             .setTitle(`**${this._dungeon.dungeonName}** Raid.`)
-            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`)
+            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`})
             .setTimestamp()
             .setColor(this._dungeon.dungeonColors.length === 0
                 ? [255, 255, 255]
@@ -1925,7 +1929,7 @@ export class RaidInstance {
             }
 
             // Does the VC even exist?
-            if (!this._raidVc || this._raidVc.deleted) {
+            if (!this._raidVc || !GuildFgrUtilities.hasCachedChannel(this._guild, this._raidVc.id)) {
                 await this.cleanUpRaid();
                 return;
             }
@@ -2373,7 +2377,7 @@ export class RaidInstance {
 
                 const embed = MessageUtilities.generateBlankEmbed(i.user, "RANDOM")
                     .setTitle(`Parse Results for: **${this._raidVc?.name ?? "N/A"}**`)
-                    .setFooter("Completed Time:")
+                    .setFooter({text: "Completed Time:"})
                     .setTimestamp();
 
                 if (parseSummary.isValid) {
@@ -2462,7 +2466,7 @@ export class RaidInstance {
                         "What was the run status of the __last__ dungeon that was completed? If you did a chain, you"
                         + " will need to manually log the other runs."
                     )
-                    .setFooter(FOOTER_INFO_MSG)
+                    .setFooter({text: FOOTER_INFO_MSG})
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageButton()
@@ -2540,7 +2544,7 @@ export class RaidInstance {
                             + " press the **Confirm** button. If you don't want to log this run with *any* main"
                             + " leader, select the **Skip** button."
                         )
-                        .setFooter(FOOTER_INFO_MSG)
+                        .setFooter({text: FOOTER_INFO_MSG})
                 ],
                 components: buttonsForSelectingMembers
             });
@@ -2568,7 +2572,7 @@ export class RaidInstance {
                         MessageUtilities.generateBlankEmbed(this._guild, "RED")
                             .setTitle("Invalid Member Given")
                             .setDescription("Please specify a valid member. This can either be a mention, ID, or IGN.")
-                            .setFooter("After 5 seconds, this message will ask again.")
+                            .setFooter({text: "After 5 seconds, this message will ask again."})
                     ],
                     components: []
                 });
@@ -2649,7 +2653,7 @@ export class RaidInstance {
                                 + " press the `Skip` button. Once you selected the correct member, press the"
                                 + " `Confirm` button."
                             )
-                            .setFooter(FOOTER_INFO_MSG)
+                            .setFooter({text: FOOTER_INFO_MSG})
                     ],
                     components: components
                 });
@@ -2678,7 +2682,7 @@ export class RaidInstance {
                             MessageUtilities.generateBlankEmbed(this._guild, "RED")
                                 .setTitle("Invalid Member Given")
                                 .setDescription("Please specify a valid member. This can either be a mention, ID, or IGN.")
-                                .setFooter("After 5 seconds, this message will ask again.")
+                                .setFooter({text: "After 5 seconds, this message will ask again."})
                         ],
                         components: []
                     });
@@ -2738,7 +2742,7 @@ export class RaidInstance {
                             "Warning",
                             "The person that ended the run should be the same person that took this /who screenshot."
                         )
-                        .setFooter(FOOTER_INFO_MSG)
+                        .setFooter({text: FOOTER_INFO_MSG})
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([
                     skipButton
@@ -2805,7 +2809,7 @@ export class RaidInstance {
                                     "It appears that the parsing API isn't up, or the screenshot that you provided"
                                     + " is not valid. In either case, this step has been skipped."
                                 )
-                                .setFooter("This will move to the next step in 5 seconds.")
+                                .setFooter({text:"This will move to the next step in 5 seconds."})
                         ]
                     });
 

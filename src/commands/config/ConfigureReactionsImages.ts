@@ -24,6 +24,7 @@ import {TimeUtilities} from "../../utilities/TimeUtilities";
 import {TimedResult, TimedStatus} from "../../definitions/Types";
 import {sendOrEditBotMsg} from "./common/ConfigCommon";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 type ReactionDetailedType = {
     type: ReactionType;
@@ -110,7 +111,7 @@ export class ConfigureReactionsImages extends BaseCommand {
      */
     public async mainMenu(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
         const embed: MessageEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Dungeon Configuration Command")
             .setDescription("Here, you will be able to manage reactions (for AFK checks) and images.")
             .addField(
@@ -199,12 +200,12 @@ export class ConfigureReactionsImages extends BaseCommand {
             await botMsg.edit({
                 embeds: [
                     new MessageEmbed()
-                        .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                        .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                         .setTitle("Unable to Manage Images")
                         .setColor("RED")
                         .setDescription("You did not define a storage channel. Please do so via the channel"
                             + " configuration command.")
-                        .setFooter("This process will go to the previous page in 5 seconds.")
+                        .setFooter({text: "This process will go to the previous page in 5 seconds."})
                 ]
             });
 
@@ -236,7 +237,7 @@ export class ConfigureReactionsImages extends BaseCommand {
 
         const selectedImages = ctx.guildDoc!.properties.approvedCustomImages.slice();
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Manage Images")
             .setDescription(
                 new StringBuilder()
@@ -309,7 +310,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Send Image")
                                 .setDescription("Please send your image __as an attachment__ now. The bot will"
                                     + " __not__ accept image links. If you don't want to add a new image at this"
@@ -444,13 +445,13 @@ export class ConfigureReactionsImages extends BaseCommand {
         return async function getNameForReaction(): Promise<TimedResult<string>> {
             const embed = embedType === "REACTION"
                 ? new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Specify Reaction Name")
                     .setDescription("You will now specify the name for this reaction. This name will be displayed on"
                         + " the AFK check button. If you decide that you don't want to create a new reaction, press the"
                         + " **Cancel** button.")
                 : new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Specify ReaImage Name")
                     .setDescription("You will now specify the name for this image. This is solely used to make"
                         + " identification of images easier. If you decide that you don't want to create a new image,"
@@ -519,7 +520,7 @@ export class ConfigureReactionsImages extends BaseCommand {
         ];
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Manage Reactions")
             .setDescription(
                 new StringBuilder()
@@ -547,7 +548,7 @@ export class ConfigureReactionsImages extends BaseCommand {
         // Asks the user for an emoji for this reaction
         async function getEmojiForReaction(): Promise<TimedResult<{ identifier: string; isCustom: boolean; }>> {
             const emojiEmbed = new MessageEmbed()
-                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                 .setTitle("Select New Emoji")
                 .setDescription("You will now specify the emoji for this reaction. To specify the emoji that you"
                     + " want to use for this reaction, **react to this message with the emoji.** If you decide that"
@@ -693,7 +694,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Specify Reaction Type")
                                 .setDescription("Please select the category that best represents this reaction."
                                     + " __Once you select a category, you cannot change it.__ If you do not want to"
@@ -797,8 +798,8 @@ export class ConfigureReactionsImages extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }
