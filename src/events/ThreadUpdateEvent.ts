@@ -4,11 +4,6 @@ import {ModmailManager} from "../managers/ModmailManager";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 
 export async function onThreadArchiveEvent(oldThread: ThreadChannel, newThread: ThreadChannel): Promise<void> {
-
-    if (oldThread.archived || !newThread.archived) {
-        return;
-    }
-
     const guildDoc = await MongoManager.getOrCreateGuildDoc(oldThread.guild.id, true);
     if (!oldThread.parent
         || oldThread.parent instanceof NewsChannel
@@ -21,5 +16,10 @@ export async function onThreadArchiveEvent(oldThread: ThreadChannel, newThread: 
         return;
     }
 
-    await ModmailManager.closeModmailThread(mmMessage, guildDoc);
+    if (oldThread.archived && !newThread.archived) {
+        await ModmailManager.openModmailThread(guildDoc, mmMessage);
+    }
+    else if (!oldThread.archived && newThread.archived) {
+        await ModmailManager.closeModmailThread(mmMessage, guildDoc);
+    }
 }

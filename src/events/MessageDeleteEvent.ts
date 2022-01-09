@@ -27,6 +27,18 @@ export async function onMessageDeleteEvent(msg: Message | PartialMessage): Promi
     }
 
     const guildDoc = await MongoManager.getOrCreateGuildDoc(msg.guild.id, true);
-    // Is the message a raid message?
+    // Modmail message?
+    const thread = guildDoc.properties.modmailThreads.find(x => x.baseMsg === msg.id);
+    if (thread) {
+        await MongoManager.updateAndFetchGuildDoc({guildId: msg.guild.id}, {
+            $pull: {
+                "properties.modmailThreads": {
+                    baseMsg: msg.id
+                }
+            }
+        });
+        return;
+    }
 
+    // ...
 }

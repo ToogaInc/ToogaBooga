@@ -14,14 +14,14 @@ import {
     onInteractionEvent,
     onMessageEvent,
     onReadyEvent,
-    onVoiceStateEvent
+    onVoiceStateEvent,
+    onThreadArchiveEvent,
+    onChannelDeleteEvent,
+    onMessageDeleteEvent
 } from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
 import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
-import {onThreadArchiveEvent} from "./events/ThreadArchiveEvent";
-import {onChannelDeleteEvent} from "./events/OnChannelDeleteEvent";
-import {onMessageDeleteEvent} from "./events/MessageDeleteEvent";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -161,7 +161,8 @@ export class OneLifeBot {
         ]);
 
         OneLifeBot.Commands.set("Modmail", [
-            new Cmds.ReplyToThread()
+            new Cmds.ReplyToThread(),
+            new Cmds.ArchiveThread()
         ]);
 
         OneLifeBot.JsonCommands = [];

@@ -39,4 +39,4 @@ export * from "./raid-leaders/StartHeadcount";
 export * from "./general/GetStats";
 
 export * from "./modmail/ReplyToThread";
-//export * from "./modmail/ArchiveThread";
+export * from "./modmail/ArchiveThread";

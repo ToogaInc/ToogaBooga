@@ -4,3 +4,6 @@ export * from "./ReadyEvent";
 export * from "./VoiceStateEvent";
 export * from "./ErrorEvent";
 export * from "./MessageEvent";
+export * from "./ThreadUpdateEvent";
+export * from "./ChannelDeleteEvent";
+export * from "./MessageDeleteEvent";
