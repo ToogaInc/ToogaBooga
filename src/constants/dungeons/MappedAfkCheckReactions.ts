@@ -139,7 +139,24 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         },
         name: "Bard"
     },
+    DPS_WIZARD: {
+        type: "CLASS",
+        emojiInfo: {
+            isCustom: true,
+            identifier: EmojiConstants.DPS_WIZARD
+        },
+        name: "DPS (4/4) Wizard"
+    },
 
+
+    CURSE: {
+        type: "STATUS_EFFECT",
+        emojiInfo: {
+            isCustom: true,
+            identifier: EmojiConstants.CURSE
+        },
+        name: "Curse"
+    },
     PARALYZE: {
         type: "STATUS_EFFECT",
         emojiInfo: {
@@ -189,6 +206,16 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Rushing Class"
     },
 
+
+
+    T2_ORB: {
+        type: "ITEM",
+        emojiInfo: {
+            isCustom: true,
+            identifier: EmojiConstants.TIER2_ORB
+        },
+        name: "Imprisonment Orb"
+    },
     MSEAL: {
         type: "ITEM",
         emojiInfo: {
@@ -213,6 +240,32 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         },
         name: "Brain of the Golem"
     },
+    FUNGAL_TOME: {
+        type: "ITEM",
+        emojiInfo: {
+            isCustom: true,
+            identifier: EmojiConstants.FUNGAL_TOME
+        },
+        name: "Tome of the Mushroom Tribes"
+    },
+    CRYSTAL_SHIELD: {
+        type: "ITEM",
+        emojiInfo: {
+            isCustom: true,
+            identifier: EmojiConstants.CRYSTAL_SHIELD
+        },
+        name: "Crystal Shield"
+    },
+    QUIVER_THUNDER: {
+        type: "ITEM",
+        emojiInfo: {
+            isCustom: true,
+            identifier: EmojiConstants.QUIVER_OF_THUNDER
+        },
+        name: "Quiver of Thunder"
+    },
+
+
 
     // Keys
     SNAKE_PIT_KEY: {

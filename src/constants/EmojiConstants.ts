@@ -81,12 +81,15 @@ export namespace EmojiConstants {
     export const SAMURAI: string = "585616163078275102";
     export const BARD: string = "714015181679624203";
 
+    export const DPS_WIZARD: string = "929851498442133554";
+
     // status effects
     export const PARALYZE: string = "678792068906352642";
     export const STUN: string = "678792068889444397";
     export const SLOW: string = "678792068965072906";
     export const DAZE: string = "678792068948295686";
     export const ARMOR_BREAK: string = "678792068889444397";
+    export const CURSE: string = "929850982374989905";
 
     // util/generic
     export const RUSHING_CLASS: string = "585616161878835220";
@@ -95,6 +98,10 @@ export namespace EmojiConstants {
     export const MSEAL: string = "893939303950983268";
     export const SCHOLAR_SEAL: string = "678792068935450634";
     export const BRAIN_PRISM: string = "708927848076935218";
+    export const FUNGAL_TOME: string = "929849843394945024";
+    export const CRYSTAL_SHIELD: string = "929850487870750730";
+    export const QUIVER_OF_THUNDER: string = "929852446715564102";
+    export const TIER2_ORB: string = "929855343121559573";
 
     // other reactions
     export const NITRO_EMOJI: string = "706246225200152656";
