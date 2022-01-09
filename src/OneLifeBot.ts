@@ -160,6 +160,10 @@ export class OneLifeBot {
             new Cmds.LogLedRun()
         ]);
 
+        OneLifeBot.Commands.set("Modmail", [
+            new Cmds.ReplyToThread()
+        ]);
+
         OneLifeBot.JsonCommands = [];
         OneLifeBot.NameCommands = new Collection<string, Cmds.BaseCommand>();
         OneLifeBot.Rest = new REST({version: "9"}).setToken(config.tokens.botToken);

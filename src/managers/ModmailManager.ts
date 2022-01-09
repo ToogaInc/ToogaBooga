@@ -221,16 +221,25 @@ export namespace ModmailManager {
 
     /**
      * Gets the embed that represents a modmail reply or response.
-     * @param {Message} msg The message.
+     * @param {User} author The author of this message.
+     * @param {Message | string} msg The message.
      * @returns {MessageEmbed} The embed. This will give you a very simple embed that is missing a title and other
      * instructions.
      */
-    export function getEmbedForModmail(msg: Message): MessageEmbed {
+    export function getEmbedForModmail(author: User, msg: Message | string): MessageEmbed {
         const embed = new MessageEmbed()
-            .setAuthor({name: msg.author.tag, iconURL: msg.author.displayAvatarURL()})
+            .setAuthor({name: author.tag, iconURL: author.displayAvatarURL()})
             .setTimestamp()
-            .setFooter({text: msg.author.id})
-            .setDescription(msg.content.length === 0 ? "(No Content)" : msg.content);
+            .setFooter({text: author.id})
+            .setDescription(
+                typeof msg === "string"
+                    ? msg
+                    : msg.content.length === 0 ? "(No Content)" : msg.content
+            );
+
+        if (typeof msg === "string") {
+            return embed;
+        }
 
         const fields = ArrayUtilities.arrayToStringFields(
             Array.from(msg.attachments.values()),
@@ -262,9 +271,8 @@ export namespace ModmailManager {
             return false;
         }
 
-        const thread = origMsg.thread!;
-
-        if (thread.archived || !guildDoc.properties.modmailThreads.some(x => x.threadId === thread.id
+        const thread = await origMsg.thread!.fetch();
+        if (!guildDoc.properties.modmailThreads.some(x => x.threadId === thread.id
                 && x.baseMsg === origMsg.id)) {
             return false;
         }
@@ -387,7 +395,7 @@ export namespace ModmailManager {
             return false;
         }
 
-        const embed = getEmbedForModmail(msg);
+        const embed = getEmbedForModmail(msg.author, msg);
         const existingChan = await findModmailThreadByUser(msg.author, toGuild, guildDoc);
         if (existingChan) {
             embed.setTitle("Modmail Response")
@@ -425,11 +433,13 @@ export namespace ModmailManager {
     /**
      * A function that should be called when a staff member responds to the user's modmail message.
      * @param {ThreadChannel} thread The thread channel where this response occurred.
-     * @param {Message} msg The message that will be used to respond back.
+     * @param {User} author The author of this message.
+     * @param {Message | string} msg The message that will be used to respond back.
      * @param {boolean} anon Whether to be anonymous or not.
      * @returns {Promise<boolean>}
      */
-    export async function sendMessageToUser(thread: ThreadChannel, msg: Message, anon: boolean): Promise<boolean> {
+    export async function sendMessageToUser(thread: ThreadChannel, author: User, msg: Message | string,
+                                            anon: boolean): Promise<boolean> {
         const guild = thread.guild;
         const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
         const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
@@ -451,16 +461,25 @@ export namespace ModmailManager {
             return false;
         }
 
-        const embedToSave = getEmbedForModmail(msg).setColor(GENERAL_THREAD_COLOR);
-        const embedToRecipient = getEmbedForModmail(msg).setColor(GENERAL_THREAD_COLOR);
+        const embedToSave = getEmbedForModmail(author, msg).setColor(GENERAL_THREAD_COLOR);
+        const embedToRecipient = getEmbedForModmail(author, msg).setColor(GENERAL_THREAD_COLOR);
         if (anon) {
             embedToRecipient.setAuthor({name: `${guild.name} Staff`, iconURL: guild.iconURL() ?? undefined})
                 .setFooter({text: guild.id});
-            embedToSave.setAuthor({name: `${msg.author.tag} (Anonymous)`, iconURL: msg.author.displayAvatarURL()});
+            embedToSave.setAuthor({name: `${author.tag} (Anonymous)`, iconURL: author.displayAvatarURL()});
         }
 
-        await GlobalFgrUtilities.sendMsg(thread, {embeds: [embedToSave]});
+        const m = await GlobalFgrUtilities.sendMsg(thread, {embeds: [embedToSave]});
+        if (!m) {
+            return false;
+        }
+
         const r = await GlobalFgrUtilities.sendMsg(member, {embeds: [embedToRecipient]});
+        if (!r) {
+            m.embeds[0].addField("Warning", "This message could not be sent to the recipient; did they block the bot?");
+            await MessageUtilities.tryEdit(m, {embeds: [m.embeds[0]]});
+        }
+
         return !!r;
     }
 

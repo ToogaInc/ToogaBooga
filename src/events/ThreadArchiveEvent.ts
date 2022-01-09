@@ -4,6 +4,7 @@ import {ModmailManager} from "../managers/ModmailManager";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 
 export async function onThreadArchiveEvent(oldThread: ThreadChannel, newThread: ThreadChannel): Promise<void> {
+
     if (oldThread.archived || !newThread.archived) {
         return;
     }
