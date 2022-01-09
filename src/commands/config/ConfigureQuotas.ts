@@ -1099,7 +1099,7 @@ export class ConfigureQuotas extends BaseCommand {
                 oldMsg: botMsg,
                 targetAuthor: ctx.user,
                 targetChannel: ctx.channel
-            }, AdvancedCollector.getNumberPrompt(ctx.channel, {min: 1, max: allDungeons.length}));
+            }, AdvancedCollector.getNumberPrompt(ctx.channel, {min: 1, max: allDungeons.length + 1}));
 
             if (!resNum)
                 return {value: null, status: TimedStatus.TIMED_OUT};

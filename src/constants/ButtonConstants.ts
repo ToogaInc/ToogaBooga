@@ -3,6 +3,21 @@ import {EmojiConstants} from "./EmojiConstants";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 
 export namespace ButtonConstants {
+    export const OPEN_THREAD_ID: string = "open_thread";
+    export const OPEN_THREAD_BUTTON: Readonly<MessageButton> = new MessageButton()
+        .setLabel("Open Thread")
+        .setCustomId(OPEN_THREAD_ID)
+        .setEmoji(EmojiConstants.PLUS_EMOJI)
+        .setStyle("PRIMARY");
+
+    export const BLACKLIST_ID: string = "blacklist";
+    export const BLACKLIST_BUTTON: Readonly<MessageButton> = new MessageButton()
+        .setLabel("Blacklist")
+        .setCustomId(BLACKLIST_ID)
+        .setEmoji(EmojiConstants.X_EMOJI)
+        .setStyle("DANGER");
+
+    
     export const CANCEL_ID: string = "cancel";
     export const CANCEL_BUTTON: Readonly<MessageButton> = new MessageButton()
         .setLabel("Cancel")

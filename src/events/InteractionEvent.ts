@@ -134,7 +134,7 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
         noPermissionEmbed.addField("Missing Member Permissions (Need ≥ 1)", StringUtil.codifyString(canRunInfo
             .missingUserPerms.join(" ")))
             .addField("Missing Member Permissions (Need ≥ 1)", StringUtil.codifyString(canRunInfo.missingUserPerms
-                .join(" ")));
+                .join(", ")));
         noPermSb.appendLine()
             .append("- You need to fulfill at least __one__ of the two missing member permissions.");
     }
@@ -143,14 +143,14 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
         noPermissionEmbed.addField("Missing Member Roles (Need ≥ 1)", StringUtil.codifyString(canRunInfo
             .missingUserRoles.join(" ")))
             .addField("Missing Member Roles (Need ≥ 1)", StringUtil.codifyString(canRunInfo.missingUserRoles
-                .join(" ")));
+                .join(", ")));
         noPermSb.appendLine()
             .append("- You need to fulfill at least __one__ of the two missing member permissions.");
     }
 
     if (canRunInfo.missingBotPerms.length !== 0) {
         noPermissionEmbed.addField("Missing Bot Permissions (Need All)", StringUtil.codifyString(canRunInfo
-            .missingBotPerms.join(" ")));
+            .missingBotPerms.join(", ")));
         noPermSb.appendLine()
             .append("- The bot needs every permission that is specified to run this command.");
     }

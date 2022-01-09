@@ -21,7 +21,7 @@ export class GetStats extends BaseCommand {
                 {
                     displayName: "Member",
                     argName: "member",
-                    desc: "The member to log this run for. If no member is specified, this will log for you.",
+                    desc: "The member to look up.",
                     type: ArgumentType.String,
                     prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: false,

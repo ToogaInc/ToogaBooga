@@ -272,8 +272,8 @@ export class ConfigureReactionsImages extends BaseCommand {
                 selectedImages,
                 (i, elem) => {
                     return i === currentIdx
-                        ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${elem.name} [Image](${elem.url})`
-                        : `${elem.name}`;
+                        ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${elem.name} [Image](${elem.url})\n`
+                        : `${elem.name}\n`;
                 }
             );
 
