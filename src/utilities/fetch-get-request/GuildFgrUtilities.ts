@@ -232,7 +232,7 @@ export namespace GuildFgrUtilities {
     export async function fetchGuildMember(guild: Guild, targetId: string): Promise<GuildMember | null> {
         if (!MiscUtilities.isSnowflake(targetId)) return null;
         try {
-            return guild.members.fetch(targetId);
+            return await guild.members.fetch(targetId);
         } catch (e) {
             return null;
         }

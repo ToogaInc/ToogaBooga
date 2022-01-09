@@ -34,7 +34,7 @@ export class StartHeadcount extends BaseCommand {
         super({
             cmdCode: StartHeadcount.START_HC_CMD_CODE,
             formalCommandName: "Start Headcount Command",
-            botCommandName: "startheadcount",
+            botCommandName: "headcount",
             description: "Starts a wizard that can be used to start a headcount.",
             commandCooldown: 8 * 1000,
             generalPermissions: [],

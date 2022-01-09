@@ -1,7 +1,7 @@
 import {IConfiguration} from "./definitions";
 import {
     Client,
-    Collection, DMChannel, Guild, GuildChannel,
+    Collection, DMChannel, Guild, GuildChannel, GuildMember,
     Interaction, Message, PartialMessage, ThreadChannel,
     VoiceState
 } from "discord.js";
@@ -17,7 +17,8 @@ import {
     onVoiceStateEvent,
     onThreadArchiveEvent,
     onChannelDeleteEvent,
-    onMessageDeleteEvent
+    onMessageDeleteEvent,
+    onGuildMemberAdd
 } from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
@@ -185,7 +186,7 @@ export class OneLifeBot {
             if (config.slash.guildIds.length === 0) {
                 await OneLifeBot.Rest.put(
                     Routes.applicationCommands(config.slash.clientId),
-                    { body: OneLifeBot.JsonCommands }
+                    {body: OneLifeBot.JsonCommands}
                 );
             }
             else {
@@ -193,7 +194,7 @@ export class OneLifeBot {
                     config.slash.guildIds.map(async guildId => {
                         await OneLifeBot.Rest.put(
                             Routes.applicationGuildCommands(config.slash.clientId, guildId),
-                            { body: OneLifeBot.JsonCommands }
+                            {body: OneLifeBot.JsonCommands}
                         );
                     })
                 );
@@ -217,6 +218,7 @@ export class OneLifeBot {
         this._bot.on("threadUpdate", async (o: ThreadChannel, n: ThreadChannel) => onThreadArchiveEvent(o, n));
         this._bot.on("channelDelete", async (c: DMChannel | GuildChannel) => onChannelDeleteEvent(c));
         this._bot.on("messageDelete", async (m: Message | PartialMessage) => onMessageDeleteEvent(m));
+        this._bot.on("guildMemberAdd", async (m: GuildMember) => onGuildMemberAdd(m));
         this._eventsIsStarted = true;
     }
 

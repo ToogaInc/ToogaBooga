@@ -2366,6 +2366,8 @@ export class RaidInstance {
 
                 if (!res) return;
                 const parseSummary = await this.parseScreenshot(res.url);
+                if (!this._raidVc) return;
+
                 this.logEvent(
                     `Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``,
                     true

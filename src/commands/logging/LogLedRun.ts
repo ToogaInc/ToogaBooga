@@ -19,7 +19,7 @@ export class LogLedRun extends BaseCommand {
         const cmi: ICommandInfo = {
             cmdCode: "LOG_LED_RUN_COMMAND",
             formalCommandName: "Log Led Run(s) Command",
-            botCommandName: "logleaderrun",
+            botCommandName: "logrun",
             description: "Logs one or more runs that a leader led. You can log completions/fails/assists for"
                 + " yourself or someone else.",
             commandCooldown: 0,
