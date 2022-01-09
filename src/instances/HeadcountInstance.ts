@@ -26,6 +26,7 @@ import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RaidInstance} from "./RaidInstance";
+import {MessageUtilities} from "../utilities/MessageUtilities";
 
 export class HeadcountInstance {
     /**
@@ -875,9 +876,9 @@ export class HeadcountInstance {
             // Also stop all collectors.
             this.removeHeadcountFromDatabase(),
             // Step 3: Remove the control panel message.
-            this._controlPanelMsg?.delete().catch(),
+            MessageUtilities.tryDelete(this._controlPanelMsg),
             // Step 4: Unpin the AFK check message.
-            this._headcountMsg?.delete().catch()
+            MessageUtilities.tryDelete(this._headcountMsg)
         ]);
     }
 
@@ -968,6 +969,14 @@ export class HeadcountInstance {
         });
 
         return true;
+    }
+
+    public get headcountMessage(): Message | null {
+        return this._headcountMsg;
+    }
+
+    public get controlPanelMessage(): Message | null {
+        return this._controlPanelMsg;
     }
 }
 

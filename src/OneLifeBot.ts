@@ -1,8 +1,8 @@
 import {IConfiguration} from "./definitions";
 import {
     Client,
-    Collection, Guild,
-    Interaction, Message,
+    Collection, DMChannel, Guild, GuildChannel,
+    Interaction, Message, PartialMessage, ThreadChannel,
     VoiceState
 } from "discord.js";
 import {MongoManager} from "./managers/MongoManager";
@@ -19,6 +19,9 @@ import {
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
 import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
+import {onThreadArchiveEvent} from "./events/ThreadArchiveEvent";
+import {onChannelDeleteEvent} from "./events/OnChannelDeleteEvent";
+import {onMessageDeleteEvent} from "./events/MessageDeleteEvent";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -206,6 +209,9 @@ export class OneLifeBot {
         this._bot.on("voiceStateUpdate", async (o: VoiceState, n: VoiceState) => onVoiceStateEvent(o, n));
         this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
         this._bot.on("error", async (e: Error) => onErrorEvent(e));
+        this._bot.on("threadUpdate", async (o: ThreadChannel, n: ThreadChannel) => onThreadArchiveEvent(o, n));
+        this._bot.on("channelDelete", async (c: DMChannel | GuildChannel) => onChannelDeleteEvent(c));
+        this._bot.on("messageDelete", async (m: Message | PartialMessage) => onMessageDeleteEvent(m));
         this._eventsIsStarted = true;
     }
 

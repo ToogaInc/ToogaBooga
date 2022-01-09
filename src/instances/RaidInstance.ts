@@ -678,6 +678,10 @@ export class RaidInstance {
         // We are officially in AFK check mode.
         // We do NOT start the intervals OR collector since pre-AFK and AFK have the exact same collectors/intervals.
         await this.setRaidStatus(RaidStatus.AFK_CHECK);
+        // Only happens if someone deleted the raid vc
+        if (!this.raidVc) {
+            return;
+        }
         await this._raidVc.permissionOverwrites.set(this.getPermissionsForRaidVc(true));
 
         this.stopAllIntervalsAndCollectors();
@@ -912,7 +916,7 @@ export class RaidInstance {
         const leaderName = name.length === 0 ? memberThatEnded.displayName : name[0];
         // Stop the collector.
         // We don't care about the result of this function, just that it should run.
-        this.cleanUpRaid().then();
+        this.cleanUpRaid(false).then();
 
         // If this method was called during the AFK check, simply abort the AFK check.
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
@@ -1385,8 +1389,11 @@ export class RaidInstance {
     /**
      * Cleans the raid up. This will remove the raid voice channel, delete the control panel message, and remove
      * the raid from the database.
+     *
+     * @param {boolean} force Whether this should delete all channels related to this raid. Useful if one component
+     * of the raid is deleted.
      */
-    public async cleanUpRaid(): Promise<void> {
+    public async cleanUpRaid(force: boolean): Promise<void> {
         this.stopAllIntervalsAndCollectors();
         // Step 1: Remove from ActiveRaids collection
         if (this._afkCheckMsg) {
@@ -1398,14 +1405,25 @@ export class RaidInstance {
             // Also stop all collectors.
             this.removeRaidFromDatabase(),
             // Step 3: Remove the control panel message.
-            this._controlPanelMsg?.delete().catch(),
+            MessageUtilities.tryDelete(this._controlPanelMsg),
             // Step 4: Unpin the AFK check message.
-            this._afkCheckMsg?.delete().catch(),
+            MessageUtilities.tryDelete(this._afkCheckMsg),
             // Step 5: Delete the raid VC
-            this._raidVc?.delete().catch(),
+            GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await this._raidVc?.delete();
+            }),
             // Step 6: Delete the logging channel
-            this._logChan?.delete().catch()
+            GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await this._logChan?.delete();
+            })
         ]);
+
+        this._raidVc = null;
+        if (force) {
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await this._thisFeedbackChan?.delete();
+            });
+        }
     }
 
     /**
@@ -1931,7 +1949,7 @@ export class RaidInstance {
 
             // Does the VC even exist?
             if (!this._raidVc || !GuildFgrUtilities.hasCachedChannel(this._guild, this._raidVc.id)) {
-                await this.cleanUpRaid();
+                await this.cleanUpRaid(true);
                 return;
             }
 
@@ -2878,6 +2896,15 @@ export class RaidInstance {
                     )
             ]
         });
+    }
+
+
+    public get afkCheckMsg(): Message | null {
+        return this._afkCheckMsg;
+    }
+
+    public get controlPanelMsg(): Message | null {
+        return this._controlPanelMsg;
     }
 }
 

@@ -1,1315 +1,515 @@
-// TODO change methods to work with GuildFgrUtilities
 import {
-    Collection,
     Guild,
     GuildMember,
     Message,
-    MessageActionRow,
-    MessageAttachment,
-    MessageButton,
-    MessageComponentInteraction,
     MessageEmbed,
+    MessageSelectMenu,
     TextChannel,
+    ThreadChannel,
     User
 } from "discord.js";
-import {MongoManager} from "./MongoManager";
-import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {MessageUtilities} from "../utilities/MessageUtilities";
-import {EmojiConstants} from "../constants/EmojiConstants";
-import {StringBuilder} from "../utilities/StringBuilder";
-import {StringUtil} from "../utilities/StringUtilities";
-import {MiscUtilities} from "../utilities/MiscUtilities";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
+import {IGuildInfo, IModmailThread} from "../definitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {IModmailThread, IModmailThreadMessage, IGuildInfo} from "../definitions";
-import {TimeUtilities} from "../utilities/TimeUtilities";
+import {MongoManager} from "./MongoManager";
+import {CommonRegex} from "../constants/CommonRegex";
+import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
+import {MessageUtilities} from "../utilities/MessageUtilities";
+import {ArrayUtilities} from "../utilities/ArrayUtilities";
+import {EmojiConstants} from "../constants/EmojiConstants";
+import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {ButtonConstants} from "../constants/ButtonConstants";
+import {StringUtil} from "../utilities/StringUtilities";
 
 export namespace ModmailManager {
-    // Key: person responding to modmail.
-    // Value: the person that is being responded to.
-    export const CurrentlyRespondingToModMail: Collection<string, string> = new Collection<string, string>();
-
-    export const MODMAIL_REPLY_ID: string = "modmail_reply";
-    export const MODMAIL_DELETE_ID: string = "modmail_delete";
-    export const MODMAIL_BLACKLIST_ID: string = "modmail_blacklist";
-    export const MODMAIL_CREATE_ID: string = "modmail_create";
-
-    const ReplyActionRow: MessageActionRow = new MessageActionRow()
-        .addComponents(new MessageButton()
-            .setLabel("Reply")
-            .setEmoji(EmojiConstants.CLIPBOARD_EMOJI)
-            .setStyle("PRIMARY")
-            .setCustomId(MODMAIL_REPLY_ID));
-
-    const ModmailGeneralActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
-        new MessageButton()
-            .setLabel("Reply")
-            .setEmoji(EmojiConstants.CLIPBOARD_EMOJI)
-            .setStyle("PRIMARY")
-            .setCustomId(MODMAIL_REPLY_ID),
-        new MessageButton()
-            .setLabel("Delete")
-            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
-            .setStyle("DANGER")
-            .setCustomId(MODMAIL_DELETE_ID),
-        new MessageButton()
-            .setLabel("Blacklist")
-            .setEmoji(EmojiConstants.DENIED_EMOJI)
-            .setStyle("DANGER")
-            .setCustomId(MODMAIL_BLACKLIST_ID),
-        new MessageButton()
-            .setLabel("Convert to Thread")
-            .setEmoji(EmojiConstants.REDIRECT_EMOJI)
-            .setStyle("PRIMARY")
-            .setCustomId(MODMAIL_CREATE_ID)
-    ]);
-
-    const ModmailThreadActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
-        new MessageButton()
-            .setLabel("Reply")
-            .setEmoji(EmojiConstants.CLIPBOARD_EMOJI)
-            .setStyle("PRIMARY")
-            .setCustomId(MODMAIL_REPLY_ID),
-        new MessageButton()
-            .setLabel("End Thread")
-            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
-            .setStyle("DANGER")
-            .setCustomId(MODMAIL_DELETE_ID),
-        new MessageButton()
-            .setLabel("Blacklist")
-            .setEmoji(EmojiConstants.DENIED_EMOJI)
-            .setStyle("DANGER")
-            .setCustomId(MODMAIL_BLACKLIST_ID)
-    ]);
-
-    const ModmailResponseEmbedActionRows: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
-        new MessageButton()
-            .setLabel("Send")
-            .setEmoji(EmojiConstants.CLIPBOARD_EMOJI)
-            .setStyle("PRIMARY")
-            .setCustomId("send"),
-        ButtonConstants.CANCEL_BUTTON,
-        new MessageButton()
-            .setLabel("Set Anonymity")
-            .setEmoji(EmojiConstants.EYES_EMOJI)
-            .setStyle("PRIMARY")
-            .setCustomId("anon")
-    ]);
-
     /**
-     * This function should be called when someone DMs the bot. This will:
-     * - Forward the message to the designated guild.
-     * - Update the database to account for the new modmail message.
+     * Checks whether the original message satisfies the preconditions for a modmail message. The preconditions are:
+     * - The original message's channel must be a `TextChannel`.
+     * - The original message must be sent in a guild.
+     * - The original message must be sent in the modmail channel.
+     * - The original message must have an embed.
+     * - The original message must be sent by the bot.
+     * - The original message's embed must have a footer that contains only an ID.
      *
-     * We assume that the DM channel is open (i.e. there is no need to validate that the author's DMs are open to
-     * the public).
-     *
-     * @param {User} author The author of the modmail message.
-     * @param {Message} msg The message.
+     * @param {Message} originalMessage The original message.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @returns {boolean} Whether the original message is a modmail message.
+     * @private
      */
-    export async function initiateModmailContact(author: User, msg: Message): Promise<void> {
-        // Make sure we can open DM channel.
-        const dmChannel = await GlobalFgrUtilities.openDirectMessage(author);
-        if (!dmChannel)
-            return;
-
-        // Validate that the message length is more than 15 characters long.
-        if (msg.content.length <= 15 && msg.attachments.size === 0) {
-            const baseMessage = await dmChannel.send({
-                embeds: [
-                    MessageUtilities.generateBlankEmbed(author, "RANDOM")
-                        .setTitle("Confirm Send Modmail Message")
-                        .setDescription("Just now, you tried sending the above message to modmail. Are you sure you "
-                            + "want to send this message?")
-                        .setFooter("Modmail Confirmation")
-                ],
-                components: ButtonConstants.YES_NO_ACTION_BUTTONS
-            });
-
-            const confirmSend = await AdvancedCollector.startInteractionCollector({
-                targetChannel: dmChannel,
-                targetAuthor: msg.author,
-                oldMsg: baseMessage,
-                duration: 60 * 1000,
-                clearInteractionsAfterComplete: false,
-                acknowledgeImmediately: true,
-                deleteBaseMsgAfterComplete: true
-            });
-
-            if (!confirmSend || confirmSend.customId === "no") return;
-        }
-
-        const uncheckedGuild = await chooseGuild(author);
-
-        // No guilds are available.
-        if (!uncheckedGuild) {
-            const noGuildsEmbed = MessageUtilities.generateBlankEmbed(author, "RED")
-                .setTitle("No Valid Servers")
-                .setDescription("The servers you are in have not configured their moderation mail module yet. " +
-                    "As such, there is no one to message.")
-                .setFooter("No Servers Found!");
-            MessageUtilities.sendThenDelete({embeds: [noGuildsEmbed]}, author);
-            return;
-        }
-
-        // The user canceled.
-        if (uncheckedGuild === "CANCEL") return;
-
-        // Otherwise, we have a guild.
-        const [guild, guildDoc] = uncheckedGuild;
-        // We have a modmail channel because that was one condition of the chooseGuild function
-        const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
-            guild,
-            guildDoc.channels.modmailChannelId
-        )!;
-        // Check if the person is blacklisted from using modmail.
-        if (guildDoc.moderation.blacklistedModmailUsers.some(x => x.affectedUser.id === author.id)) {
-            await msg.react(EmojiConstants.DENIED_EMOJI).catch();
-            return;
-        }
-        // And then tell the user that we sent it.
-        await msg.react(EmojiConstants.MAIL_EMOJI).catch();
-
-        // Now let's deal with actually sending it.
-        // First, process all attachments.
-        const attachments = new StringBuilder();
-        let indexAttachment = 0;
-        for (const [, attachment] of msg.attachments) {
-            if (indexAttachment > 6) {
-                break;
-            }
-            // [attachment](url) (type of attachment)
-            attachments.append(`[Attachment ${indexAttachment + 1}](${attachment.url}) `)
-                .append(`(\`${attachment.url.split(".")[attachment.url.split(".").length - 1]}\`)`)
-                .appendLine();
-            ++indexAttachment;
-        }
-
-        // Base embed
-        const modMailEmbed = MessageUtilities.generateBlankEmbed(author, "RED")
-            // the content of the modmail msg
-            .setDescription(msg.content)
-            .setTimestamp();
-
-        // Get the modmail thread entry
-        const threadEntry = guildDoc.properties.modmailThreads.find(x => x.initiatorId === author.id);
-        // Second, let's see where the modmail message will actually go to.
-        // We begin first by checking if there is a modmail thread.
-        if (threadEntry) {
-            // Is there a valid channel?
-            const threadChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
-                guild,
-                threadEntry.channel
-            );
-            // If the thread channel exists, then send to that channel.
-            if (threadChannel) {
-                modMailEmbed.setTitle(`${author.tag} ⇒ Modmail Thread`)
-                    .setFooter(`${author.id} • Modmail Thread`);
-                // Append attachments.
-                if (attachments.length() !== 0)
-                    modMailEmbed.addField("Attachments", attachments.toString());
-                // Send the message + add buttons.
-                await threadChannel.send({
-                    embeds: [modMailEmbed],
-                    components: [ReplyActionRow]
-                });
-                // And now update the database.
-                await MongoManager.updateAndFetchGuildDoc({
-                    guildId: guild.id,
-                    "properties.modmailThreads.channel": threadChannel.id
-                }, {
-                    $push: {
-                        "properties.modmailThread.$.messages": {
-                            authorId: author.id,
-                            tag: author.tag,
-                            timeSent: Date.now(),
-                            content: msg.content,
-                            attachments: msg.attachments.size === 0
-                                ? []
-                                : Array.from(msg.attachments.values()).map(x => x.url)
-                        }
-                    }
-                });
-                return;
-            } // End of if
-
-            // If no channel exists, we pull the entry out of the database and treat it like a normal modmail message.
-            await MongoManager.updateAndFetchGuildDoc({
-                guildId: guild.id
-            }, {
-                $pull: {
-                    "properties.modmailThreads": {
-                        channel: threadEntry.channel
-                    }
-                }
-            });
-        }
-
-        modMailEmbed
-            .setFooter(`${author.id} • Modmail Message`)
-            .setTitle(`${EmojiConstants.X_EMOJI} Modmail Entry`);
-        if (attachments.length() !== 0)
-            modMailEmbed.addField("Attachments", attachments.toString());
-
-        const senderInfoStr = new StringBuilder()
-            .append(`⇒ Mention: ${author}`)
-            .appendLine()
-            .append(`⇒ Tag: ${author.tag}`)
-            .appendLine()
-            .append(`⇒ ID: ${author.id}`);
-        modMailEmbed.addField("Sender Information", senderInfoStr.toString())
-            // responses -- any mods that have responded
-            .addField("Last Response By", "None.");
-        await modmailChannel.send({
-            embeds: [modMailEmbed],
-            components: ModmailGeneralActionRows
-        });
+    function satisfiesPrecondition(originalMessage: Message, guildDoc: IGuildInfo): boolean {
+        return originalMessage.channel instanceof TextChannel
+            && !!originalMessage.guild
+            && guildDoc.channels.modmailChannelId === originalMessage.channel.id
+            && originalMessage.embeds.length > 0
+            && !!originalMessage.embeds[0].footer?.text
+            && CommonRegex.ONLY_NUMBERS.test(originalMessage.embeds[0].footer!.text)
+            && originalMessage.author.id === originalMessage.client.user?.id;
     }
 
     /**
-     * A function that creates a modmail thread. This will:
-     * - Create a new channel where all modmail messages sent to/from `targetMember` will be redirected to.
-     *
-     * This should be called if a staff member wants to start a modmail thread with a person.
-     *
-     * @param {GuildMember} targetMember The member to target.
-     * @param {GuildMember} initiatedBy The person that started this thread.
+     * Finds an active modmail thread by user ID.
+     * @param {string | User} user The user ID to look for, or the user object. This will look for an active modmail
+     * thread where the person corresponding to this user ID is the recipient.
+     * @param {Guild} guild The guild.
      * @param {IGuildInfo} guildDoc The guild document.
-     * @param {string} [content] The contents of the message, if any.
+     * @returns {Promise<ThreadChannel | null>} The thread channel.
      */
-    export async function startThreadedModmailWithMember(targetMember: GuildMember, initiatedBy: GuildMember,
-                                                         guildDoc: IGuildInfo, content?: string): Promise<void> {
-        // If the modmail channel doesn't exists, then return.
+    export async function findModmailThreadByUser(user: string | User, guild: Guild,
+                                                  guildDoc: IGuildInfo): Promise<ThreadChannel | null> {
         const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
-            targetMember.guild,
+            guild,
             guildDoc.channels.modmailChannelId
         );
         if (!modmailChannel) {
-            const mmChannelNoExistEmbed = MessageUtilities.generateBlankEmbed(initiatedBy, "RED")
-                .setTitle("Modmail Channel Doesn't Exist")
-                .setDescription("The modmail channel doesn't exist. Please configure one and then try again.")
-                .setFooter("Modmail");
-            MessageUtilities.sendThenDelete({embeds: [mmChannelNoExistEmbed]}, initiatedBy, 20 * 1000);
-            return;
+            return null;
         }
 
-        const modmailCategory = modmailChannel.parent;
-        if (!modmailCategory) {
-            const categoryNoExistEmbed = MessageUtilities.generateBlankEmbed(initiatedBy, "RED")
-                .setTitle("No Modmail Category")
-                .setDescription("Your modmail channel doesn't have a category. Please put your modmail channel in a "
-                    + "dedicated modmail category.")
-                .setFooter("Modmail");
-            MessageUtilities.sendThenDelete({embeds: [categoryNoExistEmbed]}, initiatedBy, 20 * 1000);
-            return;
+        const id = typeof user === "string" ? user : user.id;
+        const threadSearchByUser = guildDoc.properties.modmailThreads.find(x => x.recipientId === id);
+        if (!threadSearchByUser) {
+            return null;
         }
 
-        // Step 1: is the person blacklisted?
-        const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers
-            .find(x => x.affectedUser.id === targetMember.id);
-        if (blacklistInfo) {
-            const blModmailEmbed = MessageUtilities.generateBlankEmbed(targetMember, "RED")
-                .setTitle("User Blacklisted From Modmail")
-                .setDescription(`${targetMember} is blacklisted from using modmail. You are not able to create a `
-                    + "thread for this person.")
-                .addField("Reason", StringUtil.codifyString(blacklistInfo.reason))
-                .setFooter("Modmail");
-            MessageUtilities.sendThenDelete({embeds: [blModmailEmbed]}, initiatedBy, 30 * 1000);
-            return;
-        }
-
-        // Step 2: Does the person already have a modmail thread channel?
-        const modmailInfo = guildDoc.properties.modmailThreads.find(x => x.initiatorId === targetMember.id);
-        if (modmailInfo) {
-            const channel = GuildFgrUtilities.getCachedChannel<TextChannel>(
-                targetMember.guild,
-                modmailInfo.channel
-            );
-            // If the channel exists, ping them.
-            if (channel) {
-                MessageUtilities.sendThenDelete({content: initiatedBy.toString()}, channel, 1000);
-                return;
-            }
-
-            // Otherwise, the channel doesn't exist.
-            // So remove it.
-            await MongoManager.updateAndFetchGuildDoc({
-                guildId: targetMember.guild.id
-            }, {
-                $pull: {
-                    "properties.modmailThreads": {
-                        channel: modmailInfo.channel
-                    }
-                }
-            });
-        }
-
-        // Create a new channel. Put it in same category as the modmail channel.
-        const createdTime = Date.now();
-        const channelName = `${targetMember.user.username}-${targetMember.user.discriminator}`;
-        const threadChannel = await initiatedBy.guild.channels.create(channelName, {
-            type: "GUILD_TEXT",
-            parent: modmailCategory,
-            topic: new StringBuilder().append(`Modmail Thread For: ${targetMember}`).appendLine()
-                .append(`Created By: ${initiatedBy}`).appendLine()
-                .append(`Created Time: ${TimeUtilities.getDateTime(createdTime)}`).toString()
-        }) as TextChannel;
-
-        await threadChannel.lockPermissions().catch();
-
-        const descSb = new StringBuilder(`⇒ **Initiated By:** ${initiatedBy}`)
-            .appendLine()
-            .append(`⇒ **Recipient:** ${targetMember}`)
-            .appendLine()
-            .append(`⇒ **Thread Creation Time:** ${TimeUtilities.getDateTime(createdTime)}`);
-        const reactionSb = new StringBuilder()
-            .append(`⇒ React with ${EmojiConstants.CLIPBOARD_EMOJI} to send a message. You may also use the \`;respond\` `)
-            .append("command.")
-            .appendLine()
-            .append(`⇒ React with ${EmojiConstants.RED_SQUARE_EMOJI} to close this thread.`)
-            .appendLine()
-            .append(`⇒ React with ${EmojiConstants.DENIED_EMOJI} to modmail blacklist the author of this modmail.`);
-
-        const baseMsgEmbed = MessageUtilities.generateBlankEmbed(targetMember.user)
-            .setTitle(`Modmail Thread ⇒ ${targetMember.user.tag}`)
-            .setDescription(descSb.toString())
-            .addField("Reactions", reactionSb.toString())
-            .setTimestamp()
-            .setFooter("Modmail Thread • Created");
-        const baseMessage: Message = await threadChannel.send({
-            embeds: [baseMsgEmbed],
-            components: ModmailThreadActionRows
-        });
-        await baseMessage.pin().catch();
-
-        // Don't inline in case we need to change any properties of this object.
-        const modmailObj: IModmailThread = {
-            initiatorId: targetMember.id,
-            initiatedById: initiatedBy.id,
-            baseMsg: baseMessage.id,
-            startedOn: createdTime,
-            channel: threadChannel.id,
-            originalModmailMessageId: baseMessage.id,
-            messages: content ? [
-                {
-                    authorId: initiatedBy.id,
-                    attachments: [],
-                    tag: initiatedBy.user.tag,
-                    content: content,
-                    timeSent: new Date().getTime()
-                }
-            ] : []
-        };
-        await MongoManager.updateAndFetchGuildDoc({
-            guildId: targetMember.guild.id
-        }, {
-            $push: {
-                "properties.modmailThreads": modmailObj
-            }
-        });
-
-        // Ping the person that created this.
-        MessageUtilities.sendThenDelete({content: initiatedBy.toString()}, threadChannel, 2000);
-
-        // If no content, exit.
-        if (!content) return;
-
-        const replyEmbed: MessageEmbed = MessageUtilities.generateBlankEmbed(initiatedBy.guild)
-            .setTitle(`${initiatedBy.guild.name} ⇒ You`)
-            .setDescription(content)
-            .setFooter("Modmail");
-
-        // Validate that the message has been sent.
-        const msgResult = await GlobalFgrUtilities.sendMsg(targetMember, {embeds: [replyEmbed]});
-        const replyRecordsEmbed = MessageUtilities.generateBlankEmbed(initiatedBy.user, msgResult ? "GREEN" : "YELLOW")
-            .setTitle(`${initiatedBy.displayName} ⇒ ${targetMember.user.tag}`)
-            .setDescription(content)
-            .setFooter("Sent Anonymously")
-            .setTimestamp();
-
-        if (!msgResult)
-            replyRecordsEmbed.addField(`${EmojiConstants.WARNING_EMOJI} Error`, "Something went wrong when trying to send" +
-                " this modmail message. The recipient has either blocked the bot or prevented server members from" +
-                " DMing him/her.");
-
-        await threadChannel.send({embeds: [replyRecordsEmbed]}).catch();
+        const message = await MessageUtilities.tryGetMessage(modmailChannel, threadSearchByUser.baseMsg);
+        return message && message.hasThread ? message.thread! : null;
     }
 
     /**
-     * Converts a modmail message to a thread. Should be called when reacting to 🔀.
-     * @param originalMmMsg The original modmail message. This must be a valid modmail message.
-     * @param convertedToThreadBy The person that converted the modmail message to a thread.
+     * Edits the base modmail message, if any.
+     * @param {Message} mm The modmail message.
+     * @param {ThreadChannel} t The thread channel.
+     * @param {GuildMember} openedBy The guild member that opened this modmail.
+     * @param {boolean} created Whether the thread was created.
      */
-    export async function convertToThread(originalMmMsg: Message, convertedToThreadBy: GuildMember): Promise<void> {
-        if (!convertedToThreadBy.guild.me || !convertedToThreadBy.guild.me.permissions.has("MANAGE_CHANNELS"))
-            return;
-        const oldEmbed = originalMmMsg.embeds[0];
-        const authorOfModmailId = oldEmbed.footer!.text!.split("•")[0].trim();
-        const guild = originalMmMsg.guild as Guild;
-        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
+    export async function acknowledgeModmailThreadCreation(mm: Message, t: ThreadChannel,
+                                                           openedBy: GuildMember,
+                                                           created: boolean): Promise<void> {
+        if (created) {
+            mm.embeds[0].spliceFields(mm.embeds[0].fields.findIndex(x => x.name === "Directions"), 1);
+            mm.embeds[0].addField("Directions", OPEN_MODMAIL_INSTRUCTIONS);
+            await MessageUtilities.tryEdit(mm, {embeds: [mm.embeds[0]]});
+        }
+        else {
+            await GlobalFgrUtilities.sendMsg(t, {content: openedBy.toString()});
+        }
+    }
 
-        // Is the person still in the guild?
-        const authorOfModmail = await GuildFgrUtilities.fetchGuildMember(guild, authorOfModmailId);
-        if (!authorOfModmail) {
-            const notInGuildEmbed = MessageUtilities.generateBlankEmbed(convertedToThreadBy, "RED")
-                .setTitle("Target Member Unavailable.")
-                .setDescription(`The person with ID \`${authorOfModmailId}\` is not in the server anymore. This `
-                    + "modmail message will be deleted in 10 seconds.")
-                .setFooter("Unable to Convert Modmail Message.");
-            await originalMmMsg.edit({embeds: [notInGuildEmbed]})
-                .then(x => MiscUtilities.stopFor(10 * 1000).then(() => x.delete()))
-                .catch();
-            return;
+    /**
+     * Opens a modmail thread from a modmail message, or reopens one if it was already created but archived.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {Message} modmailMsg The original modmail message.
+     * @param {GuildMember} [moderator] The moderator that opened this.
+     * @returns {Promise<[ThreadChannel | null, boolean]>} A tuple, where the first element is the thread channel
+     * and the second element is whether the channel was created (true) or if it already existed (false).
+     */
+    export async function openModmailThread(guildDoc: IGuildInfo,
+                                            modmailMsg: Message,
+                                            moderator?: GuildMember): Promise<[ThreadChannel | null, boolean]> {
+        if (!satisfiesPrecondition(modmailMsg, guildDoc)) {
+            return [null, false];
         }
 
-        // Is the person blacklisted?
-        const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers
-            .find(x => x.affectedUser.id === authorOfModmail.id);
-        if (blacklistInfo) {
-            const noUserFoundEmbed = MessageUtilities.generateBlankEmbed(convertedToThreadBy.user, "RED")
-                .setTitle("User Blacklisted From Modmail")
-                .setDescription(`${authorOfModmail} is currently blacklisted from using modmail. You are unable to `
-                    + "create a thread for this person.")
-                .addField("Reason", blacklistInfo.reason)
-                .setFooter("Modmail");
-            await originalMmMsg.edit({embeds: [noUserFoundEmbed]})
-                .then(x => MiscUtilities.stopFor(5 * 1000).then(() => x.delete()))
-                .catch();
-            return;
+        // Several cases to consider:
+        // - The thread is already open.
+        // - The thread is archived, but another thread for the same person is already open.
+        // - A thread could have been created by someone that isn't the bot, or the thread was created by the bot
+        // but is now archived.
+        //      -> Unarchive it, if applicable.
+        //      -> Add it to the database.
+        //      -> Done
+        // - No thread was created.
+        //      -> Create thread.
+        //      -> Add to database.
+        //      -> Done
+
+        // Is this particular thread active?
+        // guildDoc.properties.modmailThreads should NOT have this modmail instance IF the thread is not active.
+        if (modmailMsg.hasThread
+            && !modmailMsg.thread!.archived
+            && guildDoc.properties.modmailThreads.some(x => x.threadId === modmailMsg.thread!.id
+                && x.baseMsg === modmailMsg.id)) {
+            if (moderator) {
+                await acknowledgeModmailThreadCreation(modmailMsg, modmailMsg.thread!, moderator, false);
+            }
+            return [modmailMsg.thread!, false];
         }
 
-        // Does this person have a thread already?
-        const modmailInfo = guildDoc.properties.modmailThreads.find(x => x.initiatorId === authorOfModmail.id);
-        if (modmailInfo) {
-            const channel = GuildFgrUtilities.getCachedChannel<TextChannel>(
-                guild,
-                modmailInfo.channel
-            );
-            // If the channel exists, ping them.
-            if (channel) {
-                await MessageUtilities.sendThenDelete({content: convertedToThreadBy.toString()}, channel);
-                return;
+        // Now see if there is a thread that is already open for this person
+        const t = guildDoc.properties.modmailThreads.find(x => x.recipientId === modmailMsg.embeds[0].footer!.text);
+        if (t) {
+            const m = await GuildFgrUtilities.fetchMessage(modmailMsg.channel, t.baseMsg);
+            if (m && m.thread && !m.thread.archived) {
+                if (moderator) {
+                    await acknowledgeModmailThreadCreation(modmailMsg, m.thread!, moderator, false);
+                }
+                return [m.thread!, false];
             }
 
-            // Otherwise, the channel doesn't exist.
-            // So remove it.
-            await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+            await MongoManager.updateAndFetchGuildDoc({guildId: modmailMsg.guild!.id}, {
                 $pull: {
                     "properties.modmailThreads": {
-                        channel: modmailInfo.channel
+                        recipientId: modmailMsg.embeds[0].footer!.text
                     }
                 }
             });
         }
 
-        // Now we can begin.
+        const addThreadToDb = async (t: ThreadChannel): Promise<void> => {
+            if (moderator) {
+                await acknowledgeModmailThreadCreation(modmailMsg, t, moderator, true);
+            }
+            await MongoManager.updateAndFetchGuildDoc({guildId: modmailMsg.guild!.id}, {
+                $push: {
+                    "properties.modmailThreads": {
+                        baseMsg: modmailMsg.id,
+                        threadId: t.id,
+                        recipientId: modmailMsg.embeds[0].footer!.text
+                    } as IModmailThread
+                }
+            });
+
+            const baseMsg = await t.fetchStarterMessage();
+            baseMsg.embeds[0].spliceFields(baseMsg.embeds[0].fields.findIndex(x => x.name === "Directions"), 1);
+            baseMsg.embeds[0].addField("Directions", OPEN_MODMAIL_INSTRUCTIONS);
+            await MessageUtilities.tryEdit(baseMsg, {embeds: [baseMsg.embeds[0]]});
+        };
+
+        if (modmailMsg.hasThread) {
+            const thread = await modmailMsg.thread!.fetch();
+            if (thread.unarchivable) {
+                await thread.setArchived(false);
+            }
+
+            await addThreadToDb(thread);
+            return [thread, true];
+        }
+
+        // It's possible that we don't have permission
+        const newThread = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            return await modmailMsg.startThread({
+                autoArchiveDuration: "MAX",
+                reason: "Started modmail.",
+                name: "Modmail"
+            });
+        });
+
+        if (!newThread) {
+            return [null, false];
+        }
+
+        await addThreadToDb(newThread);
+        return [newThread, true];
+    }
+
+    // Red
+    const NOT_RESPONDED_TO_COLOR: number = 0xc90808;
+    // Blue
+    const ARCHIVED_THREAD_COLOR: number = 0x142fb5;
+    // Green
+    const ACTIVE_THREAD_COLOR: number = 0x31a10e;
+    // Purple
+    const GENERAL_THREAD_COLOR: number = 0xb31772;
+
+    const NEW_MODMAIL_INSTRUCTIONS: string = "The modmail thread has either not been responded to or has been"
+        + " archived. To (re)open this modmail thread, allowing you to reply to this modmail message, press the **Open"
+        + " Thread** button. More instructions will be provided once the thread is opened. To delete this modmail"
+        + " message, press the **Remove** button. To delete this message and blacklist the author, press the"
+        + " **Blacklist** button.";
+
+    const OPEN_MODMAIL_INSTRUCTIONS: string = "The modmail thread is currently opened. To send a message to the"
+        + " author of this modmail, use the `/reply` command. To close (i.e. archive) the modmail thread, use the"
+        + " `/archive` command or manually archive the thread yourself.";
+
+    /**
+     * Gets the embed that represents a modmail reply or response.
+     * @param {Message} msg The message.
+     * @returns {MessageEmbed} The embed. This will give you a very simple embed that is missing a title and other
+     * instructions.
+     */
+    export function getEmbedForModmail(msg: Message): MessageEmbed {
+        const embed = new MessageEmbed()
+            .setAuthor({name: msg.author.tag, iconURL: msg.author.displayAvatarURL()})
+            .setTimestamp()
+            .setFooter({text: msg.author.id})
+            .setDescription(msg.content.length === 0 ? "(No Content)" : msg.content);
+
+        const fields = ArrayUtilities.arrayToStringFields(
+            Array.from(msg.attachments.values()),
+            (i, attachment) => {
+                const ext = attachment.url.split(".").at(-1)!.toUpperCase();
+                return `**\`[${i + 1}]\`** [${attachment.name ?? "No Name"} (${ext} File)](${attachment.url})`;
+            }
+        );
+
+        for (const field of fields) {
+            embed.addField("Attachment(s)", field, true);
+        }
+
+        return embed;
+    }
+
+    /**
+     * Closes the modmail thread.
+     * @param {Message} origMsg The original message.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @returns {Promise<boolean>} Whether the thread was closed successfully.
+     */
+    export async function closeModmailThread(origMsg: Message, guildDoc: IGuildInfo): Promise<boolean> {
+        if (!satisfiesPrecondition(origMsg, guildDoc)) {
+            return false;
+        }
+
+        if (!origMsg.hasThread) {
+            return false;
+        }
+
+        const thread = origMsg.thread!;
+
+        if (thread.archived || !guildDoc.properties.modmailThreads.some(x => x.threadId === thread.id
+                && x.baseMsg === origMsg.id)) {
+            return false;
+        }
+
+        origMsg.embeds[0].spliceFields(origMsg.embeds[0].fields.findIndex(x => x.name === "Directions"), 1);
+        origMsg.embeds[0].addField("Directions", NEW_MODMAIL_INSTRUCTIONS);
+        await Promise.all([
+            thread.setArchived(true, "Closed modmail."),
+            MongoManager.updateAndFetchGuildDoc({guildId: origMsg.guild!.id}, {
+                $pull: {
+                    "properties.modmailThreads": {
+                        baseMsg: origMsg.id
+                    }
+                }
+            }),
+            MessageUtilities.tryEdit(origMsg, {embeds: [origMsg.embeds[0]]})
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Asks the user to select a guild based on what servers have modmail set up.
+     * @param {User} user The user.
+     * @returns {Promise<Guild | null>} The guild selected, if any, or `null` if none is selected.
+     */
+    export async function selectGuild(user: User): Promise<Guild | null> {
+        const guildsToChoose: Guild[] = [];
+        const allGuilds = await MongoManager.getGuildCollection().find({}).toArray();
+        for await (const [id, guild] of user.client.guilds.cache) {
+            const gObj = allGuilds.find(x => x.guildId === id);
+            if (!gObj) {
+                continue;
+            }
+
+            const member = await GuildFgrUtilities.fetchGuildMember(guild, user.id);
+            if (!member || !guild.roles.cache.has(gObj.roles.verifiedRoleId)
+                || !guild.channels.cache.has(gObj.channels.modmailChannelId)) {
+                continue;
+            }
+
+            guildsToChoose.push(guild);
+        }
+
+        if (guildsToChoose.length === 0) {
+            return null;
+        }
+
+        if (guildsToChoose.length === 1) {
+            return guildsToChoose[0];
+        }
+
+        const uniqueId = StringUtil.generateRandomString(20);
+        let i = 0;
+        const selectMenus: MessageSelectMenu[] = [];
+        for (const subset of ArrayUtilities.breakArrayIntoSubsets(guildsToChoose, 25)) {
+            selectMenus.push(
+                new MessageSelectMenu()
+                    .setCustomId(`${uniqueId}_${i++}`)
+                    .setOptions(subset.map(x => {
+                        return {value: x.id, label: x.name};
+                    }))
+                    .setMaxValues(1)
+                    .setMinValues(1)
+            );
+        }
+
+        const askMsg = await GlobalFgrUtilities.sendMsg(
+            user,
+            {
+                embeds: [
+                    MessageUtilities.generateBlankEmbed(user)
+                        .setTitle("Select Server")
+                        .setDescription("The message above will be sent to a designated server of your choice."
+                            + " Please select the server by using the select menu below. If you don't want to seelct"
+                            + " a server, press the **Cancel** button.")
+                ],
+                components: AdvancedCollector.getActionRowsFromComponents([
+                    ...selectMenus,
+                    ButtonConstants.CANCEL_BUTTON
+                ])
+            }
+        );
+
+        if (!askMsg) {
+            return null;
+        }
+
+        const result = await AdvancedCollector.startInteractionCollector({
+            targetChannel: askMsg.channel,
+            acknowledgeImmediately: false,
+            clearInteractionsAfterComplete: false,
+            deleteBaseMsgAfterComplete: true,
+            duration: 60 * 1000,
+            oldMsg: askMsg,
+            targetAuthor: user
+        });
+
+        if (!result || !result.isSelectMenu()) {
+            return null;
+        }
+
+        return guildsToChoose.find(x => x.id === result.values[0])!;
+    }
+
+    /**
+     * A function that should be called when a member sends a message through the bot to the guild's modmail system.
+     * @param {Message} msg The message that the user sent through the bot's direct messages.
+     * @param {Guild} toGuild The guild to send the message to.
+     * @returns {Promise<boolean>} Whether the process succeeded.
+     */
+    export async function sendMessageToThread(msg: Message, toGuild: Guild): Promise<boolean> {
+        const guildDoc = await MongoManager.getOrCreateGuildDoc(toGuild.id, true);
+        const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            toGuild,
+            guildDoc.channels.modmailChannelId
+        );
+
+        if (!modmailChannel) {
+            return false;
+        }
+
+        const embed = getEmbedForModmail(msg);
+        const existingChan = await findModmailThreadByUser(msg.author, toGuild, guildDoc);
+        if (existingChan) {
+            embed.setTitle("Modmail Response")
+                .setColor(GENERAL_THREAD_COLOR);
+
+            const r = await GlobalFgrUtilities.sendMsg(existingChan, {
+                embeds: [embed]
+            });
+
+            if (!r) {
+                await MessageUtilities.tryReact(msg, EmojiConstants.WARNING_EMOJI);
+                return false;
+            }
+
+            return true;
+        }
+
+        // otherwise, we need to create it
+        embed.setTitle("Modmail Received.")
+            .setColor(NOT_RESPONDED_TO_COLOR)
+            .addField("Directions", NEW_MODMAIL_INSTRUCTIONS);
+
+        const mm = await GlobalFgrUtilities.sendMsg(modmailChannel, {
+            embeds: [embed],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                ButtonConstants.OPEN_THREAD_BUTTON,
+                ButtonConstants.REMOVE_BUTTON,
+                // ButtonConstants.BLACKLIST_BUTTON
+            ])
+        });
+
+        return !!mm;
+    }
+
+    /**
+     * A function that should be called when a staff member responds to the user's modmail message.
+     * @param {ThreadChannel} thread The thread channel where this response occurred.
+     * @param {Message} msg The message that will be used to respond back.
+     * @param {boolean} anon Whether to be anonymous or not.
+     * @returns {Promise<boolean>}
+     */
+    export async function sendMessageToUser(thread: ThreadChannel, msg: Message, anon: boolean): Promise<boolean> {
+        const guild = thread.guild;
+        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
+        const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            thread.guild,
+            guildDoc.channels.modmailChannelId
+        );
+
+        if (!modmailChannel) {
+            return false;
+        }
+
+        const t = guildDoc.properties.modmailThreads.find(x => x.threadId === thread.id);
+        if (!t) {
+            return false;
+        }
+
+        const member = await GuildFgrUtilities.fetchGuildMember(guild, t.recipientId);
+        if (!member) {
+            return false;
+        }
+
+        const embedToSave = getEmbedForModmail(msg).setColor(GENERAL_THREAD_COLOR);
+        const embedToRecipient = getEmbedForModmail(msg).setColor(GENERAL_THREAD_COLOR);
+        if (anon) {
+            embedToRecipient.setAuthor({name: `${guild.name} Staff`, iconURL: guild.iconURL() ?? undefined})
+                .setFooter({text: guild.id});
+            embedToSave.setAuthor({name: `${msg.author.tag} (Anonymous)`, iconURL: msg.author.displayAvatarURL()});
+        }
+
+        await GlobalFgrUtilities.sendMsg(thread, {embeds: [embedToSave]});
+        const r = await GlobalFgrUtilities.sendMsg(member, {embeds: [embedToRecipient]});
+        return !!r;
+    }
+
+    /**
+     * Starts a modmail thread with the specified user.
+     * @param {GuildMember} user The user.
+     * @param {GuildMember} moderator The moderator.
+     * @returns {Promise<boolean>} Whether this succeeded.
+     */
+    export async function startModmailWithUser(user: GuildMember,
+                                               moderator: GuildMember): Promise<boolean> {
+        const guild = user.guild;
+        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
+
         const modmailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
             guildDoc.channels.modmailChannelId
         );
-        if (!modmailChannel) return;
-        const modmailCategory = modmailChannel.parent;
-        if (modmailCategory === null) return;
 
-        // max size of category = 50
-        if (modmailCategory.children.size + 1 > 50) return;
-
-        // Create the channel.
-        const createdTime = new Date().getTime();
-        const channelName = `${authorOfModmail.user.username}-${authorOfModmail.user.discriminator}`;
-        const description = new StringBuilder()
-            .append(`⇒ **Modmail Thread for:** ${authorOfModmail}`)
-            .appendLine()
-            .append(`⇒ **Converted to Thread by:** ${convertedToThreadBy}`)
-            .appendLine()
-            .append(`⇒ **Created By:** ${TimeUtilities.getDateTime(createdTime)}`);
-        const threadChannel = await convertedToThreadBy.guild.channels.create(channelName, {
-            type: "GUILD_TEXT",
-            parent: modmailCategory,
-            topic: description.toString()
-        }) as TextChannel;
-        await threadChannel.lockPermissions().catch();
-
-        // Create the base message.
-        const reactionInfo = new StringBuilder()
-            .append(`⇒ React to ${EmojiConstants.CLIPBOARD_EMOJI} to send a message.`)
-            .appendLine()
-            .append(`⇒ React to ${EmojiConstants.RED_SQUARE_EMOJI} to close this thread.`)
-            .appendLine()
-            .append(`⇒ React to ${EmojiConstants.DENIED_EMOJI} to modmail blacklist the author of this modmail thread.`);
-        const baseMsgEmbed = MessageUtilities.generateBlankEmbed(authorOfModmail.user)
-            .setTitle(`Modmail Thread ⇒ ${authorOfModmail.user.tag}`)
-            .setDescription(description.toString())
-            .addField("Reaction Guide", reactionInfo.toString())
-            .setTimestamp()
-            .setFooter("Modmail Thread • Converted");
-
-        const baseMessage = await threadChannel.send({embeds: [baseMsgEmbed], components: ModmailThreadActionRows});
-        await baseMessage.pin().catch();
-
-        // Now, send the first message (copy the message from modmail channel).
-        const firstMsgEmbed = MessageUtilities.generateBlankEmbed(authorOfModmail.user, "RED")
-            .setTitle(`${authorOfModmail.user.tag} ⇒ Modmail Thread`)
-            .setFooter(`${authorOfModmail.id} • Modmail Thread`)
-            .setTimestamp();
-        const attachmentsIndex = originalMmMsg.embeds[0].fields
-            .findIndex(x => x.name === "Attachments");
-        let desc = "";
-        if (originalMmMsg.embeds[0].description !== null) {
-            desc = originalMmMsg.embeds[0].description;
-            firstMsgEmbed.setDescription(originalMmMsg.embeds[0].description);
+        if (!modmailChannel) {
+            return false;
         }
 
-        if (attachmentsIndex !== -1)
-            firstMsgEmbed.addField("Attachments", originalMmMsg.embeds[0].fields[attachmentsIndex].value);
-        const firstMsg = await threadChannel.send({embeds: [firstMsgEmbed]});
-        await firstMsg.react(EmojiConstants.CLIPBOARD_EMOJI).catch();
+        const thread = await findModmailThreadByUser(user.user, guild, guildDoc);
+        if (thread) {
+            await GlobalFgrUtilities.sendMsg(thread, {content: moderator.toString()});
+            return true;
+        }
 
-        const threadInfo: IModmailThread = {
-            initiatorId: authorOfModmail.id,
-            initiatedById: convertedToThreadBy.id,
-            baseMsg: baseMessage.id,
-            startedOn: createdTime,
-            channel: threadChannel.id,
-            originalModmailMessageId: originalMmMsg.id,
-            messages: [
-                {
-                    authorId: authorOfModmail.id,
-                    tag: authorOfModmail.user.tag,
-                    timeSent: new Date().getTime(),
-                    content: desc,
-                    attachments: []
-                }
-            ]
-        };
-
-        // Update database + update old modmail message.
-        await MongoManager.updateAndFetchGuildDoc({guildID: convertedToThreadBy.guild.id}, {
-            $push: {
-                "properties.modmailThreads": threadInfo
-            }
+        const mm = await GlobalFgrUtilities.sendMsg(modmailChannel, {
+            embeds: [
+                new MessageEmbed()
+                    .setAuthor({name: user.user.tag, iconURL: user.user.displayAvatarURL()})
+                    .setTimestamp()
+                    .setFooter({text: user.user.id})
+                    .setDescription("*Thread created by command.*")
+            ],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                ButtonConstants.OPEN_THREAD_BUTTON,
+                ButtonConstants.REMOVE_BUTTON,
+                // ButtonConstants.BLACKLIST_BUTTON
+            ])
         });
 
-        oldEmbed.setFooter("Converted to Modmail Thread.");
-        oldEmbed.addField("Modmail Thread Information", new StringBuilder()
-            .append("This modmail message was converted to a thread.")
-            .appendLine()
-            .append(`⇒ **Converted to Thread by:** ${convertedToThreadBy}`)
-            .appendLine()
-            .append(`⇒ **Created By:** ${TimeUtilities.getDateTime(createdTime)}`)
-            .toString());
-        await originalMmMsg.edit({embeds: [oldEmbed]}).catch();
-        await originalMmMsg.reactions.removeAll().catch();
-    }
-
-    /**
-     * Blacklists the author of the modmail message from using modmail.
-     * @param {Message} origMmMessage The original modmail message.
-     * @param {GuildMember} mod The moderator that wants to blacklist the author of the modmail message.
-     * @param {IGuildInfo} guildDoc The guild document.
-     * @param {IModmailThread} threadInfo The thread info, if any.
-     */
-    export async function blacklistFromModmail(origMmMessage: Message, mod: GuildMember, guildDoc: IGuildInfo,
-                                               threadInfo?: IModmailThread): Promise<void> {
-        // TODO what if the button was pressed in modmail thread channel
-        const oldEmbed = origMmMessage.embeds[0];
-        const authorOfModmailId = threadInfo
-            ? threadInfo.originalModmailMessageId
-            : oldEmbed.footer!.text!.split("•")[0].trim();
-        await origMmMessage.reactions.removeAll().catch();
-
-        // Start by asking if we want to blacklist.
-        const confirmBlacklistEmbed = MessageUtilities.generateBlankEmbed(mod.user, "RED")
-            .setTitle("Blacklist From Modmail")
-            .setDescription("Are you sure you want to blacklist the user (with ID " + authorOfModmailId + ") from "
-                + "using modmail? He or she will not be notified and this blacklist is indefinite.")
-            .setFooter("Confirmation");
-        await origMmMessage.edit({
-            embeds: [confirmBlacklistEmbed],
-            components: ButtonConstants.YES_NO_ACTION_BUTTONS
-        }).catch();
-        const result = await AdvancedCollector.startInteractionCollector({
-            targetChannel: origMmMessage.channel as TextChannel,
-            targetAuthor: mod,
-            duration: 2 * 60 * 1000,
-            oldMsg: origMmMessage,
-            clearInteractionsAfterComplete: true,
-            acknowledgeImmediately: true,
-            deleteBaseMsgAfterComplete: false
-        });
-
-        if (!result || result.customId === "no") {
-            await origMmMessage.edit({
-                embeds: [oldEmbed],
-                components: threadInfo ? ModmailThreadActionRows : ModmailGeneralActionRows
-            }).catch();
-            return;
+        if (!mm) {
+            return false;
         }
 
-        const blacklistInfo = guildDoc.moderation.blacklistedModmailUsers
-            .find(x => x.affectedUser.id === authorOfModmailId);
-
-        // If this person was already blacklisted.
-        if (blacklistInfo) {
-            await origMmMessage.delete().catch();
-            return;
-        }
-
-        // Update databases accordingly
-        await MongoManager.updateAndFetchGuildDoc({guildID: mod.guild.id}, {
-            $push: {
-                "moderation.blacklistedModmailUsers": {
-                    discordId: authorOfModmailId,
-                    moderatorName: mod.displayName,
-                    dateTime: new Date().getTime(),
-                    reason: "AUTO: Blacklisted from Modmail Control Panel."
-                }
-            }
-        });
-
-        if (threadInfo) {
-            await MongoManager.updateAndFetchGuildDoc({guildDoc: mod.guild.id}, {
-                $pull: {
-                    "properties.modmailThreads": {
-                        channel: threadInfo.channel
-                    }
-                }
-            });
-        }
-
-        const embedToReplaceOld = MessageUtilities.generateBlankEmbed(mod.user)
-            .setTitle("Blacklisted From Modmail")
-            .setDescription("This modmail message has been deleted because the author of this modmail message has"
-                + " been blacklisted.")
-            .setFooter("Blacklisted from Modmail.");
-        await origMmMessage.edit({embeds: [embedToReplaceOld]})
-            .then(x => MiscUtilities.stopFor(5 * 1000).then(() => x.delete()))
-            .catch();
-
-        // Log this to moderation logs.
-        const blLogChannel = guildDoc.channels.loggingChannels.find(x => x.key === "Blacklist");
-        if (!blLogChannel) return;
-
-        const blacklistLogsChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
-            mod.guild,
-            blLogChannel.value
-        );
-        if (!blacklistLogsChannel) return;
-        const modLogEmbed = MessageUtilities.generateBlankEmbed(mod.user, "RED")
-            .setTitle("Modmail Blacklisted.")
-            .setDescription(`⇒ **Blacklisted ID:** ${authorOfModmailId}\n⇒ **Moderator:** ${mod} (${mod.id})`)
-            .addField("⇒ Reason", "AUTOMATIC: Blacklisted from Modmail Control Panel.")
-            .setFooter("Blacklisted from Modmail.")
-            .setTimestamp();
-        await blacklistLogsChannel.send({embeds: [modLogEmbed]}).catch();
-    }
-
-    /**
-     * Asks the user if the modmail message should be deleted.
-     * @param {Message} message The modmail message.
-     * @param {GuildMember} member The member to ask.
-     */
-    export async function askDeleteModmailMessage(message: Message, member: GuildMember): Promise<void> {
-        if (message.embeds.length === 0) return;
-        // Remove all otherButtons because, well, you know, you don't need them.
-        message.reactions.removeAll().catch();
-        const oldEmbed = message.embeds[0];
-        const askDeleteEmbed = MessageUtilities.generateBlankEmbed(member)
-            .setTitle("Confirm Delete Modmail Message.")
-            .setDescription("Are you sure you want to delete this modmail message?");
-        await message.edit({
-            embeds: [askDeleteEmbed],
-            components: ButtonConstants.YES_NO_ACTION_BUTTONS
-        }).catch();
-        const deleteResp = await AdvancedCollector.startInteractionCollector({
-            targetChannel: message.channel as TextChannel,
-            targetAuthor: message.author,
-            duration: 60 * 1000,
-            oldMsg: message,
-            deleteBaseMsgAfterComplete: false,
-            clearInteractionsAfterComplete: true,
-            acknowledgeImmediately: true
-        });
-
-        if (!deleteResp || deleteResp.customId === "no") {
-            await message.edit({embeds: [oldEmbed], components: ModmailGeneralActionRows}).catch();
-            return;
-        }
-
-        await message.delete().catch();
-    }
-
-    /**
-     * Responds to a thread modmail message.
-     * @param {IModmailThread} modmailThread The modmail thread object.
-     * @param {GuildMember} memberThatWillRespond The member that will respond to this modmail thread.
-     * @param {IGuildInfo} guildDoc The guild document.
-     * @param {TextChannel} threadChannel The thread channel.
-     */
-    export async function respondToThreadModmail(modmailThread: IModmailThread, memberThatWillRespond: GuildMember,
-                                                 guildDoc: IGuildInfo, threadChannel: TextChannel): Promise<void> {
-        // make sure member exists
-        const memberToRespondTo = await GuildFgrUtilities.fetchGuildMember(
-            memberThatWillRespond.guild,
-            modmailThread.initiatorId
-        );
-
-        if (!memberToRespondTo) {
-            await closeModmailThread(threadChannel, modmailThread, guildDoc, memberThatWillRespond);
-            const noUserFoundEmbed = MessageUtilities.generateBlankEmbed(memberThatWillRespond.user)
-                .setTitle("User Not Found")
-                .setDescription("The person you were trying to contact couldn't be found; maybe he or she left the "
-                    + "server? The modmail thread has been deleted as a result.")
-                .setFooter("Modmail");
-            await memberThatWillRespond.send({embeds: [noUserFoundEmbed]}).catch();
-            return;
-        }
-
-        CurrentlyRespondingToModMail.set(memberThatWillRespond.id, modmailThread.initiatorId);
-
-        const response = await getResponseMessage(memberThatWillRespond, threadChannel);
-        if (!response) return;
-        const [responseToMail, anonymous] = response;
-
-        const replyEmbed = MessageUtilities.generateBlankEmbed(anonymous
-            ? memberThatWillRespond.guild
-            : memberThatWillRespond.user)
-            .setTitle(`${memberThatWillRespond.guild} ⇒ You`)
-            .setDescription(responseToMail)
-            .setFooter("Modmail Response");
-
-        const sentMsg = await GlobalFgrUtilities.sendMsg(memberToRespondTo, {embeds: [replyEmbed]});
-        const replyRecordsEmbed = MessageUtilities.generateBlankEmbed(memberThatWillRespond.user, sentMsg
-            ? "GREEN"
-            : "YELLOW")
-            .setTitle(`${memberThatWillRespond.displayName} ⇒ ${memberToRespondTo.user.tag}`)
-            .setDescription(responseToMail)
-            .setFooter(`Sent ${anonymous ? "Anonymously" : "Publicly"}`)
-            .setTimestamp();
-
-        if (!sentMsg) {
-            replyRecordsEmbed.addField(`${EmojiConstants.WARNING_EMOJI} Error.`, "Something went wrong when trying to send" +
-                " this modmail message. The recipient has either blocked the bot or prevented server members from" +
-                " DMing him/her.");
-        }
-
-        if (sentMsg) {
-            const loggedMsg: IModmailThreadMessage = {
-                authorId: memberThatWillRespond.id,
-                tag: memberThatWillRespond.user.tag,
-                timeSent: new Date().getTime(),
-                content: responseToMail,
-                attachments: []
-            };
-
-            await MongoManager.updateAndFetchGuildDoc({
-                guildID: memberThatWillRespond.guild.id,
-                "properties.modmailThreads.initiatorId": modmailThread.initiatorId
-            }, {
-                $push: {
-                    "properties.modmailThreads.$.messages": loggedMsg
-                }
-            });
-        }
-
-        await threadChannel.send({embeds: [replyRecordsEmbed]}).catch();
-        CurrentlyRespondingToModMail.delete(memberThatWillRespond.id);
-    }
-
-    /**
-     * Closes a modmail thread. This will archive the conversation history, if possible, and delete the channel,
-     * restoring the original modmail message (in the modmail channel) to its original state.
-     * @param {TextChannel} threadChannel The thread channel.
-     * @param {IModmailThread} threadInfo The thread info.
-     * @param {IGuildInfo} guildDoc The guild document.
-     * @param {GuildMember} closedBy The person that closed this thread.
-     */
-    export async function closeModmailThread(threadChannel: TextChannel, threadInfo: IModmailThread,
-                                             guildDoc: IGuildInfo, closedBy: GuildMember): Promise<void> {
-        const modMailChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
-            threadChannel.guild,
-            threadInfo.channel
-        );
-        if (threadInfo.originalModmailMessageId !== "" && modMailChannel) {
-            // Get the corresponding message from the modmail channel
-            const oldModmailMessage = await GuildFgrUtilities
-                .fetchMessage(modMailChannel, threadInfo.originalModmailMessageId);
-            // If the originaly modmail message exists, then let's edit it.
-            if (oldModmailMessage) {
-                const modmailEmbed = oldModmailMessage.embeds[0];
-
-                // Remove modmail thread info field since we're closing the thread.
-                const modmailInfoIdx = modmailEmbed.fields.findIndex(x => x.name === "Modmail Thread Information");
-                if (modmailInfoIdx !== -1) modmailEmbed.spliceFields(modmailInfoIdx, 1);
-
-                // find last response by field so we can update it.
-                let lastRespLastIdx = -1;
-                for (let i = modmailEmbed.fields.length - 1; i >= 0; --i) {
-                    if (modmailEmbed.fields[i].value === "Last Response By") {
-                        lastRespLastIdx = i;
-                        break;
-                    }
-                }
-
-                // If one exists (and this should always be the case), then update it to include thread info
-                if (lastRespLastIdx !== -1) {
-                    const storageChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
-                        closedBy.guild,
-                        guildDoc.channels.storageChannelId
-                    );
-
-                    let additionalRespInfo = "";
-                    if (storageChannel) {
-                        const msgHistory = new StringBuilder()
-                            .append("======== Modmail Thread Summary ========")
-                            .appendLine()
-                            .append(`⇒ Modmail Initiator Author ID: ${threadInfo.initiatorId}`)
-                            .appendLine()
-                            .append(`⇒ Thread Creation Time: ${TimeUtilities.getDateTime(threadInfo.startedOn)}`)
-                            .appendLine()
-                            .append(`⇒ Converted To Thread By (ID): ${threadInfo.initiatedById}`)
-                            .appendLine()
-                            .append(`⇒ Closed By: ${closedBy.id} (${closedBy.displayName})`)
-                            .appendLine()
-                            .appendLine()
-                            .append("========================================")
-                            .appendLine();
-                        for (const mmMessage of threadInfo.messages) {
-                            msgHistory.append(`[${TimeUtilities.getDateTime(mmMessage.timeSent)}] ${mmMessage.tag} `)
-                                .append(`(${mmMessage.authorId})`)
-                                .appendLine()
-                                .appendLine()
-                                .append(mmMessage.content)
-                                .appendLine()
-                                .appendLine()
-                                .append(`Attachments: [${mmMessage.attachments.join(", ")}]`)
-                                .appendLine()
-                                .append("========================================")
-                                .appendLine();
-                        }
-
-                        const storageMsg = await GlobalFgrUtilities.sendMsg(
-                            storageChannel,
-                            {
-                                files: [
-                                    new MessageAttachment(Buffer.from(msgHistory.toString(), "utf8"),
-                                        `${closedBy.id}_${threadInfo.initiatorId}_modmail.txt`)
-                                ]
-                            }
-                        ).catch();
-
-                        if (storageMsg && storageMsg.attachments.size > 0) {
-                            const urlToAttachment = storageMsg.attachments.first()!.url;
-                            const linkedStr = `[[Thread Messages](${urlToAttachment})]`;
-                            additionalRespInfo += `${closedBy} (${TimeUtilities.getDateTime()}) ${linkedStr}\n`;
-                        }
-                        else additionalRespInfo += `${closedBy} (${TimeUtilities.getDateTime()}) \`[Thread Closed]\`\n`;
-                    }
-                    else additionalRespInfo += `${closedBy} (${TimeUtilities.getDateTime()}) \`[Thread Closed]\`\n`;
-
-                    if (modmailEmbed.fields[lastRespLastIdx].value === "None.")
-                        modmailEmbed.fields[lastRespLastIdx].value = additionalRespInfo;
-                    else {
-                        if (modmailEmbed.fields[lastRespLastIdx].value.length + additionalRespInfo.length > 1000)
-                            modmailEmbed.addField("Last Response By", additionalRespInfo);
-                        else
-                            modmailEmbed.fields[lastRespLastIdx].value += `\n${additionalRespInfo}`;
-                    }
-                }
-
-                modmailEmbed.setTitle(`${EmojiConstants.GREEN_CHECK_EMOJI} Modmail Entry`)
-                    .setColor("GREEN")
-                    .setFooter(`${threadInfo.originalModmailMessageId} • Modmail Message`);
-                await oldModmailMessage.edit({embeds: [modmailEmbed], components: ModmailGeneralActionRows}).catch();
-            }
-        }
-
-        // Remove from database + delete channel.
-        await MongoManager.updateAndFetchGuildDoc({guildID: threadChannel.guild.id}, {
-            $pull: {
-                "properties.modmailThreads": {
-                    channel: threadChannel.id
-                }
-            }
-        });
-        await threadChannel.delete().catch();
-    }
-
-    /**
-     * Allows a person to respond to a modmail message.
-     * @param {Message} originalMmMsg The message from the modmail channel that the person will respond to.
-     * @param {GuildMember} responder The person that will respond to this modmail message.
-     */
-    export async function respondToGeneralModmail(originalMmMsg: Message,
-                                                  responder: GuildMember): Promise<void> {
-        if (!responder.guild.me || !responder.guild.me.permissions.has("MANAGE_CHANNELS"))
-            return;
-        const oldEmbed = originalMmMsg.embeds[0];
-        const authorOfModmailId = oldEmbed.footer!.text!.split("•")[0].trim();
-        const guild = originalMmMsg.guild as Guild;
-
-        const origDescription = oldEmbed.description ? oldEmbed.description : "";
-        const authorOfModmail = await GuildFgrUtilities.fetchGuildMember(guild, authorOfModmailId);
-        if (!authorOfModmail) {
-            const notInGuildEmbed = MessageUtilities.generateBlankEmbed(responder, "RED")
-                .setTitle("Target Member Unavailable.")
-                .setDescription(`The person with ID \`${authorOfModmailId}\` is no longer in the server, so you cannot `
-                    + "respond to this person. This modmail entry will be deleted in 5 seconds.")
-                .setFooter("Failed to Respond.");
-            await originalMmMsg.edit({embeds: [notInGuildEmbed]})
-                .then(x => MiscUtilities.stopFor(5 * 1000).then(() => x.delete()))
-                .catch();
-            return;
-        }
-
-        await originalMmMsg.reactions.removeAll().catch();
-
-        // If the modmail message was responded to already, then ask if we want to still respond.
-        const lastResponseField = oldEmbed.fields.find(x => x.name === "Last Response By");
-        // If the field doesn't exist, then this modmail is currently being responded to.
-        if (!lastResponseField) return;
-        // Otherwise, we check if the modmail message has already been responded to.
-        if (lastResponseField.value !== "None.") {
-            const confirmWantToRespond = MessageUtilities.generateBlankEmbed(responder.user, "YELLOW")
-                .setTitle("Respond to Already-Responded Modmail")
-                .setDescription("This modmail entry has already been answered. Do you still want to answer this?")
-                .setFooter("Confirmation.");
-            await originalMmMsg.edit({embeds: [confirmWantToRespond]}).catch();
-            const result = await AdvancedCollector.startInteractionCollector({
-                targetChannel: originalMmMsg.channel as TextChannel,
-                targetAuthor: originalMmMsg.author,
-                oldMsg: originalMmMsg,
-                duration: 60 * 1000,
-                deleteBaseMsgAfterComplete: false,
-                clearInteractionsAfterComplete: true,
-                acknowledgeImmediately: true
-            });
-
-            if (!result || result.customId === "no") {
-                await originalMmMsg.edit({embeds: [oldEmbed], components: ModmailGeneralActionRows}).catch();
-                return;
-            }
-        }
-        CurrentlyRespondingToModMail.set(responder.id, authorOfModmailId);
-
-        // Update the old embed to indicate that someone is responding to the modmail.
-        const attachments = oldEmbed.fields.find(x => x.name === "Attachments");
-        const senderInfo = oldEmbed.fields.find(x => x.name === "Sender Information")!.value;
-        const respInProgressEmbed = MessageUtilities.generateBlankEmbed(responder.user)
-            .setTitle("📝 Response In Progress")
-            .setDescription(origDescription)
-            .setFooter("Modmail In Progress!");
-        if (attachments)
-            respInProgressEmbed.addField(attachments.name, attachments.value);
-        respInProgressEmbed.addField("Sender Info", senderInfo)
-            .addField("Current Responder", `${responder}: \`${TimeUtilities.getDateTime()}\``);
-
-        await originalMmMsg.edit({embeds: [respInProgressEmbed]}).catch();
-
-        // Create a new channel where the person can write a message.
-        const channelName = `respond-${authorOfModmail.user.username}`;
-        const responseChannel = await responder.guild.channels.create(channelName, {
-            type: "GUILD_TEXT",
-            permissionOverwrites: [
-                {
-                    id: responder.guild.roles.everyone,
-                    deny: ["VIEW_CHANNEL"]
-                },
-                {
-                    id: responder,
-                    allow: ["VIEW_CHANNEL"]
-                },
-                {
-                    // when is this null
-                    id: responder.guild.me!,
-                    allow: ["VIEW_CHANNEL"]
-                }
-            ]
-        }) as TextChannel;
-
-        const introEmbed = MessageUtilities.generateBlankEmbed(responder.user)
-            .setTimestamp()
-            .setTitle("Responding to Modmail.")
-            .setFooter("Modmail Response System")
-            .setDescription(origDescription);
-        if (attachments) introEmbed.addField("Attachments", attachments.value);
-        introEmbed.addField("Sender Information", senderInfo);
-
-        const introMsg = await responseChannel.send({content: responder.toString(), embeds: [introEmbed]});
-        await introMsg.pin().catch();
-        const response = await getResponseMessage(responder, responseChannel);
-        if (!response) {
-            await originalMmMsg.edit({embeds: [oldEmbed], components: ModmailGeneralActionRows}).catch();
-            return;
-        }
-
-        const [responseToMail, anonymous] = response;
-
-        const replyEmbed = MessageUtilities.generateBlankEmbed(anonymous
-            ? responder.guild : responder.user)
-            .setTitle("Modmail Response")
-            .setDescription(responseToMail)
-            .addField("Original Message", origDescription.length === 0
-                ? "N/A"
-                : (origDescription.length > 1012 ? origDescription.substring(0, 1000) + "..." : origDescription))
-            .setFooter("Modmail Response");
-
-        // TODO is this right?
-        const sentMsg = await GlobalFgrUtilities.sendMsg(authorOfModmail, {
-            embeds: [replyEmbed]
-        });
-        await responseChannel.delete().catch();
-        CurrentlyRespondingToModMail.delete(responder.id);
-
-        // save response
-        const loggedRespStr: StringBuilder = new StringBuilder()
-            .append("========== RESPONSE ==========")
-            .appendLine()
-            .append(responseToMail)
-            .appendLine()
-            .appendLine()
-            .appendLine()
-            .append("====== ORIGINAL MESSAGE ======")
-            .appendLine()
-            .append(origDescription)
-            .appendLine()
-            .appendLine()
-            .appendLine()
-            .append("======== GENERAL INFO ========")
-            .appendLine()
-            .append(`Author ID: ${authorOfModmail.id}`)
-            .appendLine()
-            .append(`Author Tag: ${authorOfModmail.user.tag}`)
-            .appendLine()
-            .append(`Responder ID: ${responder.id}`)
-            .appendLine()
-            .append(`Responder Tag: ${responder.user.tag}`)
-            .appendLine()
-            .append(`Time: ${TimeUtilities.getDateTime()} (GMT)`)
-            .appendLine()
-            .append(`Sent Status: ${sentMsg ? "Message Sent Successfully" : "Message Failed To Send"}`);
-
-        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
-        // see if we should store this string.
-        const modMailStorage = await MongoManager.getStorageChannel(guild);
-        let addLogStr = "";
-        if (modMailStorage) {
-            const logMsg = await GlobalFgrUtilities.sendMsg(
-                modMailStorage,
-                {
-                    files: [
-                        new MessageAttachment(
-                            Buffer.from(loggedRespStr.toString(), "utf8"),
-                            `${authorOfModmail.id}_modmail_${Date.now()}.txt`)
-                    ]
-                }
-            );
-
-            if (logMsg && logMsg.attachments.size > 0)
-                addLogStr = `[[Response](${logMsg.attachments.first()!.url})]`;
-        }
-
-        // Get old responses and begin adding to it if needed.
-        let lastRespLastIdx = -1;
-        for (let i = oldEmbed.fields.length - 1; i >= 0; --i) {
-            if (oldEmbed.fields[i].value === "Last Response By") {
-                lastRespLastIdx = i;
-                break;
-            }
-        }
-
-        const timeStr = TimeUtilities.getDateTime();
-        const tempLastResp = `${responder} (${timeStr}) ${addLogStr} ${sentMsg ? "" : EmojiConstants.WARNING_EMOJI}`;
-        if (oldEmbed.fields[lastRespLastIdx].value === "None.")
-            oldEmbed.fields[lastRespLastIdx].value = tempLastResp;
-        else {
-            if (oldEmbed.fields[lastRespLastIdx].value.length + tempLastResp.length > 1000)
-                oldEmbed.addField("Last Response By", tempLastResp);
-            else
-                oldEmbed.fields[lastRespLastIdx].value += `\n${tempLastResp}`;
-        }
-
-        await originalMmMsg.edit({
-            embeds: [oldEmbed.setTitle(`${EmojiConstants.GREEN_CHECK_EMOJI} Modmail Entry`).setColor("GREEN")],
-            components: ModmailGeneralActionRows
-        }).catch();
-    }
-
-    /**
-     * Selects a guild where the modmail message should be sent to. This is invoked if and only if the member is
-     * able to send a message to the bot (which implies that the bot is able to send a message to the user).
-     * @param {User} user The user.
-     * @return {Promise<[Guild, IGuildInfo] | "CANCEL" | null>} The guild and its corresponding guild doc, if any.
-     * @private
-     */
-    async function chooseGuild(user: User): Promise<[Guild, IGuildInfo] | "CANCEL" | null> {
-        const dmChannel = await GlobalFgrUtilities.openDirectMessage(user);
-        if (!dmChannel) return null;
-
-        const guildsToChoose: [Guild, IGuildInfo][] = [];
-        const allGuilds = await MongoManager.getGuildCollection()
-            .find({}).toArray();
-        for (const [id, guild] of user.client.guilds.cache) {
-            const idx = allGuilds.findIndex(x => x.guildId === id);
-            if (idx === -1) continue;
-            // Guild must have the user.
-            // Guild must have the verified role.
-            // Guild must have the modmail channel.
-            if (guild.members.cache.has(user.id)
-                && GuildFgrUtilities.hasCachedRole(guild, allGuilds[idx].roles.verifiedRoleId)
-                && GuildFgrUtilities.hasCachedChannel(guild, allGuilds[idx].channels.modmailChannelId))
-                guildsToChoose.push([guild, allGuilds[idx]]);
-        }
-
-        if (guildsToChoose.length === 0) return null;
-        if (guildsToChoose.length === 1) return guildsToChoose[0];
-
-        const askForGuildEmbed = new MessageEmbed()
-            .setAuthor({name: user.tag, iconURL: user.displayAvatarURL()})
-            .setTitle("Select Server")
-            .setDescription("The message sent above will be sent to a designated server of your choice. Please " +
-                "select the server by typing the number corresponding to the server that you want to. To cancel, " +
-                "please type `cancel`.")
-            .setColor("RANDOM")
-            .setFooter({
-                text: `${guildsToChoose.length} Servers.`
-            });
-        const arrFieldsContent: string[] = ArrayUtilities.arrayToStringFields<[Guild, IGuildInfo]>(
-            guildsToChoose,
-            (i, elem) => `\`[${i + 1}]\` ${elem[0].name}\n`
-        );
-        for (const elem of arrFieldsContent) askForGuildEmbed.addField("Possible Guilds", elem);
-
-        const selectedGuildIdx = await AdvancedCollector.startDoubleCollector({
-            targetChannel: dmChannel,
-            targetAuthor: user,
-            duration: 60 * 1000,
-            msgOptions: {
-                embeds: [askForGuildEmbed],
-                components: AdvancedCollector.getActionRowsFromComponents([
-                    ButtonConstants.CANCEL_BUTTON
-                ])
-            },
-            deleteResponseMessage: true,
-            deleteBaseMsgAfterComplete: true,
-            cancelFlag: "cancel",
-            clearInteractionsAfterComplete: false,
-            acknowledgeImmediately: true
-        }, AdvancedCollector.getNumberPrompt(dmChannel, {
-            min: 1,
-            max: guildsToChoose.length
-        }));
-
-        if (selectedGuildIdx instanceof MessageComponentInteraction)
-            return null;
-
-        return selectedGuildIdx === null ? "CANCEL" : guildsToChoose[selectedGuildIdx - 1];
-    }
-
-    /**
-     * Creates a response embed that is used to show the message that is being drafted.
-     * @param {string} resp The response message.
-     * @param {boolean} anony Whether the author will be anonymous.
-     * @param {GuildMember} responder The responder.
-     * @return {MessageEmbed} The embed.
-     * @private
-     */
-    function getRespEmbed(resp: string, anony: boolean, responder: GuildMember): MessageEmbed {
-        // Create instructions string for function.
-        const instructionsStr = new StringBuilder()
-            .append("Please respond to the above message by typing a message here. ")
-            .append("When you are finished, simply send it here. You will have 10 minutes. You are not able to ")
-            .append("send images or attachments directly.")
-            .appendLine()
-            .append(`⇒ React to ${EmojiConstants.GREEN_CHECK_EMOJI} once you are satisfied with your response above.`)
-            .appendLine()
-            .append(`⇒ React to ${EmojiConstants.X_EMOJI} to cancel this process.`)
-            .appendLine()
-            .append(`⇒ React to ${EmojiConstants.EYES_EMOJI} to show or hide your identity.`);
-
-        return MessageUtilities.generateBlankEmbed(responder.user)
-            .setTitle(`${EmojiConstants.CLIPBOARD_EMOJI} Your Response`)
-            .setDescription(resp === "" ? "N/A" : resp)
-            .setFooter("Modmail Response System")
-            .addField("Instructions", instructionsStr.toString())
-            .addField("Identity", anony
-                ? "Your identity will be __hidden__. The recipient will not know who sent this message."
-                : "Your identity will be __displayed__. The recipient will know who sent this message.");
-    }
-
-    /**
-     * An infinite loop that waits for a valid response to a modmail message.
-     * @param {GuildMember} responder The person that is sending this response.
-     * @param {TextChannel} responseChannel The response channel.
-     * @return {[string, boolean] | null} A tuple containing the response data, or null if no data is available.
-     * @private
-     */
-    async function getResponseMessage(responder: GuildMember,
-                                      responseChannel: TextChannel): Promise<[string, boolean] | null> {
-        let responseMsg = "";
-        let isAnonymous = true;
-        let botMsg: Message | null = null;
-        let hasReacted = false;
-        while (true) {
-            const responseEmbed = getRespEmbed(responseMsg, isAnonymous, responder);
-            if (botMsg) {
-                botMsg = await botMsg.edit({
-                    embeds: [responseEmbed],
-                    components: ModmailResponseEmbedActionRows
-                });
-            }
-            else {
-                botMsg = await responseChannel.send({
-                    embeds: [responseEmbed],
-                    components: ModmailResponseEmbedActionRows
-                });
-            }
-
-            const response = await AdvancedCollector.startDoubleCollector({
-                targetChannel: responseChannel,
-                targetAuthor: responder,
-                duration: 15 * 60 * 1000,
-                oldMsg: botMsg,
-                deleteResponseMessage: true,
-                // TODO check this
-                deleteBaseMsgAfterComplete: false,
-                cancelFlag: "--cancel",
-                clearInteractionsAfterComplete: false,
-                acknowledgeImmediately: true
-            }, AdvancedCollector.getPureMessage());
-
-            if (!response) {
-                await botMsg.delete().catch();
-                CurrentlyRespondingToModMail.delete(responder.id);
-                return null;
-            }
-
-            if (hasReacted) hasReacted = !hasReacted;
-
-            if (response instanceof MessageComponentInteraction) {
-                if (response.customId === "cancel") {
-                    await botMsg.delete().catch();
-                    CurrentlyRespondingToModMail.delete(responder.id);
-                    return null;
-                }
-
-                if (response.customId === "anon") {
-                    isAnonymous = !isAnonymous;
-                    continue;
-                }
-
-                if (responseMsg.length !== 0) break;
-                continue;
-            }
-
-            if (response.content.length !== 0)
-                responseMsg = response.content;
-        }
-
-        await botMsg.delete().catch(console.error);
-
-        return [responseMsg, isAnonymous];
+        const [t] = await openModmailThread(guildDoc, mm, moderator);
+        return !!t;
     }
 }

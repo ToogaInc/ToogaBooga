@@ -38,9 +38,10 @@ export namespace MessageUtilities {
      *
      * Note that using the general method when a message is deleted will result in the bot crashing due to an
      * `Unknown Message` error. This method prevents the crashing behavior.
-     * @param {Message} m The message to delete.
+     * @param {Message | null} m The message to delete.
      */
-    export async function tryDelete(m: Message): Promise<void> {
+    export async function tryDelete(m: Message | null): Promise<void> {
+        if (!m) return;
         await GlobalFgrUtilities.tryExecuteAsync(async () => {
             await m.delete();
         });

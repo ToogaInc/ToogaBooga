@@ -30,6 +30,9 @@ import {UserManager} from "./UserManager";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
 import {LoggerManager} from "./LoggerManager";
 import {ButtonConstants} from "../constants/ButtonConstants";
+import {InteractivityManager} from "./InteractivityManager";
+import {ModmailManager} from "./ModmailManager";
+import {CommonRegex} from "../constants/CommonRegex";
 
 export namespace VerifyManager {
     export const NUMBER_OF_STATS: number = 8;
@@ -515,6 +518,7 @@ export namespace VerifyManager {
 
         // Ask for a name if no name is provided.
         if (!nameToVerify) {
+            InteractivityManager.ACTIVE_DIRECT_MESSAGES.set(member.user.id);
             await verifKit.msg.edit({
                 embeds: [
                     MessageUtilities.generateBlankEmbed(member.user, "RED")
@@ -529,7 +533,8 @@ export namespace VerifyManager {
                         )
                         .setFooter({text: "Respond By"})
                         .setTimestamp(Date.now() + 2 * 60 * 1000)
-                ]
+                ],
+                components: []
             });
 
             const nameToUse = await AdvancedCollector.startNormalCollector({
@@ -540,7 +545,18 @@ export namespace VerifyManager {
                 deleteBaseMsgAfterComplete: false,
                 targetAuthor: member,
                 targetChannel: dmChannel
-            }, AdvancedCollector.getStringPrompt(member, {min: 1, max: 15}));
+            }, AdvancedCollector.getStringPrompt(member, {
+                min: 1,
+                max: 15,
+                regexFilter: {
+                    regex: CommonRegex.ONLY_LETTERS,
+                    withErrorMsg: "Your name can only have letters."
+                }
+            }));
+
+            setTimeout(() => {
+                InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(member.user.id);
+            }, 2 * 1000);
 
             if (!nameToUse) {
                 verifKit.verifyFail?.send({
@@ -1464,13 +1480,10 @@ export namespace VerifyManager {
         );
 
         // Promises to resolve after evaluating the response ID
-        const promises: (Promise<any> | undefined)[] = [
-            manualVerifMsg?.delete().catch()
-        ];
+        const promises: (Promise<any> | undefined)[] = [];
         switch (responseId) {
             case (MANUAL_VERIFY_MODMAIL_ID): {
-                // TODO
-                return true;
+                return await ModmailManager.startModmailWithUser(member, moderator);
             }
             case (MANUAL_VERIFY_DENY_ID): {
                 const finishedEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
@@ -1487,6 +1500,7 @@ export namespace VerifyManager {
                     );
 
                 promises.push(
+                    manualVerifMsg?.delete().catch(),
                     GlobalFgrUtilities.sendMsg(member, {embeds: [finishedEmbed]}),
                     section.isMainSection
                         ? verifyFailChannel?.send({
@@ -1523,6 +1537,7 @@ export namespace VerifyManager {
                 }
 
                 promises.push(
+                    manualVerifMsg?.delete().catch(),
                     GlobalFgrUtilities.sendMsg(member, {embeds: [finishedEmbed]}),
                     member.roles.add(section.roles.verifiedRoleId).catch()
                 );

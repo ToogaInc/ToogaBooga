@@ -1,4 +1,4 @@
-import {CommandInteraction, Interaction, NewsChannel} from "discord.js";
+import {CommandInteraction, Interaction, Message, NewsChannel, TextChannel} from "discord.js";
 import {OneLifeBot} from "../OneLifeBot";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
@@ -12,6 +12,8 @@ import {ICommandContext} from "../commands";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {MessageConstants} from "../constants/MessageConstants";
 import {StringBuilder} from "../utilities/StringBuilder";
+import {ModmailManager} from "../managers/ModmailManager";
+import {ButtonConstants} from "../constants/ButtonConstants";
 
 /**
  * Acknowledges a slash command.
@@ -239,5 +241,26 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
             continue;
         await afkCheckInstance.interactionEventFunction(interaction);
         return;
+    }
+
+    // Check modmail
+    if (channel.id === guildDoc.channels.modmailChannelId) {
+        interaction.deferUpdate().catch();
+        if (!(interaction.message instanceof Message) || interaction.message.embeds.length === 0) {
+            return;
+        }
+
+        const mmMessage = interaction.message;
+        const modmailChannel = channel as TextChannel;
+        switch (interaction.customId) {
+            case ButtonConstants.OPEN_THREAD_ID: {
+                await ModmailManager.openModmailThread(guildDoc, interaction.message, resolvedMember);
+                return;
+            }
+            case ButtonConstants.REMOVE_ID: {
+                await ModmailManager.closeModmailThread(interaction.message, guildDoc);
+                return;
+            }
+        }
     }
 }

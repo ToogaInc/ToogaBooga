@@ -121,8 +121,7 @@ export namespace AdvancedCollector {
 
             const msgCollector = new MessageCollector(options.targetChannel, {
                 filter: (m: Message) => m.author.id === options.targetAuthor.id,
-                time: options.duration,
-                max: 1
+                time: options.duration
             });
 
             msgCollector.on("collect", async (c: Message) => {
@@ -138,6 +137,7 @@ export namespace AdvancedCollector {
                 });
 
                 if (!info) return;
+                msgCollector.stop();
                 resolve(info);
             });
 
@@ -421,10 +421,14 @@ export namespace AdvancedCollector {
      */
     export function getStringPrompt(pChan: PartialTextBasedChannelFields, options?: {
         min?: number,
-        max?: number
+        max?: number,
+        regexFilter?: {
+            regex: RegExp,
+            withErrorMsg: string
+        }
     }): (m: Message) => Promise<string | undefined> {
         return async (m: Message): Promise<string | undefined> => {
-            if (m.content === null) {
+            if (!m.content) {
                 const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
                     .setDescription("You did not provide any message content. Do not send any attachments.");
@@ -449,6 +453,18 @@ export namespace AdvancedCollector {
                     const tooLongEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Long")
                         .setDescription(tooLongDesc.toString());
+                    MessageUtilities.sendThenDelete({embeds: [tooLongEmbed]}, pChan);
+                    return;
+                }
+
+                if (options.regexFilter && !options.regexFilter.regex.test(m.content)) {
+                    const tooLongEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
+                        .setTitle("Invalid Message")
+                        .setDescription(
+                            options.regexFilter.withErrorMsg
+                                ? options.regexFilter.withErrorMsg
+                                : "Your message failed to meet the REGEX requirement."
+                        );
                     MessageUtilities.sendThenDelete({embeds: [tooLongEmbed]}, pChan);
                     return;
                 }
