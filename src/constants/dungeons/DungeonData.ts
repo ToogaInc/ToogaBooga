@@ -1098,7 +1098,36 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherReactions: [],
+        otherReactions: [
+            {
+                mapKey: "RUSHING_CLASS",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "SLOW",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "CRYSTAL_SHIELD",
+                maxEarlyLocation: 2
+            }
+        ],
         portalLink: {
             url: "https://i.imgur.com/KtOxGpW.png",
             name: "Shatters Portal"
@@ -1162,7 +1191,44 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 3
             }
         ],
-        otherReactions: [],
+        otherReactions: [
+            {
+                mapKey: "QUIVER_THUNDER",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PRIEST",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "MYSTIC",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "SLOW",
+                maxEarlyLocation: 0
+            }
+        ],
         portalLink: {
             url: "https://i.imgur.com/WQ95Y0j.png",
             name: "Nest Portal"
@@ -1227,7 +1293,48 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherReactions: [],
+        otherReactions: [
+            {
+                mapKey: "RUSHING_CLASS",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "QUIVER_THUNDER",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            }
+        ],
         portalLink: {
             url: "https://i.imgur.com/on1ykYB.png",
             name: "Cultist Hideout Portal"
@@ -1273,6 +1380,90 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         isBuiltIn: true
     },
     {
+        codeName: "FULL_SKIP_VOID",
+        dungeonName: "Full-Skip Void",
+        portalEmojiId: "612336193761443900",
+        keyReactions: [
+            {
+                mapKey: "LOST_HALLS_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "VIAL_OF_PURE_DARKNESS",
+                maxEarlyLocation: 3
+            }
+        ],
+        otherReactions: [
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "T2_ORB",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "BRAIN_PRISM",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "SAMURAI",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "BARD",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PRIEST",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            }
+        ],
+        portalLink: {
+            url: "https://i.imgur.com/uhDj0M5.png",
+            name: "Lost Halls Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/kbzthE4.png",
+                name: "Void Entity"
+            }
+        ],
+        dungeonColors: [
+            0x0810ff
+        ],
+        dungeonCategory: "Exaltation Dungeons",
+        isBuiltIn: true
+    },
+    {
         codeName: "THE_VOID",
         dungeonName: "Void",
         portalEmojiId: "612336193761443900",
@@ -1283,10 +1474,55 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             },
             {
                 mapKey: "VIAL_OF_PURE_DARKNESS",
-                maxEarlyLocation: 2
+                maxEarlyLocation: 3
             }
         ],
-        otherReactions: [],
+        otherReactions: [
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "SAMURAI",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "BARD",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PRIEST",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            }
+        ],
         portalLink: {
             url: "https://i.imgur.com/uhDj0M5.png",
             name: "Lost Halls Portal"
@@ -1313,7 +1549,52 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 2
             }
         ],
-        otherReactions: [],
+        otherReactions: [
+            {
+                mapKey: "QUIVER_THUNDER",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "SLOW",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "MYSTIC",
+                maxEarlyLocation: 0
+            },
+        ],
         portalLink: {
             url: "https://i.imgur.com/CLzxdEM.png",
             name: "Fungal Caverns Portal"
@@ -1408,7 +1689,59 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         ],
         otherReactions: [
             {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "CRYSTAL_SHIELD",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "DPS_WIZARD",
+                maxEarlyLocation: 10
+            },
+            {
                 mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PRIEST",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "BARD",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "MYSTIC",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "SLOW",
                 maxEarlyLocation: 0
             }
         ],
