@@ -3,6 +3,18 @@
 An open-source [Realm of the Mad God](https://www.realmofthemadgod.com/) designed for cross-verification,
 moderation, and raid management.
 
+## Warning
+
+The bot is **not ready for production.** In particular:
+- There are numerous bugs that I need to fix.
+- Lots of refactoring needs to be done (i.e. the codebase is very messy).
+- The documentation (including setup guide) is very incomplete.
+- I did not set up a testing suite or configure ESLint yet.
+- The project's name is a **placeholder** since I'm not creative enough to come up with a name.
+
+It is in your best interest to not use this bot in its current state. More work will be done to fix the bugs and 
+refactor the codebase. Once the bot is sufficiently cleaned/fixed up, a public invite link will be available. 
+
 ## Purpose
 
 The main purpose of this bot is to simplify verification and raid management in any Realm Discord server. This bot,

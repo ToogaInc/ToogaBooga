@@ -1,0 +1,47 @@
+{
+  "tokens": {
+    "botToken": "your bot token here",
+    "githubToken": ""
+  },
+  "botInviteUrl": "",
+  "slash": {
+    "clientId": "",
+    "guildIds": []
+  },
+  "database": {
+    "connectionString": "",
+    "dbName": "",
+    "collectionNames": {
+      "botCollection": "",
+      "userCollection": "",
+      "guildCollection": "",
+      "idNameCollection": "",
+      "unclaimedBlCollection": ""
+    }
+  },
+  "ids": {
+    "botOwnerIds": [],
+    "exemptGuilds": [],
+    "devMailChannel": "",
+    "mainStorageChannel": ""
+  },
+  "realmEyeApiLinks": {
+    "baseApi": "",
+    "pingOnline": "online",
+    "raidUtilEndpoints": {
+      "parseOnlyEndpoint": "raidutil/parseWhoOnly",
+      "parseAndRealmEyeEndpoint": "raidutil/parseWhoRealmEye",
+      "dataForAllNamesEndpoint": "raidutil/namesRealmEye"
+    },
+    "playerEndpoints": {
+      "playerBasics": "realmeye/player/basics",
+      "petyard": "realmeye/player/petyard",
+      "graveyard": "realmeye/player/graveyard",
+      "graveyardSummary": "realmeye/player/graveyardsummary",
+      "nameHistory": "realmeye/player/namehistory",
+      "rankHistory": "realmeye/player/rankhistory",
+      "guildHistory": "realmeye/player/guildhistory",
+      "exaltations": "realmeye/player/exaltations"
+    }
+  }
+}
