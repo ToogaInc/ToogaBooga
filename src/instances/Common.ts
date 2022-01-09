@@ -246,21 +246,27 @@ export async function confirmReaction(
     else if (!isAfk)
         return null;
 
-    if (reactInfo.type === "EARLY_LOCATION") {
-        return {mapKey: mapKey, modifiers: [], accidentCt: 0};
-    }
-
     // Ask the member if they're willing to actually bring said priority item
     const contentDisplay = new StringBuilder()
         .append(`You pressed the ${itemDisplay} button.`)
-        .appendLine(2)
-        .append(`Please confirm that you will bring ${itemDisplay} to the raid by pressing `)
-        .append("the **Yes** button. If you **do not** plan on bring said selection, then please press **No** ")
-        .append("or don't respond.")
-        .appendLine(2)
-        .append("You have **15** seconds to select an option. Failure to respond will result in an ")
-        .append("automatic **no**.")
-        .toString();
+        .appendLine(2);
+
+    if (reactInfo.type === "EARLY_LOCATION") {
+        contentDisplay
+            .append("Please confirm that you want to receive early location/priority queueing. You have **15** seconds")
+            .append(" to select an option. Failure to respond will result in an automatic **no**.")
+            .toString();
+    }
+    else {
+        contentDisplay
+            .append(`Please confirm that you will bring ${itemDisplay} to the raid by pressing `)
+            .append("the **Yes** button. If you **do not** plan on bring said selection, then please press **No** ")
+            .append("or don't respond.")
+            .appendLine(2)
+            .append("You have **15** seconds to select an option. Failure to respond will result in an ")
+            .append("automatic **no**.")
+            .toString();
+    }
 
     const [, response] = await AdvancedCollector.askBoolFollowUp({
         interaction: interaction,

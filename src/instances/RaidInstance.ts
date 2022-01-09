@@ -2421,6 +2421,17 @@ export class RaidInstance {
                 }
 
                 await this._controlPanelChannel.send({embeds: [embed]}).catch();
+                const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
+                if (!member) {
+                    return;
+                }
+
+                const roleId = QuotaManager.findBestQuotaToAdd(member, this._guildDoc, "Parse");
+                if (!roleId) {
+                    return;
+                }
+
+                await QuotaManager.logQuota(member, roleId, "Parse", 1);
                 return;
             }
         });
