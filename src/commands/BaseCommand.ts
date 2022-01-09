@@ -294,11 +294,14 @@ export abstract class BaseCommand {
         // Check bot permissions.
         if (bot) {
             const botPerms = bot.permissions.toArray();
-            // Go through each required bot permission.
-            for (const perm of this.commandInfo.botPermissions) {
-                // If the bot doesn't have the specified permission, then add it to the list of missing permissions.
-                if (!botPerms.includes(perm))
-                    results.missingBotPerms.push(perm);
+            if (!bot.permissions.has("ADMINISTRATOR")) {
+                // Go through each required bot permission.
+                for (const perm of this.commandInfo.botPermissions) {
+                    // If the bot doesn't have the specified permission, then add it to the list of missing
+                    // permissions.
+                    if (!botPerms.includes(perm))
+                        results.missingBotPerms.push(perm);
+                }
             }
         }
 

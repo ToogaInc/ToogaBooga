@@ -56,6 +56,7 @@ import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/Dungeo
 import {confirmReaction, controlPanelCollectorFilter, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {PermsConstants} from "../constants/PermsConstants";
+import {StringUtil} from "../utilities/StringUtilities";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
@@ -2362,17 +2363,10 @@ export class RaidInstance {
                 }
 
                 const inVcNotInRaidFields = parseSummary.isValid
-                    ?
-                    ArrayUtilities.arrayToStringFields(
-                        parseSummary.inRaidButNotInVC,
-                        (_, elem) => `- ${elem}: \`/kick ${elem}\``
-                    )
+                    ? parseSummary.inRaidButNotInVC
                     : [];
                 const inRaidNotInVcFields = parseSummary.isValid
-                    ? ArrayUtilities.arrayToStringFields(
-                        parseSummary.inVcButNotInRaid,
-                        (_, elem) => `- ${elem}`
-                    )
+                    ? parseSummary.inVcButNotInRaid
                     : [];
 
                 const embed = MessageUtilities.generateBlankEmbed(i.user, "RANDOM")
@@ -2398,12 +2392,12 @@ export class RaidInstance {
                     );
                 }
 
-                for (const field of inRaidNotInVcFields) {
-                    embed.addField("In /who, Not In Raid VC.", field);
+                for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
+                    embed.addField("In /who, Not In Raid VC.", StringUtil.codifyString(field.join(", ")));
                 }
 
-                for (const field of inVcNotInRaidFields) {
-                    embed.addField("In Raid VC, Not In /who.", field);
+                for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
+                    embed.addField("In Raid VC, Not In /who.", StringUtil.codifyString(field.join(", ")));
                 }
 
                 await this._controlPanelChannel.send({embeds: [embed]}).catch();

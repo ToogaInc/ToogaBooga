@@ -157,7 +157,7 @@ export namespace RealmSharperWrapper {
         const config = OneLifeBot.BotInstance.config;
         const url = config.realmEyeApiLinks.baseApi
             + "/" + config.realmEyeApiLinks.raidUtilEndpoints.parseOnlyEndpoint;
-        const resp = await OneLifeBot.AxiosClient.post<PAD.IParseWhoResult>(url, {
+        const resp = await OneLifeBot.AxiosClient.post<PAD.IParseWhoResult>(url, { url: link }, {
             data: { url: link }
         });
         return resp.data;

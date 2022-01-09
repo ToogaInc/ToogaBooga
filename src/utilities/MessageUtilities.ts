@@ -6,12 +6,31 @@ import {
     GuildMember, Message, MessageActionRow,
     MessageEmbed,
     MessageOptions,
-    PartialTextBasedChannelFields, User
+    PartialTextBasedChannelFields, TextBasedChannel, User
 } from "discord.js";
 import {MiscUtilities} from "./MiscUtilities";
 import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
 
 export namespace MessageUtilities {
+    /**
+     * Attempts to fetch a message.
+     *
+     * Note that using the general method when a message is deleted will result in the bot crashing due to an
+     * `Unknown Message` error. This method prevents the crashing behavior.
+     * @param {TextBasedChannel} channel The channel to search the message up from.
+     * @param {string} mId The message ID.
+     * @returns {Promise<Message | null>} The message, if any; `null` if no message was found.
+     */
+    export async function tryGetMessage(channel: TextBasedChannel, mId: string): Promise<Message | null> {
+        if (!MiscUtilities.isSnowflake(mId)) {
+            return null;
+        }
+
+        return await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            return channel.messages.fetch(mId);
+        });
+    }
+
     /**
      * Attempts to delete a message. This function should be used instead of the general `Message#delete()` method
      * when there is a possibility that a message (that is being edited/tracked constantly) may already be deleted,

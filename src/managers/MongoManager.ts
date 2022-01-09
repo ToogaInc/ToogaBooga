@@ -665,7 +665,7 @@ export namespace MongoManager {
             return CachedGuildCollection.get(id)!;
         }
 
-        const docs = await getGuildCollection().find({guildId: id}).toArray();
+        const docs: IGuildInfo[] = await getGuildCollection().find({guildId: id}).toArray();
         if (docs.length === 0) {
             const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(id));
             const doc = await getGuildCollection().findOne({_id: insertRes.insertedId});
@@ -712,7 +712,9 @@ export namespace MongoManager {
     export async function validateGuildField<T>(guildId: string, property: string, defaultValue: T): Promise<void> {
         await getGuildCollection().updateOne({
             guildId: guildId,
-            [property]: {$exists: false}
+            [property]: {
+                $exists: true
+            }
         }, {
             $set: {
                 [property]: defaultValue

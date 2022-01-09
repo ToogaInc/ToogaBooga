@@ -26,7 +26,6 @@ import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {EmojiConstants} from "../constants/EmojiConstants";
 import {TimeUtilities} from "../utilities/TimeUtilities";
-import {ModmailManager} from "./ModmailManager";
 import {UserManager} from "./UserManager";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
 import {LoggerManager} from "./LoggerManager";
@@ -1470,7 +1469,7 @@ export namespace VerifyManager {
         ];
         switch (responseId) {
             case (MANUAL_VERIFY_MODMAIL_ID): {
-                await ModmailManager.startThreadedModmailWithMember(member, moderator, guildDoc);
+                // TODO
                 return true;
             }
             case (MANUAL_VERIFY_DENY_ID): {
