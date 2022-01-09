@@ -6,7 +6,7 @@ import {StringBuilder} from "./utilities/StringBuilder";
 import {TimeUtilities} from "./utilities/TimeUtilities";
 
 (async () => {
-    const content = fs.readFileSync(path.join(__dirname, "..", "config.json"));
+    const content = fs.readFileSync(path.join(__dirname, "..", "config.production.json"));
     const config: IConfiguration = JSON.parse(content.toString());
     const bot = new OneLifeBot(config);
     bot.startAllEvents();
