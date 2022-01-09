@@ -14,17 +14,19 @@ import {
 import {MongoManager} from "../../managers/MongoManager";
 import {askInput, sendOrEditBotMsg} from "./common/ConfigCommon";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import {IAfkCheckProperties, IGuildInfo, IPermAllowDeny, IPropertyKeyValuePair, ISectionInfo} from "../../definitions";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {TimedResult, TimedStatus} from "../../definitions/Types";
-import {GeneralConstants} from "../../constants/GeneralConstants";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {FilterQuery, UpdateQuery} from "mongodb";
+import {Filter, UpdateFilter} from "mongodb";
+import {ButtonConstants} from "../../constants/ButtonConstants";
+import {PermsConstants} from "../../constants/PermsConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 export class ConfigureAfkCheck extends BaseCommand {
     public static readonly MAX_PERMS_SET: number = 15;
@@ -82,7 +84,7 @@ export class ConfigureAfkCheck extends BaseCommand {
         botMsg = await sendOrEditBotMsg(ctx.channel, botMsg, {
             embeds: [
                 new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Select Section")
                     .setDescription(
                         "Please select the section that you want to configure the AFK check system for. If you don't"
@@ -100,11 +102,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                             label: x.sectionName
                         };
                     })),
-                new MessageButton()
-                    .setLabel("Cancel")
-                    .setCustomId("cancel")
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setStyle("DANGER")
+                ButtonConstants.CANCEL_BUTTON
             ])
         });
 
@@ -156,10 +154,7 @@ export class ConfigureAfkCheck extends BaseCommand {
             .setStyle("PRIMARY");
 
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Go Back")
-                .setCustomId("back")
-                .setStyle("DANGER"),
+            ButtonConstants.BACK_BUTTON,
             new MessageButton()
                 .setLabel("Set Section VC Limit")
                 .setCustomId("vc_lim")
@@ -197,18 +192,12 @@ export class ConfigureAfkCheck extends BaseCommand {
                 .setLabel("Configure General AFK Check Permissions")
                 .setCustomId("config_gen_afk")
                 .setStyle("PRIMARY"),
-            new MessageButton()
-                .setLabel("Save")
-                .setCustomId("save")
-                .setStyle("SUCCESS"),
-            new MessageButton()
-                .setLabel("Quit")
-                .setCustomId("quit")
-                .setStyle("DANGER")
+            ButtonConstants.SAVE_BUTTON,
+            ButtonConstants.QUIT_BUTTON
         ];
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Configure AFK Check Settings: **${section.sectionName}**`)
             .setDescription(
                 new StringBuilder()
@@ -308,8 +297,8 @@ export class ConfigureAfkCheck extends BaseCommand {
             }
 
             switch (selected.customId) {
-                case "back": {
-                    await  this.mainMenu(ctx, botMsg);
+                case ButtonConstants.BACK_ID: {
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
                 case "vc_lim": {
@@ -319,7 +308,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Section VC Limit")
                                     .setDescription(
                                         "Here, you can set the section default raid VC limit. If a dungeon doesn't"
@@ -355,7 +344,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Point User Limit")
                                     .setDescription(
                                         "Here, you can set how many people can redeem points to gain priority access"
@@ -391,7 +380,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Nitro User Limit")
                                     .setDescription(
                                         "Here, you can set how many people can gain priority access to raids in this"
@@ -428,7 +417,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set AFK Check Message")
                                     .setDescription(
                                         "Here, you can set the message that will be displayed on AFK checks in this"
@@ -444,7 +433,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                     );
 
                     if (typeof am === "undefined") {
-                        await  this.dispose(ctx, botMsg);
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -461,7 +450,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Post-AFK Check Message")
                                     .setDescription(
                                         "Here, you can set the message that will be displayed on AFK checks in this"
@@ -476,7 +465,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                     );
 
                     if (typeof pm === "undefined") {
-                        await   this.dispose(ctx, botMsg);
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -493,7 +482,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Early Location Message")
                                     .setDescription(
                                         "Here, you can set the message that will be shown to people when they react"
@@ -510,7 +499,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                     );
 
                     if (typeof el === "undefined") {
-                        await   this.dispose(ctx, botMsg);
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -527,7 +516,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set AFK Check Expiration Time")
                                     .setDescription(
                                         "Here, you can set how long AFK checks last in this section. The lowest time"
@@ -557,7 +546,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                     );
 
                     if (typeof e === "undefined") {
-                        await   this.dispose(ctx, botMsg);
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -576,7 +565,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                     );
 
                     if (p.status === TimedStatus.TIMED_OUT) {
-                        await     this.dispose(ctx, botMsg);
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -595,7 +584,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                     );
 
                     if (p.status === TimedStatus.TIMED_OUT) {
-                        await      this.dispose(ctx, botMsg);
+                        await this.dispose(ctx, botMsg);
                         return;
                     }
 
@@ -605,19 +594,19 @@ export class ConfigureAfkCheck extends BaseCommand {
                     newAfkCheckProps.afkCheckPermissions = p.value!;
                     break;
                 }
-                case "save": {
-                    const filterQuery: FilterQuery<IGuildInfo> = section.isMainSection
+                case ButtonConstants.SAVE_ID: {
+                    const filterQuery: Filter<IGuildInfo> = section.isMainSection
                         ? {guildId: ctx.guild!.id}
                         : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
-                    const updateQuery: UpdateQuery<IGuildInfo> = section.isMainSection
+                    const updateQuery: UpdateFilter<IGuildInfo> = section.isMainSection
                         ? {$set: {"otherMajorConfig.afkCheckProperties": newAfkCheckProps}}
                         : {$set: {"guildSections.$.otherMajorConfig.afkCheckProperties": newAfkCheckProps}};
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);
-                    await   this.mainMenu(ctx, botMsg);
+                    await this.mainMenu(ctx, botMsg);
                     return;
                 }
-                case "quit": {
-                    await    this.dispose(ctx, botMsg);
+                case ButtonConstants.QUIT_ID: {
+                    await this.dispose(ctx, botMsg);
                     return;
                 }
                 case "create_log_chan": {
@@ -656,30 +645,12 @@ export class ConfigureAfkCheck extends BaseCommand {
                 return {...x};
             });
 
-        const upButton = new MessageButton()
-            .setLabel("Move Up")
-            .setCustomId("move_up")
-            .setStyle("PRIMARY");
-        const downButton = new MessageButton()
-            .setLabel("Move Down")
-            .setCustomId("move_down")
-            .setStyle("PRIMARY");
-        const prevRoleButton = new MessageButton()
-            .setLabel("Previous Role")
-            .setCustomId("prev_role")
-            .setStyle("PRIMARY");
-        const nextRoleButton = new MessageButton()
-            .setLabel("Next Role")
-            .setCustomId("next_role")
-            .setStyle("PRIMARY");
-        const removeRoleButton = new MessageButton()
-            .setLabel("Remove Role")
-            .setCustomId("remove_role")
-            .setStyle("DANGER");
-        const addRoleButton = new MessageButton()
-            .setLabel("Add Role")
-            .setCustomId("add_role")
-            .setStyle("PRIMARY");
+        const upButton = AdvancedCollector.cloneButton(ButtonConstants.UP_BUTTON);
+        const downButton = AdvancedCollector.cloneButton(ButtonConstants.DOWN_BUTTON);
+        const prevRoleButton = AdvancedCollector.cloneButton(ButtonConstants.PREVIOUS_BUTTON);
+        const nextRoleButton = AdvancedCollector.cloneButton(ButtonConstants.NEXT_BUTTON);
+        const removeRoleButton = AdvancedCollector.cloneButton(ButtonConstants.REMOVE_BUTTON);
+        const addRoleButton = AdvancedCollector.cloneButton(ButtonConstants.ADD_BUTTON);
         const allowPermButton = new MessageButton()
             .setLabel("Allow Permission")
             .setCustomId("allow_perm")
@@ -698,10 +669,7 @@ export class ConfigureAfkCheck extends BaseCommand {
             nextRoleButton,
             addRoleButton,
             removeRoleButton,
-            new MessageButton()
-                .setLabel("Save Changes")
-                .setCustomId("save")
-                .setStyle("SUCCESS"),
+            ButtonConstants.SAVE_BUTTON,
             // Level 2 rows
             upButton,
             downButton,
@@ -709,14 +677,8 @@ export class ConfigureAfkCheck extends BaseCommand {
             nullPermButton,
             denyPermButton,
             // Level 3 rows
-            new MessageButton()
-                .setLabel("Go Back")
-                .setCustomId("back")
-                .setStyle("DANGER"),
-            new MessageButton()
-                .setLabel("Quit")
-                .setCustomId("quit")
-                .setStyle("DANGER")
+            ButtonConstants.BACK_BUTTON,
+            ButtonConstants.QUIT_BUTTON
         ];
 
         const instructions = new StringBuilder()
@@ -726,9 +688,10 @@ export class ConfigureAfkCheck extends BaseCommand {
             .append(" **Previous/Next Role** buttons. You can also add a new role if needed or remove the currently")
             .append(" selected role.").appendLine()
             .append("- Once you have selected the role that you want to modify, use the **Move Up/Down** buttons to")
-            .append(` move the ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji up or down the permissions list.`).appendLine()
-            .append(`- The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected permission for`)
-            .append(" the *currently selected role*.").appendLine()
+            .append(` move the ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji up or down the permissions list.`)
+            .appendLine()
+            .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected permission`)
+            .append(" for the *currently selected role*.").appendLine()
             .append("- Once you have selected the permission that you want to modify, use the **ALlow/Deny/Nullify")
             .append(" Permissions** button to either allow, deny, or nullify (i.e. let a lower role determine")
             .append(" precedence) the permission for that role.").appendLine()
@@ -738,13 +701,14 @@ export class ConfigureAfkCheck extends BaseCommand {
             .toString();
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Modifying Permissions: **${permType}**`);
 
         let currentRoleIdx = 0;
         let currentPermIdx = 0;
 
         while (true) {
+            console.log(`${currentRoleIdx} ${currentPermIdx}`);
             addRoleButton.setDisabled(newPerms.length + 1 > ConfigureAfkCheck.MAX_PERMS_SET);
 
             // Can't go to next/prev role if only one role
@@ -778,12 +742,12 @@ export class ConfigureAfkCheck extends BaseCommand {
                     const [prettyName, permStr] = ConfigureAfkCheck.VC_PERMISSIONS[i];
 
                     const fieldName = i === currentPermIdx
-                        ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${prettyName}`
+                        ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${prettyName}`
                         : prettyName;
                     if (currentPerm.allow.some(x => x === permStr))
-                        embed.addField(fieldName, `${Emojis.GREEN_CHECK_EMOJI} Allowed.`);
+                        embed.addField(fieldName, `${EmojiConstants.GREEN_CHECK_EMOJI} Allowed.`);
                     else if (currentPerm.deny.some(x => x === permStr))
-                        embed.addField(fieldName, `${Emojis.X_EMOJI} Denied.`);
+                        embed.addField(fieldName, `${EmojiConstants.X_EMOJI} Denied.`);
                     else
                         embed.addField(fieldName, "Not Specified (Null).");
                 }
@@ -809,20 +773,20 @@ export class ConfigureAfkCheck extends BaseCommand {
                 return {value: null, status: TimedStatus.TIMED_OUT};
 
             switch (selectedButton.customId) {
-                case "prev_role": {
+                case ButtonConstants.PREVIOUS_ID: {
                     currentRoleIdx = (currentRoleIdx + newPerms.length - 1) % newPerms.length;
                     break;
                 }
-                case "next_role": {
+                case ButtonConstants.NEXT_ID: {
                     currentRoleIdx++;
                     currentRoleIdx %= newPerms.length;
                     break;
                 }
-                case "add_role": {
+                case ButtonConstants.ADD_ID: {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Add Role")
                                 .setDescription(
                                     "Here, you will be able to add a role that you can then configure permissions"
@@ -841,16 +805,13 @@ export class ConfigureAfkCheck extends BaseCommand {
                                 .setMinValues(1)
                                 .setMaxValues(1)
                                 .setCustomId("select")
-                                .addOptions(GeneralConstants.ROLE_ORDER.map(x => {
+                                .addOptions(PermsConstants.ROLE_ORDER.map(x => {
                                     return {
                                         value: x,
                                         label: x
                                     };
                                 })),
-                            new MessageButton()
-                                .setLabel("Back")
-                                .setStyle("DANGER")
-                                .setCustomId("back")
+                            ButtonConstants.BACK_BUTTON
                         ]),
                         content: null
                     });
@@ -900,22 +861,22 @@ export class ConfigureAfkCheck extends BaseCommand {
                     currentRoleIdx = newPerms.length - 1;
                     break;
                 }
-                case "remove_role": {
+                case ButtonConstants.REMOVE_ID: {
                     newPerms.splice(currentRoleIdx, 1);
                     currentRoleIdx = newPerms.length === 0
                         ? 0
                         : (currentRoleIdx + newPerms.length - 1) % newPerms.length;
                     break;
                 }
-                case "save": {
+                case ButtonConstants.SAVE_ID: {
                     return {value: newPerms, status: TimedStatus.SUCCESS};
                 }
-                case "move_up": {
+                case ButtonConstants.UP_ID: {
                     currentPermIdx = (currentPermIdx
                         + ConfigureAfkCheck.VC_PERMISSIONS.length - 1) % ConfigureAfkCheck.VC_PERMISSIONS.length;
                     break;
                 }
-                case "move_down": {
+                case ButtonConstants.DOWN_ID: {
                     currentPermIdx++;
                     currentPermIdx %= ConfigureAfkCheck.VC_PERMISSIONS.length;
                     break;
@@ -951,10 +912,10 @@ export class ConfigureAfkCheck extends BaseCommand {
                     newPerms[currentRoleIdx].value.deny.push(ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                     break;
                 }
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     return {value: oldPerms, status: TimedStatus.SUCCESS};
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     return {value: null, status: TimedStatus.TIMED_OUT};
                 }
             }
@@ -967,8 +928,8 @@ export class ConfigureAfkCheck extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

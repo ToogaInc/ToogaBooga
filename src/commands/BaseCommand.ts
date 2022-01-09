@@ -5,18 +5,17 @@ import {
     GuildMember,
     PermissionString,
     Role,
-    TextBasedChannels,
+    TextBasedChannel,
     User
 } from "discord.js";
 import {OneLifeBot} from "../OneLifeBot";
-import {GeneralConstants} from "../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {IGuildInfo} from "../definitions";
 import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {MongoManager} from "../managers/MongoManager";
-import {SlashCommandOptionBase} from "@discordjs/builders/dist/interactions/slashCommands/mixins/CommandOptionBase";
+import {PermsConstants} from "../constants/PermsConstants";
 
 export interface ICommandContext {
     /**
@@ -50,9 +49,9 @@ export interface ICommandContext {
     /**
      * The channel where this command was executed.
      *
-     * @type {TextBasedChannels}
+     * @type {TextBasedChannel}
      */
-    channel: TextBasedChannels;
+    channel: TextBasedChannel;
 
     /**
      * The interaction that led to this command.
@@ -74,59 +73,64 @@ export enum ArgumentType {
 }
 
 /**
- * Given a `SlashCommandOptionBase`, this will configure the argument's name, description, and whether it is required.
- * @param {T} o The options for this argument.
- * @param {IArgumentInfo} argInfo The argument information.
- * @returns {T} The configured options.
- */
-function optionAdder<T extends SlashCommandOptionBase>(o: T, argInfo: IArgumentInfo): T {
-    return o.setName(argInfo.argName)
-        .setRequired(argInfo.required)
-        .setDescription(
-            argInfo.shortDesc ?? argInfo.desc.length > 100
-                ? argInfo.desc.substring(0, 95) + "..."
-                : argInfo.desc
-        );
-}
-
-/**
  * Adds an argument to the `SlashCommandBuilder`.
  * @param {SlashCommandBuilder} scb The `SlashCommandBuilder` object.
  * @param {IArgumentInfo} argInfo The argument information.
  * @throws {Error} If an invalid option was somehow provided.
  */
 function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
+    const desc = argInfo.shortDesc ?? argInfo.desc.length > 100
+        ? argInfo.desc.substring(0, 95) + "..."
+        : argInfo.desc;
+    // Discord.js really decided to make the arguments I needed to make this more concise
+    // private, so I couldn't use it...
     switch (argInfo.type) {
         case ArgumentType.Boolean: {
-            scb.addBooleanOption(o => optionAdder(o, argInfo));
+            scb.addBooleanOption(o => o.setName(argInfo.argName)
+                .setRequired(argInfo.required)
+                .setDescription(desc));
             break;
         }
         case ArgumentType.Channel: {
-            scb.addChannelOption(o => optionAdder(o, argInfo));
+            scb.addChannelOption(o => o.setName(argInfo.argName)
+                .setRequired(argInfo.required)
+                .setDescription(desc));
             break;
         }
         case ArgumentType.Role: {
-            scb.addRoleOption(o => optionAdder(o, argInfo));
+            scb.addRoleOption(o => o.setName(argInfo.argName)
+                .setRequired(argInfo.required)
+                .setDescription(desc));
             break;
         }
         case ArgumentType.User: {
-            scb.addUserOption(o => optionAdder(o, argInfo));
+            scb.addUserOption(o => o.setName(argInfo.argName)
+                .setRequired(argInfo.required)
+                .setDescription(desc));
             break;
         }
         case ArgumentType.Integer: {
-            scb.addIntegerOption(o => optionAdder(o, argInfo));
+            scb.addIntegerOption(o => o.setName(argInfo.argName)
+                .setRequired(argInfo.required)
+                .setDescription(desc));
             break;
         }
         case ArgumentType.Mention: {
-            scb.addMentionableOption(o => optionAdder(o, argInfo));
+            scb.addMentionableOption(o => o.setName(argInfo.argName)
+                .setRequired(argInfo.required)
+                .setDescription(desc));
             break;
         }
         case ArgumentType.Number: {
-            scb.addNumberOption(o => optionAdder(o, argInfo));
+            scb.addNumberOption(o => o.setName(argInfo.argName)
+                .setRequired(argInfo.required)
+                .setDescription(desc));
             break;
         }
         case ArgumentType.String: {
-            scb.addStringOption(o => optionAdder(o, argInfo));
+            scb.addStringOption(o => o.setName(argInfo.argName)
+                .setRequired(argInfo.required)
+                .setDescription(desc));
             break;
         }
         default: {
@@ -290,11 +294,14 @@ export abstract class BaseCommand {
         // Check bot permissions.
         if (bot) {
             const botPerms = bot.permissions.toArray();
-            // Go through each required bot permission.
-            for (const perm of this.commandInfo.botPermissions) {
-                // If the bot doesn't have the specified permission, then add it to the list of missing permissions.
-                if (!botPerms.includes(perm))
-                    results.missingBotPerms.push(perm);
+            if (!bot.permissions.has("ADMINISTRATOR")) {
+                // Go through each required bot permission.
+                for (const perm of this.commandInfo.botPermissions) {
+                    // If the bot doesn't have the specified permission, then add it to the list of missing
+                    // permissions.
+                    if (!botPerms.includes(perm))
+                        results.missingBotPerms.push(perm);
+                }
             }
         }
 
@@ -369,8 +376,7 @@ export abstract class BaseCommand {
 
     /**
      * Gets all roles that are needed in order to run this command.
-     * @param {string[]} rolePerms The role permissions. If role inclusion is enabled for the command, there must
-     * only be one role.
+     * @param {string[]} rolePerms The role permissions.
      * @param {IGuildInfo} guildDoc The guild document.
      * @return {string[]} All role IDs that can be used to satisfy the requirement.
      * @private
@@ -382,7 +388,7 @@ export abstract class BaseCommand {
         // Best way to handle this is to simply delete any entries in roleCollection that isn't allowed
         // And then add the IDs later.
         // Begin by getting rid of any roles from the collection that aren't needed at all.
-        for (const r of GeneralConstants.ROLE_ORDER) {
+        for (const r of PermsConstants.ROLE_ORDER) {
             if (rolePerms.includes(r)) continue;
             roleCollection.delete(r);
         }

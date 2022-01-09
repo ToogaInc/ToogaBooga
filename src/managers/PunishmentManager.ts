@@ -6,7 +6,7 @@ import {MongoManager} from "./MongoManager";
 import {StringUtil} from "../utilities/StringUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {AllModLogType, MainOnlyModLogType, SectionModLogType} from "../definitions/Types";
-import {FilterQuery} from "mongodb";
+import {Filter} from "mongodb";
 import {Queue} from "../utilities/Queue";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {MessageUtilities} from "../utilities/MessageUtilities";
@@ -304,13 +304,17 @@ export namespace PunishmentManager {
             .addField("Moderator", modStr)
             .addField("Reason", StringUtil.codifyString(entry.reason))
             .setTimestamp()
-            .setFooter(`Mod. ID: ${entry.actionId}`);
+            .setFooter({
+                text: `Mod. ID: ${entry.actionId}`
+            });
 
         const toSendToUserEmbed = MessageUtilities.generateBlankEmbed(details.guild, isAddingPunishment ? "RED" : "GREEN")
             .addField("Moderator", modStr)
             .addField("Reason", StringUtil.codifyString(entry.reason))
             .setTimestamp()
-            .setFooter(`Mod. ID: ${entry.actionId}`);
+            .setFooter({
+                text: `Mod. ID: ${entry.actionId}`
+            });
 
         if (!isAddingPunishment) {
             logToChanEmbed.addField(
@@ -558,7 +562,7 @@ export namespace PunishmentManager {
         // Update the user database if possible.
         let idToResolve: string;
         if (isAddingPunishment) {
-            const filterQuery: FilterQuery<IUserInfo> = {
+            const filterQuery: Filter<IUserInfo> = {
                 $or: []
             };
 
@@ -616,9 +620,10 @@ export namespace PunishmentManager {
                 return null;
 
             const addRes = await MongoManager.getUnclaimedBlacklistCollection().insertOne(entry);
-            if (addRes.insertedCount > 0) {
+            const doc = await MongoManager.getUnclaimedBlacklistCollection().findOne({_id: addRes.insertedId});
+            if (doc) {
                 await sendLoggingAndNoticeMsg();
-                return entry.actionId;
+                return doc.actionId;
             }
 
             return null;

@@ -27,180 +27,46 @@ import {
 } from "discord.js";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
+import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
 import {MessageUtilities} from "../utilities/MessageUtilities";
-import {DUNGEON_DATA} from "../constants/DungeonData";
-import {StringUtil} from "../utilities/StringUtilities";
+import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {OneLifeBot} from "../OneLifeBot";
-import {Emojis} from "../constants/Emojis";
+import {EmojiConstants} from "../constants/EmojiConstants";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {UserManager} from "../managers/UserManager";
 import {
-    IAfkCheckReaction,
     ICustomDungeonInfo,
-    IDungeonInfo,
+    IDungeonInfo, IDungeonModifier,
     IGuildInfo,
-    IMappedAfkCheckReactions,
     IRaidInfo,
     IRaidOptions,
-    IReactionInfo,
     ISectionInfo
 } from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
-import {StartAfkCheck} from "../commands";
 import {LoggerManager} from "../managers/LoggerManager";
 import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
 import {QuotaManager} from "../managers/QuotaManager";
-
-type ReactionInfoMore = IReactionInfo & {
-    earlyLocAmt: number;
-    isCustomReaction: boolean;
-    builtInEmoji?: EmojiIdentifierResolvable;
-};
-
-interface IDungeonModifier {
-    modifierName: string;
-    maxLevel: number;
-    description: string;
-}
-
-interface IKeyReactInfo {
-    mapKey: keyof IMappedAfkCheckReactions;
-    modifiers: string[];
-    accidentCt: number;
-}
+import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/DungeonModifiers";
+import {confirmReaction, controlPanelCollectorFilter, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
+import {ButtonConstants} from "../constants/ButtonConstants";
+import {PermsConstants} from "../constants/PermsConstants";
+import {StringUtil} from "../utilities/StringUtilities";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
     + " interaction.";
 
 
-const CANCEL_LOGGING_CUSTOM_ID: string = "cancel_logging_id";
-
-const CANCEL_LOGGING_BUTTON: Readonly<MessageButton> = Object.freeze(
-    new MessageButton()
-        .setCustomId(CANCEL_LOGGING_CUSTOM_ID)
-        .setEmoji(Emojis.WASTEBIN_EMOJI)
-        .setLabel("Cancel Logging")
-        .setStyle("DANGER")
-);
-
-
 /**
  * This class represents a raid.
  */
 export class RaidInstance {
-    public static readonly HIGHEST_MODIFIER_LEVEL: number = 4;
-    public static readonly DUNGEON_MODIFIERS: IDungeonModifier[] = [
-        {
-            modifierName: "Agent of Oryx",
-            description: "Boss can drop Agent of Oryx Shards.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Bis",
-            description: "Boss will drop a portal to the same dungeon.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Bored Minions",
-            description: "Minions’ projectiles have x% less lifetime.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Bulky Minions",
-            description: "Minions have x% more HP.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Chef",
-            description: "Boss has a x% chance of dropping a food item.",
-            maxLevel: 1
-        },
-
-        {
-            modifierName: "Colorful",
-            description: "Boss always drops a Color Dye.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Dimitus",
-            description: "Dimitus will appear after the Boss is defeated.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Dull Minions",
-            description: "Minions’ projectiles travel x% slower.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Elite Boss",
-            description: "Boss enemies have x% more HP.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Energized Minions",
-            description: "Minions’ projectiles have x% more lifetime.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Feeble Boss",
-            description: "Boss enemies have x% less DEF.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Feeble Minions",
-            description: "Minions have x% less DEF.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Ferocious Boss",
-            description: "Boss enemies deal x% more DMG.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Ferocious Minions",
-            description: "Minions deal x% more DMG.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Generous",
-            description: "Boss always drops a Quest Chest.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Guaranteed Stat Potion",
-            description: "Boss enemies will always drop a Stat Potion.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Keen Minions",
-            description: "Minions’ projectiles travel x% faster.",
-            maxLevel: 4
-        },
-        {
-            modifierName: "Lazy Minions",
-            description: "Minions attack x% slower.",
-            maxLevel: 3
-        },
-        {
-            modifierName: "Mystery Stat Potion",
-            description: "Boss always drops a Mystery Stat Potion.",
-            maxLevel: 1
-        },
-        {
-            modifierName: "Noble Boss",
-            description: "After completion Oryx’s Court dungeons will spawn.",
-            maxLevel: 1
-        }
-    ];
-
     /**
      * A collection of active AFK checks and raids. The key is the AFK check message ID and the value is the raid
      * manager object.
@@ -221,17 +87,17 @@ export class RaidInstance {
     private static readonly CP_PRE_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Start AFK Check")
-            .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+            .setEmoji(EmojiConstants.LONG_RIGHT_TRIANGLE_EMOJI)
             .setCustomId(RaidInstance.START_AFK_CHECK_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Abort AFK Check")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
+            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
             .setCustomId(RaidInstance.ABORT_AFK_ID)
             .setStyle("DANGER"),
         new MessageButton()
             .setLabel("Set Location")
-            .setEmoji(Emojis.MAP_EMOJI)
+            .setEmoji(EmojiConstants.MAP_EMOJI)
             .setCustomId(RaidInstance.SET_LOCATION_ID)
             .setStyle("PRIMARY")
     ]);
@@ -239,17 +105,17 @@ export class RaidInstance {
     private static readonly CP_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Start Raid")
-            .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+            .setEmoji(EmojiConstants.LONG_RIGHT_TRIANGLE_EMOJI)
             .setCustomId(RaidInstance.START_RAID_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Abort AFK Check")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
+            .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
             .setCustomId(RaidInstance.ABORT_AFK_ID)
             .setStyle("DANGER"),
         new MessageButton()
             .setLabel("Set Location")
-            .setEmoji(Emojis.MAP_EMOJI)
+            .setEmoji(EmojiConstants.MAP_EMOJI)
             .setCustomId(RaidInstance.SET_LOCATION_ID)
             .setStyle("PRIMARY")
     ]);
@@ -257,27 +123,27 @@ export class RaidInstance {
     private static readonly CP_RAID_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("End Raid")
-            .setEmoji(Emojis.RED_SQUARE_EMOJI)
+            .setEmoji(EmojiConstants.RED_SQUARE_EMOJI)
             .setCustomId(RaidInstance.END_RAID_ID)
             .setStyle("DANGER"),
         new MessageButton()
             .setLabel("Set Location")
-            .setEmoji(Emojis.MAP_EMOJI)
+            .setEmoji(EmojiConstants.MAP_EMOJI)
             .setCustomId(RaidInstance.SET_LOCATION_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Lock Raid VC")
-            .setEmoji(Emojis.LOCK_EMOJI)
+            .setEmoji(EmojiConstants.LOCK_EMOJI)
             .setCustomId(RaidInstance.LOCK_VC_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Unlock Raid VC")
-            .setEmoji(Emojis.UNLOCK_EMOJI)
+            .setEmoji(EmojiConstants.UNLOCK_EMOJI)
             .setCustomId(RaidInstance.UNLOCK_VC_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Parse Raid VC")
-            .setEmoji(Emojis.PRINTER_EMOJI)
+            .setEmoji(EmojiConstants.PRINTER_EMOJI)
             .setCustomId(RaidInstance.PARSE_VC_ID)
             .setStyle("PRIMARY")
     ]);
@@ -310,7 +176,7 @@ export class RaidInstance {
     // value is an object containing the roles needed.
     private readonly _earlyLocToRole: Collection<string, Role[]>;
 
-    // The guild document.
+    // The guild doc.
     private _guildDoc: IGuildInfo;
     // The location.
     private _location: string;
@@ -368,6 +234,9 @@ export class RaidInstance {
     // This is so we don't have double reactions
     private _pplConfirmingReaction: Set<string> = new Set();
 
+    // All modifiers that we should be referring to.
+    private readonly _modifiersToUse: readonly IDungeonModifier[];
+
     /**
      * Creates a new `RaidInstance` object.
      * @param {GuildMember} memberInit The member that initiated this raid.
@@ -391,6 +260,7 @@ export class RaidInstance {
         this._guildDoc = guildDoc;
         this._raidSection = section;
         this._membersThatJoined = [];
+        this._modifiersToUse = DEFAULT_MODIFIERS;
 
         this._logChan = null;
         this._thisFeedbackChan = null;
@@ -424,7 +294,7 @@ export class RaidInstance {
         );
 
         // Which essential reacts are we going to use.
-        const reactions = RaidInstance.getReactions(dungeon, guildDoc);
+        const reactions = getReactions(dungeon, guildDoc);
 
         // This defines the number of people that gets early location via NITRO only.
         let numEarlyLoc: number = -2;
@@ -447,12 +317,23 @@ export class RaidInstance {
 
             if (dgnOverride && dgnOverride.pointCost)
                 costForEarlyLoc = dgnOverride.pointCost;
+
+            if (dgnOverride?.allowedModifiers) {
+                this._modifiersToUse = dgnOverride.allowedModifiers.map(x => {
+                    return DUNGEON_MODIFIERS.find(modifier => modifier.modifierId === x);
+                }).filter(x => x) as IDungeonModifier[];
+            }
         }
         else {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
             numEarlyLoc = (dungeon as ICustomDungeonInfo).nitroEarlyLocationLimit;
             costForEarlyLoc = (dungeon as ICustomDungeonInfo).pointCost;
+            if ((dungeon as ICustomDungeonInfo).allowedModifiers) {
+                this._modifiersToUse = (dungeon as ICustomDungeonInfo).allowedModifiers.map(x => {
+                    return DUNGEON_MODIFIERS.find(modifier => modifier.modifierId === x);
+                }).filter(x => x) as IDungeonModifier[];
+            }
         }
 
         this._earlyLocPointCost = costForEarlyLoc;
@@ -484,12 +365,12 @@ export class RaidInstance {
                 earlyLocAmt: section.otherMajorConfig.afkCheckProperties.pointUserLimit,
                 isCustomReaction: false,
                 emojiInfo: {
-                    identifier: Emojis.TICKET_EMOJI,
+                    identifier: EmojiConstants.TICKET_EMOJI,
                     isCustom: false
                 },
                 name: "Points",
                 type: "EARLY_LOCATION",
-                builtInEmoji: Emojis.TICKET_EMOJI
+                builtInEmoji: EmojiConstants.TICKET_EMOJI
             });
         }
 
@@ -563,91 +444,6 @@ export class RaidInstance {
 
             this._afkCheckButtons.push(button);
         }
-    }
-
-    /**
-     * Gets all relevant reactions. This accounts for overrides as well.
-     * @param {IDungeonInfo} dungeon The dungeon.
-     * @param {IGuildInfo} guildDoc The guild document.
-     * @return {Collection<string, IReactionInfo & {earlyLocAmt: number; isCustom: boolean;}>} The collection of
-     * reactions. The key is the mapping key and the value is the reaction information (along with the number of
-     * early locations.
-     */
-    public static getReactions(
-        dungeon: IDungeonInfo,
-        guildDoc: IGuildInfo
-    ): Collection<string, ReactionInfoMore> {
-        const reactions = new Collection<string, ReactionInfoMore>();
-
-        // Define a local function that will check both MappedAfkCheckReactions & customReactions for reactions.
-        function findAndAddReaction(reaction: IAfkCheckReaction): void {
-            // Is the reaction key in MappedAfkCheckReactions? If so, it's as simple as grabbing that data.
-            if (reaction.mapKey in MAPPED_AFK_CHECK_REACTIONS) {
-                const obj = MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey];
-                if (obj.emojiInfo.isCustom && !GlobalFgrUtilities.hasCachedEmoji(obj.emojiInfo.identifier))
-                    return;
-
-                reactions.set(reaction.mapKey, {
-                    ...obj,
-                    earlyLocAmt: reaction.maxEarlyLocation,
-                    isCustomReaction: false
-                });
-                return;
-            }
-
-            // Is the reaction key associated with a custom emoji? If so, grab that as well. 
-            const customEmoji = guildDoc.properties.customReactions.find(x => x.key === reaction.mapKey);
-            if (customEmoji) {
-                if (customEmoji.value.emojiInfo.isCustom
-                    && !GlobalFgrUtilities.hasCachedEmoji(customEmoji.value.emojiInfo.identifier))
-                    return;
-
-                reactions.set(reaction.mapKey, {
-                    ...customEmoji.value,
-                    earlyLocAmt: reaction.maxEarlyLocation,
-                    isCustomReaction: true
-                });
-            }
-        }
-
-        // If the dungeon is base or derived base, we need to check for dungeon overrides. 
-        if (dungeon.isBuiltIn) {
-            // Check if we need to deal with any dungeon overrides. 
-            const overrideIdx = guildDoc.properties.dungeonOverride.findIndex(x => x.codeName === dungeon.codeName);
-
-            if (overrideIdx !== -1) {
-                // We need to deal with overrides. In this case, go through every reaction defined in the override
-                // info and add them to the collection of reactions.
-                const overrideInfo = guildDoc.properties.dungeonOverride[overrideIdx];
-
-                for (const reaction of overrideInfo.keyReactions.concat(overrideInfo.otherReactions)) {
-                    findAndAddReaction(reaction);
-                }
-
-                // We don't need to check anything else.
-                return reactions;
-            }
-
-            // Otherwise, we 100% know that this is the base dungeon with no random custom emojis.
-            // Get all keys + reactions
-            for (const key of dungeon.keyReactions.concat(dungeon.otherReactions)) {
-                reactions.set(key.mapKey, {
-                    ...MAPPED_AFK_CHECK_REACTIONS[key.mapKey],
-                    earlyLocAmt: key.maxEarlyLocation,
-                    isCustomReaction: false
-                });
-            }
-
-            return reactions;
-        }
-
-        // Otherwise, this is a fully custom dungeon so we can simply just combine all reactions into one array and
-        // process that.
-        for (const r of dungeon.keyReactions.concat(dungeon.otherReactions)) {
-            findAndAddReaction(r);
-        }
-
-        return reactions;
     }
 
     /**
@@ -799,7 +595,7 @@ export class RaidInstance {
         this._raidStatus = RaidStatus.PRE_AFK_CHECK;
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
         const [vc, logChannel] = await Promise.all([
-            this._guild.channels.create(`${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
+            this._guild.channels.create(`${EmojiConstants.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
                 type: "GUILD_VOICE",
                 userLimit: this._vcLimit,
                 permissionOverwrites: this.getPermissionsForRaidVc(false),
@@ -882,6 +678,10 @@ export class RaidInstance {
         // We are officially in AFK check mode.
         // We do NOT start the intervals OR collector since pre-AFK and AFK have the exact same collectors/intervals.
         await this.setRaidStatus(RaidStatus.AFK_CHECK);
+        // Only happens if someone deleted the raid vc
+        if (!this.raidVc) {
+            return;
+        }
         await this._raidVc.permissionOverwrites.set(this.getPermissionsForRaidVc(true));
 
         this.stopAllIntervalsAndCollectors();
@@ -892,7 +692,7 @@ export class RaidInstance {
         // However, we forcefully edit the embeds.
         await Promise.all([
             this._raidVc.edit({
-                name: `${Emojis.UNLOCK_EMOJI} ${this._leaderName}'s Raid`
+                name: `${EmojiConstants.UNLOCK_EMOJI} ${this._leaderName}'s Raid`
             }),
             this._afkCheckMsg.edit({
                 content: "@here An AFK Check is currently ongoing.",
@@ -932,11 +732,11 @@ export class RaidInstance {
         ).catch();
 
         // Update the database so it is clear that we are in raid mode.
+        await this.setRaidStatus(RaidStatus.IN_RUN);
         this.stopAllIntervalsAndCollectors();
         this.startIntervals();
         this.startControlPanelCollector();
         this.startAfkCheckCollector();
-        await this.setRaidStatus(RaidStatus.IN_RUN);
 
         // Lock the VC as well.
         await Promise.all([
@@ -944,7 +744,7 @@ export class RaidInstance {
                 "CONNECT": false
             }).catch(),
             this._raidVc.edit({
-                name: `${Emojis.LOCK_EMOJI} ${this._leaderName}'s Raid`,
+                name: `${EmojiConstants.LOCK_EMOJI} ${this._leaderName}'s Raid`,
                 position: this._raidVc.parent?.children.filter(x => x.type === "GUILD_VOICE")
                     .map(x => x.position).sort((a, b) => b - a)[0] ?? 0,
                 permissionOverwrites: this.getPermissionsForRaidVc(false)
@@ -973,9 +773,11 @@ export class RaidInstance {
                 this._dungeon.dungeonColors.length === 0
                     ? [255, 255, 255]
                     : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
-            ).setAuthor(`${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
-                this._memberInit.user.displayAvatarURL())
-            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Raid`)
+            ).setAuthor({
+                name: `${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
+                iconURL: this._memberInit.user.displayAvatarURL()
+            })
+            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Raid`})
             .setTimestamp()
             .setDescription(
                 member
@@ -1045,7 +847,7 @@ export class RaidInstance {
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageButton()
                     .setCustomId(`reconnect_${this._afkCheckMsg.id}`)
-                    .setEmoji(Emojis.INBOX_EMOJI)
+                    .setEmoji(EmojiConstants.INBOX_EMOJI)
                     .setLabel("Reconnect")
                     .setStyle("SUCCESS")
             ])
@@ -1064,8 +866,8 @@ export class RaidInstance {
                             .appendLine()
                             .append(`You can leave feedback for ${member ?? this._memberInit} here by doing the`)
                             .append(" following:").appendLine()
-                            .append(`- React to **this** message with either a ${Emojis.LONG_UP_ARROW_EMOJI},`)
-                            .append(` ${Emojis.LONG_SIDEWAYS_ARROW_EMOJI}, or ${Emojis.LONG_DOWN_ARROW_EMOJI} to`)
+                            .append(`- React to **this** message with either a ${EmojiConstants.LONG_UP_ARROW_EMOJI},`)
+                            .append(` ${EmojiConstants.LONG_SIDEWAYS_ARROW_EMOJI}, or ${EmojiConstants.LONG_DOWN_ARROW_EMOJI} to`)
                             .append(" indicate this leader's performance.")
                             .appendLine()
                             .append("- You can also send feedback messages in this channel directly. Keep in mind that")
@@ -1081,9 +883,9 @@ export class RaidInstance {
         });
 
         AdvancedCollector.reactFaster(feedbackMsg, [
-            Emojis.LONG_DOWN_ARROW_EMOJI,
-            Emojis.LONG_SIDEWAYS_ARROW_EMOJI,
-            Emojis.LONG_UP_ARROW_EMOJI
+            EmojiConstants.LONG_DOWN_ARROW_EMOJI,
+            EmojiConstants.LONG_SIDEWAYS_ARROW_EMOJI,
+            EmojiConstants.LONG_UP_ARROW_EMOJI
         ]);
 
         await this.setThisFeedbackChannel(feedbackChannel);
@@ -1114,7 +916,7 @@ export class RaidInstance {
         const leaderName = name.length === 0 ? memberThatEnded.displayName : name[0];
         // Stop the collector.
         // We don't care about the result of this function, just that it should run.
-        this.cleanUpRaid().then();
+        this.cleanUpRaid(false).then();
 
         // If this method was called during the AFK check, simply abort the AFK check.
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
@@ -1172,9 +974,9 @@ export class RaidInstance {
             if (botMsg) {
                 const m = await botMsg.fetch();
                 const [upvotes, noPref, downvotes] = await Promise.all([
-                    m.reactions.cache.get(Emojis.LONG_UP_ARROW_EMOJI)?.fetch(),
-                    m.reactions.cache.get(Emojis.LONG_SIDEWAYS_ARROW_EMOJI)?.fetch(),
-                    m.reactions.cache.get(Emojis.LONG_DOWN_ARROW_EMOJI)?.fetch()
+                    m.reactions.cache.get(EmojiConstants.LONG_UP_ARROW_EMOJI)?.fetch(),
+                    m.reactions.cache.get(EmojiConstants.LONG_SIDEWAYS_ARROW_EMOJI)?.fetch(),
+                    m.reactions.cache.get(EmojiConstants.LONG_DOWN_ARROW_EMOJI)?.fetch()
                 ]);
 
                 if (upvotes) sb.append(`- Upvotes      : ${upvotes.count - 1}`).appendLine();
@@ -1477,7 +1279,9 @@ export class RaidInstance {
                 if (sentMsgTo.includes(obj.member.id))
                     return;
                 sentMsgTo.push(obj.member.id);
-                await obj.member.send(msgOpt).catch();
+                await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await obj.member.send(msgOpt);
+                });
             });
         }
     }
@@ -1585,79 +1389,41 @@ export class RaidInstance {
     /**
      * Cleans the raid up. This will remove the raid voice channel, delete the control panel message, and remove
      * the raid from the database.
+     *
+     * @param {boolean} force Whether this should delete all channels related to this raid. Useful if one component
+     * of the raid is deleted.
      */
-    public async cleanUpRaid(): Promise<void> {
+    public async cleanUpRaid(force: boolean): Promise<void> {
         this.stopAllIntervalsAndCollectors();
         // Step 1: Remove from ActiveRaids collection
-        RaidInstance.ActiveRaids.delete(this._afkCheckMsg!.id);
+        if (this._afkCheckMsg) {
+            RaidInstance.ActiveRaids.delete(this._afkCheckMsg.id);
+        }
 
         await Promise.all([
             // Step 2: Remove the raid object. We don't need it anymore.
             // Also stop all collectors.
             this.removeRaidFromDatabase(),
             // Step 3: Remove the control panel message.
-            this._controlPanelMsg?.delete().catch(),
+            MessageUtilities.tryDelete(this._controlPanelMsg),
             // Step 4: Unpin the AFK check message.
-            this._afkCheckMsg?.delete().catch(),
+            MessageUtilities.tryDelete(this._afkCheckMsg),
             // Step 5: Delete the raid VC
-            this._raidVc?.delete().catch(),
+            GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await this._raidVc?.delete();
+            }),
             // Step 6: Delete the logging channel
-            this._logChan?.delete().catch()
+            GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await this._logChan?.delete();
+            })
         ]);
-    }
 
-    /**
-     * Checks whether a person can manage raids in the specified section. The section must have a control panel and
-     * AFK check channel defined, the person must have at least one leader role, and the channels must be under a
-     * category.
-     * @param {ISectionInfo} section The section in question.
-     * @param {GuildMember} member The member in question.
-     * @param {IGuildInfo} guildInfo The guild document.
-     * @return {boolean} Whether the person can manage raids in the specified section.
-     * @static
-     */
-    public static canManageRaidsIn(section: ISectionInfo, member: GuildMember, guildInfo: IGuildInfo): boolean {
-        const guild = member.guild;
-
-        // Verified role doesn't exist.
-        if (!GuildFgrUtilities.hasCachedRole(guild, section.roles.verifiedRoleId))
-            return false;
-
-        // Control panel does not exist.
-        if (!GuildFgrUtilities.hasCachedChannel(guild, section.channels.raids.controlPanelChannelId))
-            return false;
-
-        // AFK check does not exist.
-        if (!GuildFgrUtilities.hasCachedChannel(guild, section.channels.raids.afkCheckChannelId))
-            return false;
-
-        const cpCategory = GuildFgrUtilities.getCachedChannel<TextChannel>(
-            guild,
-            section.channels.raids.controlPanelChannelId
-        )!;
-
-        const acCategory = GuildFgrUtilities.getCachedChannel<TextChannel>(
-            guild,
-            section.channels.raids.afkCheckChannelId
-        )!;
-
-        // AFK check and/or control panel do not have categories.
-        if (!cpCategory.parent || !acCategory.parent)
-            return false;
-
-        // Categories are not the same.
-        if (cpCategory.parent.id !== acCategory.parent.id)
-            return false;
-
-        return [
-            section.roles.leaders.sectionVetLeaderRoleId,
-            section.roles.leaders.sectionLeaderRoleId,
-            section.roles.leaders.sectionAlmostLeaderRoleId,
-            guildInfo.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            guildInfo.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-            guildInfo.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
-            guildInfo.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
-        ].some(x => GuildFgrUtilities.memberHasCachedRole(member, x));
+        this._raidVc = null;
+        if (force) {
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await this._thisFeedbackChan?.delete();
+            });
+        }
     }
 
     /**
@@ -1674,65 +1440,65 @@ export class RaidInstance {
         const permsToReturn: OverwriteResolvable[] = [
             {
                 id: this._guild!.roles.everyone.id,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.EVERYONE_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.EVERYONE_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.EVERYONE_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.EVERYONE_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.verifiedRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MEMBER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.MEMBER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.MEMBER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.securityRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.SECURITY_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.SECURITY_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.SECURITY_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.officerRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.OFFICER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.OFFICER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.OFFICER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.moderatorRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.MODERATOR_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.MODERATOR_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.MODERATOR_ROLE)?.value.deny
             },
             // Universal leader roles start here.
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.ALMOST_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.ALMOST_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.HEAD_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.HEAD_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.HEAD_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.VETERAN_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.VETERAN_LEADER_ROLE)?.value.deny
             },
             // Section leader roles start here
             {
                 id: this._raidSection.roles.leaders.sectionAlmostLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.ALMOST_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.ALMOST_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.ALMOST_LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.LEADER_ROLE)?.value.deny
             },
             {
                 id: this._raidSection.roles.leaders.sectionVetLeaderRoleId as Snowflake,
-                allow: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.allow,
-                deny: permsToEvaluate.find(x => x.key === GeneralConstants.VETERAN_LEADER_ROLE)?.value.deny
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.VETERAN_LEADER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.VETERAN_LEADER_ROLE)?.value.deny
             }
         ].filter(y => GuildFgrUtilities.hasCachedRole(this._guild, y.id)
             && ((y.allow && y.allow.length !== 0) || (y.deny && y.deny.length !== 0)));
@@ -1760,7 +1526,7 @@ export class RaidInstance {
         const descSb = new StringBuilder()
             .append(`Please type the **new location** for the raid with VC: ${this._raidVc.name}. `)
             .append("The location will be sent to every person that has reacted with an early location reaction. ")
-            .append(`To cancel this process, simply react to the ${Emojis.X_EMOJI} emoji.`)
+            .append(`To cancel this process, simply react to the ${EmojiConstants.X_EMOJI} emoji.`)
             .appendLine()
             .appendLine()
             .append("You have one minute to perform this action. After one minute has passed, this process will ")
@@ -1768,7 +1534,7 @@ export class RaidInstance {
         const askLocEmbed: MessageEmbed = MessageUtilities.generateBlankEmbed(this._memberInit, "GREEN")
             .setTitle(`Setting New Location: ${this._raidVc.name}`)
             .setDescription(descSb.toString())
-            .setFooter(`${this._guild.name} - AFK Check`)
+            .setFooter({text: `${this._guild.name} - AFK Check`})
             .setTimestamp();
 
         const res = await AdvancedCollector.startDoubleCollector<string>({
@@ -1780,11 +1546,7 @@ export class RaidInstance {
             msgOptions: {
                 embeds: [askLocEmbed],
                 components: AdvancedCollector.getActionRowsFromComponents([
-                    new MessageButton()
-                        .setLabel("Cancel")
-                        .setEmoji(Emojis.X_EMOJI)
-                        .setCustomId("cancel")
-                        .setStyle("DANGER")
+                    ButtonConstants.CANCEL_BUTTON
                 ])
             },
             deleteBaseMsgAfterComplete: true,
@@ -1807,42 +1569,6 @@ export class RaidInstance {
                 .toString()
         });
         return true;
-    }
-
-    /**
-     * A collector that should be used for the control panel.
-     * @param {User} u The user.
-     * @return {Promise<boolean>} Whether the collector is satisfied with the given variables.
-     * @private
-     */
-    private async controlPanelCollectorFilter(u: User): Promise<boolean> {
-        if (u.bot) return false;
-
-        const member = await GuildFgrUtilities.fetchGuildMember(this._guild, u.id);
-        if (!member || !this._raidVc)
-            return false;
-
-        const neededRoles: string[] = [
-            // This section's leader roles
-            this._raidSection.roles.leaders.sectionLeaderRoleId,
-            this._raidSection.roles.leaders.sectionAlmostLeaderRoleId,
-            this._raidSection.roles.leaders.sectionVetLeaderRoleId,
-
-            // Universal leader roles
-            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
-            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
-            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            this._guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId
-        ];
-
-        const customPermData = this._guildDoc.properties.customCmdPermissions
-            .find(x => x.key === StartAfkCheck.START_AFK_CMD_CODE);
-        // If you can start an AFK check, you should be able to manipulate control panel.
-        if (customPermData && !customPermData.value.useDefaultRolePerms)
-            neededRoles.push(...customPermData.value.rolePermsNeeded);
-
-        return neededRoles.some(x => GuildFgrUtilities.memberHasCachedRole(member, x))
-            || member.permissions.has("ADMINISTRATOR");
     }
 
     /**
@@ -1896,10 +1622,12 @@ export class RaidInstance {
                 : "Raid";
 
         const afkCheckEmbed = new MessageEmbed()
-            .setAuthor(`${this._leaderName} has started a ${this._dungeon.dungeonName} AFK check.`,
-                this._memberInit.user.displayAvatarURL())
+            .setAuthor({
+                name: `${this._leaderName} has started a ${this._dungeon.dungeonName} AFK check.`,
+                iconURL: this._memberInit.user.displayAvatarURL()
+            })
             .setDescription(descSb.toString())
-            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: ${raidStatus}.`)
+            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: ${raidStatus}.`})
             .setTimestamp()
             .setColor(
                 this._dungeon.dungeonColors.length === 0
@@ -1985,10 +1713,12 @@ export class RaidInstance {
             .append(`⇨ Status: **\`${raidStatus}\`**`);
 
         const controlPanelEmbed = new MessageEmbed()
-            .setAuthor(`${this._leaderName}'s Control Panel - ${this._raidVc.name}`,
-                this._memberInit.user.displayAvatarURL())
+            .setAuthor({
+                name: `${this._leaderName}'s Control Panel - ${this._raidVc.name}`,
+                iconURL: this._memberInit.user.displayAvatarURL()
+            })
             .setTitle(`**${this._dungeon.dungeonName}** Raid.`)
-            .setFooter(`${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`)
+            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`})
             .setTimestamp()
             .setColor(this._dungeon.dungeonColors.length === 0
                 ? [255, 255, 255]
@@ -2056,8 +1786,7 @@ export class RaidInstance {
                 .append("screenshot so only the /who results are shown.");
         }
 
-        controlPanelEmbed
-            .setDescription(descSb.toString());
+        controlPanelEmbed.setDescription(descSb.toString());
 
         // Display reactions properly
         const cpFields: string[] = [];
@@ -2219,8 +1948,8 @@ export class RaidInstance {
             }
 
             // Does the VC even exist?
-            if (!this._raidVc || this._raidVc.deleted) {
-                await this.cleanUpRaid();
+            if (!this._raidVc || !GuildFgrUtilities.hasCachedChannel(this._guild, this._raidVc.id)) {
+                await this.cleanUpRaid(true);
                 return;
             }
 
@@ -2246,8 +1975,7 @@ export class RaidInstance {
             }
 
             // Item display for future use
-            const itemDis = `${GlobalFgrUtilities.getNormalOrCustomEmoji(reactInfo) ?? ""} **\`${reactInfo.name}\`**`;
-
+            const itemDis = getItemDisplay(reactInfo);
             // If we no longer need this anymore, then notify them
             if (!this.stillNeedEssentialReact(mapKey)) {
                 i.reply({
@@ -2258,7 +1986,7 @@ export class RaidInstance {
             }
 
             this._pplConfirmingReaction.add(i.user.id);
-            const res = await RaidInstance.confirmReaction(i, this);
+            const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse);
             this._pplConfirmingReaction.delete(i.user.id);
             if (!res) {
                 await i.editReply({
@@ -2504,7 +2232,7 @@ export class RaidInstance {
         if (this._raidStatus === RaidStatus.NOTHING) return false;
 
         this._controlPanelReactionCollector = this._controlPanelMsg.createMessageComponentCollector({
-            filter: i => this.controlPanelCollectorFilter(i.user)
+            filter: controlPanelCollectorFilter(this._guildDoc, this._raidSection, this._guild)
             // Infinite time
         });
 
@@ -2638,6 +2366,8 @@ export class RaidInstance {
 
                 if (!res) return;
                 const parseSummary = await this.parseScreenshot(res.url);
+                if (!this._raidVc) return;
+
                 this.logEvent(
                     `Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``,
                     true
@@ -2653,22 +2383,15 @@ export class RaidInstance {
                 }
 
                 const inVcNotInRaidFields = parseSummary.isValid
-                    ?
-                    ArrayUtilities.arrayToStringFields(
-                        parseSummary.inRaidButNotInVC,
-                        (_, elem) => `- ${elem}: \`/kick ${elem}\``
-                    )
+                    ? parseSummary.inRaidButNotInVC
                     : [];
                 const inRaidNotInVcFields = parseSummary.isValid
-                    ? ArrayUtilities.arrayToStringFields(
-                        parseSummary.inVcButNotInRaid,
-                        (_, elem) => `- ${elem}`
-                    )
+                    ? parseSummary.inVcButNotInRaid
                     : [];
 
                 const embed = MessageUtilities.generateBlankEmbed(i.user, "RANDOM")
                     .setTitle(`Parse Results for: **${this._raidVc?.name ?? "N/A"}**`)
-                    .setFooter("Completed Time:")
+                    .setFooter({text: "Completed Time:"})
                     .setTimestamp();
 
                 if (parseSummary.isValid) {
@@ -2689,15 +2412,26 @@ export class RaidInstance {
                     );
                 }
 
-                for (const field of inRaidNotInVcFields) {
-                    embed.addField("In /who, Not In Raid VC.", field);
+                for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
+                    embed.addField("In /who, Not In Raid VC.", StringUtil.codifyString(field.join(", ")));
                 }
 
-                for (const field of inVcNotInRaidFields) {
-                    embed.addField("In Raid VC, Not In /who.", field);
+                for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
+                    embed.addField("In Raid VC, Not In /who.", StringUtil.codifyString(field.join(", ")));
                 }
 
                 await this._controlPanelChannel.send({embeds: [embed]}).catch();
+                const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
+                if (!member) {
+                    return;
+                }
+
+                const roleId = QuotaManager.findBestQuotaToAdd(member, this._guildDoc, "Parse");
+                if (!roleId) {
+                    return;
+                }
+
+                await QuotaManager.logQuota(member, roleId, "Parse", 1);
                 return;
             }
         });
@@ -2711,201 +2445,6 @@ export class RaidInstance {
      */
     public get raidVc(): VoiceChannel | null {
         return this._raidVc;
-    }
-
-    /**
-     * Gets the item display.
-     * @param {ReactionInfoMore} reactInfo More reaction information.
-     * @returns {string} The item display.
-     */
-    public static getItemDisplay(reactInfo: ReactionInfoMore): string {
-        return `${GlobalFgrUtilities.getNormalOrCustomEmoji(reactInfo) ?? ""} **\`${reactInfo.name}\`**`.trim();
-    }
-
-    /**
-     * Confirms the key reacts. This asks the person what modifiers the key has.
-     * @param {MessageComponentInteraction} interaction The interactions.
-     * @param {RaidInstance} raidInstance The raid instance.
-     * @param {boolean} [isAfk] Whether this is an AFK check. If this is not an AFk check, then only the key checker
-     * will be invoked.
-     * @returns {Promise<IKeyReactInfo | null>} The reaction result, if any.
-     */
-    public static async confirmReaction(
-        interaction: MessageComponentInteraction,
-        raidInstance: RaidInstance,
-        isAfk: boolean = true
-    ): Promise<IKeyReactInfo | null> {
-        if (!interaction.guild)
-            return null;
-
-        const member = await GuildFgrUtilities.fetchGuildMember(interaction.guild, interaction.user.id);
-        if (!member)
-            return null;
-
-        const mapKey = interaction.customId;
-        const reactInfo = raidInstance._allEssentialOptions.get(mapKey)!;
-        const itemDisplay = RaidInstance.getItemDisplay(reactInfo);
-        const uniqueIdentifier = StringUtil.generateRandomString(20);
-
-        if (reactInfo.type === "KEY") {
-            const selectMenu = new MessageSelectMenu()
-                .setMinValues(0)
-                .setMaxValues(4)
-                .setCustomId(`${uniqueIdentifier}_select`);
-            for (const modifier of RaidInstance.DUNGEON_MODIFIERS) {
-                selectMenu.addOptions({
-                    description: modifier.description,
-                    label: modifier.modifierName,
-                    value: modifier.modifierName
-                });
-            }
-
-            const noModifierId = `${uniqueIdentifier}_no_modifier`;
-            const cancelModId = `${uniqueIdentifier}_cancel_mods`;
-            const cancelButton = new MessageButton()
-                .setLabel("Cancel")
-                .setStyle("DANGER")
-                .setCustomId(cancelModId);
-
-            await interaction.reply({
-                ephemeral: true,
-                content: `You pressed the ${itemDisplay} button. What modifiers does this key have? You have two`
-                    + " minutes to answer this question. **Lying about what modifiers your key has may result in"
-                    + " consequences**; thus, it is important that you be careful when selecting what modifiers your"
-                    + " key has.\n"
-                    + "- If you have **multiple** keys, please specify the modifiers for **one** of your keys and"
-                    + " message the raid leader the modifiers of the remaining key.\n"
-                    + "- If you do not have any modifiers, please press the **No Modifier** button.\n"
-                    + "- If you did not mean to press this button, please press the **Cancel** button.",
-                components: AdvancedCollector.getActionRowsFromComponents([
-                    selectMenu,
-                    new MessageButton()
-                        .setLabel("No Modifier")
-                        .setStyle("PRIMARY")
-                        .setCustomId(noModifierId),
-                    cancelButton
-                ])
-            });
-
-            const modifierRes = await AdvancedCollector.startInteractionEphemeralCollector({
-                targetChannel: interaction.channel!,
-                duration: 2 * 60 * 1000,
-                targetAuthor: interaction.user,
-                acknowledgeImmediately: true
-            }, uniqueIdentifier);
-
-            if (!modifierRes) {
-                await interaction.editReply({
-                    content: "You did not respond to this question in time.",
-                    components: []
-                });
-
-                return null;
-            }
-
-            if (modifierRes.isButton()) {
-                return modifierRes.customId === noModifierId
-                    ? {mapKey: mapKey, modifiers: [], accidentCt: 0}
-                    : null;
-            }
-
-            // Should never hit
-            if (!modifierRes.isSelectMenu())
-                return null;
-
-            const selectedModifiers = RaidInstance.DUNGEON_MODIFIERS
-                .filter(x => modifierRes.values.includes(x.modifierName));
-
-            const returnObj: IKeyReactInfo = {mapKey: mapKey, modifiers: [], accidentCt: 0};
-            // Define all possible buttons, don't construct new buttons for each modifier
-            const numButtons: MessageButton[] = [];
-            const accidentCustomId = `${uniqueIdentifier}_accident`;
-            const accidentButton = new MessageButton()
-                .setLabel("Accident")
-                .setCustomId(accidentCustomId)
-                .setStyle("DANGER");
-
-            for (let i = 0; i < RaidInstance.HIGHEST_MODIFIER_LEVEL; i++) {
-                numButtons.push(
-                    new MessageButton()
-                        .setLabel((i + 1).toString())
-                        .setCustomId(`${uniqueIdentifier}_${(i + 1)}`)
-                        .setStyle("PRIMARY")
-                );
-            }
-
-            // ask for individual levels.
-            for (const modifier of selectedModifiers) {
-                if (modifier.maxLevel === 1) {
-                    returnObj.modifiers.push(modifier.modifierName);
-                    continue;
-                }
-
-                const buttonsToUse: MessageButton[] = [cancelButton, accidentButton];
-                for (let i = 0; i < modifier.maxLevel; i++)
-                    buttonsToUse.push(numButtons[i]);
-
-                await interaction.editReply({
-                    content: `What **level** is the **${modifier.modifierName}** modifier? If you want to cancel this,`
-                        + " press the **Cancel** button. If you mistakenly specified this modifier, press the"
-                        + " **Accident** button.",
-                    components: AdvancedCollector.getActionRowsFromComponents(buttonsToUse)
-                });
-
-                const levelRes = await AdvancedCollector.startInteractionEphemeralCollector({
-                    targetChannel: interaction.channel!,
-                    duration: 2 * 60 * 1000,
-                    targetAuthor: interaction.user,
-                    acknowledgeImmediately: true
-                }, uniqueIdentifier);
-
-                if (!levelRes) return null;
-
-                if (levelRes.customId === accidentCustomId) {
-                    returnObj.accidentCt++;
-                    continue;
-                }
-
-                if (levelRes.customId === cancelModId)
-                    return null;
-
-                returnObj.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
-            }
-
-            return returnObj;
-        }
-        else if (!isAfk)
-            return null;
-
-        if (reactInfo.type === "EARLY_LOCATION")
-            return {mapKey: mapKey, modifiers: [], accidentCt: 0};
-
-        // Ask the member if they're willing to actually bring said priority item
-        const contentDisplay = new StringBuilder()
-            .append(`You pressed the ${itemDisplay} button.`)
-            .appendLine(2)
-            .append(`Please confirm that you will bring ${itemDisplay} to the raid by pressing `)
-            .append("the **Yes** button. If you **do not** plan on bring said selection, then please press **No** ")
-            .append("or don't respond.")
-            .appendLine(2)
-            .append("You have **15** seconds to select an option. Failure to respond will result in an ")
-            .append("automatic **no**.")
-            .toString();
-
-        const [, response] = await AdvancedCollector.askBoolFollowUp({
-            interaction: interaction,
-            time: 15 * 1000,
-            contentToSend: {
-                content: contentDisplay.toString()
-            },
-            channel: interaction.channel as TextChannel
-        });
-
-        // Response of "no" or failure to respond implies no.
-        if (!response)
-            return null;
-
-        return {mapKey: mapKey, modifiers: [], accidentCt: 0};
     }
 
     /**
@@ -2952,20 +2491,20 @@ export class RaidInstance {
                         "What was the run status of the __last__ dungeon that was completed? If you did a chain, you"
                         + " will need to manually log the other runs."
                     )
-                    .setFooter(FOOTER_INFO_MSG)
+                    .setFooter({text: FOOTER_INFO_MSG})
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageButton()
                     .setLabel("Success")
                     .setCustomId("success")
-                    .setEmoji(Emojis.GREEN_CHECK_EMOJI)
+                    .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI)
                     .setStyle("SUCCESS"),
                 new MessageButton()
                     .setLabel("Failed")
                     .setCustomId("failed")
-                    .setEmoji(Emojis.X_EMOJI)
+                    .setEmoji(EmojiConstants.X_EMOJI)
                     .setStyle("DANGER"),
-                CANCEL_LOGGING_BUTTON
+                ButtonConstants.CANCEL_LOGGING_BUTTON
             ])
         });
 
@@ -2984,7 +2523,7 @@ export class RaidInstance {
             targetChannel: this._controlPanelChannel
         });
 
-        if (!runStatusRes || runStatusRes.customId === CANCEL_LOGGING_CUSTOM_ID) {
+        if (!runStatusRes || runStatusRes.customId === ButtonConstants.CANCEL_LOGGING_ID) {
             // TODO validate this better
             botMsg.delete().catch();
             return;
@@ -2994,18 +2533,18 @@ export class RaidInstance {
 
         const skipButton = new MessageButton()
             .setLabel("Skip")
-            .setEmoji(Emojis.LONG_RIGHT_TRIANGLE_EMOJI)
+            .setEmoji(EmojiConstants.LONG_RIGHT_TRIANGLE_EMOJI)
             .setStyle("DANGER")
             .setCustomId("skip");
 
         const buttonsForSelectingMembers = AdvancedCollector.getActionRowsFromComponents([
             new MessageButton()
                 .setLabel("Confirm")
-                .setEmoji(Emojis.GREEN_CHECK_EMOJI)
+                .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI)
                 .setStyle("SUCCESS")
                 .setCustomId("confirm"),
             skipButton,
-            CANCEL_LOGGING_BUTTON
+            ButtonConstants.CANCEL_BUTTON
         ]);
 
         // 2) Get main leader.
@@ -3030,7 +2569,7 @@ export class RaidInstance {
                             + " press the **Confirm** button. If you don't want to log this run with *any* main"
                             + " leader, select the **Skip** button."
                         )
-                        .setFooter(FOOTER_INFO_MSG)
+                        .setFooter({text: FOOTER_INFO_MSG})
                 ],
                 components: buttonsForSelectingMembers
             });
@@ -3058,7 +2597,7 @@ export class RaidInstance {
                         MessageUtilities.generateBlankEmbed(this._guild, "RED")
                             .setTitle("Invalid Member Given")
                             .setDescription("Please specify a valid member. This can either be a mention, ID, or IGN.")
-                            .setFooter("After 5 seconds, this message will ask again.")
+                            .setFooter({text: "After 5 seconds, this message will ask again."})
                     ],
                     components: []
                 });
@@ -3077,7 +2616,7 @@ export class RaidInstance {
                     break;
                 }
 
-                if (memberToPick.customId === CANCEL_LOGGING_CUSTOM_ID) {
+                if (memberToPick.customId === ButtonConstants.CANCEL_LOGGING_ID) {
                     botMsg.delete().catch();
                     return;
                 }
@@ -3120,9 +2659,9 @@ export class RaidInstance {
                         MessageUtilities.generateBlankEmbed(memberThatEnded, "RED")
                             .setTitle(`Logging Key Poppers: ${this._dungeon.dungeonName}`)
                             .setDescription(
-                                `You are now logging the ${RaidInstance.getItemDisplay(reactionInfo)} popper for the `
-                                + " __last dungeon__ that was either completed or failed. If you need to log more than"
-                                + " one key, please manually do it by command."
+                                `You are now logging the ${getItemDisplay(reactionInfo)} popper for the __last`
+                                + " dungeon__ that was either completed or failed. If you need to log more than one"
+                                + " key, please manually do it by command."
                             )
                             .addField(
                                 "Selected Popper",
@@ -3139,7 +2678,7 @@ export class RaidInstance {
                                 + " press the `Skip` button. Once you selected the correct member, press the"
                                 + " `Confirm` button."
                             )
-                            .setFooter(FOOTER_INFO_MSG)
+                            .setFooter({text: FOOTER_INFO_MSG})
                     ],
                     components: components
                 });
@@ -3168,7 +2707,7 @@ export class RaidInstance {
                             MessageUtilities.generateBlankEmbed(this._guild, "RED")
                                 .setTitle("Invalid Member Given")
                                 .setDescription("Please specify a valid member. This can either be a mention, ID, or IGN.")
-                                .setFooter("After 5 seconds, this message will ask again.")
+                                .setFooter({text: "After 5 seconds, this message will ask again."})
                         ],
                         components: []
                     });
@@ -3192,7 +2731,7 @@ export class RaidInstance {
                         break;
                     }
 
-                    if (memberToPick.customId === CANCEL_LOGGING_CUSTOM_ID) {
+                    if (memberToPick.customId === ButtonConstants.CANCEL_LOGGING_ID) {
                         botMsg.delete().catch();
                         return;
                     }
@@ -3228,7 +2767,7 @@ export class RaidInstance {
                             "Warning",
                             "The person that ended the run should be the same person that took this /who screenshot."
                         )
-                        .setFooter(FOOTER_INFO_MSG)
+                        .setFooter({text: FOOTER_INFO_MSG})
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([
                     skipButton
@@ -3295,7 +2834,7 @@ export class RaidInstance {
                                     "It appears that the parsing API isn't up, or the screenshot that you provided"
                                     + " is not valid. In either case, this step has been skipped."
                                 )
-                                .setFooter("This will move to the next step in 5 seconds.")
+                                .setFooter({text:"This will move to the next step in 5 seconds."})
                         ]
                     });
 
@@ -3370,6 +2909,15 @@ export class RaidInstance {
                     )
             ]
         });
+    }
+
+
+    public get afkCheckMsg(): Message | null {
+        return this._afkCheckMsg;
+    }
+
+    public get controlPanelMsg(): Message | null {
+        return this._controlPanelMsg;
     }
 }
 

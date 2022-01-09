@@ -1,9 +1,8 @@
-import {CommandInteraction, Interaction, NewsChannel, TextChannel} from "discord.js";
+import {CommandInteraction, Interaction, Message, NewsChannel, TextChannel} from "discord.js";
 import {OneLifeBot} from "../OneLifeBot";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {ModmailManager} from "../managers/ModmailManager";
 import {VerifyManager} from "../managers/VerifyManager";
 import {RaidInstance} from "../instances/RaidInstance";
 import {IGuildInfo} from "../definitions";
@@ -13,6 +12,8 @@ import {ICommandContext} from "../commands";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {MessageConstants} from "../constants/MessageConstants";
 import {StringBuilder} from "../utilities/StringBuilder";
+import {ModmailManager} from "../managers/ModmailManager";
+import {ButtonConstants} from "../constants/ButtonConstants";
 
 /**
  * Acknowledges a slash command.
@@ -131,18 +132,27 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
     const noPermissionEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "RED")
         .setTitle("Missing Permissions.");
 
-    if (canRunInfo.missingUserPerms.length !== 0 && canRunInfo.missingUserRoles.length !== 0) {
+    if (canRunInfo.missingUserPerms.length !== 0) {
         noPermissionEmbed.addField("Missing Member Permissions (Need ≥ 1)", StringUtil.codifyString(canRunInfo
-            .missingUserPerms.join(" ")))
+            .missingUserPerms.join(", ")))
+            .addField("Missing Member Permissions (Need ≥ 1)", StringUtil.codifyString(canRunInfo.missingUserPerms
+                .join(", ")));
+        noPermSb.appendLine()
+            .append("- You need to fulfill at least __one__ of the two missing member permissions.");
+    }
+
+    if (canRunInfo.missingUserRoles.length !== 0) {
+        noPermissionEmbed.addField("Missing Member Roles (Need ≥ 1)", StringUtil.codifyString(canRunInfo
+            .missingUserRoles.join(" ")))
             .addField("Missing Member Roles (Need ≥ 1)", StringUtil.codifyString(canRunInfo.missingUserRoles
-                .join(" ")));
+                .join(", ")));
         noPermSb.appendLine()
             .append("- You need to fulfill at least __one__ of the two missing member permissions.");
     }
 
     if (canRunInfo.missingBotPerms.length !== 0) {
         noPermissionEmbed.addField("Missing Bot Permissions (Need All)", StringUtil.codifyString(canRunInfo
-            .missingBotPerms.join(" ")));
+            .missingBotPerms.join(", ")));
         noPermSb.appendLine()
             .append("- The bot needs every permission that is specified to run this command.");
     }
@@ -178,10 +188,8 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     // Get corresponding channel.
     const channel = interaction.channel;
     if (!channel || !channel.isText() || channel instanceof NewsChannel) return;
-    const [resolvedChannel, guildDoc] = await Promise.all([
-        channel.fetch(),
-        MongoManager.getOrCreateGuildDoc(guild.id, true)
-    ]);
+    const resolvedChannel = await channel.fetch();
+    const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
 
     // If this is happening in control panel, don't process it
     const allControlPanelChannels = [
@@ -213,79 +221,6 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         return;
     }
 
-    // Check MODMAIL
-    if (guildDoc.channels.modmailChannelId === resolvedChannel.id) {
-        // Several choices.
-        switch (interaction.customId) {
-            case ModmailManager.MODMAIL_REPLY_ID: {
-                await ModmailManager.respondToGeneralModmail(
-                    message,
-                    resolvedMember
-                );
-                return;
-            }
-            case ModmailManager.MODMAIL_DELETE_ID: {
-                if ((message.embeds[0].description?.length ?? 0) <= 15) {
-                    await message.delete().catch();
-                    return;
-                }
-                await ModmailManager.askDeleteModmailMessage(
-                    message,
-                    resolvedMember
-                );
-                return;
-            }
-            case ModmailManager.MODMAIL_BLACKLIST_ID: {
-                await ModmailManager.blacklistFromModmail(
-                    message,
-                    resolvedMember,
-                    guildDoc
-                );
-                return;
-            }
-            case ModmailManager.MODMAIL_CREATE_ID: {
-                await ModmailManager.convertToThread(
-                    message,
-                    resolvedMember
-                );
-                return;
-            }
-        }
-    }
-
-    const thread = guildDoc.properties.modmailThreads
-        .find(x => x.channel === channel.id);
-    if (thread) {
-        switch (interaction.customId) {
-            case ModmailManager.MODMAIL_REPLY_ID: {
-                await ModmailManager.respondToThreadModmail(
-                    thread,
-                    resolvedMember,
-                    guildDoc,
-                    channel as TextChannel
-                );
-                return;
-            }
-            case ModmailManager.MODMAIL_DELETE_ID: {
-                await ModmailManager.closeModmailThread(
-                    channel as TextChannel,
-                    thread,
-                    guildDoc,
-                    resolvedMember
-                );
-                return;
-            }
-            case ModmailManager.MODMAIL_BLACKLIST_ID: {
-                await ModmailManager.blacklistFromModmail(
-                    message,
-                    resolvedMember,
-                    guildDoc,
-                    thread
-                );
-                return;
-            }
-        }
-    }
 
     // Check VERIFICATION
     if (guildDoc.channels.verification.verificationChannelId === resolvedChannel.id && interaction.message.author.bot) {
@@ -306,5 +241,26 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
             continue;
         await afkCheckInstance.interactionEventFunction(interaction);
         return;
+    }
+
+    // Check modmail
+    if (channel.id === guildDoc.channels.modmailChannelId) {
+        interaction.deferUpdate().catch();
+        if (!(interaction.message instanceof Message) || interaction.message.embeds.length === 0) {
+            return;
+        }
+
+        const mmMessage = interaction.message;
+        const modmailChannel = channel as TextChannel;
+        switch (interaction.customId) {
+            case ButtonConstants.OPEN_THREAD_ID: {
+                await ModmailManager.openModmailThread(guildDoc, interaction.message, resolvedMember);
+                return;
+            }
+            case ButtonConstants.REMOVE_ID: {
+                await ModmailManager.closeModmailThread(interaction.message, guildDoc);
+                return;
+            }
+        }
     }
 }

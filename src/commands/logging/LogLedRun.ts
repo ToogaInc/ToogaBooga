@@ -2,24 +2,24 @@ import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseC
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {UserManager} from "../../managers/UserManager";
 import {MongoManager} from "../../managers/MongoManager";
-import {MessageButton, MessageSelectMenu} from "discord.js";
-import {DUNGEON_DATA} from "../../constants/DungeonData";
+import {MessageSelectMenu} from "discord.js";
+import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {Emojis} from "../../constants/Emojis";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {LoggerManager} from "../../managers/LoggerManager";
 import {QuotaManager} from "../../managers/QuotaManager";
 import {QuotaLogType} from "../../definitions/Types";
+import {ButtonConstants} from "../../constants/ButtonConstants";
 
 export class LogLedRun extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
             cmdCode: "LOG_LED_RUN_COMMAND",
             formalCommandName: "Log Led Run(s) Command",
-            botCommandName: "logleaderrun",
+            botCommandName: "logrun",
             description: "Logs one or more runs that a leader led. You can log completions/fails/assists for"
                 + " yourself or someone else.",
             commandCooldown: 0,
@@ -189,11 +189,7 @@ export class LogLedRun extends BaseCommand {
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 ...selectMenus,
-                new MessageButton()
-                    .setStyle("DANGER")
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setLabel("Cancel")
-                    .setCustomId(`${uniqueId}_cancel`)
+                ButtonConstants.CANCEL_BUTTON
             ])
         });
 

@@ -1,4 +1,4 @@
-import {GuildChannel, Message, Role, User} from "discord.js";
+import {GuildBasedChannel, Message, Role, User} from "discord.js";
 import {MiscUtilities} from "./MiscUtilities";
 import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
@@ -22,7 +22,7 @@ export namespace ParseUtilities {
      * @param {Message} msg The message.
      * @return {T | null} The channel object, if any; null otherwise.
      */
-    export function parseChannel<T extends GuildChannel>(msg: Message): T | null {
+    export function parseChannel<T extends GuildBasedChannel>(msg: Message): T | null {
         if (!msg.guild) return null;
         if (MiscUtilities.isSnowflake(msg.content))
             return GuildFgrUtilities.getCachedChannel<T>(msg.guild, msg.content);

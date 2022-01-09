@@ -5,6 +5,8 @@ import {IBotInfo} from "../definitions";
 import {MuteManager, SuspensionManager} from "../managers/PunishmentManager";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {RaidInstance} from "../instances/RaidInstance";
+import getMongoClient = MongoManager.getMongoClient;
+import {HeadcountInstance} from "../instances/HeadcountInstance";
 
 export async function onReadyEvent(): Promise<void> {
     const botUser = OneLifeBot.BotInstance.client.user;
@@ -15,12 +17,8 @@ export async function onReadyEvent(): Promise<void> {
         process.exit(1);
     }
 
-    // If mongo isn't connected, then we can't really use the bot.
-    if (!MongoManager.isConnected()) {
-        console.error("Mongo isn't connected! Unable to use bot. Shutting down.");
-        process.exitCode = 1;
-        return;
-    }
+    // This will throw an error if something went wrong when trying to connect.
+    getMongoClient();
 
     // If the bot doc isn't in the database, then we add it.
     const thisBotCollection = await MongoManager.getBotCollection()
@@ -47,7 +45,13 @@ export async function onReadyEvent(): Promise<void> {
         MuteManager.startChecker(guildDocs),
         SuspensionManager.startChecker(guildDocs),
         ...guildDocs.filter(x => OneLifeBot.BotInstance.client.guilds.cache.has(x.guildId)).map(guildDoc => {
-            return guildDoc.activeRaids.forEach(async raid => {
+            if (guildDoc.activeHeadcounts) {
+                guildDoc.activeHeadcounts.forEach(async hc => {
+                    await HeadcountInstance.createNewLivingInstance(guildDoc, hc);
+                });
+            }
+
+            guildDoc.activeRaids.forEach(async raid => {
                 await RaidInstance.createNewLivingInstance(guildDoc, raid);
             });
         })

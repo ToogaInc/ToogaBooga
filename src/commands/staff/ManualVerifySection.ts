@@ -2,12 +2,12 @@ import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseC
 import {UserManager} from "../../managers/UserManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../../managers/MongoManager";
-import {MessageButton, MessageSelectMenu, TextChannel} from "discord.js";
+import {MessageSelectMenu, TextChannel} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {Emojis} from "../../constants/Emojis";
 import {QuotaManager} from "../../managers/QuotaManager";
+import {ButtonConstants} from "../../constants/ButtonConstants";
 
 export class ManualVerifySection extends BaseCommand {
     public constructor() {
@@ -104,11 +104,7 @@ export class ManualVerifySection extends BaseCommand {
                             label: x.sectionName
                         };
                     })),
-                new MessageButton()
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setStyle("DANGER")
-                    .setLabel("Cancel")
-                    .setCustomId("cancel")
+                ButtonConstants.CANCEL_BUTTON
             ])
         });
 

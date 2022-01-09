@@ -1,5 +1,5 @@
 import {
-    Channel,
+    AnyChannel,
     DMChannel,
     Guild,
     GuildEmoji,
@@ -26,7 +26,7 @@ export namespace GlobalFgrUtilities {
      */
     export async function openDirectMessage(targetUser: User): Promise<DMChannel | null> {
         try {
-            return targetUser.createDM();
+            return await targetUser.createDM();
         } catch (e) {
             return null;
         }
@@ -38,7 +38,7 @@ export namespace GlobalFgrUtilities {
      * returned.
      * @return {T | null} The channel, if at all. Otherwise, `null`.
      */
-    export function getCachedChannel<T extends Channel>(channelId: string): T | null {
+    export function getCachedChannel<T extends AnyChannel>(channelId: string): T | null {
         if (!MiscUtilities.isSnowflake(channelId)) return null;
         const c = OneLifeBot.BotInstance.client.channels.cache.get(channelId) ?? null;
         return c ? c as T : null;
@@ -50,7 +50,7 @@ export namespace GlobalFgrUtilities {
      * returned.
      * @return {T | null} The channel, if at all. Otherwise, `null`.
      */
-    export async function fetchChannel<T extends Channel>(channelId: string): Promise<T | null> {
+    export async function fetchChannel<T extends AnyChannel>(channelId: string): Promise<T | null> {
         if (!MiscUtilities.isSnowflake(channelId)) return null;
         const c = await OneLifeBot.BotInstance.client.channels.fetch(channelId) ?? null;
         return c ? c as T : null;

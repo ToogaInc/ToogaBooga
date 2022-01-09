@@ -8,7 +8,7 @@ import {
     TextChannel
 } from "discord.js";
 import {StringBuilder} from "../../utilities/StringBuilder";
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {
     DungeonType,
@@ -21,17 +21,20 @@ import {
 import {StringUtil} from "../../utilities/StringUtilities";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../../constants/MappedAfkCheckReactions";
+import {MAPPED_AFK_CHECK_REACTIONS} from "../../constants/dungeons/MappedAfkCheckReactions";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {OneLifeBot} from "../../OneLifeBot";
 import {MongoManager} from "../../managers/MongoManager";
-import {DUNGEON_DATA} from "../../constants/DungeonData";
+import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {entryFunction, sendOrEditBotMsg} from "./common/ConfigCommon";
-import {FilterQuery, UpdateQuery} from "mongodb";
+import {Filter, UpdateFilter} from "mongodb";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
+import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../../constants/dungeons/DungeonModifiers";
+import {ButtonConstants} from "../../constants/ButtonConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 enum ValidatorResult {
     // Success = ValidationReturnType#res is not null
@@ -96,7 +99,7 @@ export class ConfigureDungeons extends BaseCommand {
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-        
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -113,7 +116,7 @@ export class ConfigureDungeons extends BaseCommand {
      */
     public async mainMenu(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
         const embed: MessageEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Dungeon Configuration Command")
             .setDescription(
                 new StringBuilder()
@@ -142,21 +145,17 @@ export class ConfigureDungeons extends BaseCommand {
             );
 
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Exit")
-                .setStyle("DANGER")
-                .setCustomId("exit")
-                .setEmoji(Emojis.X_EMOJI),
+            ButtonConstants.QUIT_BUTTON,
             new MessageButton()
                 .setLabel("Allow/Deny Dungeon Raids")
                 .setStyle("PRIMARY")
                 .setCustomId("allow_deny_dungeon")
-                .setEmoji(Emojis.PENCIL_EMOJI),
+                .setEmoji(EmojiConstants.PENCIL_EMOJI),
             new MessageButton()
                 .setLabel("Override Base Dungeon")
                 .setStyle("PRIMARY")
                 .setCustomId("override_base")
-                .setEmoji(Emojis.PLUS_EMOJI)
+                .setEmoji(EmojiConstants.PLUS_EMOJI)
         ];
 
         if (ctx.guildDoc!.properties.customDungeons.length + 1 < ConfigureDungeons.MAXIMUM_CUSTOM_DUNGEONS) {
@@ -174,12 +173,12 @@ export class ConfigureDungeons extends BaseCommand {
                     .setLabel("Create Custom Dungeon")
                     .setStyle("PRIMARY")
                     .setCustomId("create_custom")
-                    .setEmoji(Emojis.PLUS_EMOJI),
+                    .setEmoji(EmojiConstants.PLUS_EMOJI),
                 new MessageButton()
                     .setLabel("Clone Base Dungeon")
                     .setStyle("PRIMARY")
                     .setCustomId("clone_base")
-                    .setEmoji(Emojis.PLUS_EMOJI)
+                    .setEmoji(EmojiConstants.PLUS_EMOJI)
             );
         }
 
@@ -187,9 +186,6 @@ export class ConfigureDungeons extends BaseCommand {
             embed.addField(
                 "Modify Custom Dungeon",
                 "Click on the `Modify Custom Dungeon` button if you want to modify a custom dungeon."
-            ).addField(
-                "Delete Custom Dungeon",
-                "Click on the `Delete Custom Dungeon` button if you want to delete a custom dungeon."
             );
 
             buttons.push(
@@ -197,12 +193,7 @@ export class ConfigureDungeons extends BaseCommand {
                     .setLabel("Modify Custom Dungeon")
                     .setStyle("PRIMARY")
                     .setCustomId("modify_custom")
-                    .setEmoji(Emojis.PLUS_EMOJI),
-                new MessageButton()
-                    .setLabel("Delete Custom Dungeon")
-                    .setStyle("DANGER")
-                    .setCustomId("delete_custom")
-                    .setEmoji(Emojis.WASTEBIN_EMOJI)
+                    .setEmoji(EmojiConstants.PLUS_EMOJI)
             );
         }
 
@@ -227,7 +218,7 @@ export class ConfigureDungeons extends BaseCommand {
         }
 
         switch (selectedButton.customId) {
-            case "exit": {
+            case ButtonConstants.QUIT_ID: {
                 await this.dispose(ctx, botMsg);
                 return;
             }
@@ -235,7 +226,7 @@ export class ConfigureDungeons extends BaseCommand {
                 const res = await entryFunction(ctx, botMsg, {
                     embeds: [
                         new MessageEmbed()
-                            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                             .setTitle("Select Section to Configure")
                             .setDescription("Please select the section that you want to modify. Once selected, you"
                                 + " will be able to select what dungeon(s) leaders can run in this section.")
@@ -253,8 +244,8 @@ export class ConfigureDungeons extends BaseCommand {
                     return;
                 }
 
-                let filterQuery: FilterQuery<IGuildInfo>;
-                let updateQuery: UpdateQuery<IGuildInfo>;
+                let filterQuery: Filter<IGuildInfo>;
+                let updateQuery: UpdateFilter<IGuildInfo>;
                 if (res[0].isMainSection) {
                     filterQuery = {guildId: ctx.guild!.id};
                     updateQuery = {
@@ -300,7 +291,8 @@ export class ConfigureDungeons extends BaseCommand {
                     nitroEarlyLocationLimit: -1,
                     vcLimit: -1,
                     pointCost: 0,
-                    roleRequirement: []
+                    roleRequirement: [],
+                    allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
                 } as IDungeonOverrideInfo));
                 return;
             }
@@ -334,8 +326,8 @@ export class ConfigureDungeons extends BaseCommand {
                     botMsg,
                     ctx.guildDoc!.properties.customDungeons,
                     {
-                        nameOfPrompt: "Modify Base Dungeon",
-                        descOfPrompt: "Select a base dungeon that you want to modify."
+                        nameOfPrompt: "Modify Custom Dungeon",
+                        descOfPrompt: "Select a custom dungeon that you want to modify."
                     }
                 ) as ICustomDungeonInfo | null;
 
@@ -345,34 +337,6 @@ export class ConfigureDungeons extends BaseCommand {
                 }
 
                 await this.createOrModifyCustomDungeon(ctx, botMsg, res);
-                return;
-            }
-            case "delete_custom": {
-                const res = await this.selectDungeon(
-                    ctx,
-                    botMsg,
-                    ctx.guildDoc!.properties.customDungeons,
-                    {
-                        nameOfPrompt: "Delete Base Dungeon",
-                        descOfPrompt: "Select a base dungeon that you want to delete. Once you select a dungeon, it"
-                            + " will be removed forever (there is __no__ confirmation)."
-                    }
-                ) as ICustomDungeonInfo | null;
-
-                if (!res) {
-                    await this.dispose(ctx, botMsg);
-                    return;
-                }
-
-                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
-                    $pull: {
-                        "properties.customDungeons": {
-                            codeName: res.codeName
-                        }
-                    }
-                });
-
-                await this.mainMenu(ctx, botMsg);
                 return;
             }
         }
@@ -395,12 +359,12 @@ export class ConfigureDungeons extends BaseCommand {
         });
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`${section.sectionName}: Modifying Allowed/Denied Dungeons`)
             .setDescription(
                 new StringBuilder()
                     .append("Below are a list of all dungeons that any raid leader in this section can raid. A")
-                    .append(` ${Emojis.GREEN_CHECK_EMOJI} next to the dungeon name indicates that raid leaders can`)
+                    .append(` ${EmojiConstants.GREEN_CHECK_EMOJI} next to the dungeon name indicates that raid leaders can`)
                     .append(` start an AFK check for this particular dungeon in this particular section.`)
                     .appendLine(2)
                     .append("- Type either one number (e.g. `5`), a series of numbers separated by a space or comma")
@@ -419,7 +383,7 @@ export class ConfigureDungeons extends BaseCommand {
                 allDungeons,
                 (i, elem) => {
                     const emojiToUse = elem.allow
-                        ? `${Emojis.GREEN_CHECK_EMOJI} `
+                        ? `${EmojiConstants.GREEN_CHECK_EMOJI} `
                         : "";
                     const customTxt = elem.dgn.isBuiltIn ? "" : "(Custom)";
                     return `\`[${i + 1}]\` ${emojiToUse}${elem.dgn.dungeonName} ${customTxt}\n`;
@@ -434,21 +398,9 @@ export class ConfigureDungeons extends BaseCommand {
             await botMsg.edit({
                 embeds: [embed],
                 components: AdvancedCollector.getActionRowsFromComponents([
-                    new MessageButton()
-                        .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
-                        .setCustomId("back")
-                        .setLabel("Back")
-                        .setStyle("DANGER"),
-                    new MessageButton()
-                        .setEmoji(Emojis.X_EMOJI)
-                        .setCustomId("cancel")
-                        .setLabel("Cancel")
-                        .setStyle("DANGER"),
-                    new MessageButton()
-                        .setEmoji(Emojis.PENCIL_EMOJI)
-                        .setCustomId("save")
-                        .setLabel("Save")
-                        .setStyle("SUCCESS"),
+                    ButtonConstants.BACK_BUTTON,
+                    ButtonConstants.CANCEL_BUTTON,
+                    ButtonConstants.SAVE_BUTTON,
                 ])
             });
 
@@ -469,11 +421,11 @@ export class ConfigureDungeons extends BaseCommand {
 
             if (res instanceof MessageComponentInteraction) {
                 switch (res.customId) {
-                    case "back":
+                    case ButtonConstants.BACK_ID:
                         return section.otherMajorConfig.afkCheckProperties.allowedDungeons;
-                    case "cancel":
+                    case ButtonConstants.CANCEL_ID:
                         return null;
-                    case "save":
+                    case ButtonConstants.SAVE_ID:
                         return allDungeons.filter(x => x.allow).map(x => x.dgn.codeName);
                 }
 
@@ -507,7 +459,22 @@ export class ConfigureDungeons extends BaseCommand {
         if (origDungeon.keyReactions.length !== dgnOverride.keyReactions.length)
             return false;
 
-        // TODO very brute force, find better way
+        // Check modifiers
+        if (DEFAULT_MODIFIERS.length !== dgnOverride.allowedModifiers.length) {
+            return false;
+        }
+
+        const a = [...DEFAULT_MODIFIERS.map(x => x.modifierId)];
+        const b = [...dgnOverride.allowedModifiers];
+        a.sort();
+        b.sort();
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) {
+                return false;
+            }
+        }
+
+        // Check reactions
         let numEq = 0;
         for (const oR of origDungeon.otherReactions) {
             const testVal = dgnOverride.otherReactions
@@ -578,7 +545,8 @@ export class ConfigureDungeons extends BaseCommand {
                 name: ""
             },
             roleRequirement: [],
-            vcLimit: -1
+            vcLimit: -1,
+            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
         };
 
         const embed = new MessageEmbed();
@@ -587,15 +555,10 @@ export class ConfigureDungeons extends BaseCommand {
             return dgn.hasOwnProperty("dungeonName");
         }
 
-        const saveButton = new MessageButton()
-            .setLabel("Save")
-            .setCustomId("save")
-            .setStyle("SUCCESS");
-        const backButton = new MessageButton()
-            .setLabel("Go Back")
-            .setCustomId("back")
-            .setStyle("DANGER");
-        const buttons: MessageButton[] = [backButton];
+        const saveButton = AdvancedCollector.cloneButton(ButtonConstants.SAVE_BUTTON);
+        const removeButton = AdvancedCollector.cloneButton(ButtonConstants.REMOVE_BUTTON)
+            .setDisabled(!dungeon);
+        const buttons: MessageButton[] = [ButtonConstants.BACK_BUTTON];
         const reactionsButton = new MessageButton()
             .setLabel("Configure Reactions")
             .setCustomId("config_reactions")
@@ -616,13 +579,17 @@ export class ConfigureDungeons extends BaseCommand {
             .setLabel("Role Requirements")
             .setCustomId("role_requirements")
             .setStyle("PRIMARY");
+        const configModifiers = new MessageButton()
+            .setLabel("Configure Modifiers")
+            .setCustomId("config_modifiers")
+            .setStyle("PRIMARY");
 
         let dgnToOverrideInfo: IDungeonInfo | null = null;
 
         // Is custom dungeon
         if (isCustomDungeon(cDungeon)) {
-            embed.setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
-                .setTitle("Create Custom Dungeon")
+            embed.setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                .setTitle(dungeon ? "Edit Custom Dungeon" : "Create Custom Dungeon")
                 .setDescription(
                     "You can create a new custom dungeon here. In order to create a custom dungeon, you must fill out"
                     + " the __required__ items. Once you are done, press the **Submit** button. If you decide that you"
@@ -664,7 +631,7 @@ export class ConfigureDungeons extends BaseCommand {
         else {
             dgnToOverrideInfo = DUNGEON_DATA.find(x => x.codeName === cDungeon.codeName) ?? null;
 
-            embed.setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            embed.setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                 .setTitle(`Overriding Dungeon: ${dgnToOverrideInfo?.dungeonName ?? "N/A"}`)
                 .setDescription(
                     "Here, you can __override__ an existing dungeon. Once you are done, press the **Submit** button."
@@ -679,8 +646,14 @@ export class ConfigureDungeons extends BaseCommand {
             nitroLimitButton,
             vcLimitButton,
             roleReqButton,
-            saveButton
+            configModifiers,
+            saveButton,
+            removeButton
         );
+
+        const operationOnStr = isCustomDungeon(cDungeon)
+            ? "properties.customDungeons"
+            : "properties.dungeonOverride";
 
         while (true) {
             saveButton.setDisabled(
@@ -725,6 +698,12 @@ export class ConfigureDungeons extends BaseCommand {
                 "Configure Reactions",
                 "Click on the `Configure Reactions` button to add, remove, or modify reactions for this dungeon. You"
                 + " can set priority and non-priority reactions here for this dungeon."
+            );
+
+            embed.addField(
+                "Configure Modifiers",
+                "Click on the `Configure Modifiers` button to add, remove, or modify what modifiers are allowed for"
+                + " this dungeon."
             );
 
             if (isCustomDungeon(cDungeon)) {
@@ -785,6 +764,12 @@ export class ConfigureDungeons extends BaseCommand {
                 + ` number of role(s) set is: \`${cDungeon.roleRequirement.length}\``
             );
 
+            embed.addField(
+                "Saving/Deleting",
+                "To save your changes, press the **Save** button. To delete this custom dungeon or dungeon override,"
+                + " press the **Remove** button. __Note that no confirmation will be given for either!__"
+            );
+
             await botMsg.edit({
                 embeds: [embed],
                 components: AdvancedCollector.getActionRowsFromComponents(buttons)
@@ -806,17 +791,25 @@ export class ConfigureDungeons extends BaseCommand {
             }
 
             switch (selectedButton.customId) {
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     await this.mainMenu(ctx, botMsg);
                     return;
                 }
-                case "save": {
-                    const operationOnStr = isCustomDungeon(cDungeon)
-                        ? "properties.customDungeons"
-                        : "properties.dungeonOverride";
+                case ButtonConstants.REMOVE_ID: {
+                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                        $pull: {
+                            [operationOnStr]: {
+                                codeName: cDungeon.codeName
+                            }
+                        }
+                    });
 
+                    await this.mainMenu(ctx, botMsg);
+                    return;
+                }
+                case ButtonConstants.SAVE_ID: {
                     if (dungeon) {
-                        await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
                             $pull: {
                                 [operationOnStr]: {
                                     codeName: cDungeon.codeName
@@ -1060,7 +1053,7 @@ export class ConfigureDungeons extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Set Dungeon Category")
                                 .setDescription("Please select the category (from the select menu) that best"
                                     + " represents this dungeon. To go back, press the **Back** button.")
@@ -1072,7 +1065,7 @@ export class ConfigureDungeons extends BaseCommand {
                                 .setMinValues(1)
                                 .addOptions(possibleCategories),
                             new MessageButton()
-                                .setCustomId("back")
+                                .setCustomId(ButtonConstants.BACK_ID)
                                 .setLabel("Back")
                                 .setStyle("DANGER")
                         ])
@@ -1206,9 +1199,156 @@ export class ConfigureDungeons extends BaseCommand {
                     cDungeon.roleRequirement = newRoleReqs.map(x => x.id);
                     break;
                 }
+                case "config_modifiers": {
+                    const res = await this.configModifiers(
+                        ctx,
+                        botMsg,
+                        isCustomDungeon(cDungeon)
+                            ? cDungeon.dungeonName
+                            : DUNGEON_DATA.find(x => x.codeName === cDungeon.codeName)!.dungeonName,
+                        cDungeon
+                    );
+
+                    if (!res) {
+                        await this.dispose(ctx, botMsg);
+                        return;
+                    }
+
+                    cDungeon.allowedModifiers = res;
+                    break;
+                }
             }
         }
     }
+
+    /**
+     * Configures the modifiers for this dungeon.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     * @param {string} dungeonName The name of the dungeon.
+     * @param {ICustomDungeonInfo | IDungeonOverrideInfo} dgn The dungeon.
+     * @returns {Promise<string[] | null>} The modifiers, if any. `null` if this timed out.
+     * @private
+     */
+    // TODO generalize this function
+    private async configModifiers(ctx: ICommandContext, botMsg: Message, dungeonName: string,
+                                  dgn: ICustomDungeonInfo | IDungeonOverrideInfo): Promise<string[] | null> {
+        const embed = new MessageEmbed()
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setTitle(`**Filter Dungeon Modifiers:** ${dungeonName}`)
+            .setDescription(
+                new StringBuilder()
+                    .append("Below is a list of all modifiers that server members can volunteer. You can choose what")
+                    .append(" modifiers are viable for this particular dungeon and then let members pick from those")
+                    .append(" modifiers only. Please follow the directions below:")
+                    .appendLine(2)
+                    .append("- Type either one number (e.g. `5`), a series of numbers separated by a space or comma")
+                    .append(" (e.g. `1, 5, 10 12, 19`), or a number range (e.g. 1-10). If the modifier corresponding")
+                    .append(" to the number is selected, it will be deselected; otherwise, it will be selected.")
+                    .appendLine()
+                    .append("- Press the **Back** button if you want to go back to the previous page without saving ")
+                    .append(" your changes.").appendLine()
+                    .append("- Press the **Cancel** button if you want to cancel this process completely.").appendLine()
+                    .append("- Press the **Save** button to save your changes. __Make sure you do this!__")
+                    .toString()
+            );
+
+        const allModifiers = DUNGEON_MODIFIERS.map(x => {
+            return {
+                modifierName: x.modifierName,
+                modifierId: x.modifierId,
+                allow: dgn.allowedModifiers.includes(x.modifierId)
+            };
+        });
+
+        let allowedCount = allModifiers.filter(x => x.allow).length;
+        if (allowedCount > 25) {
+            allModifiers.forEach(m => {
+                m.allow = false;
+            });
+
+            allowedCount = 0;
+        }
+
+        while (true) {
+            const fields = ArrayUtilities.arrayToStringFields(
+                allModifiers,
+                (i, elem) => {
+                    const emojiToUse = elem.allow
+                        ? `${EmojiConstants.GREEN_CHECK_EMOJI} `
+                        : "";
+                    return `\`[${i + 1}]\` ${emojiToUse} ${elem.modifierName}\n`;
+                }
+            );
+
+            embed.setFooter({text: `${allowedCount}/25 Modifiers Selected.`});
+            embed.fields = [];
+            for (const field of fields) {
+                embed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field, true);
+            }
+
+            await botMsg.edit({
+                embeds: [embed],
+                components: AdvancedCollector.getActionRowsFromComponents([
+                    ButtonConstants.BACK_BUTTON,
+                    ButtonConstants.CANCEL_BUTTON,
+                    ButtonConstants.QUIT_BUTTON,
+                ])
+            });
+
+            const res = await AdvancedCollector.startDoubleCollector<number[]>({
+                cancelFlag: null,
+                deleteResponseMessage: true,
+                targetChannel: ctx.channel,
+                acknowledgeImmediately: true,
+                clearInteractionsAfterComplete: false,
+                deleteBaseMsgAfterComplete: false,
+                duration: 60 * 1000,
+                targetAuthor: ctx.user,
+                oldMsg: botMsg
+            }, m => StringUtil.parseNumbers(m.content));
+
+            if (!res)
+                return null;
+
+            if (res instanceof MessageComponentInteraction) {
+                switch (res.customId) {
+                    case ButtonConstants.BACK_ID:
+                        return dgn.allowedModifiers;
+                    case ButtonConstants.CANCEL_ID:
+                        return null;
+                    case ButtonConstants.SAVE_ID:
+                        return allModifiers.filter(x => x.allow).map(x => x.modifierId);
+                }
+
+                continue;
+            }
+
+            if (Array.isArray(res)) {
+                if (res.length === 0)
+                    continue;
+
+                for (const n of res) {
+                    const tempIdx = n - 1;
+                    if (tempIdx < 0 || tempIdx >= allModifiers.length)
+                        continue;
+
+                    allowedCount += allModifiers[tempIdx].allow ? -1 : 1;
+                    allModifiers[tempIdx].allow = !allModifiers[tempIdx].allow;
+                }
+
+                for (let i = allModifiers.length - 1; i >= 0 && allowedCount > 25; i--) {
+                    if (!allModifiers[i].allow) {
+                        continue;
+                    }
+
+                    allModifiers[i].allow = false;
+                    allowedCount--;
+                }
+            }
+        }
+    }
+
 
     /**
      * Clones a dungeon, creating a custom dungeon in the process.
@@ -1217,25 +1357,30 @@ export class ConfigureDungeons extends BaseCommand {
      * @private
      */
     private static cloneDungeonForCustom(dgn: IDungeonInfo): ICustomDungeonInfo {
+        // Deep clone of everything
         return {
-            bossLinks: dgn.bossLinks.slice(),
+            bossLinks: dgn.bossLinks.map(x => {
+                return {...x};
+            }),
             codeName: `[[${dgn.codeName}:${Date.now()}:${StringUtil.generateRandomString(5)}]]`,
             dungeonCategory: dgn.dungeonCategory,
             dungeonColors: dgn.dungeonColors.slice(),
             dungeonName: dgn.dungeonName,
             isBuiltIn: false,
-            keyReactions: dgn.keyReactions.slice(),
-            otherReactions: dgn.otherReactions.slice(),
+            keyReactions: dgn.keyReactions.map(x => {
+                return {...x};
+            }),
+            otherReactions: dgn.otherReactions.map(x => {
+                return {...x};
+            }),
             portalEmojiId: dgn.portalEmojiId,
-            portalLink: {
-                url: dgn.portalLink.url,
-                name: dgn.portalLink.name
-            },
+            portalLink: {...dgn.portalLink},
             nitroEarlyLocationLimit: -1,
             pointCost: 0,
             vcLimit: -1,
             roleRequirement: [],
-            logFor: null
+            logFor: null,
+            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
         } as ICustomDungeonInfo;
     }
 
@@ -1256,7 +1401,7 @@ export class ConfigureDungeons extends BaseCommand {
         embedInfo: EmbedInfo
     ): Promise<IDungeonInfo | ICustomDungeonInfo | null> {
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Select Dungeon: **${embedInfo.nameOfPrompt}**`)
             .setDescription(
                 new StringBuilder()
@@ -1303,8 +1448,8 @@ export class ConfigureDungeons extends BaseCommand {
                 ...selectMenus,
                 new MessageButton()
                     .setLabel("Back")
-                    .setCustomId("back")
-                    .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
+                    .setCustomId(ButtonConstants.BACK_ID)
+                    .setEmoji(EmojiConstants.LONG_LEFT_ARROW_EMOJI)
                     .setStyle("DANGER")
             ])
         });
@@ -1338,7 +1483,6 @@ export class ConfigureDungeons extends BaseCommand {
                               options: LinkConfigOptions): Promise<ImageInfo[] | null> {
         const selected = currLinks.slice();
 
-        // TODO make more efficient
         let validBuiltInImageUrls = DUNGEON_DATA.flatMap(x => [x.portalLink, ...x.bossLinks]);
         validBuiltInImageUrls = validBuiltInImageUrls.filter((elem, idx) => {
             return validBuiltInImageUrls.findIndex(x => x.url === elem.url) === idx;
@@ -1369,12 +1513,12 @@ export class ConfigureDungeons extends BaseCommand {
         }
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Set Image Links: ${options.nameOfPrompt}`)
             .setDescription(
                 new StringBuilder()
                     .append("Below are a list of all images that you have registered with the bot via the")
-                    .append(` configuration command for reactions and images. A ${Emojis.GREEN_CHECK_EMOJI} next to`)
+                    .append(` configuration command for reactions and images. A ${EmojiConstants.GREEN_CHECK_EMOJI} next to`)
                     .append(` the link means that the image has been selected; otherwise, it has not been selected.`)
                     .appendLine(2)
                     .append("- Type either one number (e.g. `5`) or a series of numbers separated by a space or comma")
@@ -1401,7 +1545,7 @@ export class ConfigureDungeons extends BaseCommand {
                 validCustomImageUrls,
                 (i, elem) => {
                     const emojiToUse = selected.some(x => x.url === elem.url)
-                        ? `${Emojis.GREEN_CHECK_EMOJI} `
+                        ? `${EmojiConstants.GREEN_CHECK_EMOJI} `
                         : "";
                     return `\`[${i + 1}]\` ${emojiToUse}${elem.name}`;
                 }
@@ -1412,31 +1556,19 @@ export class ConfigureDungeons extends BaseCommand {
                 embed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
             }
 
-            embed.setFooter(`Used: ${selected.length}/${options.max}`);
+            embed.setFooter({text: `Used: ${selected.length}/${options.max}`});
 
             await botMsg.edit({
                 embeds: [embed],
                 components: AdvancedCollector.getActionRowsFromComponents([
+                    ButtonConstants.BACK_BUTTON,
+                    ButtonConstants.CANCEL_BUTTON,
                     new MessageButton()
-                        .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
-                        .setCustomId("back")
-                        .setLabel("Back")
-                        .setStyle("DANGER"),
-                    new MessageButton()
-                        .setEmoji(Emojis.X_EMOJI)
-                        .setCustomId("cancel")
-                        .setLabel("Cancel")
-                        .setStyle("DANGER"),
-                    new MessageButton()
-                        .setEmoji(Emojis.WASTEBIN_EMOJI)
+                        .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
                         .setCustomId("switch")
                         .setLabel("Switch")
                         .setStyle("PRIMARY"),
-                    new MessageButton()
-                        .setEmoji(Emojis.PENCIL_EMOJI)
-                        .setCustomId("save")
-                        .setLabel("Save")
-                        .setStyle("SUCCESS"),
+                    ButtonConstants.SAVE_BUTTON,
                 ])
             });
 
@@ -1457,14 +1589,14 @@ export class ConfigureDungeons extends BaseCommand {
 
             if (res instanceof MessageComponentInteraction) {
                 switch (res.customId) {
-                    case "back":
+                    case ButtonConstants.BACK_ID:
                         return currLinks;
-                    case "cancel":
+                    case ButtonConstants.CANCEL_ID:
                         return null;
                     case "switch":
                         seeCustom = !seeCustom;
                         break;
-                    case "save":
+                    case ButtonConstants.SAVE_ID:
                         return selected;
                 }
 
@@ -1498,6 +1630,7 @@ export class ConfigureDungeons extends BaseCommand {
     /**
      * Configures a generic setting. Similar in nature to `configReactions` but allows for multiple different
      * options at the expense of extreme customizability.
+     * @typedef T The option types.
      * @param {ICommandContext} ctx The command context.
      * @param {Message} botMsg The bot message.
      * @param {T[]} cOptions The current options that are set.
@@ -1514,7 +1647,7 @@ export class ConfigureDungeons extends BaseCommand {
         const selected = cOptions.slice();
         const itemName = addOptions.itemName.toLowerCase();
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Edit Setting: ${addOptions.nameOfPrompt}`)
             .setDescription(
                 new StringBuilder()
@@ -1525,7 +1658,7 @@ export class ConfigureDungeons extends BaseCommand {
                     .append(`Here, you will be able to add a new ${itemName} or remove an already existing ${itemName}`)
                     .append(` from the list below.`)
                     .appendLine(2)
-                    .append(`- The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected`)
+                    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected`)
                     .append(` ${itemName}.`)
                     .appendLine()
                     .append(`- To move up or down the list of current ${itemName}, press the Up/Down buttons.`)
@@ -1542,50 +1675,19 @@ export class ConfigureDungeons extends BaseCommand {
                     .toString()
             );
 
-        // TODO put these buttons somewhere so we aren't
-        // - constantly creating the same EXACT buttons
-        // - less repetition
-        const removeButton = new MessageButton()
-            .setLabel("Remove")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
-            .setCustomId("remove")
-            .setStyle("PRIMARY");
-        const addButton = new MessageButton()
-            .setLabel("Add")
-            .setEmoji(Emojis.PLUS_EMOJI)
-            .setCustomId("add")
-            .setStyle("PRIMARY");
-        const upButton = new MessageButton()
-            .setLabel("Up")
-            .setEmoji(Emojis.UP_TRIANGLE_EMOJI)
-            .setCustomId("up")
-            .setStyle("PRIMARY");
-        const downButton = new MessageButton()
-            .setLabel("Down")
-            .setEmoji(Emojis.DOWN_TRIANGLE_EMOJI)
-            .setCustomId("down")
-            .setStyle("PRIMARY");
-        const saveButton = new MessageButton()
-            .setLabel("Save")
-            .setEmoji(Emojis.GREEN_CHECK_EMOJI)
-            .setCustomId("save")
-            .setStyle("SUCCESS");
+        const removeButton = AdvancedCollector.cloneButton(ButtonConstants.REMOVE_BUTTON);
+        const addButton = AdvancedCollector.cloneButton(ButtonConstants.ADD_BUTTON);
+        const upButton = AdvancedCollector.cloneButton(ButtonConstants.UP_BUTTON);
+        const downButton = AdvancedCollector.cloneButton(ButtonConstants.DOWN_BUTTON);
+        const saveButton = AdvancedCollector.cloneButton(ButtonConstants.SAVE_BUTTON);
 
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Back")
-                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
-                .setCustomId("back")
-                .setStyle("PRIMARY"),
+            ButtonConstants.BACK_BUTTON,
             addButton,
             upButton,
             downButton,
             removeButton,
-            new MessageButton()
-                .setLabel("Quit")
-                .setEmoji(Emojis.X_EMOJI)
-                .setCustomId("quit")
-                .setStyle("PRIMARY"),
+            ButtonConstants.QUIT_BUTTON,
             saveButton
         ];
 
@@ -1600,7 +1702,7 @@ export class ConfigureDungeons extends BaseCommand {
                 return new StringBuilder()
                     .append(
                         i === currentIdx
-                            ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${addOptions.embedTitleResolver(selected[i])}`
+                            ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${addOptions.embedTitleResolver(selected[i])}`
                             : addOptions.embedTitleResolver(selected[i])
                     )
                     .append(" ")
@@ -1638,7 +1740,7 @@ export class ConfigureDungeons extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle(`Adding **${addOptions.itemName}**`)
                                 .setDescription(
                                     new StringBuilder()
@@ -1646,16 +1748,12 @@ export class ConfigureDungeons extends BaseCommand {
                                         .append(` following: **${addOptions.expectedType}**`)
                                         .appendLine(2)
                                         .append(`If you don't want to add a new ${itemName} at this time, press the`)
-                                        .append(" **Go Back** button.")
+                                        .append(" **Back** button.")
                                         .toString()
                                 )
                         ],
                         components: AdvancedCollector.getActionRowsFromComponents([
-                            new MessageButton()
-                                .setLabel("Go Back")
-                                .setCustomId("go_back")
-                                .setStyle("DANGER")
-                                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
+                            ButtonConstants.BACK_BUTTON
                         ])
                     });
 
@@ -1704,10 +1802,10 @@ export class ConfigureDungeons extends BaseCommand {
                     currentIdx %= selected.length;
                     break;
                 }
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     return cOptions;
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     return null;
                 }
             } // end switch case
@@ -1732,59 +1830,31 @@ export class ConfigureDungeons extends BaseCommand {
             );
         });
 
-        const saveButton = new MessageButton()
-            .setLabel("Save")
-            .setEmoji(Emojis.GREEN_CHECK_EMOJI)
-            .setCustomId("save")
-            .setStyle("SUCCESS");
-        const addButton = new MessageButton()
-            .setLabel("Add")
-            .setEmoji(Emojis.PLUS_EMOJI)
-            .setCustomId("add")
-            .setStyle("PRIMARY");
-        const removeButton = new MessageButton()
-            .setLabel("Remove")
-            .setEmoji(Emojis.WASTEBIN_EMOJI)
-            .setCustomId("remove")
-            .setStyle("PRIMARY");
-        const upButton = new MessageButton()
-            .setLabel("Up")
-            .setEmoji(Emojis.UP_TRIANGLE_EMOJI)
-            .setCustomId("up")
-            .setStyle("PRIMARY");
-        const downButton = new MessageButton()
-            .setLabel("Down")
-            .setEmoji(Emojis.DOWN_TRIANGLE_EMOJI)
-            .setCustomId("down")
-            .setStyle("PRIMARY");
+        const saveButton = AdvancedCollector.cloneButton(ButtonConstants.SAVE_BUTTON);
+        const addButton = AdvancedCollector.cloneButton(ButtonConstants.ADD_BUTTON);
+        const removeButton = AdvancedCollector.cloneButton(ButtonConstants.REMOVE_BUTTON);
+        const upButton = AdvancedCollector.cloneButton(ButtonConstants.UP_BUTTON);
+        const downButton = AdvancedCollector.cloneButton(ButtonConstants.DOWN_BUTTON);
 
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Back")
-                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
-                .setCustomId("back")
-                .setStyle("PRIMARY"),
+            ButtonConstants.BACK_BUTTON,
             addButton,
             upButton,
             downButton,
             removeButton,
-            new MessageButton()
-                .setLabel("Quit")
-                .setEmoji(Emojis.X_EMOJI)
-                .setCustomId("quit")
-                .setStyle("PRIMARY"),
+            ButtonConstants.QUIT_BUTTON,
             saveButton
         ];
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Dungeon Reaction Manager")
             .setDescription(
                 new StringBuilder()
                     .append("Here, you will be able to add, remove, or manage reactions for this dungeon. Please read")
                     .append(" the directions carefully.")
                     .appendLine(2)
-                    .append(`- The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the current reaction (if any).`)
+                    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the current reaction (if any).`)
                     .appendLine()
                     .append("- To move up or down the list of current reactions, press the Up/Down buttons. If there")
                     .append(" are too many reactions, you can also use the jump (`j`) command. For example, to move")
@@ -1839,7 +1909,7 @@ export class ConfigureDungeons extends BaseCommand {
                     new StringBuilder()
                         .append(
                             i === currentIdx
-                                ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${reactionInfo.name}`
+                                ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${reactionInfo.name}`
                                 : reactionInfo.name
                         ).appendLine()
                         .append(`- Emoji: ${emoji ?? "N/A"} (ID: ${reactionInfo.emojiInfo.identifier})`).appendLine()
@@ -1854,8 +1924,10 @@ export class ConfigureDungeons extends BaseCommand {
             }
 
             embed.setFooter(
-                `${numEarlyLocs}/${ConfigureDungeons.MAXIMUM_PRIORITY_REACTS} Priority Reactions & `
-                + `${normalReacts}/${ConfigureDungeons.MAXIMUM_NORMAL_REACTS} Normal Reactions`
+                {
+                    text: `${numEarlyLocs}/${ConfigureDungeons.MAXIMUM_PRIORITY_REACTS} Priority Reactions & `
+                        + `${normalReacts}/${ConfigureDungeons.MAXIMUM_NORMAL_REACTS} Normal Reactions`
+                }
             );
 
             await botMsg.edit({
@@ -1943,10 +2015,10 @@ export class ConfigureDungeons extends BaseCommand {
                         await botMsg.edit({
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("No Reactions to Add")
                                     .setDescription("There are no more reactions that you can add at this time.")
-                                    .setFooter("This message will automatically revert back in 5 seconds.")
+                                    .setFooter({text: "This message will automatically revert back in 5 seconds."})
                             ],
                             components: []
                         });
@@ -1982,18 +2054,14 @@ export class ConfigureDungeons extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Select Reaction to Add")
                                 .setDescription("Please select **one** reaction to add to this dungeon. If you don't"
-                                    + " want to add a reaction, press the **Go Back** button.")
+                                    + " want to add a reaction, press the **Back** button.")
                         ],
                         components: AdvancedCollector.getActionRowsFromComponents([
                             ...selectMenus,
-                            new MessageButton()
-                                .setLabel("Go Back")
-                                .setCustomId("go_back")
-                                .setStyle("DANGER")
-                                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
+                            ButtonConstants.BACK_BUTTON
                         ])
                     });
 
@@ -2040,10 +2108,10 @@ export class ConfigureDungeons extends BaseCommand {
                     currentIdx %= currentReactions.length;
                     break;
                 }
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     return cReactions;
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     return null;
                 }
             } // end switch case
@@ -2068,7 +2136,7 @@ export class ConfigureDungeons extends BaseCommand {
     private async askInput<T>(ctx: ICommandContext, botMsg: Message, validationInfo: ValidationInfo,
                               validator: ValidationFunction<T>, defaultT: T): Promise<T | ValidatorResult> {
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Prompt: **${validationInfo.nameOfPrompt}**`)
             .setDescription(
                 new StringBuilder()
@@ -2091,13 +2159,13 @@ export class ConfigureDungeons extends BaseCommand {
                 new MessageButton()
                     .setLabel("Back")
                     .setStyle("DANGER")
-                    .setCustomId("back")
-                    .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
+                    .setCustomId(ButtonConstants.BACK_ID)
+                    .setEmoji(EmojiConstants.LONG_LEFT_ARROW_EMOJI),
                 new MessageButton()
                     .setLabel("Reset")
                     .setStyle("DANGER")
                     .setCustomId("reset")
-                    .setEmoji(Emojis.X_EMOJI)
+                    .setEmoji(EmojiConstants.X_EMOJI)
             ])
         });
 
@@ -2121,7 +2189,7 @@ export class ConfigureDungeons extends BaseCommand {
 
             if (selectedValue instanceof MessageComponentInteraction) {
                 switch (selectedValue.customId) {
-                    case "back": {
+                    case ButtonConstants.BACK_ID: {
                         return ValidatorResult.Canceled;
                     }
                     case "reset": {
@@ -2156,8 +2224,8 @@ export class ConfigureDungeons extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

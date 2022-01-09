@@ -11,14 +11,16 @@ import {Guild, Message, MessageButton, MessageEmbed, Role, TextChannel} from "di
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import getCachedRole = GuildFgrUtilities.getCachedRole;
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {FilterQuery} from "mongodb";
+import {Filter} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
 import hasCachedRole = GuildFgrUtilities.hasCachedRole;
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
+import {ButtonConstants} from "../../constants/ButtonConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 enum DisplayFilter {
     Moderation = (1 << 0),
@@ -317,32 +319,28 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         );
 
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Go Back")
-                .setStyle("PRIMARY")
-                .setCustomId("go_back")
-                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
+            ButtonConstants.BACK_BUTTON,
             new MessageButton()
                 .setLabel("Edit General Roles")
                 .setStyle("PRIMARY")
                 .setCustomId("general")
-                .setEmoji(Emojis.PENCIL_PAPER_EMOJI),
+                .setEmoji(EmojiConstants.PENCIL_PAPER_EMOJI),
             new MessageButton()
                 .setLabel("Edit Section Leader Roles")
                 .setStyle("PRIMARY")
                 .setCustomId("sec_leader")
-                .setEmoji(Emojis.SECOND_PLACE_EMOJI)
+                .setEmoji(EmojiConstants.SECOND_PLACE_EMOJI)
         ];
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Role** Configuration Main Menu`)
             .setDescription(`Please select the appropriate option.\n\n${currentConfiguration}`)
-            .setFooter(`ID: ${section.uniqueIdentifier}`)
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
             .addField(
                 "Go Back",
-                "Click on the `Go Back` button to go back to the section selection embed. You can choose a new"
-                + " section to modify."
+                "Click on the `Back` button to go back to the section selection embed. You can choose a new section"
+                + " to modify."
             ).addField(
                 "Edit General Roles",
                 "Click on the `Edit General Roles` button to configure the verified raider role for this section. If"
@@ -372,30 +370,26 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     .setLabel("Edit Universal Leader Roles")
                     .setStyle("PRIMARY")
                     .setCustomId("uni_leader")
-                    .setEmoji(Emojis.FIRST_PLACE_EMOJI),
+                    .setEmoji(EmojiConstants.FIRST_PLACE_EMOJI),
                 new MessageButton()
                     .setLabel("Edit Moderation Roles")
                     .setStyle("PRIMARY")
                     .setCustomId("mod")
-                    .setEmoji(Emojis.CROSSED_SWORDS_EMOJI),
+                    .setEmoji(EmojiConstants.CROSSED_SWORDS_EMOJI),
                 new MessageButton()
                     .setLabel("Edit Team Roles")
                     .setStyle("PRIMARY")
                     .setCustomId("team")
-                    .setEmoji(Emojis.MULTIPLE_FLAGS_EMOJI)
+                    .setEmoji(EmojiConstants.MULTIPLE_FLAGS_EMOJI)
             );
         }
 
         displayEmbed.addField(
-            "Exit",
-            "Click on the `Exit` button to exit this process."
+            "Quit",
+            "Click on the `Quit` button to exit this process."
         );
 
-        buttons.push(new MessageButton()
-            .setLabel("Exit")
-            .setStyle("DANGER")
-            .setCustomId("exit")
-            .setEmoji(Emojis.X_EMOJI));
+        buttons.push(ButtonConstants.QUIT_BUTTON);
 
         await botMsg.edit({
             embeds: [displayEmbed],
@@ -418,7 +412,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         }
 
         switch (selectedButton.customId) {
-            case "go_back": {
+            case ButtonConstants.BACK_ID: {
                 await this.entry(ctx, botMsg);
                 return;
             }
@@ -469,7 +463,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                 await this.editTeamRoles(ctx, botMsg);
                 return;
             }
-            case "exit": {
+            case ButtonConstants.QUIT_ID: {
                 await this.dispose(ctx, botMsg);
                 return;
             }
@@ -597,8 +591,8 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 
@@ -611,7 +605,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         const guild = ctx.guild!;
 
         const embedToDisplay = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setDescription(
                 "Here, you will have the ability to modify what __custom__ (i.e. not built-in) roles are *staff*"
                 + " roles. Members will receive the Team role when they receive a staff role and will lose the"
@@ -665,16 +659,8 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             await botMsg.edit({
                 embeds: [embedToDisplay],
                 components: AdvancedCollector.getActionRowsFromComponents([
-                    new MessageButton()
-                        .setLabel("Back")
-                        .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
-                        .setCustomId("back")
-                        .setStyle("PRIMARY"),
-                    new MessageButton()
-                        .setLabel("Quit")
-                        .setEmoji(Emojis.X_EMOJI)
-                        .setCustomId("quit")
-                        .setStyle("PRIMARY")
+                    ButtonConstants.BACK_BUTTON,
+                    ButtonConstants.QUIT_BUTTON
                 ])
             });
 
@@ -731,11 +717,11 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
             // Case 3: Buttons
             switch (result.customId) {
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     await this.mainMenu(ctx, MongoManager.getMainSection(ctx.guildDoc!), botMsg);
                     return;
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     await this.dispose(ctx, botMsg);
                     return;
                 }
@@ -758,19 +744,19 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
         let selected = 0;
         const embedToDisplay = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Role** Configuration ⇒ ${group}`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
         while (true) {
             embedToDisplay.fields = [];
-            embedToDisplay.setFooter(getInstructions(entries[selected].configTypeOrInstructions));
+            embedToDisplay.setFooter({text: getInstructions(entries[selected].configTypeOrInstructions)});
             for (let i = 0; i < entries.length; i++) {
                 const currSet: Role | null = getCachedRole(
                     guild,
                     entries[i].getCurrentValue(ctx.guildDoc!, section) as string
                 );
                 embedToDisplay.addField(
-                    i === selected ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${entries[i].name}` : entries[i].name,
+                    i === selected ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${entries[i].name}` : entries[i].name,
                     `Current Value: ${currSet ?? ConfigureRoles.NA}`
                 );
             }
@@ -819,7 +805,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             }
 
             // Case 2: Role
-            const query: FilterQuery<IGuildInfo> = section.isMainSection
+            const query: Filter<IGuildInfo> = section.isMainSection
                 ? {guildId: guild.id}
                 : {guildId: guild.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
             const keySetter = section.isMainSection
@@ -839,20 +825,20 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
             // Case 3: Button
             switch (result.customId) {
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     await this.mainMenu(ctx, section, botMsg);
                     return;
                 }
-                case "up": {
+                case ButtonConstants.UP_ID: {
                     selected = (entries.length + selected - 1) % entries.length;
                     break;
                 }
-                case "down": {
+                case ButtonConstants.DOWN_ID: {
                     selected++;
                     selected %= entries.length;
                     break;
                 }
-                case "reset": {
+                case ButtonConstants.RESET_ID: {
                     ctx.guildDoc = (await MongoManager.updateAndFetchGuildDoc(query, {
                         $set: {
                             [keySetter]: ""
@@ -862,7 +848,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                         .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                     break;
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     await this.dispose(ctx, botMsg);
                     return;
                 }

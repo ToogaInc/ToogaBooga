@@ -8,7 +8,7 @@ import {
     Role,
     TextChannel
 } from "discord.js";
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
@@ -18,7 +18,8 @@ import {ParseUtilities} from "../../utilities/ParseUtilities";
 import {MongoManager} from "../../managers/MongoManager";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
 import {ISectionInfo} from "../../definitions";
-import {GeneralConstants} from "../../constants/GeneralConstants";
+import {ButtonConstants} from "../../constants/ButtonConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 // Type that defines the values for the new section
 type SectionCreateType = [string | null, Role | null, TextChannel | null, TextChannel | null, TextChannel | null];
@@ -51,16 +52,8 @@ export class ConfigureSections extends BaseCommand {
     private static readonly NA: string = "NA";
 
     private static readonly BACK_QUIT_BUTTONS: MessageButton[] = [
-        new MessageButton()
-            .setLabel("Go Back")
-            .setStyle("PRIMARY")
-            .setCustomId("go_back")
-            .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
-        new MessageButton()
-            .setLabel("Quit")
-            .setStyle("DANGER")
-            .setCustomId("quit")
-            .setEmoji(Emojis.X_EMOJI)
+        ButtonConstants.BACK_BUTTON,
+        ButtonConstants.QUIT_BUTTON
     ];
 
     private static readonly SECTION_CREATE_CHOICES: ISectionCreateChoice[] = [
@@ -182,53 +175,35 @@ export class ConfigureSections extends BaseCommand {
         descSb.append("Please select the appropriate option.");
 
         const embed: MessageEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Section Manager Command")
             .setDescription(descSb.toString())
             .addField(
-                "Exit",
-                "Click on the `Exit` button to exit this process."
+                "Quit",
+                "Click on the `Quit` button to exit this process."
             );
 
-        const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Exit")
-                .setStyle("DANGER")
-                .setCustomId("exit")
-                .setEmoji(Emojis.X_EMOJI)
-        ];
+        const buttons: MessageButton[] = [ButtonConstants.QUIT_BUTTON];
 
         const remainingSecs = ConfigureSections.MAXIMUM_SECTIONS_ALLOWED - ctx.guildDoc!.guildSections.length;
         if (remainingSecs > 0) {
             embed.addField(
-                "Create Section",
-                `Press the \`Create\` button to create a new server section. You can create ${remainingSecs} more`
+                "Add Section",
+                `Press the \`Add\` button to create a new server section. You can create ${remainingSecs} more`
                 + " sections in this server."
             );
 
-            buttons.push(
-                new MessageButton()
-                    .setCustomId("create")
-                    .setLabel("Create")
-                    .setStyle("PRIMARY")
-                    .setEmoji(Emojis.PLUS_EMOJI)
-            );
+            buttons.push(ButtonConstants.ADD_BUTTON);
         }
 
         if (ctx.guildDoc!.guildSections.length > 0) {
             embed.addField(
-                "Manage Section",
-                "Press the \`Manage\` button to manage an existing server section. You will be able to change the"
+                "Edit Section",
+                "Press the \`Edit\` button to manage an existing server section. You will be able to change the"
                 + " section's name and delete the section here."
             );
 
-            buttons.push(
-                new MessageButton()
-                    .setCustomId("manage")
-                    .setLabel("Manage")
-                    .setStyle("PRIMARY")
-                    .setEmoji(Emojis.WASTEBIN_EMOJI)
-            );
+            buttons.push(ButtonConstants.EDIT_BUTTON);
         }
 
         embed.addField(
@@ -257,15 +232,15 @@ export class ConfigureSections extends BaseCommand {
         }
 
         switch (selectedButton.customId) {
-            case "exit": {
+            case ButtonConstants.QUIT_ID: {
                 await this.dispose(ctx, botMsg);
                 return;
             }
-            case "create": {
+            case ButtonConstants.ADD_ID: {
                 await this.createSection(ctx, botMsg);
                 return;
             }
-            case "manage": {
+            case ButtonConstants.EDIT_ID: {
                 await this.preManageSection(ctx, botMsg);
                 return;
             }
@@ -278,8 +253,8 @@ export class ConfigureSections extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 
@@ -303,7 +278,7 @@ export class ConfigureSections extends BaseCommand {
         await botMsg.edit({
             embeds: [
                 new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Select Section")
                     .setDescription(
                         "Please select a section that you want to manage. If you want to go back, press the **Back**" 
@@ -311,21 +286,13 @@ export class ConfigureSections extends BaseCommand {
                     )
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
-                new MessageButton()
-                    .setLabel("Back")
-                    .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
-                    .setCustomId("back_button")
-                    .setStyle("PRIMARY"),
+                ButtonConstants.BACK_BUTTON,
                 new MessageSelectMenu()
                     .addOptions(...secSelectOpt)
                     .setCustomId("section_selector")
                     .setMinValues(1)
                     .setMaxValues(1),
-                new MessageButton()
-                    .setLabel("Cancel")
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setCustomId("cancel_button")
-                    .setStyle("DANGER")
+                ButtonConstants.CANCEL_BUTTON
             ])
         });
 
@@ -345,7 +312,7 @@ export class ConfigureSections extends BaseCommand {
         }
 
         if (result.isButton()) {
-            if (result.customId === "cancel_button")
+            if (result.customId === ButtonConstants.CANCEL_ID)
                 await this.dispose(ctx, botMsg);
             else
                 await this.mainMenu(ctx, botMsg);
@@ -373,33 +340,25 @@ export class ConfigureSections extends BaseCommand {
      */
     private async manageSection(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Go Back")
-                .setStyle("PRIMARY")
-                .setCustomId("go_back")
-                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
+            ButtonConstants.BACK_BUTTON,
             new MessageButton()
                 .setLabel("Rename Section")
                 .setStyle("PRIMARY")
                 .setCustomId("rename")
-                .setEmoji(Emojis.PENCIL_PAPER_EMOJI),
+                .setEmoji(EmojiConstants.PENCIL_PAPER_EMOJI),
             new MessageButton()
                 .setLabel("Delete Section")
                 .setStyle("DANGER")
                 .setCustomId("delete")
-                .setEmoji(Emojis.WASTEBIN_EMOJI),
-            new MessageButton()
-                .setLabel("Quit")
-                .setStyle("DANGER")
-                .setCustomId("quit")
-                .setEmoji(Emojis.X_EMOJI)
+                .setEmoji(EmojiConstants.WASTEBIN_EMOJI),
+            ButtonConstants.QUIT_BUTTON
         ];
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] Section Manager`)
             .setDescription("Please select an option.")
-            .setFooter(`ID: ${section.uniqueIdentifier}`)
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
             .addField(
                 "Go Back",
                 "Click on the `Go Back` button to go back to the main menu."
@@ -438,7 +397,7 @@ export class ConfigureSections extends BaseCommand {
         }
 
         switch (selectedButton.customId) {
-            case "go_back": {
+            case ButtonConstants.BACK_ID: {
                 await this.preManageSection(ctx, botMsg);
                 break;
             }
@@ -450,7 +409,7 @@ export class ConfigureSections extends BaseCommand {
                 await this.deleteSection(ctx, botMsg, section);
                 break;
             }
-            case "quit": {
+            case ButtonConstants.QUIT_ID: {
                 await this.dispose(ctx, botMsg);
                 return;
             }
@@ -466,13 +425,13 @@ export class ConfigureSections extends BaseCommand {
      */
     private async renameSection(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const displayEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] Rename Section`)
             .setDescription("Please send a message containing the new name for this section. This must be at least 1"
                 + " character long and at most 30 characters long, and must not conflict with another section's"
                 + " name. If you don't want to rename this section at this time, click the **Go Back** button. If"
                 + " you want to quit, press the **Quit** button.")
-            .setFooter(`ID: ${section.uniqueIdentifier}`);
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`});
 
         await botMsg.edit({
             embeds: [displayEmbed],
@@ -497,7 +456,7 @@ export class ConfigureSections extends BaseCommand {
         }
 
         if (res instanceof MessageComponentInteraction) {
-            if (res.customId === "go_back") {
+            if (res.customId === ButtonConstants.BACK_ID) {
                 await this.manageSection(ctx, botMsg, section);
                 return;
             }
@@ -528,14 +487,14 @@ export class ConfigureSections extends BaseCommand {
      */
     private async deleteSection(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const displayEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] Delete Section?`)
             .setDescription("Are you sure you want to delete this section? Once completed, you cannot reverse this.")
-            .setFooter(`ID: ${section.uniqueIdentifier}`);
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`});
 
         await botMsg.edit({
             embeds: [displayEmbed],
-            components: GeneralConstants.YES_NO_ACTION_BUTTONS
+            components: ButtonConstants.YES_NO_ACTION_BUTTONS
         });
 
         const selectedButton = await AdvancedCollector.startInteractionCollector({
@@ -573,7 +532,7 @@ export class ConfigureSections extends BaseCommand {
      */
     private async createSection(ctx: ICommandContext, botMsg: Message): Promise<void> {
         const baseEmbed: MessageEmbed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("**Create Section**")
             .setDescription(
                 new StringBuilder()
@@ -582,7 +541,7 @@ export class ConfigureSections extends BaseCommand {
                     .append(" panel channels are optional; you can configure them later via the respective")
                     .append(" configuration commands.")
                     .appendLine(2)
-                    .append(`- The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the **currently** selected`)
+                    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the **currently** selected`)
                     .append(" option.")
                     .appendLine()
                     .append("- To move up or down the list of options, simply **press** the UP/DOWN buttons.")
@@ -596,10 +555,7 @@ export class ConfigureSections extends BaseCommand {
                     .toString()
             );
 
-        const saveButton = new MessageButton()
-            .setLabel("Save")
-            .setCustomId("save")
-            .setStyle("SUCCESS")
+        const saveButton = AdvancedCollector.cloneButton(ButtonConstants.SAVE_BUTTON)
             .setDisabled(true);
 
         const buttons: MessageButton[] = [
@@ -616,7 +572,7 @@ export class ConfigureSections extends BaseCommand {
             for (let i = 0; i < newSectionInfo.length; i++) {
                 baseEmbed.addField(
                     i === selectedIdx
-                        ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${ConfigureSections.SECTION_CREATE_CHOICES[i].name}`
+                        ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${ConfigureSections.SECTION_CREATE_CHOICES[i].name}`
                         : ConfigureSections.SECTION_CREATE_CHOICES[i].name,
                     `Current Value: ${newSectionInfo[i] ?? ConfigureSections.NA}`
                 );
@@ -650,28 +606,28 @@ export class ConfigureSections extends BaseCommand {
             // Interaction = Button options, deal w/ accordingly
             if (selected instanceof MessageComponentInteraction) {
                 switch (selected.customId) {
-                    case "back": {
+                    case ButtonConstants.BACK_ID: {
                         await this.mainMenu(ctx, botMsg);
                         return;
                     }
-                    case "up": {
+                    case ButtonConstants.UP_ID: {
                         selectedIdx = (selectedIdx + newSectionInfo.length - 1) % newSectionInfo.length;
                         break;
                     }
-                    case "down": {
+                    case ButtonConstants.DOWN_ID: {
                         selectedIdx++;
                         selectedIdx %= newSectionInfo.length;
                         break;
                     }
-                    case "reset": {
+                    case ButtonConstants.RESET_ID: {
                         newSectionInfo[selectedIdx] = null;
                         break;
                     }
-                    case "quit": {
+                    case ButtonConstants.QUIT_ID: {
                         await this.dispose(ctx, botMsg);
                         return;
                     }
-                    case "save": {
+                    case ButtonConstants.SAVE_ID: {
                         // Break out and save there
                         break mainLoop;
                     }

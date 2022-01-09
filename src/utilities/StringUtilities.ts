@@ -1,7 +1,7 @@
 import {StringBuilder} from "./StringBuilder";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {ArrayUtilities} from "./ArrayUtilities";
-import {Emojis} from "../constants/Emojis";
+import {EmojiConstants} from "../constants/EmojiConstants";
 
 export namespace StringUtil {
     /**
@@ -36,17 +36,17 @@ export namespace StringUtil {
         let numPut = 0;
         let returnStr = "";
         const compEmojiUsed = percent < 0.50
-            ? Emojis.GREEN_SQUARE_EMOJI
+            ? EmojiConstants.GREEN_SQUARE_EMOJI
             : percent < 0.80
-                ? Emojis.YELLOW_SQUARE_EMOJI
-                : Emojis.RED_SQUARE_EMOJI;
+                ? EmojiConstants.YELLOW_SQUARE_EMOJI
+                : EmojiConstants.RED_SQUARE_EMOJI;
         for (let i = 0; i < Math.min(Math.floor(percent * numSquares), numSquares); i++) {
             returnStr += compEmojiUsed;
             numPut++;
         }
 
         for (let i = 0; i < numSquares - numPut; i++) {
-            returnStr += Emojis.BLACK_SQUARE_EMOJI;
+            returnStr += EmojiConstants.BLACK_SQUARE_EMOJI;
         }
 
         return returnStr;

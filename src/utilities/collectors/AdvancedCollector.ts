@@ -9,14 +9,14 @@ import {
     MessageOptions, MessageSelectMenu,
     PartialTextBasedChannelFields,
     PermissionResolvable,
-    Role, TextBasedChannels,
+    Role, TextBasedChannel,
     TextChannel,
     User
 } from "discord.js";
 import {MessageUtilities} from "../MessageUtilities";
 import {StringBuilder} from "../StringBuilder";
 import {GuildFgrUtilities} from "../fetch-get-request/GuildFgrUtilities";
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import {GlobalFgrUtilities} from "../fetch-get-request/GlobalFgrUtilities";
 import {StringUtil} from "../StringUtilities";
 
@@ -27,7 +27,7 @@ export namespace AdvancedCollector {
     const MAX_ACTION_ROWS: number = 5;
 
     interface ICollectorBaseArgument {
-        readonly targetChannel: TextBasedChannels;
+        readonly targetChannel: TextBasedChannel;
         readonly targetAuthor: User | GuildMember;
         readonly duration: number;
 
@@ -121,8 +121,7 @@ export namespace AdvancedCollector {
 
             const msgCollector = new MessageCollector(options.targetChannel, {
                 filter: (m: Message) => m.author.id === options.targetAuthor.id,
-                time: options.duration,
-                max: 1
+                time: options.duration
             });
 
             msgCollector.on("collect", async (c: Message) => {
@@ -138,6 +137,7 @@ export namespace AdvancedCollector {
                 });
 
                 if (!info) return;
+                msgCollector.stop();
                 resolve(info);
             });
 
@@ -245,8 +245,8 @@ export namespace AdvancedCollector {
             });
 
             msgCollector.on("collect", async (c: Message) => {
-                if (options.deleteResponseMessage && !c.deleted)
-                    await GlobalFgrUtilities.tryExecuteAsync(() => c.delete());
+                if (options.deleteResponseMessage)
+                    await MessageUtilities.tryDelete(c);
 
                 if (cancelFlag && cancelFlag.toLowerCase() === c.content.toLowerCase()) {
                     interactionCollector.stop();
@@ -313,12 +313,12 @@ export namespace AdvancedCollector {
             .setCustomId(id + "yes")
             .setLabel("Yes")
             .setStyle("SUCCESS")
-            .setEmoji(Emojis.GREEN_CHECK_EMOJI);
+            .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI);
         const noButton = new MessageButton()
             .setCustomId(id + "no")
             .setLabel("No")
             .setStyle("DANGER")
-            .setEmoji(Emojis.X_EMOJI);
+            .setEmoji(EmojiConstants.X_EMOJI);
         const actionRow = new MessageActionRow()
             .addComponents(yesButton, noButton);
 
@@ -358,17 +358,17 @@ export namespace AdvancedCollector {
                                 intervalTime: number = 550): void {
         intervalTime = Math.max(550, intervalTime);
         let i: number = 0;
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
             if (i < reactions.length) {
-                if (msg.deleted) {
+                if (!(await MessageUtilities.tryReact(msg, reactions[i]))) {
                     clearInterval(interval);
                     return;
                 }
-
-                msg.react(reactions[i]).catch();
             }
-            else
+            else {
                 clearInterval(interval);
+            }
+
             i++;
         }, intervalTime);
     }
@@ -421,10 +421,14 @@ export namespace AdvancedCollector {
      */
     export function getStringPrompt(pChan: PartialTextBasedChannelFields, options?: {
         min?: number,
-        max?: number
+        max?: number,
+        regexFilter?: {
+            regex: RegExp,
+            withErrorMsg: string
+        }
     }): (m: Message) => Promise<string | undefined> {
         return async (m: Message): Promise<string | undefined> => {
-            if (m.content === null) {
+            if (!m.content) {
                 const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
                     .setDescription("You did not provide any message content. Do not send any attachments.");
@@ -449,6 +453,18 @@ export namespace AdvancedCollector {
                     const tooLongEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Long")
                         .setDescription(tooLongDesc.toString());
+                    MessageUtilities.sendThenDelete({embeds: [tooLongEmbed]}, pChan);
+                    return;
+                }
+
+                if (options.regexFilter && !options.regexFilter.regex.test(m.content)) {
+                    const tooLongEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
+                        .setTitle("Invalid Message")
+                        .setDescription(
+                            options.regexFilter.withErrorMsg
+                                ? options.regexFilter.withErrorMsg
+                                : "Your message failed to meet the REGEX requirement."
+                        );
                     MessageUtilities.sendThenDelete({embeds: [tooLongEmbed]}, pChan);
                     return;
                 }
@@ -640,17 +656,39 @@ export namespace AdvancedCollector {
         return rows;
     }
 
-    /*
-    export function getActionRowsFromButtons(buttons: MessageButton[]): MessageActionRow[] {
-        const rows: MessageActionRow[] = [];
-        for (let i = 0; i < buttons.length; i += 5) {
-            const actionRow = new MessageActionRow();
-            for (let j = 0; j < 5 && i + j < buttons.length; j++)
-                actionRow.addComponents(buttons[i + j]);
-
-            rows.push(actionRow);
+    /**
+     * Clones a `MessageButton`.
+     * @param {Readonly<MessageButton>} button The button to clone.
+     * @returns {MessageButton} The cloned button.
+     */
+    export function cloneButton(button: Readonly<MessageButton>): MessageButton {
+        const newButton = new MessageButton();
+        if (button.style) {
+            newButton.setStyle(button.style);
         }
 
-        return rows;
-    }*/
+        if (button.label) {
+            newButton.setLabel(button.label);
+        }
+
+        if (button.emoji) {
+            if (button.emoji.name) {
+                newButton.setEmoji(button.emoji.name);
+            }
+            else if (button.emoji.id) {
+                newButton.setEmoji(button.emoji.id);
+            }
+        }
+
+        if (button.customId) {
+            newButton.setCustomId(button.customId);
+        }
+
+        if (button.url) {
+            newButton.setURL(button.url);
+        }
+
+        newButton.setDisabled(button.disabled);
+        return newButton;
+    }
 }

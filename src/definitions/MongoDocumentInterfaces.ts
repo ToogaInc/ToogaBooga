@@ -1,8 +1,8 @@
-import {ObjectID} from "mongodb";
+import {ObjectId} from "mongodb";
 import {
     IAfkCheckProperties,
     IRaidChannels,
-    IRaidInfo, IReactionInfo, ICustomDungeonInfo, ImageInfo, IDungeonOverrideInfo
+    IRaidInfo, IReactionInfo, ICustomDungeonInfo, ImageInfo, IDungeonOverrideInfo, IHeadcountInfo
 } from "./DungeonRaidInterfaces";
 import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
 import {IModmailThread} from "./ModmailInterfaces";
@@ -16,7 +16,7 @@ import {
 import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
 import {MainLogType, MainOnlyModLogType, QuotaLogType, SectionLogType, SectionModLogType} from "./Types";
 
-export interface IBaseDocument<T = ObjectID> {
+export interface IBaseDocument<T = ObjectId> {
     _id: T;
 }
 
@@ -411,6 +411,13 @@ export interface IGuildInfo extends IBaseDocument {
      * @type {IRaidInfo[]}
      */
     activeRaids: IRaidInfo[];
+
+    /**
+     * All active headcounts. This includes headcounts from other sections.
+     *
+     * @type {IHeadcountInfo[]}
+     */
+    activeHeadcounts: IHeadcountInfo[];
 
     /**
      * All active manual verification requests for the main section.

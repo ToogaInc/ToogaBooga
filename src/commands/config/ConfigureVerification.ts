@@ -10,7 +10,7 @@ import {
 import {askInput, sendOrEditBotMsg} from "./common/ConfigCommon";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {MongoManager} from "../../managers/MongoManager";
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import {
     ICharacterReq,
     IDungeonReq,
@@ -23,14 +23,16 @@ import {
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
-import {FilterQuery, UpdateQuery} from "mongodb";
+import {Filter, UpdateFilter} from "mongodb";
 import {TimedResult, TimedStatus} from "../../definitions/Types";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {DUNGEON_DATA} from "../../constants/DungeonData";
-import SHORT_STAT_TO_LONG = GeneralConstants.SHORT_STAT_TO_LONG;
+import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {VerifyManager} from "../../managers/VerifyManager";
+import {ButtonConstants} from "../../constants/ButtonConstants";
+import SHORT_STAT_TO_LONG = VerifyManager.SHORT_STAT_TO_LONG;
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 export class ConfigureVerification extends BaseCommand {
     public static GUILD_RANKS: string[] = [
@@ -41,7 +43,7 @@ export class ConfigureVerification extends BaseCommand {
     ];
 
     public static MAX_DUNGEON_REQS: number = 8;
-    
+
     public constructor() {
         super({
             cmdCode: "CONFIG_VERIFICATION",
@@ -63,7 +65,7 @@ export class ConfigureVerification extends BaseCommand {
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-        
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -84,7 +86,7 @@ export class ConfigureVerification extends BaseCommand {
         botMsg = await sendOrEditBotMsg(ctx.channel, botMsg, {
             embeds: [
                 new MessageEmbed()
-                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Select Section")
                     .setDescription(
                         "Please select the section that you want to configure verification for. If you don't want to"
@@ -102,11 +104,7 @@ export class ConfigureVerification extends BaseCommand {
                             label: x.sectionName
                         };
                     })),
-                new MessageButton()
-                    .setLabel("Cancel")
-                    .setCustomId("cancel")
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setStyle("DANGER")
+                ButtonConstants.CANCEL_BUTTON
             ])
         });
 
@@ -126,7 +124,7 @@ export class ConfigureVerification extends BaseCommand {
         }
 
         await this.configVerification(ctx, botMsg, allSections.find(x => x.uniqueIdentifier === selected.values[0])!)
-            ;
+        ;
     }
 
     /**
@@ -165,18 +163,9 @@ export class ConfigureVerification extends BaseCommand {
                 .setStyle("PRIMARY")
                 .setLabel("Set Verification Success Message")
                 .setCustomId("set_verif_success_msg"),
-            new MessageButton()
-                .setStyle("PRIMARY")
-                .setLabel("Save")
-                .setCustomId("save"),
-            new MessageButton()
-                .setStyle("DANGER")
-                .setLabel("Cancel & Go Back")
-                .setCustomId("go_back"),
-            new MessageButton()
-                .setStyle("DANGER")
-                .setLabel("Cancel & Quit")
-                .setCustomId("quit"),
+            ButtonConstants.SAVE_BUTTON,
+            ButtonConstants.BACK_BUTTON,
+            ButtonConstants.QUIT_BUTTON,
             new MessageButton()
                 .setStyle("PRIMARY")
                 .setLabel("Send Verification Embed")
@@ -187,7 +176,7 @@ export class ConfigureVerification extends BaseCommand {
         ];
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Configure Verification: **${section.sectionName}**`)
             .setDescription(
                 new StringBuilder()
@@ -292,7 +281,7 @@ export class ConfigureVerification extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Additional Verification Info Message")
                                     .setDescription("Please type the message that you want people to see when they"
                                         + " try to verify. Your message can be up to 1010 characters in length. When"
@@ -322,7 +311,7 @@ export class ConfigureVerification extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Verification Success Info Message")
                                     .setDescription("Please type the message that you want people to see when they"
                                         + " successfully verify. You can use this to tell raiders how the server"
@@ -345,30 +334,30 @@ export class ConfigureVerification extends BaseCommand {
                     verifConfig.verificationSuccessMessage = verifSuccessMsg;
                     break;
                 }
-                case "save": {
-                    const filterQuery: FilterQuery<IGuildInfo> = section.isMainSection
+                case ButtonConstants.SAVE_ID: {
+                    const filterQuery: Filter<IGuildInfo> = section.isMainSection
                         ? {guildId: ctx.guild!.id}
                         : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
-                    const updateQuery: UpdateQuery<IGuildInfo> = section.isMainSection
+                    const updateQuery: UpdateFilter<IGuildInfo> = section.isMainSection
                         ? {$set: {"otherMajorConfig.verificationProperties": verifConfig}}
                         : {$set: {"guildSections.$.otherMajorConfig.verificationProperties": verifConfig}};
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);
                     await this.mainMenu(ctx, botMsg);
                     return;
                 }
-                case "go_back": {
+                case ButtonConstants.BACK_ID: {
                     await this.mainMenu(ctx, botMsg);
                     return;
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     await this.dispose(ctx, botMsg);
                     return;
                 }
                 case "send": {
-                    const filterQuery: FilterQuery<IGuildInfo> = section.isMainSection
+                    const filterQuery: Filter<IGuildInfo> = section.isMainSection
                         ? {guildId: ctx.guild!.id}
                         : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
-                    const updateQuery: UpdateQuery<IGuildInfo> = section.isMainSection
+                    const updateQuery: UpdateFilter<IGuildInfo> = section.isMainSection
                         ? {$set: {"otherMajorConfig.verificationProperties": verifConfig}}
                         : {$set: {"guildSections.$.otherMajorConfig.verificationProperties": verifConfig}};
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);
@@ -387,16 +376,12 @@ export class ConfigureVerification extends BaseCommand {
                     }
 
                     const verifEmbed = new MessageEmbed()
-                        .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                        .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                         .setTitle(
                             section.isMainSection
                                 ? `Server Verification: **${ctx.guild!.name}**`
                                 : `Section Verification: **${section.sectionName}**`
-                        ).setFooter(
-                            section.isMainSection
-                                ? "Server Verification"
-                                : "Section Verification"
-                        );
+                        ).setFooter({text: section.isMainSection ? "Server Verification" : "Section Verification"});
 
                     const requirements = VerifyManager.getVerificationRequirements(ctx.guildDoc!, verifConfig);
                     const descSb = new StringBuilder();
@@ -466,7 +451,7 @@ export class ConfigureVerification extends BaseCommand {
         };
 
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configuring Verification Requirements")
             .setDescription(
                 new StringBuilder()
@@ -497,10 +482,7 @@ export class ConfigureVerification extends BaseCommand {
             .setStyle("PRIMARY")
             .setCustomId("guild_rank");
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Back")
-                .setStyle("DANGER")
-                .setCustomId("back"),
+            ButtonConstants.BACK_BUTTON,
             new MessageButton()
                 .setLabel("Rank")
                 .setStyle("PRIMARY")
@@ -530,10 +512,7 @@ export class ConfigureVerification extends BaseCommand {
                 .setLabel("Dungeon Completions")
                 .setStyle("PRIMARY")
                 .setCustomId("dungeon_completions"),
-            new MessageButton()
-                .setLabel("Save")
-                .setStyle("PRIMARY")
-                .setCustomId("save")
+            ButtonConstants.SAVE_BUTTON
         ];
 
         while (true) {
@@ -621,7 +600,7 @@ export class ConfigureVerification extends BaseCommand {
                 return {value: null, status: TimedStatus.TIMED_OUT};
 
             switch (selectedButton.customId) {
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     return {value: verifReqs, status: TimedStatus.SUCCESS};
                 }
                 case "last_seen": {
@@ -632,7 +611,7 @@ export class ConfigureVerification extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Set Guild Rank")
                                 .setDescription(
                                     "Please select the minimum guild rank needed to verify in this section by"
@@ -645,7 +624,7 @@ export class ConfigureVerification extends BaseCommand {
                             new MessageButton()
                                 .setLabel("Back")
                                 .setStyle("DANGER")
-                                .setCustomId("back"),
+                                .setCustomId(ButtonConstants.BACK_ID),
                             new MessageButton()
                                 .setLabel("Reset")
                                 .setStyle("DANGER")
@@ -675,7 +654,7 @@ export class ConfigureVerification extends BaseCommand {
 
                     if (!gRankPrompt)
                         return {value: null, status: TimedStatus.TIMED_OUT};
-                    if (gRankPrompt.customId === "back")
+                    if (gRankPrompt.customId === ButtonConstants.BACK_ID)
                         break;
 
                     let guildRank: string | null = null;
@@ -688,7 +667,7 @@ export class ConfigureVerification extends BaseCommand {
                         await botMsg.edit({
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Specify Guild Rank Restriction")
                                     .setDescription(
                                         "Please specify the restriction that should be made with the rank that you just"
@@ -711,7 +690,7 @@ export class ConfigureVerification extends BaseCommand {
                                 new MessageButton()
                                     .setLabel("Back to Config")
                                     .setStyle("PRIMARY")
-                                    .setCustomId("back")
+                                    .setCustomId(ButtonConstants.BACK_ID)
                             ])
                         });
 
@@ -727,7 +706,7 @@ export class ConfigureVerification extends BaseCommand {
 
                         if (!gRankRestrictPrompt)
                             return {value: null, status: TimedStatus.TIMED_OUT};
-                        if (gRankRestrictPrompt.customId === "back")
+                        if (gRankRestrictPrompt.customId === ButtonConstants.BACK_ID)
                             break;
                         guildRestriction = gRankRestrictPrompt.customId;
                     }
@@ -744,7 +723,7 @@ export class ConfigureVerification extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Minimum Rank")
                                     .setDescription("Please type a number between 0 and 85. If you don't want to set"
                                         + " a rank, press the **Back** button.")
@@ -773,7 +752,7 @@ export class ConfigureVerification extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                     .setTitle("Set Minimum Alive Fame")
                                     .setDescription("Please type a number that is at least 0. If you don't want to"
                                         + " set the amount of alive fame for this requirement, press the **Back**"
@@ -800,7 +779,7 @@ export class ConfigureVerification extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Set Guild Name")
                                 .setDescription(
                                     "Please type the guild that the person must be in to get verified in this"
@@ -814,7 +793,7 @@ export class ConfigureVerification extends BaseCommand {
                             new MessageButton()
                                 .setLabel("Back")
                                 .setStyle("DANGER")
-                                .setCustomId("back"),
+                                .setCustomId(ButtonConstants.BACK_ID),
                             new MessageButton()
                                 .setLabel("Reset")
                                 .setStyle("DANGER")
@@ -879,7 +858,7 @@ export class ConfigureVerification extends BaseCommand {
                     newVerifReqs.graveyardSummary = c.value!;
                     break;
                 }
-                case "save": {
+                case ButtonConstants.SAVE_ID: {
                     return {value: newVerifReqs, status: TimedStatus.SUCCESS};
                 }
             }
@@ -907,7 +886,7 @@ export class ConfigureVerification extends BaseCommand {
 
         const buttons: MessageButton[] = ConfigureVerification.getButtons(oneCharButton);
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configure Exaltation Requirement")
             .setDescription(
                 new StringBuilder()
@@ -915,7 +894,7 @@ export class ConfigureVerification extends BaseCommand {
                     .append(" in this server. Do keep in mind that RealmEye updates exaltations infrequently, so it")
                     .append(" might be best to find a different method for validating exaltations. Nonetheless, the")
                     .append(" instructions are as follows:").appendLine()
-                    .append(`- The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected stat.`)
+                    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected stat.`)
                     .append(" You can press the **Up**/**Down** buttons to navigate between stats.")
                     .appendLine()
                     .append("- Once you select the appropriate stat, type a number between 0 and 5, where `0`")
@@ -943,7 +922,7 @@ export class ConfigureVerification extends BaseCommand {
                 const [stat, amt] = entries[i];
                 if (i === selectedIdx) {
                     embed.addField(
-                        `${Emojis.RIGHT_TRIANGLE_EMOJI} ${SHORT_STAT_TO_LONG[stat][1]} (${stat.toUpperCase()})`,
+                        `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${SHORT_STAT_TO_LONG[stat][1]} (${stat.toUpperCase()})`,
                         StringUtil.codifyString(`Minimum Needed: ${amt}/5`)
                     );
                     continue;
@@ -990,19 +969,19 @@ export class ConfigureVerification extends BaseCommand {
                     newExaltationInfo.onOneChar = !newExaltationInfo.onOneChar;
                     break;
                 }
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     return {value: exaltationInfo, status: TimedStatus.SUCCESS};
                 }
-                case "up": {
+                case ButtonConstants.UP_ID: {
                     selectedIdx = (selectedIdx + 8 - 1) % 8;
                     break;
                 }
-                case "down": {
+                case ButtonConstants.DOWN_ID: {
                     selectedIdx++;
                     selectedIdx %= 8;
                     break;
                 }
-                case "save": {
+                case ButtonConstants.SAVE_ID: {
                     newExaltationInfo.checkThis = Object.values(newExaltationInfo.minimum).some(x => x > 0);
                     return {value: newExaltationInfo, status: TimedStatus.SUCCESS};
                 }
@@ -1022,7 +1001,7 @@ export class ConfigureVerification extends BaseCommand {
                                    dungeonReq: IDungeonReq): Promise<TimedResult<IDungeonReq>> {
         const newDungeonReq: IDungeonReq = {
             botCompletions: dungeonReq.botCompletions
-                .filter(x => !!DungeonUtilities.getDungeonInfo(ctx.guildDoc!, x.key))
+                .filter(x => !!DungeonUtilities.getDungeonInfo(x.key, ctx.guildDoc!))
                 .map(x => {
                     return {...x};
                 }),
@@ -1036,25 +1015,27 @@ export class ConfigureVerification extends BaseCommand {
         };
 
         const [backBtn, upBtn, downButton, addBtn, removeBtn, saveBtn] = ConfigureVerification.getButtons(
-            new MessageButton()
-                .setLabel("Add")
-                .setStyle("PRIMARY")
-                .setCustomId("add"),
-            new MessageButton()
-                .setLabel("Remove")
-                .setStyle("DANGER")
-                .setCustomId("remove")
+            ButtonConstants.ADD_BUTTON,
+            ButtonConstants.DOWN_BUTTON
         );
 
-        const buttons = [backBtn, upBtn, downButton, addBtn, removeBtn, saveBtn];
+        const buttons = [
+            backBtn,
+            AdvancedCollector.cloneButton(upBtn),
+            AdvancedCollector.cloneButton(downButton),
+            AdvancedCollector.cloneButton(addBtn),
+            AdvancedCollector.cloneButton(removeBtn),
+            saveBtn
+        ];
+
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configure Dungeon Requirements")
             .setDescription(
                 new StringBuilder()
                     .append("Here, you will be able to configure what dungeons the user must have completed in this")
                     .append(" server before they can verify in this section. Here's how this works.").appendLine()
-                    .append(`- The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected dungeon.`)
+                    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected dungeon.`)
                     .appendLine()
                     .append("- You can move this emoji up/down by pressing the respective **Up** or **Down** buttons.")
                     .appendLine()
@@ -1081,9 +1062,9 @@ export class ConfigureVerification extends BaseCommand {
             const fields = ArrayUtilities.arrayToStringFields(
                 newDungeonReq.botCompletions,
                 (i, elem) => {
-                    const dgn = DungeonUtilities.getDungeonInfo(ctx.guildDoc!, newDungeonReq.botCompletions[i].key)!;
+                    const dgn = DungeonUtilities.getDungeonInfo(newDungeonReq.botCompletions[i].key, ctx.guildDoc!)!;
                     return i === selectedIdx
-                        ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${dgn.dungeonName}: \`${elem.value}\`\n`
+                        ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${dgn.dungeonName}: \`${elem.value}\`\n`
                         : `${dgn.dungeonName}: \`${elem.value}\`\n`;
                 }
             );
@@ -1130,10 +1111,10 @@ export class ConfigureVerification extends BaseCommand {
             }
 
             switch (selectedChoice.customId) {
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     return {value: dungeonReq, status: TimedStatus.SUCCESS};
                 }
-                case "add": {
+                case ButtonConstants.ADD_ID: {
                     const possDungeons = DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons)
                         .filter(x => newDungeonReq.botCompletions.every(y => y.key !== x.codeName));
 
@@ -1160,7 +1141,7 @@ export class ConfigureVerification extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                                 .setTitle("Add Dungeon Requirement")
                                 .setDescription(
                                     "Please select a dungeon that you want to add to the list of dungeon"
@@ -1170,11 +1151,7 @@ export class ConfigureVerification extends BaseCommand {
                         ],
                         components: AdvancedCollector.getActionRowsFromComponents([
                             ...selectMenus,
-                            new MessageButton()
-                                .setLabel("Go Back")
-                                .setCustomId("go_back")
-                                .setStyle("DANGER")
-                                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI)
+                            ButtonConstants.BACK_BUTTON
                         ])
                     });
 
@@ -1197,25 +1174,25 @@ export class ConfigureVerification extends BaseCommand {
                     newDungeonReq.botCompletions.push({key: selectedInteraction.values[0], value: 1});
                     break;
                 }
-                case "remove": {
+                case ButtonConstants.REMOVE_ID: {
                     newDungeonReq.botCompletions.splice(selectedIdx, 1);
                     if (newDungeonReq.botCompletions.length === 0)
                         break;
                     selectedIdx %= newDungeonReq.botCompletions.length;
                     break;
                 }
-                case "up": {
+                case ButtonConstants.UP_ID: {
                     selectedIdx = (selectedIdx + newDungeonReq.botCompletions.length - 1)
                         % newDungeonReq.botCompletions.length;
                     selectedIdx %= newDungeonReq.botCompletions.length;
                     break;
                 }
-                case "down": {
+                case ButtonConstants.DOWN_ID: {
                     selectedIdx++;
                     selectedIdx %= newDungeonReq.botCompletions.length;
                     break;
                 }
-                case "save": {
+                case ButtonConstants.SAVE_ID: {
                     newDungeonReq.checkThis = newDungeonReq.botCompletions.some(x => x.value > 0);
                     return {value: newDungeonReq, status: TimedStatus.SUCCESS};
                 }
@@ -1254,7 +1231,7 @@ export class ConfigureVerification extends BaseCommand {
 
         const buttons: MessageButton[] = ConfigureVerification.getButtons(checkPastDeathsButton);
         const embed = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configure Character Requirement")
             .setDescription(
                 new StringBuilder()
@@ -1263,7 +1240,7 @@ export class ConfigureVerification extends BaseCommand {
                     .append(" character stats updated. It is, thus, recommended that you check past deaths or find")
                     .append(" a different way to validate the person's maxed characters. Here are the instructions:")
                     .appendLine()
-                    .append(`- The ${Emojis.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected number`)
+                    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected number`)
                     .append(" of maxed stats. You can press the **Up**/**Down** buttons to navigate between this.")
                     .appendLine()
                     .append("- Once you select the appropriate number of maxed stats, type a non-negative integer.")
@@ -1289,7 +1266,7 @@ export class ConfigureVerification extends BaseCommand {
                 const numOfThis = newCharRequirements.statsNeeded[i];
                 if (i === selectedIdx) {
                     embed.addField(
-                        `${Emojis.RIGHT_TRIANGLE_EMOJI} ${i}/8 Characters`,
+                        `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${i}/8 Characters`,
                         StringUtil.codifyString(`Minimum Needed: ${numOfThis}`)
                     );
                     continue;
@@ -1336,20 +1313,20 @@ export class ConfigureVerification extends BaseCommand {
                     newCharRequirements.checkPastDeaths = !newCharRequirements.checkPastDeaths;
                     break;
                 }
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     return {value: charInfo, status: TimedStatus.SUCCESS};
                 }
-                case "up": {
+                case ButtonConstants.UP_ID: {
                     selectedIdx = (selectedIdx + newCharRequirements.statsNeeded.length
                         - 1) % newCharRequirements.statsNeeded.length;
                     break;
                 }
-                case "down": {
+                case ButtonConstants.DOWN_ID: {
                     selectedIdx++;
                     selectedIdx %= newCharRequirements.statsNeeded.length;
                     break;
                 }
-                case "save": {
+                case ButtonConstants.SAVE_ID: {
                     newCharRequirements.checkThis = newCharRequirements.statsNeeded.some(x => x > 0);
                     return {value: newCharRequirements, status: TimedStatus.SUCCESS};
                 }
@@ -1365,23 +1342,11 @@ export class ConfigureVerification extends BaseCommand {
      */
     private static getButtons(...buttons: MessageButton[]): MessageButton[] {
         return [
-            new MessageButton()
-                .setLabel("Back")
-                .setStyle("DANGER")
-                .setCustomId("back"),
-            new MessageButton()
-                .setLabel("Up")
-                .setStyle("PRIMARY")
-                .setCustomId("up"),
-            new MessageButton()
-                .setLabel("Down")
-                .setStyle("PRIMARY")
-                .setCustomId("down"),
+            ButtonConstants.BACK_BUTTON,
+            ButtonConstants.UP_BUTTON,
+            ButtonConstants.DOWN_BUTTON,
             ...buttons,
-            new MessageButton()
-                .setLabel("Save")
-                .setStyle("SUCCESS")
-                .setCustomId("save")
+            ButtonConstants.SAVE_BUTTON
         ];
     }
 
@@ -1392,8 +1357,8 @@ export class ConfigureVerification extends BaseCommand {
      * @param {Message} botMsg The bot message.
      */
     public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

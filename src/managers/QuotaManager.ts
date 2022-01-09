@@ -20,14 +20,23 @@ import {MessageUtilities} from "../utilities/MessageUtilities";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {IGuildInfo, IQuotaInfo} from "../definitions";
-import {DUNGEON_DATA} from "../constants/DungeonData";
+import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
-import {Emojis} from "../constants/Emojis";
+import {EmojiConstants} from "../constants/EmojiConstants";
 
 export namespace QuotaManager {
+    export const ALL_QUOTAS_KV: { [key: string]: string } = {
+        "Parse": "Parse",
+        "ManualVerify": "Manual Verify",
+        "PunishmentIssued": "Punishment Issued",
+        "RunComplete": "Run Complete",
+        "RunAssist": "Run Assist",
+        "RunFailed": "Run Failed"
+    };
+
     const ALL_QUOTA_LOG_TYPES: QuotaLogType[] = [
         "RunAssist",
         "RunComplete",
@@ -573,15 +582,19 @@ export namespace QuotaManager {
             const logType = logTypeDgnId[0];
             if (key.startsWith("Run")) {
                 if (logTypeDgnId.length === 1) {
-                    return `- ${GeneralConstants.ALL_QUOTAS_KV[logType]} (All): ${value} PT`;
+                    return `- ${ALL_QUOTAS_KV[logType]} (All): ${value} PT`;
                 }
 
-                const dungeonName = DungeonUtilities.getDungeonInfo(guildDoc, logTypeDgnId[1])!.dungeonName;
-                return `${GeneralConstants.ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
+                const dungeonName = DungeonUtilities.getDungeonInfo(logTypeDgnId[1], guildDoc)?.dungeonName;
+                if (!dungeonName) {
+                    return "";
+                }
+
+                return `${ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
             }
 
-            return `${GeneralConstants.ALL_QUOTAS_KV[key]}: ${value} PT`;
-        }).join("\n");
+            return `${ALL_QUOTAS_KV[key]}: ${value} PT`;
+        }).filter(x => x).join("\n");
     }
 
     /**
@@ -628,7 +641,7 @@ export namespace QuotaManager {
                     .toString()
             )
             .setTimestamp()
-            .setFooter("Leaderboard Updated Every 30 Seconds. Last Updated:");
+            .setFooter({text: "Leaderboard Updated Every 30 Seconds. Last Updated:"});
 
         if (quotaInfo.quotaLog.length === 0)
             return embed;
@@ -656,7 +669,7 @@ export namespace QuotaManager {
                     ? `ID ${member}`
                     : member.displayName;
 
-                const emojiStr = amt >= quotaInfo.pointsNeeded ? Emojis.GREEN_CHECK_EMOJI : "";
+                const emojiStr = amt >= quotaInfo.pointsNeeded ? EmojiConstants.GREEN_CHECK_EMOJI : "";
                 return `[${rank}] ${displayMember} - ${amt} PTS ${emojiStr}\n`;
             },
             1000

@@ -88,7 +88,7 @@ export class FindPunishment extends BaseCommand {
 
         // Bot owner can see guild name in footer
         if (OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id)) {
-            embed.setFooter(`Guild Name/ID: ${guild?.name ?? pInfo.guildId}`);
+            embed.setFooter({text: `Guild Name/ID: ${guild?.name ?? pInfo.guildId}`});
         }
 
         const punishmentObj = pInfo.resolved?.actionId === punishmentId
@@ -169,7 +169,7 @@ export class FindPunishment extends BaseCommand {
                     `The moderation ID of the resolution is: ${StringUtil.codifyString(pInfo.resolved.actionId)}`
                 );
             }
-            else {
+            else if (pInfo.moderationType !== "Warn") {
                 embed.addField(
                     "Punishment Not Resolved",
                     "This punishment has not been resolved; it is still ongoing."

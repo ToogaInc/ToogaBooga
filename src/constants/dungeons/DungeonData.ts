@@ -1,6 +1,6 @@
-import {IDungeonInfo} from "../definitions";
+import {IDungeonInfo} from "../../definitions";
 
-export const DUNGEON_DATA: readonly IDungeonInfo[] = Object.freeze([
+export const DUNGEON_DATA: readonly IDungeonInfo[] = [
     {
         codeName: "SNAKE_PIT",
         dungeonName: "Snake Pit",
@@ -784,7 +784,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = Object.freeze([
         portalEmojiId: "561248700828090388",
         keyReactions: [
             {
-                mapKey: "LAIR_OF_SHAITAN_KEY",
+                mapKey: "LAIR_OF_SHAITANS_KEY",
                 maxEarlyLocation: 15
             }
         ],
@@ -1433,4 +1433,4 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = Object.freeze([
         dungeonCategory: "Exaltation Dungeons",
         isBuiltIn: true
     }
-]);
+];

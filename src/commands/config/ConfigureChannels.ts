@@ -12,12 +12,14 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
-import {FilterQuery} from "mongodb";
+import {Filter} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {IGuildInfo, ISectionInfo} from "../../definitions";
-import {Emojis} from "../../constants/Emojis";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 import {MainLogType, SectionLogType} from "../../definitions/Types";
+import {ButtonConstants} from "../../constants/ButtonConstants";
+import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 enum ChannelCategoryType {
     Raiding,
@@ -271,31 +273,27 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         );
 
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Go Back")
-                .setStyle("PRIMARY")
-                .setCustomId("go_back")
-                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
+            ButtonConstants.BACK_BUTTON,
             new MessageButton()
                 .setLabel("Edit Base Channels")
                 .setStyle("PRIMARY")
                 .setCustomId("base")
-                .setEmoji(Emojis.HASH_EMOJI),
+                .setEmoji(EmojiConstants.HASH_EMOJI),
             new MessageButton()
                 .setLabel("Edit Logging Channels")
                 .setStyle("PRIMARY")
                 .setCustomId("logging")
-                .setEmoji(Emojis.CLIPBOARD_EMOJI)
+                .setEmoji(EmojiConstants.CLIPBOARD_EMOJI)
         ];
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Channel** Configuration Main Menu`)
             .setDescription(`Please select the appropriate option.\n\n${currentConfiguration}`)
-            .setFooter(`ID: ${section.uniqueIdentifier}`)
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
             .addField(
                 "Go Back",
-                "Click on the `Go Back` button to go back to the section selection embed. You can choose a new"
+                "Click on the `Back` button to go back to the section selection embed. You can choose a new"
                 + " section to modify."
             ).addField(
                 "Edit Base Channels",
@@ -315,19 +313,15 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 .setLabel("Edit Other Channels")
                 .setStyle("PRIMARY")
                 .setCustomId("other")
-                .setEmoji(Emojis.HASH_EMOJI));
+                .setEmoji(EmojiConstants.HASH_EMOJI));
         }
 
         displayEmbed.addField(
-            "Exit",
-            "Click on the `Exit` button to exit this process."
+            "Quit",
+            "Click on the `Quit` button to exit this process."
         );
 
-        buttons.push(new MessageButton()
-            .setLabel("Exit")
-            .setStyle("DANGER")
-            .setCustomId("exit")
-            .setEmoji(Emojis.X_EMOJI));
+        buttons.push(ButtonConstants.QUIT_BUTTON);
 
         // Edit the bot message and then wait for button press.
         await botMsg.edit({
@@ -351,7 +345,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         }
 
         switch (selectedButton.customId) {
-            case "go_back": {
+            case ButtonConstants.BACK_ID: {
                 await this.entry(ctx, botMsg);
                 return;
             }
@@ -373,7 +367,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 );
                 return;
             }
-            case "exit": {
+            case ButtonConstants.QUIT_ID: {
                 await this.dispose(ctx, botMsg);
                 return;
             }
@@ -394,12 +388,12 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
         let selectedIdx = 0;
         const embedToDisplay = new MessageEmbed()
-            .setAuthor(ctx.guild!.name, ctx.guild!.iconURL() ?? undefined)
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Logging** Configuration`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
         while (true) {
             embedToDisplay.fields = [];
-            embedToDisplay.setFooter("Either mention the channel or provide a valid channel ID.");
+            embedToDisplay.setFooter({text: "Either mention the channel or provide a valid channel ID."});
             for (let i = 0; i < logIds.length; i++) {
                 const channelId = (
                     section.isMainSection
@@ -413,7 +407,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     )
                     : null;
                 embedToDisplay.addField(
-                    i === selectedIdx ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${logIds[i]}` : logIds[i],
+                    i === selectedIdx ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${logIds[i]}` : logIds[i],
                     `Current Value: ${currSet ?? "N/A"}`
                 );
             }
@@ -449,7 +443,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             }
 
             // Case 2: Channel
-            const query: FilterQuery<IGuildInfo> = section.isMainSection
+            const query: Filter<IGuildInfo> = section.isMainSection
                 ? {guildId: ctx.guild!.id}
                 : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
             const newArr = section.isMainSection
@@ -480,20 +474,20 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
             // Case 3: Button
             switch (result.customId) {
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     await this.mainMenu(ctx, section, botMsg);
                     return;
                 }
-                case "up": {
+                case ButtonConstants.UP_ID: {
                     selectedIdx = (selectedIdx + logIds.length - 1) % logIds.length;
                     break;
                 }
-                case "down": {
+                case ButtonConstants.DOWN_ID: {
                     selectedIdx++;
                     selectedIdx %= logIds.length;
                     break;
                 }
-                case "reset": {
+                case ButtonConstants.RESET_ID: {
                     const arrIdx = newArr.findIndex(x => x.key === logIds[selectedIdx]);
                     if (arrIdx === -1) {
                         // Nothing to save
@@ -512,7 +506,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                         .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                     break;
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     await this.dispose(ctx, botMsg);
                     return;
                 }
@@ -538,32 +532,28 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
         // Corresponding buttons to display.
         const buttons: MessageButton[] = [
-            new MessageButton()
-                .setLabel("Go Back")
-                .setStyle("PRIMARY")
-                .setCustomId("go_back")
-                .setEmoji(Emojis.LONG_LEFT_ARROW_EMOJI),
+            ButtonConstants.BACK_BUTTON,
             new MessageButton()
                 .setLabel("Raids")
                 .setStyle("PRIMARY")
                 .setCustomId("raids")
-                .setEmoji(Emojis.HASH_EMOJI),
+                .setEmoji(EmojiConstants.HASH_EMOJI),
             new MessageButton()
                 .setLabel("Verification")
                 .setStyle("PRIMARY")
                 .setCustomId("verification")
-                .setEmoji(Emojis.HASH_EMOJI),
+                .setEmoji(EmojiConstants.HASH_EMOJI),
         ];
 
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Channel** Configuration ⇒ Base Channels`)
             .setDescription(`Select the button corresponding to the channel group you want to edit.\n\n${curConf}`)
-            .setFooter(`ID: ${section.uniqueIdentifier}`)
+            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
             .addField(
-                "Go Back",
-                "Click on the `Go Back` button to go back to the main menu."
+                "Back",
+                "Click on the `Back` button to go back to the main menu."
             )
             .addField(
                 "Edit Raid Channels",
@@ -587,22 +577,16 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     .setLabel("Modmail")
                     .setStyle("PRIMARY")
                     .setCustomId("modmail")
-                    .setEmoji(Emojis.HASH_EMOJI)
+                    .setEmoji(EmojiConstants.HASH_EMOJI)
             );
         }
 
         displayEmbed.addField(
-            "Exit",
-            "Click on the `Exit` button to exit this process."
+            "Quit",
+            "Click on the `Quit` button to exit this process."
         );
 
-        buttons.push(
-            new MessageButton()
-                .setLabel("Exit")
-                .setStyle("DANGER")
-                .setCustomId("exit")
-                .setEmoji(Emojis.X_EMOJI)
-        );
+        buttons.push(ButtonConstants.QUIT_BUTTON);
 
         // Edit the bot message and then wait for button press.
         await botMsg.edit({
@@ -626,7 +610,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         }
 
         switch (selectedButton.customId) {
-            case "go_back": {
+            case ButtonConstants.BACK_ID: {
                 await this.mainMenu(ctx, section, botMsg);
                 break;
             }
@@ -664,7 +648,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 );
                 break;
             }
-            case "exit": {
+            case ButtonConstants.QUIT_ID: {
                 await this.dispose(ctx, botMsg);
                 return;
             }
@@ -673,8 +657,8 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
-        if (botMsg && await GuildFgrUtilities.hasMessage(botMsg.channel, botMsg.id)) {
-            await botMsg?.delete();
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
         }
     }
 
@@ -693,20 +677,20 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
         let selected = 0;
         const embedToDisplay = new MessageEmbed()
-            .setAuthor(guild.name, guild.iconURL() ?? undefined)
+            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
             .setTitle(`[${section.sectionName}] **Channel** Configuration ⇒ Base Channels ⇒ ${group}`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
 
         while (true) {
             embedToDisplay.fields = [];
-            embedToDisplay.setFooter(getInstructions(entries[selected].configTypeOrInstructions));
+            embedToDisplay.setFooter({text: getInstructions(entries[selected].configTypeOrInstructions)});
             for (let i = 0; i < entries.length; i++) {
                 const currSet: TextChannel | null = GuildFgrUtilities.getCachedChannel<TextChannel>(
                     guild,
                     entries[i].getCurrentValue(ctx.guildDoc!, section) as string
                 );
                 embedToDisplay.addField(
-                    i === selected ? `${Emojis.RIGHT_TRIANGLE_EMOJI} ${entries[i].name}` : entries[i].name,
+                    i === selected ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${entries[i].name}` : entries[i].name,
                     `Current Value: ${currSet ?? ConfigureChannels.NA}`
                 );
             }
@@ -743,7 +727,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             }
 
             // Case 2: Channel
-            const query: FilterQuery<IGuildInfo> = section.isMainSection
+            const query: Filter<IGuildInfo> = section.isMainSection
                 ? {guildId: guild.id}
                 : {guildId: guild.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
             const keySetter = section.isMainSection
@@ -763,20 +747,20 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
             // Case 3: Button
             switch (result.customId) {
-                case "back": {
+                case ButtonConstants.BACK_ID: {
                     await this.mainMenu(ctx, section, botMsg);
                     return;
                 }
-                case "up": {
+                case ButtonConstants.UP_ID: {
                     selected = (selected + entries.length - 1) % entries.length;
                     break;
                 }
-                case "down": {
+                case ButtonConstants.DOWN_ID: {
                     selected++;
                     selected %= entries.length;
                     break;
                 }
-                case "reset": {
+                case ButtonConstants.RESET_ID: {
                     ctx.guildDoc = (await MongoManager.updateAndFetchGuildDoc(query, {
                         $set: {
                             [keySetter]: ""
@@ -786,7 +770,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                         .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                     break;
                 }
-                case "quit": {
+                case ButtonConstants.QUIT_ID: {
                     await this.dispose(ctx, botMsg);
                     return;
                 }

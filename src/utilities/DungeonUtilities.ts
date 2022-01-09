@@ -6,8 +6,8 @@ import {
     IGuildInfo,
     IReactionInfo
 } from "../definitions";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/MappedAfkCheckReactions";
-import {DUNGEON_DATA} from "../constants/DungeonData";
+import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
+import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {Guild} from "discord.js";
 import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
@@ -18,7 +18,7 @@ import {MongoManager} from "../managers/MongoManager";
  */
 export namespace DungeonUtilities {
     /**
-     * Removes any dead reactions or links from all dungeons.
+     * Removes any dead reactions or links from all dungeons. This also fixes quota issues.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {Guild} guild The guild.
      * @return {Promise<IGuildInfo | null>} The guild document containing the new dungeons.
@@ -102,27 +102,50 @@ export namespace DungeonUtilities {
             customDungeons.push(customDungeon);
         }));
 
+        // Check quotas
+        guildDoc.quotas.quotaInfo.forEach(q => {
+            const idxToRemove: number[] = [];
+            for (let i = 0; i < q.pointValues.length; i++) {
+                const v = q.pointValues[i].key.split(":");
+                if (v.length === 1) {
+                    continue;
+                }
+
+                const dungeon = getDungeonInfo(v[1], guildDoc);
+                if (!dungeon) {
+                    idxToRemove.push(i);
+                }
+            }
+
+            idxToRemove.sort((a, b) => b - a);
+            for (const idx of idxToRemove) {
+                changed = true;
+                q.pointValues.splice(idx, 1);
+            }
+        });
+
         console.assert(overriddenDungeons.length === guildDoc.properties.dungeonOverride.length);
         console.assert(customDungeons.length === guildDoc.properties.customDungeons.length);
 
         return changed ? await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
             $set: {
                 "properties.customDungeons": customDungeons,
-                "properties.dungeonOverride": overriddenDungeons
+                "properties.dungeonOverride": overriddenDungeons,
+                "quotas.quotaInfo": guildDoc.quotas.quotaInfo
             }
         }) : guildDoc;
     }
 
     /**
      * Gets the dungeon object from the code name.
-     * @param {IGuildInfo} guildDoc The guild document.
      * @param {string} codeName The dungeon code name, or unique identifier.
+     * @param {IGuildInfo} [guildDoc] The guild document, if any.
      * @return {IDungeonInfo | ICustomDungeonInfo | null} The dungeon object.
      */
-    export function getDungeonInfo(guildDoc: IGuildInfo,
-                                   codeName: string): IDungeonInfo | ICustomDungeonInfo | null {
+    export function getDungeonInfo(codeName: string,
+                                   guildDoc?: IGuildInfo | null): IDungeonInfo | ICustomDungeonInfo | null {
         return isCustomDungeon(codeName)
-            ? guildDoc.properties.customDungeons.find(x => x.codeName === codeName) ?? null
+            ? guildDoc?.properties.customDungeons.find(x => x.codeName === codeName) ?? null
             : DUNGEON_DATA.find(x => x.codeName === codeName) ?? null;
     }
 

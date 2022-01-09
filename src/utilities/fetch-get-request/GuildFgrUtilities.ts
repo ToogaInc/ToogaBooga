@@ -1,8 +1,8 @@
 import {
     Channel,
-    Guild, GuildChannel,
+    Guild, GuildBasedChannel,
     GuildMember,
-    Message, Role, Snowflake, TextBasedChannels,
+    Message, Role, Snowflake, TextBasedChannel,
 } from "discord.js";
 import {MiscUtilities} from "../MiscUtilities";
 import {DefinedRole} from "../../definitions/Types";
@@ -205,7 +205,7 @@ export namespace GuildFgrUtilities {
      * returned.
      * @return {T | null} The channel, if at all. Otherwise, `null`.
      */
-    export function getCachedChannel<T extends GuildChannel>(guild: Guild, channelId: string): T | null {
+    export function getCachedChannel<T extends GuildBasedChannel>(guild: Guild, channelId: string): T | null {
         if (!MiscUtilities.isSnowflake(channelId)) return null;
         const c = guild.channels.cache.get(channelId) ?? null;
         return c ? c as T : null;
@@ -232,7 +232,7 @@ export namespace GuildFgrUtilities {
     export async function fetchGuildMember(guild: Guild, targetId: string): Promise<GuildMember | null> {
         if (!MiscUtilities.isSnowflake(targetId)) return null;
         try {
-            return guild.members.fetch(targetId);
+            return await guild.members.fetch(targetId);
         } catch (e) {
             return null;
         }
@@ -240,12 +240,12 @@ export namespace GuildFgrUtilities {
 
     /**
      * A simple function that checks if a message still exists.
-     * @param {TextBasedChannels | Channel} channel The channel.
+     * @param {TextBasedChannel | Channel} channel The channel.
      * @param {string} msgId The message to fetch. This assumes a valid ID. If an invalid ID is given, `null` will
      * be returned.
      * @returns {Promise<boolean>} Whether the message exists.
      */
-    export async function hasMessage(channel: TextBasedChannels | Channel, msgId: string): Promise<boolean> {
+    export async function hasMessage(channel: TextBasedChannel | Channel, msgId: string): Promise<boolean> {
         if (!MiscUtilities.isSnowflake(msgId))
             return false;
 
@@ -261,12 +261,12 @@ export namespace GuildFgrUtilities {
 
     /**
      * A simple function that fetches a message. This will handle any exceptions that may occur.
-     * @param {TextBasedChannels | Channel} channel The channel.
+     * @param {TextBasedChannel | Channel} channel The channel.
      * @param {string} msgId The message to fetch. This assumes a valid ID. If an invalid ID is given, `null` will
      * be returned.
      * @returns {Promise<Message | null>} The message object, if found. Null otherwise.
      */
-    export async function fetchMessage(channel: TextBasedChannels | Channel, msgId: string): Promise<Message | null> {
+    export async function fetchMessage(channel: TextBasedChannel | Channel, msgId: string): Promise<Message | null> {
         if (!MiscUtilities.isSnowflake(msgId))
             return null;
 

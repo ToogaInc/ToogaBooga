@@ -13,7 +13,6 @@ import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilitie
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {StringUtil} from "../utilities/StringUtilities";
-import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {PrivateApiDefinitions as PAD} from "../private-api/PrivateApiDefinitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -25,15 +24,132 @@ import {
 } from "../definitions";
 import {MongoManager} from "./MongoManager";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {Emojis} from "../constants/Emojis";
+import {EmojiConstants} from "../constants/EmojiConstants";
 import {TimeUtilities} from "../utilities/TimeUtilities";
-import {ModmailManager} from "./ModmailManager";
 import {UserManager} from "./UserManager";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
 import {LoggerManager} from "./LoggerManager";
+import {ButtonConstants} from "../constants/ButtonConstants";
+import {InteractivityManager} from "./InteractivityManager";
+import {ModmailManager} from "./ModmailManager";
+import {CommonRegex} from "../constants/CommonRegex";
 
 export namespace VerifyManager {
-    const CANCEL_ID: string = "cancel";
+    export const NUMBER_OF_STATS: number = 8;
+    export const SHORT_STAT_TO_LONG: { [s: string]: [string, string] } = {
+        "att": ["attack", "Attack"],
+        "def": ["defense", "Defense"],
+        "spd": ["speed", "Speed"],
+        "dex": ["dexterity", "Dexterity"],
+        "vit": ["vitality", "Vitality"],
+        "wis": ["wisdom", "Wisdom"],
+        "hp": ["health", "Health"],
+        "mp": ["magic", "Magic"]
+    };
+
+    export const LONG_STAT_TO_SHORT: { [s: string]: string } = {
+        "attack": "att",
+        "defense": "def",
+        "speed": "spd",
+        "dexterity": "dex",
+        "vitality": "vit",
+        "wisdom": "wis",
+        "health": "hp",
+        "magic": "mp"
+    };
+
+    export const GY_HIST_TO_DISPLAY: { [s: string]: string } = {
+        "Lost Halls completed": "Lost Halls",
+        "Voids completed": "Voids",
+        "Cultist Hideouts completed": "Cultist Hideouts",
+        "Nests completed2": "Nests",
+        "Shatters completed1": "Shatters",
+        "Tombs completed": "Tomb of the Ancients",
+        "Ocean Trenches completed": "Ocean Trenches",
+        "Parasite chambers completed4": "Parasite Chambers",
+        "Lairs of Shaitan completed4": "Lair of Shaitans",
+        "Puppet Master's Encores completed4": "Puppet Master's Encores",
+        "Cnidarian Reefs completed": "Cnidarian Reefs",
+        "Secluded Thickets completed": "Secluded Thickets",
+        "Cursed Libraries completed": "Cursed Libraries",
+        "Fungal Caverns completed": "Fungal Caverns",
+        "Crystal Caverns completed": "Crystal Caverns",
+        "Lairs of Draconis (hard mode) completed2": "Lair of Draconis (Hard)",
+        "Lairs of Draconis (easy mode) completed1": "Lair of Draconis (Easy)",
+        "Mountain Temples completed2": "Mountain Temples",
+        "Crawling Depths completed1": "Crawling Depths",
+        "Woodland Labyrinths completed1": "Woodland Labyrinths",
+        "Deadwater Docks completed1": "Deadwater Docks",
+        "Ice Caves completed1": "Ice Cave",
+        "Bella Donnas completed3": "Belladonna's Gardens",
+        "Davy Jones's Lockers completed1": "Davy Jones' Lockers",
+        "Battle for the Nexuses completed1": "Battle of the Nexus",
+        "Candyland Hunting Grounds completed": "Candyland Hunting Grounds",
+        "Puppet Master's Theatres completed1": "Puppet Master's Theatres",
+        "Toxic Sewers completed1": "Toxic Sewers",
+        "Haunted Cemeteries completed1": "Haunted Cemetaries",
+        "Mad Labs completed1": "Mad Labs",
+        "Abysses of Demons completed": "Abyss of Demons",
+        "Manors of the Immortals completed": "Manor of the Immortals",
+        "Ancient Ruins completed": "Ancient Ruins",
+        "Undead Lairs completed": "Undead Lairs",
+        "Sprite Worlds completed": "Sprite Worlds",
+        "Snake Pits completed": "Snake Pits",
+        "Caves of a Thousand Treasures completed1": "Cave of a Thousand Treasures",
+        "Magic Woods completed": "Magic Woods",
+        "Hives completed1": "Hives",
+        "Spider Dens completed": "Spider Dens",
+        "Forbidden Jungles completed": "Forbidden Jungles",
+        "Forest Mazes completed1": "Forest Mazes",
+        "Pirate Caves completed": "Pirate Caves"
+    };
+
+    export const DISPLAY_TO_GY_HIST: { [s: string]: string } = {
+        "Lost Halls": "Lost Halls completed",
+        "Voids": "Voids completed",
+        "Cultist Hideouts": "Cultist Hideouts completed",
+        "Nests": "Nests completed2",
+        "Shatters": "Shatters completed1",
+        "Tomb of the Ancients": "Tombs completed",
+        "Ocean Trenches": "Ocean Trenches completed",
+        "Parasite Chambers": "Parasite chambers completed4",
+        "Lair of Shaitans": "Lairs of Shaitan completed4",
+        "Puppet Master's Encores": "Puppet Master's Encores completed4",
+        "Cnidarian Reefs": "Cnidarian Reefs completed",
+        "Secluded Thickets": "Secluded Thickets completed",
+        "Cursed Libraries": "Cursed Libraries completed",
+        "Fungal Caverns": "Fungal Caverns completed",
+        "Crystal Caverns": "Crystal Caverns completed",
+        "Lair of Draconis (Hard)": "Lairs of Draconis (hard mode) completed2",
+        "Lair of Draconis (Easy)": "Lairs of Draconis (easy mode) completed1",
+        "Mountain Temples": "Mountain Temples completed2",
+        "Crawling Depths": "Crawling Depths completed1",
+        "Woodland Labyrinths": "Woodland Labyrinths completed1",
+        "Deadwater Docks": "Deadwater Docks completed1",
+        "Ice Cave": "Ice Caves completed1",
+        "Belladonna's Gardens": "Bella Donnas completed3",
+        "Davy Jones' Lockers": "Davy Jones's Lockers completed1",
+        "Battle of the Nexus": "Battle for the Nexuses completed1",
+        "Candyland Hunting Grounds": "Candyland Hunting Grounds completed",
+        "Puppet Master's Theatres": "Puppet Master's Theatres completed1",
+        "Toxic Sewers": "Toxic Sewers completed1",
+        "Haunted Cemetaries": "Haunted Cemeteries completed1",
+        "Mad Labs": "Mad Labs completed1",
+        "Abyss of Demons": "Abysses of Demons completed",
+        "Manor of the Immortals": "Manors of the Immortals completed",
+        "Ancient Ruins": "Ancient Ruins completed",
+        "Undead Lairs": "Undead Lairs completed",
+        "Sprite Worlds": "Sprite Worlds completed",
+        "Snake Pits": "Snake Pits completed",
+        "Cave of a Thousand Treasures": "Caves of a Thousand Treasures completed1",
+        "Magic Woods": "Magic Woods completed",
+        "Hives": "Hives completed1",
+        "Spider Dens": "Spider Dens completed",
+        "Forbidden Jungles": "Forbidden Jungles completed",
+        "Forest Mazes": "Forest Mazes completed1",
+        "Pirate Caves": "Pirate Caves completed"
+    };
+
     const CHECK_PROFILE_ID: string = "check_profile";
     const NO_MANUAL_VERIFY_ID: string = "deny";
     const MANUAL_VERIFY_ID: string = "manual_verify";
@@ -49,10 +165,6 @@ export namespace VerifyManager {
         .setLabel("Check Profile")
         .setCustomId(CHECK_PROFILE_ID)
         .setStyle("PRIMARY");
-    const CANCEL_PROFILE_CHECK_BUTTON = new MessageButton()
-        .setLabel("Cancel")
-        .setCustomId(CANCEL_ID)
-        .setStyle("DANGER");
     const NO_MANUAL_VERIFY_BUTTON = new MessageButton()
         .setLabel("Deny Manual Verify")
         .setCustomId(NO_MANUAL_VERIFY_ID)
@@ -111,20 +223,28 @@ export namespace VerifyManager {
      * @param {ISectionInfo} section The section where verification will occur.
      */
     export async function verifyInteraction(i: Interaction, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
-        if (!i.isButton()) return;
+        if (!i.isButton()) {
+            return;
+        }
 
-        await i.deferUpdate();
-        if (!i.guild) return;
+        if (!i.guild) {
+            await i.deferUpdate();
+            return;
+        }
 
         const member = await GuildFgrUtilities.fetchGuildMember(i.guild, i.user.id);
-        if (!member) return;
+        if (!member) {
+            await i.deferUpdate();
+            return;
+        }
 
         // Check if the verified role exists.
         const verifiedRole = await GuildFgrUtilities.fetchRole(member.guild, section.roles.verifiedRoleId);
 
         // No verified role = no go. Or, if the person is verified, no need for them to get verified.
-        if (!verifiedRole || GuildFgrUtilities.memberHasCachedRole(member, verifiedRole.id))
+        if (!verifiedRole || GuildFgrUtilities.memberHasCachedRole(member, verifiedRole.id)) {
             return;
+        }
 
         // Get logging channels ready
         const loggingChannels = section.isMainSection
@@ -178,6 +298,7 @@ export namespace VerifyManager {
             section.channels.verification.manualVerificationChannelId
         );
 
+        await i.deferUpdate();
         verify(member, guildDoc, section, {
             manualVerify: manualVerifyChannel,
             verifyStart: verifyStartChannel,
@@ -340,7 +461,7 @@ export namespace VerifyManager {
                             + " select a name that you want to use to verify with this server. If you want to use a"
                             + " name that isn't listed, simply press the **Skip** button."
                         )
-                        .setFooter("Respond By")
+                        .setFooter({text: "Respond By"})
                         .setTimestamp(Date.now() + 2 * 60 * 1000)
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([
@@ -355,10 +476,7 @@ export namespace VerifyManager {
                         .setStyle("DANGER")
                         .setLabel("Skip")
                         .setCustomId("skip"),
-                    new MessageButton()
-                        .setStyle("DANGER")
-                        .setLabel("Cancel")
-                        .setCustomId("cancel")
+                    ButtonConstants.CANCEL_BUTTON
                 ])
             });
             const selectedOption = await AdvancedCollector.startInteractionCollector({
@@ -387,7 +505,7 @@ export namespace VerifyManager {
                 userDocToUse = userDocs[0];
             }
 
-            if (selectedOption.isButton() && selectedOption.customId === "cancel") {
+            if (selectedOption.isButton() && selectedOption.customId === ButtonConstants.CANCEL_ID) {
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} has stopped the verification process. This occurred when the person was `
                         + "asked to either use an existing name or provide a new name."
@@ -400,6 +518,7 @@ export namespace VerifyManager {
 
         // Ask for a name if no name is provided.
         if (!nameToVerify) {
+            InteractivityManager.ACTIVE_DIRECT_MESSAGES.set(member.user.id);
             await verifKit.msg.edit({
                 embeds: [
                     MessageUtilities.generateBlankEmbed(member.user, "RED")
@@ -412,9 +531,10 @@ export namespace VerifyManager {
                             "Cancel Process",
                             "To cancel the verification process, simply type **`-cancel`**."
                         )
-                        .setFooter("Respond By")
+                        .setFooter({text: "Respond By"})
                         .setTimestamp(Date.now() + 2 * 60 * 1000)
-                ]
+                ],
+                components: []
             });
 
             const nameToUse = await AdvancedCollector.startNormalCollector({
@@ -425,7 +545,18 @@ export namespace VerifyManager {
                 deleteBaseMsgAfterComplete: false,
                 targetAuthor: member,
                 targetChannel: dmChannel
-            }, AdvancedCollector.getStringPrompt(member, {min: 1, max: 15}));
+            }, AdvancedCollector.getStringPrompt(member, {
+                min: 1,
+                max: 15,
+                regexFilter: {
+                    regex: CommonRegex.ONLY_LETTERS,
+                    withErrorMsg: "Your name can only have letters."
+                }
+            }));
+
+            setTimeout(() => {
+                InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(member.user.id);
+            }, 2 * 1000);
 
             if (!nameToUse) {
                 verifKit.verifyFail?.send({
@@ -466,7 +597,7 @@ export namespace VerifyManager {
                                 + " user. You will need to resolve this issue by messaging a staff member for"
                                 + " assistance. If you want to verify with a different in-game name, please"
                                 + " restart the verification process.")
-                            .setFooter("Verification Process Stopped.")
+                            .setFooter({text: "Verification Process Stopped."})
                     ]
                 }).catch();
 
@@ -495,12 +626,12 @@ export namespace VerifyManager {
         await verifKit.msg.edit({
             embeds: [
                 getVerifEmbed(member, nameToVerify, code, guildDoc, guildDoc.otherMajorConfig.verificationProperties)
-                    .setFooter("Verification Process Expires")
+                    .setFooter({text: "Verification Process Expires"})
                     .setTimestamp(timeStarted + 20 * 60 * 1000)
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 CHECK_PROFILE_BUTTON,
-                CANCEL_PROFILE_CHECK_BUTTON
+                ButtonConstants.CANCEL_BUTTON
             ])
         });
 
@@ -515,7 +646,7 @@ export namespace VerifyManager {
 
         collector.on("collect", async i => {
             await i.deferUpdate();
-            if (i.customId === "cancel") {
+            if (i.customId === ButtonConstants.CANCEL_ID) {
                 await verifKit.msg!.edit({
                     embeds: [
                         MessageUtilities.generateBlankEmbed(member.guild, "RED")
@@ -620,16 +751,16 @@ export namespace VerifyManager {
                             code,
                             guildDoc,
                             guildDoc.otherMajorConfig.verificationProperties
-                        ).setFooter("Verification Process Expires")
+                        ).setFooter({text: "Verification Process Expires"})
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
-                                `${Emojis.WARNING_EMOJI} Verification Issues`,
+                                `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
                                 "Your verification code was not found in your RealmEye profile's description."
                             )
                     ],
                     components: AdvancedCollector.getActionRowsFromComponents([
                         CHECK_PROFILE_BUTTON,
-                        CANCEL_PROFILE_CHECK_BUTTON
+                        ButtonConstants.CANCEL_BUTTON
                     ])
                 });
 
@@ -669,10 +800,10 @@ export namespace VerifyManager {
                             code,
                             guildDoc,
                             guildDoc.otherMajorConfig.verificationProperties
-                        ).setFooter("Verification Process Expires")
+                        ).setFooter({text: "Verification Process Expires"})
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
-                                `${Emojis.WARNING_EMOJI} Verification Issues`,
+                                `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
                                 "Something went wrong when trying to get your RealmEye profile's **name history.**"
                                 + " Make sure anyone can view your profile's name history. If this issue persists,"
                                 + " please **stop** the verification process and contact a staff member for assistance."
@@ -680,7 +811,7 @@ export namespace VerifyManager {
                     ],
                     components: AdvancedCollector.getActionRowsFromComponents([
                         CHECK_PROFILE_BUTTON,
-                        CANCEL_PROFILE_CHECK_BUTTON
+                        ButtonConstants.CANCEL_BUTTON
                     ])
                 });
 
@@ -735,7 +866,7 @@ export namespace VerifyManager {
                                     + " blacklist with the server staff. When doing so, please give them the"
                                     + " moderation ID associated with your blacklist (shown below)."
                                 )
-                                .setFooter(`Mod. ID: ${blacklistEntry.actionId}`)
+                                .setFooter({text: `Mod. ID: ${blacklistEntry.actionId}`})
                                 .setTimestamp()
                         ],
                         components: []
@@ -808,10 +939,10 @@ export namespace VerifyManager {
                             code,
                             guildDoc,
                             guildDoc.otherMajorConfig.verificationProperties
-                        ).setFooter("Verification Process Expires")
+                        ).setFooter({text: "Verification Process Expires"})
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
-                                `${Emojis.WARNING_EMOJI} Verification Issues`,
+                                `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
                                 "Something went wrong when fully reviewing your profile. Please resolve these issues"
                                 + " and try again.\n"
                                 + checkRes.taIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n")
@@ -819,7 +950,7 @@ export namespace VerifyManager {
                     ],
                     components: AdvancedCollector.getActionRowsFromComponents([
                         CHECK_PROFILE_BUTTON,
-                        CANCEL_PROFILE_CHECK_BUTTON
+                        ButtonConstants.CANCEL_BUTTON
                     ])
                 });
                 const r = await GlobalFgrUtilities.sendMsg(member, {
@@ -866,7 +997,7 @@ export namespace VerifyManager {
 
             const finishedEmbed = MessageUtilities.generateBlankEmbed(member.guild, "GREEN")
                 .setTitle(`**${member.guild.name}**: Guild Verification Successful`)
-                .setFooter("Verification Completed At")
+                .setFooter({text: "Verification Completed At"})
                 .setTimestamp();
             if (guildDoc.otherMajorConfig.verificationProperties.verificationSuccessMessage) {
                 finishedEmbed.setDescription(
@@ -1083,7 +1214,7 @@ export namespace VerifyManager {
                 + " **Keep in mind** that you will not be able to verify in this server or section until your"
                 + " manual verification results come back, and you will **not** be able to stop this process."
             )
-            .setFooter("Respond By:")
+            .setFooter({text: "Respond By:"})
             .setTimestamp(Date.now() + 2 * 60 * 1000);
 
         const [m, , dmChannel] = await Promise.all([
@@ -1349,13 +1480,10 @@ export namespace VerifyManager {
         );
 
         // Promises to resolve after evaluating the response ID
-        const promises: (Promise<any> | undefined)[] = [
-            manualVerifMsg?.delete().catch()
-        ];
+        const promises: (Promise<any> | undefined)[] = [];
         switch (responseId) {
             case (MANUAL_VERIFY_MODMAIL_ID): {
-                await ModmailManager.startThreadedModmailWithMember(member, moderator, guildDoc);
-                return true;
+                return await ModmailManager.startModmailWithUser(member, moderator);
             }
             case (MANUAL_VERIFY_DENY_ID): {
                 const finishedEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
@@ -1365,13 +1493,14 @@ export namespace VerifyManager {
                             : `**${member.guild.name}**: ${section.sectionName} Section Verification Denied`
                     )
                     .setTimestamp()
-                    .setFooter("Manual Verification Request Denied.")
+                    .setFooter({text: "Manual Verification Request Denied."})
                     .setDescription(
                         "Your manual verification request was **denied**. If you have any questions regarding why"
                         + " your request was denied, please message a staff member or send a modmail."
                     );
 
                 promises.push(
+                    manualVerifMsg?.delete().catch(),
                     GlobalFgrUtilities.sendMsg(member, {embeds: [finishedEmbed]}),
                     section.isMainSection
                         ? verifyFailChannel?.send({
@@ -1408,6 +1537,7 @@ export namespace VerifyManager {
                 }
 
                 promises.push(
+                    manualVerifMsg?.delete().catch(),
                     GlobalFgrUtilities.sendMsg(member, {embeds: [finishedEmbed]}),
                     member.roles.add(section.roles.verifiedRoleId).catch()
                 );
@@ -1479,7 +1609,7 @@ export namespace VerifyManager {
                 .append("Please complete the following steps. If you do not want to complete verification at this ")
                 .append("time, press the **Cancel** button.")
                 .toString())
-            .setFooter("You have 15 minutes to complete this process.")
+            .setFooter({text: "You have 15 minutes to complete this process."})
             .addField(
                 "1. Verification Code",
                 new StringBuilder().append(`Your verification code is: ${StringUtil.codifyString(code)}`)
@@ -1537,7 +1667,7 @@ export namespace VerifyManager {
                 const numNeeded = verifProps.verifReq.characters.statsNeeded[i];
                 if (numNeeded === 0)
                     continue;
-                sb.append(`- ${numNeeded} ${i}/${GeneralConstants.NUMBER_OF_STATS} Characters`)
+                sb.append(`- ${numNeeded} ${i}/${NUMBER_OF_STATS} Characters`)
                     .append(checkPastDeaths ? " (Past Deaths Allowed)." : ".").appendLine();
             }
         }
@@ -1555,7 +1685,7 @@ export namespace VerifyManager {
                     sb.append("- Exaltations is Public.").appendLine();
                     added = true;
                 }
-                const displayedVersion = GeneralConstants.SHORT_STAT_TO_LONG[stat][1];
+                const displayedVersion = SHORT_STAT_TO_LONG[stat][1];
                 sb.append(`- ${numNeeded} ${displayedVersion} Exaltations.`).appendLine();
             }
 
@@ -1567,7 +1697,7 @@ export namespace VerifyManager {
             if (verifProps.verifReq.graveyardSummary.useBotCompletions) {
                 for (const entry of verifProps.verifReq.graveyardSummary.botCompletions) {
                     if (entry.value === 0) continue;
-                    const dgnInfo = DungeonUtilities.getDungeonInfo(guildDoc, entry.key);
+                    const dgnInfo = DungeonUtilities.getDungeonInfo(entry.key, guildDoc);
                     if (!dgnInfo) continue;
                     sb.append(`- ${entry.value} ${dgnInfo.dungeonName} Completion Logged.`).appendLine();
                 }
@@ -1581,7 +1711,7 @@ export namespace VerifyManager {
                         sb.append("- Graveyard History is Public.").appendLine();
                         added = true;
                     }
-                    const display = GeneralConstants.GY_HIST_TO_DISPLAY[entry.key];
+                    const display = GY_HIST_TO_DISPLAY[entry.key];
                     sb.append(`- ${entry.value} ${display} Completions.`).appendLine();
                 }
             }
@@ -1754,7 +1884,7 @@ export namespace VerifyManager {
                 const missingStats = new StringBuilder();
                 for (let i = 0; i < neededStats.length; i++) {
                     if (neededStats[i] <= 0) continue;
-                    missingStats.append(`- Need ${neededStats[i]} ${i}/${GeneralConstants.NUMBER_OF_STATS}s`)
+                    missingStats.append(`- Need ${neededStats[i]} ${i}/${NUMBER_OF_STATS}s`)
                         .appendLine();
                 }
 
@@ -1781,7 +1911,7 @@ export namespace VerifyManager {
 
                 let allPassed = true;
                 for (const [dgnId, amt] of loggedInfo) {
-                    const dgnInfo = DungeonUtilities.getDungeonInfo(guildDoc, dgnId);
+                    const dgnInfo = DungeonUtilities.getDungeonInfo(dgnId, guildDoc);
                     if (!dgnInfo)
                         continue;
 
@@ -1823,8 +1953,8 @@ export namespace VerifyManager {
                 }
                 else {
                     for (const gyStat of verifReq.graveyardSummary.realmEyeCompletions) {
-                        if (!(gyStat.key in GeneralConstants.DISPLAY_TO_GY_HIST)) continue;
-                        const gyHistKey = GeneralConstants.DISPLAY_TO_GY_HIST[gyStat.key];
+                        if (!(gyStat.key in DISPLAY_TO_GY_HIST)) continue;
+                        const gyHistKey = DISPLAY_TO_GY_HIST[gyStat.key];
                         const data = gyHist.properties.find(x => x.achievement === gyHistKey);
                         // Doesn't qualify because dungeon doesn't exist.
                         if (!data) {
@@ -1869,7 +1999,7 @@ export namespace VerifyManager {
                 // We use this variable to keep track of each stat and corresponding exaltations needed.
                 // neededExalt will have keys "att" "spd" "hp" etc
                 const neededExalt: { [s: string]: number } = {};
-                for (const d of Object.keys(GeneralConstants.SHORT_STAT_TO_LONG))
+                for (const d of Object.keys(SHORT_STAT_TO_LONG))
                     neededExalt[d] = verifReq.exaltations.minimum[d];
 
                 if (verifReq.exaltations.onOneChar) {
@@ -1880,7 +2010,7 @@ export namespace VerifyManager {
                             if (!entry.exaltationStats.hasOwnProperty(longStat))
                                 continue;
 
-                            const shortenedStat = GeneralConstants.LONG_STAT_TO_SHORT[longStat];
+                            const shortenedStat = LONG_STAT_TO_SHORT[longStat];
                             if (neededExalt[shortenedStat] - entry.exaltationStats[longStat] > 0) {
                                 passed = false;
                                 break;
@@ -1905,7 +2035,7 @@ export namespace VerifyManager {
                             if (!entry.exaltationStats.hasOwnProperty(longStat))
                                 continue;
 
-                            const shortenedStat = GeneralConstants.LONG_STAT_TO_SHORT[longStat];
+                            const shortenedStat = LONG_STAT_TO_SHORT[longStat];
                             neededExalt[shortenedStat] -= entry.exaltationStats[longStat];
                         }
                     }
@@ -1924,7 +2054,7 @@ export namespace VerifyManager {
                     }
                     else {
                         for (const statNotFulfilled of notMetExaltations) {
-                            const statName = GeneralConstants.SHORT_STAT_TO_LONG[statNotFulfilled];
+                            const statName = SHORT_STAT_TO_LONG[statNotFulfilled];
                             issuesExaltations.append(`- Need ${neededExalt[statNotFulfilled]} ${statName[1]}`)
                                 .append(" Exaltations.")
                                 .appendLine();

@@ -53,8 +53,10 @@ export class UnsuspendMember extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
-        const mStr = ctx.interaction.options.getString("member", true);
-        const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
+        const resMember = await UserManager.resolveMember(
+            ctx.guild!,
+            ctx.interaction.options.getString("member", true)
+        );
         if (!resMember) {
             await ctx.interaction.reply({
                 content: "This member could not be resolved. Please try again.",

@@ -1,18 +1,28 @@
 import {IConfiguration} from "./definitions";
 import {
     Client,
-    Collection, Guild,
-    Interaction,
+    Collection, DMChannel, Guild, GuildChannel, GuildMember,
+    Interaction, Message, PartialMessage, ThreadChannel,
     VoiceState
 } from "discord.js";
 import {MongoManager} from "./managers/MongoManager";
-import * as assert from "assert";
 import axios, {AxiosInstance} from "axios";
 import * as Cmds from "./commands";
-import {onGuildCreateEvent, onInteractionEvent, onReadyEvent, onVoiceStateEvent} from "./events";
+import {
+    onErrorEvent,
+    onGuildCreateEvent,
+    onInteractionEvent,
+    onMessageEvent,
+    onReadyEvent,
+    onVoiceStateEvent,
+    onThreadArchiveEvent,
+    onChannelDeleteEvent,
+    onMessageDeleteEvent,
+    onGuildMemberAdd
+} from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
-import {APIApplicationCommandOption, Routes} from "discord-api-types/v9";
+import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
 
 export class OneLifeBot {
     private readonly _config: IConfiguration;
@@ -55,12 +65,7 @@ export class OneLifeBot {
      *
      * @type {object[]}
      */
-    public static JsonCommands: {
-        name: string;
-        description: string;
-        options: APIApplicationCommandOption[];
-        default_permission: boolean | undefined;
-    }[];
+    public static JsonCommands: RESTPostAPIApplicationCommandsJSONBody[];
 
     public static Rest: REST;
 
@@ -108,6 +113,10 @@ export class OneLifeBot {
             new Cmds.Help()
         ]);
 
+        OneLifeBot.Commands.set("General", [
+            new Cmds.GetStats()
+        ]);
+
         OneLifeBot.Commands.set("Staff", [
             new Cmds.FindPunishment(),
             new Cmds.CheckBlacklist(),
@@ -144,18 +153,24 @@ export class OneLifeBot {
         ]);
 
         OneLifeBot.Commands.set("Raid Leaders", [
-            new Cmds.StartAfkCheck()
+            new Cmds.StartAfkCheck(),
+            new Cmds.StartHeadcount()
         ]);
 
         OneLifeBot.Commands.set("Logging", [
             new Cmds.LogLedRun()
         ]);
 
+        OneLifeBot.Commands.set("Modmail", [
+            new Cmds.ReplyToThread(),
+            new Cmds.ArchiveThread()
+        ]);
+
         OneLifeBot.JsonCommands = [];
         OneLifeBot.NameCommands = new Collection<string, Cmds.BaseCommand>();
         OneLifeBot.Rest = new REST({version: "9"}).setToken(config.tokens.botToken);
         for (const command of Array.from(OneLifeBot.Commands.values()).flat()) {
-            OneLifeBot.JsonCommands.push(command.data.toJSON());
+            OneLifeBot.JsonCommands.push(command.data.toJSON() as RESTPostAPIApplicationCommandsJSONBody);
 
             if (command.data.name !== command.commandInfo.botCommandName)
                 throw new Error(`Names not matched: "${command.data.name}" - "${command.commandInfo.botCommandName}"`);
@@ -171,7 +186,7 @@ export class OneLifeBot {
             if (config.slash.guildIds.length === 0) {
                 await OneLifeBot.Rest.put(
                     Routes.applicationCommands(config.slash.clientId),
-                    { body: OneLifeBot.JsonCommands }
+                    {body: OneLifeBot.JsonCommands}
                 );
             }
             else {
@@ -179,7 +194,7 @@ export class OneLifeBot {
                     config.slash.guildIds.map(async guildId => {
                         await OneLifeBot.Rest.put(
                             Routes.applicationGuildCommands(config.slash.clientId, guildId),
-                            { body: OneLifeBot.JsonCommands }
+                            {body: OneLifeBot.JsonCommands}
                         );
                     })
                 );
@@ -198,6 +213,12 @@ export class OneLifeBot {
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
         this._bot.on("guildCreate", async (g: Guild) => onGuildCreateEvent(g));
         this._bot.on("voiceStateUpdate", async (o: VoiceState, n: VoiceState) => onVoiceStateEvent(o, n));
+        this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
+        this._bot.on("error", async (e: Error) => onErrorEvent(e));
+        this._bot.on("threadUpdate", async (o: ThreadChannel, n: ThreadChannel) => onThreadArchiveEvent(o, n));
+        this._bot.on("channelDelete", async (c: DMChannel | GuildChannel) => onChannelDeleteEvent(c));
+        this._bot.on("messageDelete", async (m: Message | PartialMessage) => onMessageDeleteEvent(m));
+        this._bot.on("guildMemberAdd", async (m: GuildMember) => onGuildMemberAdd(m));
         this._eventsIsStarted = true;
     }
 
@@ -218,8 +239,6 @@ export class OneLifeBot {
             idNameColName: this.config.database.collectionNames.idNameCollection,
             unclaimedBlName: this.config.database.collectionNames.unclaimedBlCollection
         });
-        // make sure the database is connected
-        assert(MongoManager.isConnected());
         // logs into the bot
         await this._bot.login(this._config.tokens.botToken);
     }

@@ -3,12 +3,12 @@ import {UserManager} from "../../managers/UserManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../../managers/MongoManager";
 import {IRealmIgn} from "../../definitions";
-import {MessageButton, MessageSelectMenu, TextChannel} from "discord.js";
+import {MessageSelectMenu, TextChannel} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {Emojis} from "../../constants/Emojis";
 import {QuotaManager} from "../../managers/QuotaManager";
+import {ButtonConstants} from "../../constants/ButtonConstants";
 
 export class ManualVerifyMain extends BaseCommand {
     public constructor() {
@@ -152,11 +152,7 @@ export class ManualVerifyMain extends BaseCommand {
                         ],
                         components: AdvancedCollector.getActionRowsFromComponents([
                             selectMenu,
-                            new MessageButton()
-                                .setCustomId("cancel")
-                                .setLabel("Cancel")
-                                .setStyle("DANGER")
-                                .setEmoji(Emojis.X_EMOJI)
+                            ButtonConstants.CANCEL_BUTTON
                         ])
                     },
                     targetAuthor: ctx.user,

@@ -2,26 +2,22 @@ import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseC
 import {MongoManager} from "../../managers/MongoManager";
 import {IDungeonInfo, ISectionInfo} from "../../definitions";
 import {
-    Collection,
-    GuildMember,
     MessageActionRow,
-    MessageButton,
     MessageSelectMenu,
     Role,
     TextChannel
 } from "discord.js";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {RaidInstance} from "../../instances/RaidInstance";
-import {DUNGEON_DATA} from "../../constants/DungeonData";
-import {MiscUtilities} from "../../utilities/MiscUtilities";
-import {DefinedRole} from "../../definitions/Types";
+import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {Emojis} from "../../constants/Emojis";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
+import {canManageRaidsIn, hasPermsToRaid} from "../../instances/Common";
+import {ButtonConstants} from "../../constants/ButtonConstants";
 
 type DungeonSelectionType = {
     section: ISectionInfo;
@@ -39,7 +35,7 @@ export class StartAfkCheck extends BaseCommand {
         const cmi: ICommandInfo = {
             cmdCode: StartAfkCheck.START_AFK_CMD_CODE,
             formalCommandName: "Start AFK Check Command",
-            botCommandName: "startafkcheck",
+            botCommandName: "afkcheck",
             description: "Starts a wizard that can be used to start an AFK check.",
             commandCooldown: 8 * 1000,
             generalPermissions: [],
@@ -75,36 +71,6 @@ export class StartAfkCheck extends BaseCommand {
     }
 
     /**
-     * Checks whether the person has the correct permissions to raid in this particular dungeon.
-     * @param {string[] | undefined} roleReqs The role requirements.
-     * @param {GuildMember} member The member.
-     * @param {Collection<DefinedRole, string[]>} roleCol The role collection.
-     * @return {boolean} Whether the person can run a raid in this dungeon.
-     */
-    static hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMember,
-                          roleCol: Collection<DefinedRole, string[]>): boolean {
-        if (!roleReqs || roleReqs.length === 0)
-            return true;
-
-        for (const role of roleReqs) {
-            if (GuildFgrUtilities.memberHasCachedRole(member, role))
-                return true;
-
-            if (!MiscUtilities.isDefinedRole(role))
-                continue;
-
-            const roleArr = roleCol.get(role);
-            if (!roleArr)
-                continue;
-
-            if (roleArr.some(x => GuildFgrUtilities.memberHasCachedRole(member, x)))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
@@ -119,7 +85,7 @@ export class StartAfkCheck extends BaseCommand {
         // Get all sections that the member can lead in
         const allRolePerms = MongoManager.getAllConfiguredRoles(ctx.guildDoc!);
         for (const section of allSections) {
-            if (!RaidInstance.canManageRaidsIn(section, ctx.member!, ctx.guildDoc!))
+            if (!canManageRaidsIn(section, ctx.member!, ctx.guildDoc!))
                 continue;
 
             const dungeons: IDungeonInfo[] = [];
@@ -128,7 +94,7 @@ export class StartAfkCheck extends BaseCommand {
                 if (DungeonUtilities.isCustomDungeon(id)) {
                     const customDgn = ctx.guildDoc!.properties.customDungeons.find(x => x.codeName === id);
                     if (customDgn) {
-                        if (!StartAfkCheck.hasPermsToRaid(customDgn.roleRequirement, ctx.member!, allRolePerms)) {
+                        if (!hasPermsToRaid(customDgn.roleRequirement, ctx.member!, allRolePerms)) {
                             omittedDungeons.push(customDgn);
                             return;
                         }
@@ -144,7 +110,7 @@ export class StartAfkCheck extends BaseCommand {
                     return;
 
                 const overrideInfo = ctx.guildDoc!.properties.dungeonOverride.find(x => x.codeName === id);
-                if (!StartAfkCheck.hasPermsToRaid(overrideInfo?.roleRequirement, ctx.member!, allRolePerms)) {
+                if (!hasPermsToRaid(overrideInfo?.roleRequirement, ctx.member!, allRolePerms)) {
                     omittedDungeons.push(dgn);
                     return;
                 }
@@ -274,7 +240,7 @@ export class StartAfkCheck extends BaseCommand {
             .setTitle(`${sectionToUse.section.sectionName}: Select Dungeon`)
             .setDescription("Please select a dungeon from the dropdown menu(s) below. If you want to cancel this,"
                 + " press the **Cancel** button.")
-            .setFooter("You have 1 minute and 30 seconds to select a dungeon.")
+            .setFooter({text: "You have 1 minute and 30 seconds to select a dungeon."})
             .setTimestamp();
 
         if (sectionToUse.omittedDungeons.length > 0) {
@@ -301,10 +267,7 @@ export class StartAfkCheck extends BaseCommand {
             embeds: [askDgnEmbed],
             components: AdvancedCollector.getActionRowsFromComponents([
                 ...selectMenus,
-                new MessageButton()
-                    .setStyle("DANGER")
-                    .setEmoji(Emojis.X_EMOJI)
-                    .setLabel("Cancel")
+                AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
                     .setCustomId(`${uIdentifier}_cancel`)
             ])
         });
