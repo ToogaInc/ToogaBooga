@@ -74,9 +74,8 @@ export class SectionSuspendMember extends BaseCommand {
         const resMember = await UserManager.resolveMember(ctx.guild!, memberStr);
 
         if (!resMember) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "This member could not be resolved. Please try again.",
-                ephemeral: true
             });
 
             return 0;
@@ -93,9 +92,8 @@ export class SectionSuspendMember extends BaseCommand {
         });
 
         if (sections.length === 0) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "You are not able to suspend this user from any sections at this time. Try again later.",
-                ephemeral: true
             });
 
             return 0;
@@ -112,7 +110,7 @@ export class SectionSuspendMember extends BaseCommand {
             });
 
         const uId = StringUtil.generateRandomString(30);
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             content: "Please select the section where you want to section suspend this person from.",
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageSelectMenu()

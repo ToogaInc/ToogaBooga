@@ -59,9 +59,8 @@ export class UnsuspendMember extends BaseCommand {
             ctx.interaction.options.getString("member", true)
         );
         if (!resMember) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "This member could not be resolved. Please try again.",
-                ephemeral: true
             });
 
             return 0;
@@ -77,9 +76,8 @@ export class UnsuspendMember extends BaseCommand {
         });
 
         if (!unsuspensionRes.punishmentResolved) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: UnsuspendMember.ERROR_NO_UNSUSPEND_STR,
-                ephemeral: true
             });
 
             return 0;
@@ -101,7 +99,7 @@ export class UnsuspendMember extends BaseCommand {
             );
         }
 
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             embeds: [finalEmbed]
         });
 

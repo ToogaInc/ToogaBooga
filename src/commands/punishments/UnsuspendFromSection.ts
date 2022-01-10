@@ -53,9 +53,8 @@ export class UnsuspendFromSection extends BaseCommand {
         const mStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
         if (!resMember) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "This member could not be resolved. Please try again.",
-                ephemeral: true
             });
 
             return 0;
@@ -73,9 +72,8 @@ export class UnsuspendFromSection extends BaseCommand {
         });
 
         if (sections.length === 0) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "It appears that this person is not suspended in any sections.",
-                ephemeral: true
             });
 
             return 0;
@@ -92,7 +90,7 @@ export class UnsuspendFromSection extends BaseCommand {
             });
 
         const uId = StringUtil.generateRandomString(30);
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             content: "Please select the section where you want to unsuspend this person from.",
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageSelectMenu()
@@ -135,9 +133,8 @@ export class UnsuspendFromSection extends BaseCommand {
         });
 
         if (!unsuspensionRes.punishmentResolved) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "Something went wrong when trying to unsuspend this person.",
-                ephemeral: true,
                 components: []
             });
 
