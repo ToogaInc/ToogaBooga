@@ -498,7 +498,7 @@ export class HeadcountInstance {
     public getHeadcountEmbed(): MessageEmbed | null {
         if (this._headcountStatus === HeadcountStatus.NOTHING) return null;
 
-        const afkCheckEmbed = new MessageEmbed()
+        const headcountEmbed = new MessageEmbed()
             .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Headcount.`})
             .setTimestamp()
             .setColor(
@@ -508,9 +508,9 @@ export class HeadcountInstance {
             );
 
         if (this._headcountMsg && this._headcountMsg.embeds[0].thumbnail)
-            afkCheckEmbed.setThumbnail(this._headcountMsg.embeds[0].thumbnail.url);
+            headcountEmbed.setThumbnail(this._headcountMsg.embeds[0].thumbnail.url);
         else if (this._dungeon.bossLinks.length > 0)
-            afkCheckEmbed.setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url);
+            headcountEmbed.setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url);
 
         // Display percent of items needed.
         const earlyReactInfo: string[] = [];
@@ -537,23 +537,23 @@ export class HeadcountInstance {
         earlyReactInfo.unshift(`- ${EmojiConstants.GREEN_CHECK_EMOJI} ${l} People Interested.`);
 
         if (earlyReactInfo.length > 0) {
-            afkCheckEmbed.addField("Reaction Status", earlyReactInfo.join("\n"));
+            headcountEmbed.addField("Reaction Status", earlyReactInfo.join("\n"));
         }
 
         // If headcount is finished, just let them know.
         if (this._headcountStatus === HeadcountStatus.HEADCOUNT_FINISHED) {
-            afkCheckEmbed
+            headcountEmbed
                 .setAuthor({
                     name: "The headcount has been ended.",
                     iconURL: this._memberInit.user.displayAvatarURL()
                 })
                 .setDescription("This headcount is now over. Please wait for the raid leader.");
-            return afkCheckEmbed;
+            return headcountEmbed;
         }
 
-        afkCheckEmbed
+        headcountEmbed
             .setAuthor({
-                name: `${this._leaderName} has started a ${this._dungeon.dungeonName} AFK check.`,
+                name: `${this._leaderName} has started a ${this._dungeon.dungeonName} headcount.`,
                 iconURL: this._memberInit.user.displayAvatarURL()
             })
             .setDescription(
@@ -562,7 +562,7 @@ export class HeadcountInstance {
                 + " react with your class/gear choices."
             );
 
-        return afkCheckEmbed;
+        return headcountEmbed;
     }
 
     /**
