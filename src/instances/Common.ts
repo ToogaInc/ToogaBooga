@@ -261,7 +261,7 @@ export async function confirmReaction(
         if(mapKey === "NITRO"){
 
             //Obtain Nitro role id if present on server
-            var nitroRoleID = ""; //To test on Test Server, initialize nitroRoleID to a role on the server.
+            let nitroRoleID = ""; //To test on Test Server, initialize nitroRoleID to a role on the server.
             if(interaction.guild.roles.premiumSubscriberRole?.id){
                 nitroRoleID = interaction.guild.roles.premiumSubscriberRole.id;
             }
@@ -488,9 +488,10 @@ export function controlPanelCollectorFilter(guildDoc: IGuildInfo, section: ISect
             guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
 
             // Moderation team roles
-            guildDoc.roles.staffRoles.moderation.moderatorRoleId,
-            guildDoc.roles.staffRoles.moderation.officerRoleId,
-            guildDoc.roles.staffRoles.moderation.securityRoleId
+            guildDoc.roles.staffRoles.moderation.helperRoleId,
+            guildDoc.roles.staffRoles.moderation.securityRoleId,
+            guildDoc.roles.staffRoles.moderation.officerRoleId,            
+            guildDoc.roles.staffRoles.moderation.moderatorRoleId
         ];
 
         const customPermData = guildDoc.properties.customCmdPermissions
