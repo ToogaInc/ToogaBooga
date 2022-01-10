@@ -460,7 +460,12 @@ export function controlPanelCollectorFilter(guildDoc: IGuildInfo, section: ISect
             guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
             guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
             guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
+
+            // Moderation team roles
+            guildDoc.roles.staffRoles.moderation.moderatorRoleId,
+            guildDoc.roles.staffRoles.moderation.officerRoleId,
+            guildDoc.roles.staffRoles.moderation.securityRoleId
         ];
 
         const customPermData = guildDoc.properties.customCmdPermissions
