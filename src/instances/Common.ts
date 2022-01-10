@@ -257,23 +257,17 @@ export async function confirmReaction(
          * Temporary Nitro Solution
          * Check if user who reacted to Nitro has the server booster role
          */
-
         if(mapKey === "NITRO"){
 
             //Obtain Nitro role id if present on server
-            let nitroRoleID = ""; //To test on Test Server, initialize nitroRoleID to a role on the server.
-            if(interaction.guild.roles.premiumSubscriberRole?.id){
-                nitroRoleID = interaction.guild.roles.premiumSubscriberRole.id;
-            }
-
-            //If Nitro role is null or member does not have role corresponding to nitroRoleID, return null
-            if(nitroRoleID === "" || !member.roles.cache.find(role => role.id === nitroRoleID)){
-
+            //To test on Test Server, change "" to a role on the server.
+            const nitroRoleID = interaction.guild.roles.premiumSubscriberRole?.id ?? ""; 
+            if(!member.roles.cache.has(nitroRoleID)){
                 await interaction.reply({
                     ephemeral: true,
                     content: "No Nitro",
                 });
-                return null
+                return null;
             }
         }
 
