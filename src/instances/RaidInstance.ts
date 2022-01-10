@@ -1987,6 +1987,13 @@ export class RaidInstance {
 
             this._pplConfirmingReaction.add(i.user.id);
             const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse);
+            if(!this._raidVc){
+                await i.editReply({
+                    content: "The raid you are attempting to react to has been closed.",
+                    components: []
+                });
+                return;
+            };
             this._pplConfirmingReaction.delete(i.user.id);
             if (!res) {
                 await i.editReply({
