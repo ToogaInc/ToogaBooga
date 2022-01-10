@@ -3,7 +3,7 @@ import {MongoManager} from "../../managers/MongoManager";
 import {RaidInstance} from "../../instances/RaidInstance";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
-import {getAvailableSections, DungeonSelectionType, getSelectedSection, getSelectedDungeon} from "../../instances/Common";
+import {getAvailableSections, DungeonSelectionType, getSelectedSection, getSelectedDungeon} from "./common/RaidLeaderCommon";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";

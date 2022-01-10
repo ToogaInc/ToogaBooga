@@ -1,7 +1,7 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {MongoManager} from "../../managers/MongoManager";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
-import {getAvailableSections, DungeonSelectionType, getSelectedSection, getSelectedDungeon} from "../../instances/Common";
+import {getAvailableSections, DungeonSelectionType, getSelectedSection, getSelectedDungeon} from "./common/RaidLeaderCommon";
 import {HeadcountInstance} from "../../instances/HeadcountInstance";
 
 export class StartHeadcount extends BaseCommand {
