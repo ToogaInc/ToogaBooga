@@ -1989,7 +1989,7 @@ export class RaidInstance {
             const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse);
             if(!this._raidVc){
                 await i.editReply({
-                    content: "The raid you are attempting to react to has been closed.",
+                    content: "The raid you are attempting to react to has been closed or aborted.",
                     components: []
                 });
                 return;
