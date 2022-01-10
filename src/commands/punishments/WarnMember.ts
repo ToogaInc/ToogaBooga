@@ -57,12 +57,12 @@ export class WarnMember extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.deferReply();
         const mStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
         if (!resMember) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "This member could not be resolved. Please try again.",
-                ephemeral: true
             });
 
             return 0;
@@ -100,7 +100,7 @@ export class WarnMember extends BaseCommand {
             );
         }
 
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             embeds: [finalEmbed]
         });
 

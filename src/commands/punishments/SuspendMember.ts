@@ -65,13 +65,13 @@ export class SuspendMember extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.deferReply();
         const memberStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, memberStr);
 
         if (!resMember) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "This member could not be resolved. Please try again.",
-                ephemeral: true
             });
 
             return 0;
@@ -90,9 +90,8 @@ export class SuspendMember extends BaseCommand {
         });
 
         if (!susRes.punishmentResolved) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: SuspendMember.ERROR_NO_SUSPEND_STR,
-                ephemeral: true
             });
 
             return 0;
@@ -115,7 +114,7 @@ export class SuspendMember extends BaseCommand {
             );
         }
 
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             embeds: [embed]
         });
 

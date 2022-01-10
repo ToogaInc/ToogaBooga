@@ -51,6 +51,7 @@ export class BlacklistMember extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.deferReply();
         const mStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
         const reason = ctx.interaction.options.getString("reason", true);
@@ -69,9 +70,8 @@ export class BlacklistMember extends BaseCommand {
             // If this was an ID or a mention, then we can't resolve it
             // We can blacklist names though
             if (!CommonRegex.ONLY_LETTERS.test(mStr)) {
-                await ctx.interaction.reply({
+                await ctx.interaction.editReply({
                     content: "This member could not be resolved. Please try again.",
-                    ephemeral: true
                 });
 
                 return 0;
@@ -80,10 +80,9 @@ export class BlacklistMember extends BaseCommand {
             const notInGuildBlInfo = ctx.guildDoc!.moderation.blacklistedUsers
                 .find(x => x.realmName.lowercaseIgn === mStr.toLowerCase());
             if (notInGuildBlInfo) {
-                await ctx.interaction.reply({
+                await ctx.interaction.editReply({
                     content: `\`${mStr}\` is already blacklisted. The moderation ID associated with this blacklist is:`
                         + StringUtil.codifyString(notInGuildBlInfo.actionId),
-                    ephemeral: true
                 });
 
                 return 0;
@@ -127,7 +126,7 @@ export class BlacklistMember extends BaseCommand {
                 );
             }
 
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 embeds: [finalEmbed]
             });
 
@@ -151,9 +150,8 @@ export class BlacklistMember extends BaseCommand {
         else {
             const possNames = UserManager.getAllNames(resMember.member.displayName);
             if (possNames.length === 0) {
-                await ctx.interaction.reply({
+                await ctx.interaction.editReply({
                     content: "This member could not be resolved. Please try again.",
-                    ephemeral: true
                 });
 
                 return 0;
@@ -166,10 +164,9 @@ export class BlacklistMember extends BaseCommand {
         const blInfo = ctx.guildDoc!.moderation.blacklistedUsers
             .find(x => x.realmName.lowercaseIgn === finalIgnToBl.toLowerCase());
         if (blInfo) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: `\`${finalIgnToBl}\` is already blacklisted. The moderation ID associated with this blacklist:`
                     + ` is: ${StringUtil.codifyString(blInfo.actionId)}`,
-                ephemeral: true
             });
 
             return 0;
@@ -221,7 +218,7 @@ export class BlacklistMember extends BaseCommand {
             );
         }
 
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             embeds: [finalEmbed]
         });
 

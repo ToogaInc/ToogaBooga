@@ -49,11 +49,11 @@ export class UnblacklistMember extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.deferReply();
         const mStr = ctx.interaction.options.getString("member", true);
         if (!CommonRegex.ONLY_LETTERS.test(mStr)) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: "The name that you specified must only contain letters.",
-                ephemeral: true
             });
 
             return 0;
@@ -62,9 +62,8 @@ export class UnblacklistMember extends BaseCommand {
         const blInfo = ctx.guildDoc!.moderation.blacklistedUsers
             .find(x => x.realmName.lowercaseIgn === mStr.toLowerCase());
         if (!blInfo) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: `\`${mStr}\` is not blacklisted.`,
-                ephemeral: true
             });
 
             return 0;
@@ -129,7 +128,7 @@ export class UnblacklistMember extends BaseCommand {
             );
         }
 
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             embeds: [finalEmbed]
         });
 
