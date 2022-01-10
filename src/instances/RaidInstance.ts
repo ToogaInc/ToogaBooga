@@ -2219,6 +2219,7 @@ export class RaidInstance {
 
         member.voice.setChannel(this._raidVc).catch();
         this.logEvent(`${member.displayName} (${member.id}) has reconnected to the raid VC.`, true).catch();
+        return;
     }
 
     /**
