@@ -49,6 +49,7 @@ export class UnblacklistMember extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.deferReply();
         const mStr = ctx.interaction.options.getString("member", true);
         if (!CommonRegex.ONLY_LETTERS.test(mStr)) {
             await ctx.interaction.reply({

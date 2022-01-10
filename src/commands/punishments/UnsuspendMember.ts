@@ -53,6 +53,7 @@ export class UnsuspendMember extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.deferReply();
         const resMember = await UserManager.resolveMember(
             ctx.guild!,
             ctx.interaction.options.getString("member", true)
