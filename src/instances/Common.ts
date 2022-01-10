@@ -26,12 +26,12 @@ import {StartAfkCheck} from "../commands";
 import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 
+
 export type ReactionInfoMore = IReactionInfo & {
     earlyLocAmt: number;
     isCustomReaction: boolean;
     builtInEmoji?: EmojiIdentifierResolvable;
 };
-
 export interface IKeyReactInfo {
     mapKey: keyof IMappedAfkCheckReactions;
     modifiers: string[];
