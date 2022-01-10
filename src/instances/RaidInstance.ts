@@ -1990,8 +1990,8 @@ export class RaidInstance {
             this._pplConfirmingReaction.delete(i.user.id);
             if (!res) {
                 await i.editReply({
-                    content: "You either did not respond to a question that was asked, or chose to cancel this"
-                        + ` process. Either way, the preference (${itemDis}) that you selected has **not** been logged`
+                    content: "You either timed out, chose to cancel, or did not have Nitro."
+                        + ` The preference (${itemDis}) that you selected has **not** been logged`
                         + " with the raid leader.",
                     components: []
                 });

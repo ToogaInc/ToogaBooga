@@ -252,6 +252,31 @@ export async function confirmReaction(
         .appendLine(2);
 
     if (reactInfo.type === "EARLY_LOCATION") {
+        
+        /**
+         * Temporary Nitro Solution
+         * Check if user who reacted to Nitro has the server booster role
+         */
+
+        if(mapKey === "NITRO"){
+
+            //Obtain Nitro role id if present on server
+            var nitroRoleID = ""; //To test on Test Server, initialize nitroRoleID to a role on the server.
+            if(interaction.guild.roles.premiumSubscriberRole?.id){
+                nitroRoleID = interaction.guild.roles.premiumSubscriberRole.id;
+            }
+
+            //If Nitro role is null or member does not have role corresponding to nitroRoleID, return null
+            if(nitroRoleID === "" || !member.roles.cache.find(role => role.id === nitroRoleID)){
+
+                await interaction.reply({
+                    ephemeral: true,
+                    content: "No Nitro",
+                });
+                return null
+            }
+        }
+
         contentDisplay
             .append("Please confirm that you want to receive early location/priority queueing. You have **15** seconds")
             .append(" to select an option. Failure to respond will result in an automatic **no**.")
