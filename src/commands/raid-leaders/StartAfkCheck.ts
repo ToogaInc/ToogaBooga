@@ -1,32 +1,9 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {MongoManager} from "../../managers/MongoManager";
-import {IDungeonInfo, ISectionInfo} from "../../definitions";
-import {
-    MessageActionRow,
-    MessageSelectMenu,
-    Role,
-    TextChannel
-} from "discord.js";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {RaidInstance} from "../../instances/RaidInstance";
-import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
-import {canManageRaidsIn, hasPermsToRaid} from "../../instances/Common";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-
-type DungeonSelectionType = {
-    section: ISectionInfo;
-    afkCheckChan: TextChannel;
-    cpChan: TextChannel;
-    raiderRole: Role;
-    dungeons: IDungeonInfo[];
-    omittedDungeons: IDungeonInfo[];
-};
+import {getAvailableSections, DungeonSelectionType, getSelectedSection, getSelectedDungeon} from "../../instances/Common";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
@@ -78,74 +55,10 @@ export class StartAfkCheck extends BaseCommand {
         await ctx.interaction.deferReply();
         const location = ctx.interaction.options.getString("location");
         const allSections = MongoManager.getAllSections(ctx.guildDoc!);
+        const allRolePerms = MongoManager.getAllConfiguredRoles(ctx.guildDoc!);
 
         // Step 1: Find all sections that the leader can lead in.
-        const availableSections: DungeonSelectionType[] = [];
-
-        // Get all sections that the member can lead in
-        const allRolePerms = MongoManager.getAllConfiguredRoles(ctx.guildDoc!);
-        for (const section of allSections) {
-            if (!canManageRaidsIn(section, ctx.member!, ctx.guildDoc!))
-                continue;
-
-            const dungeons: IDungeonInfo[] = [];
-            const omittedDungeons: IDungeonInfo[] = [];
-            section.otherMajorConfig.afkCheckProperties.allowedDungeons.forEach(id => {
-                if (DungeonUtilities.isCustomDungeon(id)) {
-                    const customDgn = ctx.guildDoc!.properties.customDungeons.find(x => x.codeName === id);
-                    if (customDgn) {
-                        if (!hasPermsToRaid(customDgn.roleRequirement, ctx.member!, allRolePerms)) {
-                            omittedDungeons.push(customDgn);
-                            return;
-                        }
-
-                        dungeons.push(customDgn);
-                    }
-
-                    return;
-                }
-
-                const dgn = DUNGEON_DATA.find(x => x.codeName === id);
-                if (!dgn)
-                    return;
-
-                const overrideInfo = ctx.guildDoc!.properties.dungeonOverride.find(x => x.codeName === id);
-                if (!hasPermsToRaid(overrideInfo?.roleRequirement, ctx.member!, allRolePerms)) {
-                    omittedDungeons.push(dgn);
-                    return;
-                }
-
-                dungeons.push(dgn);
-                return;
-            });
-
-            if (dungeons.length === 0)
-                continue;
-
-            const afkCheckChan = GuildFgrUtilities.getCachedChannel<TextChannel>(
-                ctx.guild!,
-                section.channels.raids.afkCheckChannelId
-            )!;
-
-            const controlPanelChan = GuildFgrUtilities.getCachedChannel<TextChannel>(
-                ctx.guild!,
-                section.channels.raids.controlPanelChannelId
-            )!;
-
-            const verifiedRole = GuildFgrUtilities.getCachedRole(
-                ctx.guild!,
-                section.roles.verifiedRoleId
-            )!;
-
-            availableSections.push({
-                section: section,
-                cpChan: controlPanelChan,
-                afkCheckChan: afkCheckChan,
-                raiderRole: verifiedRole,
-                dungeons: dungeons,
-                omittedDungeons: omittedDungeons
-            });
-        }
+        const availableSections = await getAvailableSections(ctx, allRolePerms, allSections);
 
         if (availableSections.length === 0) {
             await ctx.interaction.editReply({
@@ -158,56 +71,8 @@ export class StartAfkCheck extends BaseCommand {
         }
 
         // Step 2: Ask for the appropriate section.
-        const sectionToUse: DungeonSelectionType | null = await new Promise(async (resolve) => {
-            if (availableSections.length === 1)
-                return resolve(availableSections[0]);
-
-            const identifier = StringUtil.generateRandomString(20);
-            const selectMenu = new MessageSelectMenu()
-                .setCustomId(identifier)
-                .setMaxValues(1)
-                .setMinValues(1);
-
-            selectMenu.addOptions([
-                {
-                    description: "Cancels the section selection menu",
-                    label: "Cancel.",
-                    value: "cancel"
-                },
-                ...availableSections.map(x => {
-                    return {
-                        description: `AFK Channel Channel: ${x.afkCheckChan.name}`,
-                        label: x.section.sectionName,
-                        value: x.section.uniqueIdentifier
-                    };
-                })
-            ]);
-
-            await ctx.interaction.editReply({
-                content: "Please select the section that you want to start your raid in. You have a minute and a"
-                    + " half to choose. If you do not want to start a raid at this time, select the **Cancel** option.",
-                components: [new MessageActionRow().addComponents(selectMenu)]
-            });
-
-            const res = await AdvancedCollector.startInteractionEphemeralCollector({
-                targetAuthor: ctx.user,
-                acknowledgeImmediately: false,
-                targetChannel: ctx.channel,
-                duration: 1.5 * 60 * 1000
-            }, identifier);
-
-            if (!res || !res.isSelectMenu()) {
-                return resolve(null);
-            }
-
-            if (res.values[0] === "cancel") {
-                return resolve(null);
-            }
-
-            await res.deferUpdate();
-            return resolve(availableSections.find(x => x.section.uniqueIdentifier === res.values[0])!);
-        });
-
+        const sectionToUse: DungeonSelectionType | null = await getSelectedSection(ctx, availableSections);
+        
         if (!sectionToUse) {
             await ctx.interaction.editReply({
                 content: "This process has been canceled.",
@@ -217,79 +82,18 @@ export class StartAfkCheck extends BaseCommand {
         }
 
         // Step 3: Ask for the appropriate dungeon
-        const uIdentifier = StringUtil.generateRandomString(20);
-        const selectMenus: MessageSelectMenu[] = [];
-        const dungeonSubset = ArrayUtilities.breakArrayIntoSubsets(sectionToUse.dungeons, 25);
-        for (let i = 0; i < Math.min(4, dungeonSubset.length); i++) {
-            selectMenus.push(
-                new MessageSelectMenu()
-                    .setCustomId(`${uIdentifier}_${i}`)
-                    .setMinValues(1)
-                    .setMaxValues(1)
-                    .addOptions(dungeonSubset[i].map(x => {
-                        return {
-                            label: x.dungeonName,
-                            value: x.codeName,
-                            emoji: x.portalEmojiId
-                        };
-                    }))
-            );
-        }
+        const selectedDgn = await getSelectedDungeon(ctx, sectionToUse);
 
-        const askDgnEmbed = MessageUtilities.generateBlankEmbed(ctx.member!, "GOLD")
-            .setTitle(`${sectionToUse.section.sectionName}: Select Dungeon`)
-            .setDescription("Please select a dungeon from the dropdown menu(s) below. If you want to cancel this,"
-                + " press the **Cancel** button.")
-            .setFooter({text: "You have 1 minute and 30 seconds to select a dungeon."})
-            .setTimestamp();
-
-        if (sectionToUse.omittedDungeons.length > 0) {
-            askDgnEmbed.addField(
-                "Omitted Dungeon",
-                "You are not able to lead in the following dungeons due to not having the necessary role(s)."
-                + StringUtil.codifyString(
-                    sectionToUse.omittedDungeons
-                        .map(x => `- ${x.dungeonName} (${x.isBuiltIn ? "Built-In" : "Custom"})`)
-                        .join("\n")
-                )
-            );
-        }
-
-        if (dungeonSubset.length > 4) {
-            askDgnEmbed.addField(
-                "Warning",
-                "Some dungeons have been excluded from the dropdown. This is due to a Discord limitation. To fix "
-                + "this issue, please ask a higher-up to exclude some irrelevant dungeons from this list."
-            );
-        }
-
-        await ctx.interaction.editReply({
-            embeds: [askDgnEmbed],
-            components: AdvancedCollector.getActionRowsFromComponents([
-                ...selectMenus,
-                AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
-                    .setCustomId(`${uIdentifier}_cancel`)
-            ])
-        });
-
-        const selectedDgn = await AdvancedCollector.startInteractionEphemeralCollector({
-            targetAuthor: ctx.user,
-            acknowledgeImmediately: false,
-            targetChannel: ctx.channel,
-            duration: 1.5 * 60 * 1000
-        }, uIdentifier);
-
-        if (!selectedDgn || !selectedDgn.isSelectMenu()) {
+        if(!selectedDgn){
             await ctx.interaction.editReply({
                 components: [],
                 content: "You either did not select a dungeon in time or canceled this process.",
                 embeds: []
             });
-
             return 0;
         }
-
         const dungeonToUse = sectionToUse.dungeons.find(x => x.codeName === selectedDgn.values[0])!;
+
 
         // Step 4: Start it
         const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, {
