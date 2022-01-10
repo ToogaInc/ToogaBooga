@@ -252,6 +252,25 @@ export async function confirmReaction(
         .appendLine(2);
 
     if (reactInfo.type === "EARLY_LOCATION") {
+        
+        /**
+         * Temporary Nitro Solution
+         * Check if user who reacted to Nitro has the server booster role
+         */
+        if(mapKey === "NITRO"){
+
+            //Obtain Nitro role id if present on server
+            //To test on Test Server, change "" to a role on the server.
+            const nitroRoleID = interaction.guild.roles.premiumSubscriberRole?.id ?? ""; 
+            if(!member.roles.cache.has(nitroRoleID)){
+                await interaction.reply({
+                    ephemeral: true,
+                    content: "No Nitro",
+                });
+                return null;
+            }
+        }
+
         contentDisplay
             .append("Please confirm that you want to receive early location/priority queueing. You have **15** seconds")
             .append(" to select an option. Failure to respond will result in an automatic **no**.")
@@ -460,7 +479,13 @@ export function controlPanelCollectorFilter(guildDoc: IGuildInfo, section: ISect
             guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
             guildDoc.roles.staffRoles.universalLeaderRoleIds.leaderRoleId,
             guildDoc.roles.staffRoles.universalLeaderRoleIds.almostLeaderRoleId,
-            guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId
+            guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId,
+
+            // Moderation team roles
+            guildDoc.roles.staffRoles.moderation.helperRoleId,
+            guildDoc.roles.staffRoles.moderation.securityRoleId,
+            guildDoc.roles.staffRoles.moderation.officerRoleId,            
+            guildDoc.roles.staffRoles.moderation.moderatorRoleId
         ];
 
         const customPermData = guildDoc.properties.customCmdPermissions
