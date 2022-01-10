@@ -2,7 +2,7 @@ import {
     Collection,
     TextChannel,
     Role,
-    MessageSelectMenu, MessageActionRow,
+    MessageSelectMenu, MessageActionRow, SelectMenuInteraction,
 } from "discord.js"
 import {
     ISectionInfo,
@@ -38,10 +38,10 @@ export type DungeonSelectionType = {
  * @param {ICommandContext} ctx The command context.
  * @param {Collection<DefinedRole, string[]>} allRolePerms The role collection.
  * @param {ISectionInfo[]>} allSections All Guild Sections.
- * @return {DungeonSelectionType[]} All sections the leader can lead in.
+ * @return {Promise<DungeonSelectionType[]>} All sections the leader can lead in.
  */
  export async function getAvailableSections(ctx: ICommandContext, allRolePerms: Collection<DefinedRole, string[]>,
-    allSections: ISectionInfo[]){
+    allSections: ISectionInfo[]): Promise<DungeonSelectionType[]> {
     
     const availableSections: DungeonSelectionType[] = [];
     for (const section of allSections) {
@@ -113,9 +113,9 @@ export type DungeonSelectionType = {
  * Prompts leader to select a section to use.
  * @param {ICommandContext} ctx The command context.
  * @param {DungeonSelectionType[]} availableSections The available sections.
- * @return {DungeonSelectionType | null} A section or null.
+ * @return {Promise<DungeonSelectionType | null>} A section or null.
  */
-export async function getSelectedSection(ctx: ICommandContext, availableSections: DungeonSelectionType[]){
+export async function getSelectedSection(ctx: ICommandContext, availableSections: DungeonSelectionType[]): Promise<DungeonSelectionType | null> {
     const sectionToUse: DungeonSelectionType | null = await new Promise(async (resolve) => {
         if (availableSections.length === 1)
             return resolve(availableSections[0]);
@@ -172,9 +172,9 @@ export async function getSelectedSection(ctx: ICommandContext, availableSections
  * Prompts leader to select a dungeon to use.
  * @param {ICommandContext} ctx The command context.
  * @param {DungeonSelectionType[]} sectionToUse The section to use.
- * @return {DungeonSelectionType | null} A dungeon selection or null.
+ * @return {Promise<SelectMenuInteraction | null>} A dungeon selection or null.
  */
-export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: DungeonSelectionType){
+export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: DungeonSelectionType): Promise<SelectMenuInteraction | null> {
     const uIdentifier = StringUtil.generateRandomString(20);
     const selectMenus: MessageSelectMenu[] = [];
 
@@ -184,6 +184,7 @@ export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: Dun
             exaltDungeons.push(sectionToUse.dungeons[i]);
         }
     }
+
     selectMenus.push(
         new MessageSelectMenu()
             .setCustomId(`${uIdentifier}_${5}`)
@@ -199,7 +200,10 @@ export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: Dun
             }))
     );
     
-    const dungeonSubset = ArrayUtilities.breakArrayIntoSubsets(sectionToUse.dungeons, 25);
+    const dungeonSubset = ArrayUtilities.breakArrayIntoSubsets(
+        sectionToUse.dungeons.filter(x => x.dungeonCategory !== "Exaltation Dungeons"), 
+        25
+    );
     for (let i = 0; i < Math.min(4, dungeonSubset.length); i++) {
         selectMenus.push(
             new MessageSelectMenu()

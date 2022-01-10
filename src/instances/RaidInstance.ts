@@ -2190,15 +2190,17 @@ export class RaidInstance {
         if (!interaction.isButton() || !this._afkCheckMsg || this._raidStatus !== RaidStatus.IN_RUN)
             return;
 
+        if (interaction.customId !== `reconnect_${this._afkCheckMsg.id}`)
+            return;
+
         if (this.membersThatJoinedVc.every(x => x.id !== interaction.user.id)) {
             await interaction.reply({
                 ephemeral: true,
                 content: "You didn't join this raid, so you can't be moved in at this time."
             });
-        }
 
-        if (interaction.customId !== `reconnect_${this._afkCheckMsg.id}`)
             return;
+        }
 
         const member = await GuildFgrUtilities.fetchGuildMember(this._guild, interaction.user.id);
         if (!member)
@@ -2217,7 +2219,9 @@ export class RaidInstance {
         if (member.voice.channel.id === this._raidVc?.id)
             return;
 
-        member.voice.setChannel(this._raidVc).catch();
+        await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            member.voice.setChannel(this._raidVc);
+        });
         this.logEvent(`${member.displayName} (${member.id}) has reconnected to the raid VC.`, true).catch();
         return;
     }
