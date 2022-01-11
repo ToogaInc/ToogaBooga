@@ -18,6 +18,7 @@ export * from "./staff/CheckBlacklist";
 export * from "./staff/FindPerson";
 export * from "./staff/ManualVerifyMain";
 export * from "./staff/ManualVerifySection";
+export * from "./staff/AddOrChangeName";
 
 export * from "./punishments/SuspendMember";
 export * from "./punishments/SectionSuspendMember";

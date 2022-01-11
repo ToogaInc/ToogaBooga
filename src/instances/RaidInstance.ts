@@ -2457,6 +2457,15 @@ export class RaidInstance {
                             .append("channel but not in the /who screenshot.")
                             .toString()
                     );
+
+
+                    const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
+                    if (member) {
+                        const quotaToLogAs = QuotaManager.findBestQuotaToAdd(member, this._guildDoc, "Parse");
+                        if (quotaToLogAs) {
+                            await QuotaManager.logQuota(member, quotaToLogAs, "Parse", 1);
+                        }
+                    }
                 }
                 else {
                     embed.setDescription(

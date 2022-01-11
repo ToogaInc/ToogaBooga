@@ -16,7 +16,9 @@ export type TimedResult<R> = {
 export type QuotaLogType = QuotaRunLogType
     | "Parse"
     | "ManualVerify"
-    | "PunishmentIssued";
+    | "PunishmentIssued"
+    | "NameAdjustment"
+    | "ModmailRespond";
 
 export type QuotaRunLogType = "RunComplete"
     | "RunFailed"
