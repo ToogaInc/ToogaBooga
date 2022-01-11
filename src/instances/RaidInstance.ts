@@ -1582,8 +1582,7 @@ export class RaidInstance {
 
         const descSb = new StringBuilder();
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
-            descSb.append(`To participate in this raid, join the ${this._raidVc.toString()} channel. There are no`)
-                .append(" required reactions.");
+            descSb.append(`To participate in this raid, join ${this._raidVc.toString()} channel.`);
         }
         else {
             descSb.append("Only priority reactions can join the raid VC at this time. You will be able to join the ")
