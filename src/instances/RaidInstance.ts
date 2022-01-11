@@ -1153,7 +1153,7 @@ export class RaidInstance {
             return false;
 
         this._location = newLoc;
-        this.logEvent(`Location changed to: ${newLoc}`, true).catch();
+        this.logEvent(`${EmojiConstants.MAP_EMOJI} Location changed to: ${newLoc}`, true).catch();
 
         // Update the location in the database.
         const res = await MongoManager.updateAndFetchGuildDoc({
@@ -1582,8 +1582,7 @@ export class RaidInstance {
 
         const descSb = new StringBuilder();
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
-            descSb.append(`To participate in this raid, join the ${this._raidVc.toString()} channel. There are no`)
-                .append(" required reactions.");
+            descSb.append(`To participate in this raid, join ${this._raidVc.toString()} channel.`);
         }
         else {
             descSb.append("Only priority reactions can join the raid VC at this time. You will be able to join the ")
@@ -2051,7 +2050,7 @@ export class RaidInstance {
             });
 
             this.logEvent(
-                `${memberThatResponded.displayName} (${memberThatResponded.id}) confirmed that he or she has`
+                `${EmojiConstants.KEY_EMOJI} ${memberThatResponded.displayName} (${memberThatResponded.id}) confirmed that he or she has`
                 + ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.modifiers.join(", ")}]\``,
                 true
             ).catch();
@@ -2099,7 +2098,7 @@ export class RaidInstance {
             && this._peopleToAddToVc.has(member.id)) {
             member.voice.setChannel(this._raidVc).catch();
             this.logEvent(
-                `${member.displayName} (${member.id}) has been added to the VC for being a priority react.`,
+                `${EmojiConstants.NITRO_EMOJI} ${member.displayName} (${member.id}) has been added to the VC for being a priority react.`,
                 true
             ).catch();
             return;
@@ -2108,21 +2107,21 @@ export class RaidInstance {
         if (oldState.channelId !== newState.channelId) {
             if (oldState.channelId && !newState.channelId) {
                 // person left the VC
-                this.logEvent(`${member.displayName} (${member.id}) has left the raid VC.`, true)
+                this.logEvent(`${EmojiConstants.EYES_EMOJI} ${member.displayName} (${member.id}) has left the raid VC.`, true)
                     .catch();
                 return;
             }
 
             if (!oldState.channelId && newState.channelId) {
                 // person joined the VC
-                this.logEvent(`${member.displayName} (${member.id}) has joined the raid VC.`, true)
+                this.logEvent(`${EmojiConstants.GREEN_CHECK_EMOJI} ${member.displayName} (${member.id}) has joined the raid VC.`, true)
                     .catch();
                 return;
             }
 
             // otherwise, changed VC
             this.logEvent(
-                `${member.displayName} (${member.id}) has switched voice channels.\n`
+                `${EmojiConstants.REDIRECT_EMOJI} ${member.displayName} (${member.id}) has switched voice channels.\n`
                 + `\tFrom: ${oldState.channel!.name} (${oldState.channelId})\n`
                 + `\tTo: ${newState.channel!.name} (${newState.channelId})`,
                 true
@@ -2133,56 +2132,56 @@ export class RaidInstance {
         // Don't care about local mute, only server
         if (oldState.serverMute && !newState.serverMute) {
             // person no longer server muted
-            this.logEvent(`${member.displayName} (${member.id}) is no longer server muted.`, true)
+            this.logEvent(`${EmojiConstants.MIC_EMOJI} ${member.displayName} (${member.id}) is no longer server muted.`, true)
                 .catch();
             return;
         }
 
         if (!oldState.serverMute && newState.serverMute) {
             // person server/local muted
-            this.logEvent(`${member.displayName} (${member.id}) is now server muted.`, true)
+            this.logEvent(`${EmojiConstants.MIC_EMOJI} ${member.displayName} (${member.id}) is now server muted.`, true)
                 .catch();
             return;
         }
 
         if (oldState.deaf && !newState.deaf) {
             // person no longer server/local deaf
-            this.logEvent(`${member.displayName} (${member.id}) is no longer deafened.`, true)
+            this.logEvent(`${EmojiConstants.HEADPHONE_EMOJI} ${member.displayName} (${member.id}) is no longer deafened.`, true)
                 .catch();
             return;
         }
 
         if (!oldState.deaf && newState.deaf) {
             // person server/local deaf
-            this.logEvent(`${member.displayName} (${member.id}) is now deafened.`, true)
+            this.logEvent(`${EmojiConstants.HEADPHONE_EMOJI} ${member.displayName} (${member.id}) is now deafened.`, true)
                 .catch();
             return;
         }
 
         if (oldState.selfVideo && !newState.selfVideo) {
             // person video off
-            this.logEvent(`${member.displayName} (${member.id}) has turned off video.`, true)
+            this.logEvent(`${EmojiConstants.CAM_EMOJI} ${member.displayName} (${member.id}) has turned off video.`, true)
                 .catch();
             return;
         }
 
         if (!oldState.selfVideo && newState.selfVideo) {
             // person video on
-            this.logEvent(`${member.displayName} (${member.id}) has turned on video.`, true)
+            this.logEvent(`${EmojiConstants.CAM_EMOJI} ${member.displayName} (${member.id}) has turned on video.`, true)
                 .catch();
             return;
         }
 
         if (oldState.streaming && !newState.streaming) {
             // person stream off
-            this.logEvent(`${member.displayName} (${member.id}) has stopped streaming.`, true)
+            this.logEvent(`${EmojiConstants.TV_EMOJI} ${member.displayName} (${member.id}) has stopped streaming.`, true)
                 .catch();
             return;
         }
 
         if (!oldState.streaming && newState.streaming) {
             // person stream on
-            this.logEvent(`${member.displayName} (${member.id}) has started streaming.`, true)
+            this.logEvent(`${EmojiConstants.TV_EMOJI} ${member.displayName} (${member.id}) has started streaming.`, true)
                 .catch();
             return;
         }
@@ -2229,7 +2228,7 @@ export class RaidInstance {
         await GlobalFgrUtilities.tryExecuteAsync(async () => {
             member.voice.setChannel(this._raidVc);
         });
-        this.logEvent(`${member.displayName} (${member.id}) has reconnected to the raid VC.`, true).catch();
+        this.logEvent(`${EmojiConstants.GREEN_CHECK_EMOJI} ${member.displayName} (${member.id}) has reconnected to the raid VC.`, true).catch();
         return;
     }
 
@@ -2331,7 +2330,7 @@ export class RaidInstance {
                         content: "Locked Raid VC.",
                         ephemeral: true
                     }),
-                    this.logEvent("Raid VC locked.", true)
+                    this.logEvent(`${EmojiConstants.LOCK_EMOJI} Raid VC locked.`, true)
                 ]);
                 return;
             }
@@ -2345,7 +2344,7 @@ export class RaidInstance {
                         content: "Unlocked Raid VC.",
                         ephemeral: true
                     }),
-                    this.logEvent("Raid VC unlocked.", true).catch()
+                    this.logEvent(`${EmojiConstants.UNLOCK_EMOJI}Raid VC unlocked.`, true).catch()
                 ]);
                 return;
             }
@@ -2381,23 +2380,23 @@ export class RaidInstance {
                 if (!this._raidVc) return;
 
                 this.logEvent(
-                    `Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``,
+                    `${EmojiConstants.CLIPBOARD_EMOJI} Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``,
                     true
                 ).catch();
 
                 if (!parseSummary) {
                     this.logEvent(
-                        "Parse failed; the API may not be functioning at this time.",
+                        `${EmojiConstants.CLIPBOARD_EMOJI} Parse failed; the API may not be functioning at this time.`,
                         true
                     ).catch();
 
                     return;
                 }
 
-                const inVcNotInRaidFields = parseSummary.isValid
+                const inRaidNotInVcFields = parseSummary.isValid
                     ? parseSummary.inRaidButNotInVC
                     : [];
-                const inRaidNotInVcFields = parseSummary.isValid
+                const inVcNotInRaidFields = parseSummary.isValid
                     ? parseSummary.inVcButNotInRaid
                     : [];
 
@@ -2429,7 +2428,7 @@ export class RaidInstance {
                 }
 
                 for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
-                    embed.addField("In Raid VC, Not In /who.", StringUtil.codifyString(field.join(", ")));
+                    embed.addField("In Raid VC, Not In /who.", field.join(", "));
                 }
 
                 await this._controlPanelChannel.send({embeds: [embed]}).catch();

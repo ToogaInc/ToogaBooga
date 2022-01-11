@@ -62,6 +62,12 @@ export namespace EmojiConstants {
     export const REDIRECT_EMOJI: string = "🔀";
     export const STOP_SIGN_EMOJI: string = "🛑";
     export const EYES_EMOJI: string = "👀";
+    export const MUTE_EMOJI: string = "🔇";
+    export const UNMUTE_EMOJI: string = "🔉";
+    export const HEADPHONE_EMOJI: string = "🎧";
+    export const MIC_EMOJI: string = "🎤";
+    export const CAM_EMOJI: string = "📷";
+    export const TV_EMOJI: string = "📺";
 
     // specific classes
     export const ROGUE: string = "585616162189082626";
