@@ -265,11 +265,11 @@ export namespace LoggerManager {
                     let keyName: string | null = null;
                     if (vId === "GENERAL")
                         keyName = "General";
-                    else if (vId in MAPPED_AFK_CHECK_REACTIONS && MAPPED_AFK_CHECK_REACTIONS[vId].type === "KEY")
+                    else if (vId in MAPPED_AFK_CHECK_REACTIONS && MAPPED_AFK_CHECK_REACTIONS[vId].type.includes("KEY"))
                         keyName = MAPPED_AFK_CHECK_REACTIONS[vId].name;
                     else {
                         const customKey = guildDoc?.properties.customReactions
-                            .find(x => x.key === vId && x.value.type === "KEY");
+                            .find(x => x.key === vId && x.value.type.includes("KEY"));
                         if (customKey)
                             keyName = customKey.value.name;
                     }

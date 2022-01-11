@@ -708,7 +708,6 @@ export class ConfigureAfkCheck extends BaseCommand {
         let currentPermIdx = 0;
 
         while (true) {
-            console.log(`${currentRoleIdx} ${currentPermIdx}`);
             addRoleButton.setDisabled(newPerms.length + 1 > ConfigureAfkCheck.MAX_PERMS_SET);
 
             // Can't go to next/prev role if only one role

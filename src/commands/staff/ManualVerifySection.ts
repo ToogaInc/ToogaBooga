@@ -219,6 +219,11 @@ export class ManualVerifySection extends BaseCommand {
             components: []
         });
 
+        const bestQuotaRole = QuotaManager.findBestQuotaToAdd(ctx.member!, ctx.guildDoc!, "ManualVerify");
+        if (bestQuotaRole) {
+            await QuotaManager.logQuota(ctx.member!, bestQuotaRole, "ManualVerify", 1);
+        }
+
         return 0;
     }
 }

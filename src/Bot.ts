@@ -122,7 +122,10 @@ export class Bot {
             new Cmds.CheckBlacklist(),
             new Cmds.FindPerson(),
             new Cmds.ManualVerifyMain(),
-            new Cmds.ManualVerifySection()
+            new Cmds.ManualVerifySection(),
+            new Cmds.AddOrChangeName(),
+            new Cmds.RemoveName(),
+            new Cmds.ParseRaidVc()
         ]);
 
         Bot.Commands.set("Configuration", [
@@ -158,7 +161,8 @@ export class Bot {
         ]);
 
         Bot.Commands.set("Logging", [
-            new Cmds.LogLedRun()
+            new Cmds.LogLedRun(),
+            new Cmds.LogKeyPop()
         ]);
 
         Bot.Commands.set("Modmail", [

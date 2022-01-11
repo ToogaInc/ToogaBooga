@@ -73,24 +73,31 @@ export class AddOrChangeName extends BaseCommand {
         const member = resMember.member;
         // Ask if add or change name
         const uniqueId = StringUtil.generateRandomString(10);
+        const addId = `${uniqueId}_ADD`;
+        const editId = `${uniqueId}_EDIT`;
+        const addButton = AdvancedCollector.cloneButton(ButtonConstants.ADD_BUTTON)
+            .setCustomId(addId);
+        const editButton = AdvancedCollector.cloneButton(ButtonConstants.EDIT_BUTTON)
+            .setCustomId(editId);
         await ctx.interaction.reply({
             content: `Do you want to __add__ \`${ign}\` or __edit__ one of ${member}'s names to \`${ign}\`?`,
             components: AdvancedCollector.getActionRowsFromComponents([
-                ButtonConstants.ADD_BUTTON,
-                ButtonConstants.EDIT_BUTTON
+                addButton,
+                editButton
             ])
         });
 
         const selectedOption = await AdvancedCollector.startInteractionEphemeralCollector({
             targetChannel: ctx.channel,
-            acknowledgeImmediately: false,
+            acknowledgeImmediately: true,
             duration: 60 * 1000,
             targetAuthor: ctx.user
         }, uniqueId);
 
         if (!selectedOption) {
             await ctx.interaction.editReply({
-                content: "You did not select an option in time."
+                content: "You did not select an option in time.",
+                components: []
             });
             return 0;
         }
@@ -102,7 +109,8 @@ export class AddOrChangeName extends BaseCommand {
             const otherEntry = lookup[0];
             await ctx.interaction.editReply({
                 content: `The IGN, \`${ign}\`, is already in use by another person with the Discord ID`
-                    + ` \`${otherEntry.currentDiscordId}\`. Please have an Officer/HRL resolve this.`
+                    + ` \`${otherEntry.currentDiscordId}\`. Please have an Officer/HRL resolve this.`,
+                components: []
             });
 
             return 0;
@@ -111,24 +119,30 @@ export class AddOrChangeName extends BaseCommand {
         const bestQuotaToAdd = QuotaManager.findBestQuotaToAdd(ctx.member!, ctx.guildDoc!, "NameAdjustment");
 
         // Adding
-        if (selectedOption.customId === ButtonConstants.ADD_ID) {
+        if (selectedOption.customId === addId) {
+            const uniqueIdentifier = StringUtil.generateRandomString(20);
+            const yesButton = AdvancedCollector.cloneButton(ButtonConstants.YES_BUTTON)
+                .setCustomId(uniqueIdentifier + "_yes");
+            const noId = uniqueIdentifier + "_no";
+            const noButton = AdvancedCollector.cloneButton(ButtonConstants.NO_BUTTON)
+                .setCustomId(noId);
+
             await ctx.interaction.editReply({
                 content: `Are you sure you want to add \`${ign}\` to ${member}'s database entry & nickname?`,
                 components: AdvancedCollector.getActionRowsFromComponents([
-                    ButtonConstants.YES_BUTTON,
-                    ButtonConstants.NO_BUTTON
+                    yesButton,
+                    noButton
                 ])
             });
 
-            const uniqueIdentifier = StringUtil.generateRandomString(20);
             const res = await AdvancedCollector.startInteractionEphemeralCollector({
                 targetChannel: ctx.channel,
-                acknowledgeImmediately: false,
+                acknowledgeImmediately: true,
                 duration: 2 * 60 * 1000,
                 targetAuthor: ctx.user
             }, uniqueIdentifier);
 
-            if (!res) {
+            if (!res || res.customId === noId) {
                 await ctx.interaction.editReply({
                     content: "You did not respond in time or you said `No` to the confirmation question.",
                     components: []
@@ -166,7 +180,8 @@ export class AddOrChangeName extends BaseCommand {
                 : "Their nickname could not be changed.";
 
             await ctx.interaction.editReply({
-                content: finalStr
+                content: finalStr,
+                components: []
             });
 
             if (bestQuotaToAdd) {
@@ -184,8 +199,9 @@ export class AddOrChangeName extends BaseCommand {
             UserManager.getAllNames(member.nickname).forEach(x => names.set(x.toLowerCase(), [x, false, true]));
         }
 
-        if (lookup.length > 0) {
-            lookup[0].rotmgNames.forEach(x => {
+        const doc = await MongoManager.findIdInIdNameCollection(member.id);
+        if (doc.length > 0) {
+            doc[0].rotmgNames.forEach(x => {
                 const d = names.get(x.lowercaseIgn);
                 if (d) {
                     d[1] = true;
@@ -198,31 +214,35 @@ export class AddOrChangeName extends BaseCommand {
 
         if (names.size === 0) {
             await ctx.interaction.editReply({
-                content: "This person does not have any names to change. Please add a name instead."
+                content: "This person does not have any names to change. Please add a name instead.",
+                components: []
             });
 
             return 0;
         }
 
+        const uniqueIdentifier = StringUtil.generateRandomString(20);
         const selectMenu = new MessageSelectMenu()
-            .setCustomId("select")
+            .setCustomId(uniqueIdentifier + "_select")
             .setMinValues(1)
             .setMaxValues(1)
             .setPlaceholder("Possible Names")
             .setOptions(names.map(x => {
                 return {value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database"}
             }));
+
+        const cancelButton = AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
+            .setCustomId(uniqueIdentifier + "_cancel");
         await ctx.interaction.editReply({
             content: `Are you sure you want to add \`${ign}\` to ${member}'s database entry & nickname?`
                 + " If you want to add this IGN, please __select__ an IGN that you want to replace this IGN with."
                 + " Otherwise, press the **Cancel** button to cancel.",
             components: AdvancedCollector.getActionRowsFromComponents([
                 selectMenu,
-                ButtonConstants.CANCEL_BUTTON
+                cancelButton
             ])
         });
 
-        const uniqueIdentifier = StringUtil.generateRandomString(20);
         const res = await AdvancedCollector.startInteractionEphemeralCollector({
             targetChannel: ctx.channel,
             acknowledgeImmediately: false,
@@ -243,11 +263,11 @@ export class AddOrChangeName extends BaseCommand {
         const [origName, isInDb, wasNickname] = names.get(lowerCaseName)!;
         let updatedDb = false;
         if (isInDb && ign.toLowerCase() !== lowerCaseName) {
-            const allNames = lookup[0].rotmgNames;
+            const allNames = doc[0].rotmgNames;
             const idx = allNames.findIndex(x => x.lowercaseIgn === lowerCaseName);
             if (idx === -1) {
                 await ctx.interaction.editReply({
-                    content: `An index database error occurred. IGN: ${ign}. ID: ${lookup[0].currentDiscordId}`,
+                    content: `An index database error occurred. IGN: ${ign}. ID: ${doc[0].currentDiscordId}`,
                     components: []
                 });
 
@@ -257,9 +277,16 @@ export class AddOrChangeName extends BaseCommand {
             allNames[idx].ign = ign;
             allNames[idx].lowercaseIgn = ign.toLowerCase();
 
-            await MongoManager.getIdNameCollection().updateOne({currentDiscordId: lookup[0].currentDiscordId}, {
+            await MongoManager.getIdNameCollection().updateOne({currentDiscordId: doc[0].currentDiscordId}, {
                 $set: {
                     rotmgNames: allNames
+                },
+                $push: {
+                    pastRealmNames: {
+                        ign: lowerCaseName,
+                        lowercaseIgn: origName,
+                        toDate: Date.now()
+                    }
                 }
             });
             updatedDb = true;
@@ -267,12 +294,12 @@ export class AddOrChangeName extends BaseCommand {
 
         let updatedName = false;
         if (wasNickname && (member.nickname?.length ?? 0) + ign.length + 4 <= 32
-            && (member.nickname ?? "").toLowerCase().includes(ign.toLowerCase())) {
+            && !(member.nickname ?? "").toLowerCase().includes(ign.toLowerCase())) {
             const allNames = member.nickname!.split("|");
             const idx = allNames.findIndex(x => x.toLowerCase().includes(lowerCaseName));
             if (idx === -1) {
                 await ctx.interaction.editReply({
-                    content: `An index update error occurred. IGN: ${ign}. ID: ${lookup[0].currentDiscordId}`,
+                    content: `An index update error occurred. IGN: ${ign}. ID: ${doc[0].currentDiscordId}`,
                     components: []
                 });
 
@@ -295,7 +322,8 @@ export class AddOrChangeName extends BaseCommand {
             : "Their nickname could not be changed.";
 
         await ctx.interaction.editReply({
-            content: tFinalStr
+            content: tFinalStr,
+            components: []
         });
 
         if (bestQuotaToAdd) {

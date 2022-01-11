@@ -1334,14 +1334,65 @@ export class RaidInstance {
     }
 
     /**
+     * Interprets the parse result, returning an embed with the relevant information.
+     * @param {IParseResponse} parseSummary The parse summary.
+     * @param {User} initiatedBy The user that initiated this.
+     * @param {VoiceChannel} vc The voice channel.
+     * @returns {Promise<MessageEmbed>} The embed.
+     */
+    public static async interpretParseRes(parseSummary: IParseResponse, initiatedBy: User,
+                                          vc: VoiceChannel): Promise<MessageEmbed> {
+        const inVcNotInRaidFields = parseSummary.isValid
+            ? parseSummary.inRaidButNotInVC
+            : [];
+        const inRaidNotInVcFields = parseSummary.isValid
+            ? parseSummary.inVcButNotInRaid
+            : [];
+
+        const embed = MessageUtilities.generateBlankEmbed(initiatedBy, "RANDOM")
+            .setTitle(`Parse Results for: **${vc?.name ?? "N/A"}**`)
+            .setFooter({ text: "Completed Time:" })
+            .setTimestamp();
+
+        if (parseSummary.isValid) {
+            embed.setDescription(
+                new StringBuilder("Parse Successful.")
+                    .appendLine()
+                    .append(`- ${parseSummary.inRaidButNotInVC.length} player(s) are in the /who screenshot `)
+                    .append("but not in the raid voice channel.")
+                    .appendLine()
+                    .append(`- ${parseSummary.inVcButNotInRaid.length} player(s) are in the raid voice  `)
+                    .append("channel but not in the /who screenshot.")
+                    .toString()
+            );
+        }
+        else {
+            embed.setDescription(
+                "An error occurred when trying to parse this screenshot. Please try again later."
+            );
+        }
+
+        for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
+            embed.addField("In /who, Not In Raid VC.", StringUtil.codifyString(field.join(", ")));
+        }
+
+        for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
+            embed.addField("In Raid VC, Not In /who.", StringUtil.codifyString(field.join(", ")));
+        }
+
+        return embed;
+    }
+
+    /**
      * Parses a screenshot.
      * @param {string} url The url to the screenshot.
+     * @param {VoiceChannel | null} vc The voice channel to check against.
      * @return {Promise<IParseResponse>} An object containing the parse results.
      */
-    public async parseScreenshot(url: string): Promise<IParseResponse | null> {
+    public static async parseScreenshot(url: string, vc: VoiceChannel | null): Promise<IParseResponse | null> {
         const toReturn: IParseResponse = {inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false};
         // No raid VC = no parse.
-        if (!this._raidVc) return toReturn;
+        if (!vc) return toReturn;
         // Make sure the image exists.
         try {
             // Make a request to see if this URL points to the right place.
@@ -1367,7 +1418,7 @@ export class RaidInstance {
         toReturn.isValid = true;
         // Begin parsing.
         // Get people in raid VC but not in the raid itself. Could be alts.
-        this._raidVc.members.forEach(member => {
+        vc.members.forEach(member => {
             const igns = UserManager.getAllNames(member.displayName)
                 .map(x => x.toLowerCase());
             const idx = parsedNames.findIndex(name => igns.includes(name.toLowerCase()));
@@ -1376,7 +1427,7 @@ export class RaidInstance {
         });
 
         // Get people in raid but not in the VC. Could be crashers.
-        const allIgnsInVc = this._raidVc.members.map(x => UserManager.getAllNames(x.displayName.toLowerCase())).flat();
+        const allIgnsInVc = vc.members.map(x => UserManager.getAllNames(x.displayName.toLowerCase())).flat();
         parsedNames.forEach(name => {
             if (allIgnsInVc.includes(name.toLowerCase())) return;
             toReturn.inRaidButNotInVC.push(name);
@@ -2417,7 +2468,7 @@ export class RaidInstance {
                 });
 
                 if (!res) return;
-                const parseSummary = await this.parseScreenshot(res.url);
+                const parseSummary = await RaidInstance.parseScreenshot(res.url, this._raidVc);
                 if (!this._raidVc) return;
 
                 this.logEvent(
@@ -2434,53 +2485,7 @@ export class RaidInstance {
                     return;
                 }
 
-                const inVcNotInRaidFields = parseSummary.isValid
-                    ? parseSummary.inRaidButNotInVC
-                    : [];
-                const inRaidNotInVcFields = parseSummary.isValid
-                    ? parseSummary.inVcButNotInRaid
-                    : [];
-
-                const embed = MessageUtilities.generateBlankEmbed(i.user, "RANDOM")
-                    .setTitle(`Parse Results for: **${this._raidVc?.name ?? "N/A"}**`)
-                    .setFooter({ text: "Completed Time:" })
-                    .setTimestamp();
-
-                if (parseSummary.isValid) {
-                    embed.setDescription(
-                        new StringBuilder("Parse Successful.")
-                            .appendLine()
-                            .append(`- ${parseSummary.inRaidButNotInVC.length} player(s) are in the /who screenshot `)
-                            .append("but not in the raid voice channel.")
-                            .appendLine()
-                            .append(`- ${parseSummary.inVcButNotInRaid.length} player(s) are in the raid voice  `)
-                            .append("channel but not in the /who screenshot.")
-                            .toString()
-                    );
-
-
-                    const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
-                    if (member) {
-                        const quotaToLogAs = QuotaManager.findBestQuotaToAdd(member, this._guildDoc, "Parse");
-                        if (quotaToLogAs) {
-                            await QuotaManager.logQuota(member, quotaToLogAs, "Parse", 1);
-                        }
-                    }
-                }
-                else {
-                    embed.setDescription(
-                        "An error occurred when trying to parse this screenshot. Please try again later."
-                    );
-                }
-
-                for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
-                    embed.addField("In /who, Not In Raid VC.", StringUtil.codifyString(field.join(", ")));
-                }
-
-                for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
-                    embed.addField("In Raid VC, Not In /who.", StringUtil.codifyString(field.join(", ")));
-                }
-
+                const embed = await RaidInstance.interpretParseRes(parseSummary, i.user, this._raidVc);
                 await this._controlPanelChannel.send({ embeds: [embed] }).catch();
                 const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
                 if (!member) {
