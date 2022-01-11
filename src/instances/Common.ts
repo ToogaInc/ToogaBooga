@@ -4,7 +4,7 @@ import {
     EmojiIdentifierResolvable, Guild, GuildMember,
     MessageButton,
     MessageComponentInteraction,
-    MessageSelectMenu,
+    MessageSelectMenu, Role,
     TextChannel
 } from "discord.js";
 import {
@@ -44,6 +44,8 @@ export interface IKeyReactInfo {
  * @param {Collection<string, ReactionInfoMore>} essentialOptions The essential reactions. Note that
  * `interaction.customId` must be a key in `essentialOptions`.
  * @param {readonly IDungeonModifier[]} modifiers The dungeon modifiers that are allowed.
+ * @param {Collection<string, Role[]>} earlyLocReactions The early location reactions (mapped by ID) and the roles
+ * needed to get access to it.
  * @param {boolean} [isAfk] Whether this is an AFK check. If this is not an AFK check, then only the key checker
  * will be invoked.
  * @returns {Promise<IKeyReactInfo | null>} The reaction result, if any.
@@ -52,6 +54,7 @@ export async function confirmReaction(
     interaction: MessageComponentInteraction,
     essentialOptions: Collection<string, ReactionInfoMore>,
     modifiers: readonly IDungeonModifier[],
+    earlyLocReactions: Collection<string, Role[]> | null,
     isAfk: boolean = true
 ): Promise<IKeyReactInfo | null> {
     if (!interaction.guild)
@@ -251,24 +254,32 @@ export async function confirmReaction(
         .append(`You pressed the ${itemDisplay} button.`)
         .appendLine(2);
 
-    if (reactInfo.type === "EARLY_LOCATION") {
-        
-        /**
-         * Temporary Nitro Solution
-         * Check if user who reacted to Nitro has the server booster role
-         */
-        if(mapKey === "NITRO"){
+    if (reactInfo.type === "EARLY_LOCATION" && earlyLocReactions) {
+        const validRoles = earlyLocReactions.get(mapKey);
+        if (!validRoles) {
+            await interaction.reply({
+                ephemeral: true,
+                content: "An unknown error occurred.",
+            });
 
-            //Obtain Nitro role id if present on server
-            //To test on Test Server, change "" to a role on the server.
-            const nitroRoleID = interaction.guild.roles.premiumSubscriberRole?.id ?? ""; 
-            if(!member.roles.cache.has(nitroRoleID)){
-                await interaction.reply({
-                    ephemeral: true,
-                    content: "No Nitro",
-                });
-                return null;
+            return null;
+        }
+
+        let isFound = false;
+        for (const role of validRoles) {
+            if (member.roles.cache.has(role.id)) {
+                isFound = true;
+                break;
             }
+        }
+
+        if (!isFound) {
+            await interaction.reply({
+                ephemeral: true,
+                content: "You don't have a valid role for this!"
+            });
+
+            return null;
         }
 
         contentDisplay

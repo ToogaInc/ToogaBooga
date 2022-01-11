@@ -1985,14 +1985,15 @@ export class RaidInstance {
             }
 
             this._pplConfirmingReaction.add(i.user.id);
-            const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse);
-            if(!this._raidVc){
+            const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse, this._earlyLocToRole);
+            if (!this._raidVc) {
                 await i.editReply({
                     content: "The raid you are attempting to react to has been closed or aborted.",
                     components: []
                 });
                 return;
-            };
+            }
+
             this._pplConfirmingReaction.delete(i.user.id);
             if (!res) {
                 await i.editReply({
@@ -2050,7 +2051,8 @@ export class RaidInstance {
             });
 
             this.logEvent(
-                `${EmojiConstants.KEY_EMOJI} ${memberThatResponded.displayName} (${memberThatResponded.id}) confirmed that he or she has`
+                `${EmojiConstants.KEY_EMOJI} ${memberThatResponded.displayName} (${memberThatResponded.id}) confirmed`
+                + " that he or she has"
                 + ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.modifiers.join(", ")}]\``,
                 true
             ).catch();
@@ -2107,15 +2109,19 @@ export class RaidInstance {
         if (oldState.channelId !== newState.channelId) {
             if (oldState.channelId && !newState.channelId) {
                 // person left the VC
-                this.logEvent(`${EmojiConstants.EYES_EMOJI} ${member.displayName} (${member.id}) has left the raid VC.`, true)
-                    .catch();
+                this.logEvent(
+                    `${EmojiConstants.EYES_EMOJI} ${member.displayName} (${member.id}) has left the raid VC.`,
+                    true
+                ).catch();
                 return;
             }
 
             if (!oldState.channelId && newState.channelId) {
                 // person joined the VC
-                this.logEvent(`${EmojiConstants.GREEN_CHECK_EMOJI} ${member.displayName} (${member.id}) has joined the raid VC.`, true)
-                    .catch();
+                this.logEvent(
+                    `${EmojiConstants.GREEN_CHECK_EMOJI} ${member.displayName} (${member.id}) has joined the raid VC.`,
+                    true
+                ).catch();
                 return;
             }
 
@@ -2132,57 +2138,73 @@ export class RaidInstance {
         // Don't care about local mute, only server
         if (oldState.serverMute && !newState.serverMute) {
             // person no longer server muted
-            this.logEvent(`${EmojiConstants.MIC_EMOJI} ${member.displayName} (${member.id}) is no longer server muted.`, true)
-                .catch();
+            this.logEvent(
+                `${EmojiConstants.MIC_EMOJI} ${member.displayName} (${member.id}) is no longer server muted.`,
+                true
+            ).catch();
             return;
         }
 
         if (!oldState.serverMute && newState.serverMute) {
             // person server/local muted
-            this.logEvent(`${EmojiConstants.MIC_EMOJI} ${member.displayName} (${member.id}) is now server muted.`, true)
-                .catch();
+            this.logEvent(
+                `${EmojiConstants.MIC_EMOJI} ${member.displayName} (${member.id}) is now server muted.`,
+                true
+            ).catch();
             return;
         }
 
         if (oldState.deaf && !newState.deaf) {
             // person no longer server/local deaf
-            this.logEvent(`${EmojiConstants.HEADPHONE_EMOJI} ${member.displayName} (${member.id}) is no longer deafened.`, true)
-                .catch();
+            this.logEvent(
+                `${EmojiConstants.HEADPHONE_EMOJI} ${member.displayName} (${member.id}) is no longer deafened.`,
+                true
+            ).catch();
             return;
         }
 
         if (!oldState.deaf && newState.deaf) {
             // person server/local deaf
-            this.logEvent(`${EmojiConstants.HEADPHONE_EMOJI} ${member.displayName} (${member.id}) is now deafened.`, true)
-                .catch();
+            this.logEvent(
+                `${EmojiConstants.HEADPHONE_EMOJI} ${member.displayName} (${member.id}) is now deafened.`,
+                true
+            ).catch();
             return;
         }
 
         if (oldState.selfVideo && !newState.selfVideo) {
             // person video off
-            this.logEvent(`${EmojiConstants.CAM_EMOJI} ${member.displayName} (${member.id}) has turned off video.`, true)
-                .catch();
+            this.logEvent(
+                `${EmojiConstants.CAM_EMOJI} ${member.displayName} (${member.id}) has turned off video.`,
+                true
+            ).catch();
             return;
         }
 
         if (!oldState.selfVideo && newState.selfVideo) {
             // person video on
-            this.logEvent(`${EmojiConstants.CAM_EMOJI} ${member.displayName} (${member.id}) has turned on video.`, true)
-                .catch();
+            this.logEvent(
+                `${EmojiConstants.CAM_EMOJI} ${member.displayName} (${member.id}) has turned on video.`,
+                true
+            ).catch();
             return;
         }
 
         if (oldState.streaming && !newState.streaming) {
             // person stream off
-            this.logEvent(`${EmojiConstants.TV_EMOJI} ${member.displayName} (${member.id}) has stopped streaming.`, true)
-                .catch();
+            this.logEvent(
+                `${EmojiConstants.TV_EMOJI} ${member.displayName} (${member.id}) has stopped streaming.`,
+                true
+            ).catch();
             return;
         }
 
         if (!oldState.streaming && newState.streaming) {
             // person stream on
-            this.logEvent(`${EmojiConstants.TV_EMOJI} ${member.displayName} (${member.id}) has started streaming.`, true)
-                .catch();
+            this.logEvent(
+                `${EmojiConstants.TV_EMOJI} ${member.displayName} (${member.id}) has started streaming.`,
+                true
+            ).catch();
             return;
         }
     }
@@ -2226,9 +2248,12 @@ export class RaidInstance {
             return;
 
         await GlobalFgrUtilities.tryExecuteAsync(async () => {
-            member.voice.setChannel(this._raidVc);
+            await member.voice.setChannel(this._raidVc);
         });
-        this.logEvent(`${EmojiConstants.GREEN_CHECK_EMOJI} ${member.displayName} (${member.id}) has reconnected to the raid VC.`, true).catch();
+        this.logEvent(
+            `${EmojiConstants.GREEN_CHECK_EMOJI} ${member.displayName} (${member.id}) has reconnected to the raid VC.`,
+            true
+        ).catch();
         return;
     }
 
@@ -2247,24 +2272,32 @@ export class RaidInstance {
             // Infinite time
         });
 
+        const validateInVc = async (i: MessageComponentInteraction): Promise<boolean> => {
+            // Should have already been fetched from the collector filter function
+            // So this should be cached
+            const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
+            if (!member) {
+                i.reply({
+                    content: "An unknown error occurred. Please try again later.",
+                    ephemeral: true
+                }).catch();
+                return false;
+            }
+
+            if (member.voice.channel?.id !== this._raidVc?.id) {
+                i.reply({
+                    content: "You need to be in the correct raiding VC to interact with these controls.",
+                    ephemeral: true
+                }).catch();
+                return false;
+            }
+
+            return true;
+        };
+
         if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
             this._controlPanelReactionCollector.on("collect", async i => {
-                // Should have already been fetched from the collector filter function
-                // So this should be cached
-                const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
-                if (!member) {
-                    i.reply({
-                        content: "An unknown error occurred. Please try again later.",
-                        ephemeral: true
-                    }).catch();
-                    return;
-                }
-
-                if (member.voice.channel?.id !== this._raidVc?.id) {
-                    i.reply({
-                        content: "You need to be in the correct raiding VC to interact with these controls.",
-                        ephemeral: true
-                    }).catch();
+                if (!(await validateInVc(i))) {
                     return;
                 }
 
@@ -2289,6 +2322,10 @@ export class RaidInstance {
 
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
             this._controlPanelReactionCollector.on("collect", async i => {
+                if (!(await validateInVc(i))) {
+                    return;
+                }
+
                 await i.deferUpdate();
                 if (i.customId === RaidInstance.START_RAID_ID) {
                     this.endAfkCheck(i.user).then();
@@ -2310,6 +2347,10 @@ export class RaidInstance {
         }
 
         this._controlPanelReactionCollector.on("collect", async i => {
+            if (!(await validateInVc(i))) {
+                return;
+            }
+
             if (i.customId === RaidInstance.END_RAID_ID) {
                 this.endRaid(i.user).then();
                 return;
@@ -2330,7 +2371,7 @@ export class RaidInstance {
                         content: "Locked Raid VC.",
                         ephemeral: true
                     }),
-                    this.logEvent(`${EmojiConstants.LOCK_EMOJI} Raid VC locked.`, true)
+                    this.logEvent("Raid VC locked.", true)
                 ]);
                 return;
             }
@@ -2344,7 +2385,7 @@ export class RaidInstance {
                         content: "Unlocked Raid VC.",
                         ephemeral: true
                     }),
-                    this.logEvent(`${EmojiConstants.UNLOCK_EMOJI}Raid VC unlocked.`, true).catch()
+                    this.logEvent("Raid VC unlocked.", true).catch()
                 ]);
                 return;
             }
@@ -2380,29 +2421,29 @@ export class RaidInstance {
                 if (!this._raidVc) return;
 
                 this.logEvent(
-                    `${EmojiConstants.CLIPBOARD_EMOJI} Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``,
+                    `Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``,
                     true
                 ).catch();
 
                 if (!parseSummary) {
                     this.logEvent(
-                        `${EmojiConstants.CLIPBOARD_EMOJI} Parse failed; the API may not be functioning at this time.`,
+                        "Parse failed; the API may not be functioning at this time.",
                         true
                     ).catch();
 
                     return;
                 }
 
-                const inRaidNotInVcFields = parseSummary.isValid
+                const inVcNotInRaidFields = parseSummary.isValid
                     ? parseSummary.inRaidButNotInVC
                     : [];
-                const inVcNotInRaidFields = parseSummary.isValid
+                const inRaidNotInVcFields = parseSummary.isValid
                     ? parseSummary.inVcButNotInRaid
                     : [];
 
                 const embed = MessageUtilities.generateBlankEmbed(i.user, "RANDOM")
                     .setTitle(`Parse Results for: **${this._raidVc?.name ?? "N/A"}**`)
-                    .setFooter({text: "Completed Time:"})
+                    .setFooter({ text: "Completed Time:" })
                     .setTimestamp();
 
                 if (parseSummary.isValid) {
@@ -2428,10 +2469,10 @@ export class RaidInstance {
                 }
 
                 for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
-                    embed.addField("In Raid VC, Not In /who.", field.join(", "));
+                    embed.addField("In Raid VC, Not In /who.", StringUtil.codifyString(field.join(", ")));
                 }
 
-                await this._controlPanelChannel.send({embeds: [embed]}).catch();
+                await this._controlPanelChannel.send({ embeds: [embed] }).catch();
                 const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
                 if (!member) {
                     return;
@@ -2845,7 +2886,7 @@ export class RaidInstance {
                                     "It appears that the parsing API isn't up, or the screenshot that you provided"
                                     + " is not valid. In either case, this step has been skipped."
                                 )
-                                .setFooter({text:"This will move to the next step in 5 seconds."})
+                                .setFooter({text: "This will move to the next step in 5 seconds."})
                         ]
                     });
 
