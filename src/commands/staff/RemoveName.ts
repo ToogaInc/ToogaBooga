@@ -61,7 +61,9 @@ export class RemoveName extends BaseCommand {
         }
 
         const bestQuotaToAdd = QuotaManager.findBestQuotaToAdd(ctx.member!, ctx.guildDoc!, "NameAdjustment");
+
         const member = resMember.member;
+        // Make sure they have a document to begin with
         await MongoManager.addIdNameToIdNameCollection(member);
         const idNameDoc = await MongoManager.findIdInIdNameCollection(member.id);
         const namesInDb = idNameDoc.length > 0 ? idNameDoc[0].rotmgNames : [];
@@ -86,7 +88,7 @@ export class RemoveName extends BaseCommand {
 
         if (names.size === 0) {
             await ctx.interaction.editReply({
-                content: "This person does not have any names to change. Please add a name instead.",
+                content: "This person does not have any names to remove. Please add a name instead.",
                 components: []
             });
 
@@ -98,7 +100,7 @@ export class RemoveName extends BaseCommand {
             .setCustomId(uniqueIdentifier + "_select")
             .setMinValues(1)
             .setMaxValues(1)
-            .setPlaceholder("Possible Names")
+            .setPlaceholder("Possible Names to Remove")
             .setOptions(names.map(x => {
                 return {value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database"}
             }));
@@ -173,7 +175,8 @@ export class RemoveName extends BaseCommand {
         }
 
         let updatedName = false;
-        const allNames = member.nickname!.split("|");
+        const prefix = UserManager.getPrefix(member.nickname!);
+        const allNames = UserManager.getAllNames(member.nickname!);
         if (wasNickname && allNames.length > 1) {
             const idx = allNames.findIndex(x => x.toLowerCase().includes(lowerCaseName));
             if (idx === -1) {
@@ -186,8 +189,13 @@ export class RemoveName extends BaseCommand {
             }
 
             allNames.splice(idx, 1);
+
+            let newName = allNames.join(" | ");
+            if (prefix && !newName.startsWith(prefix)) {
+                newName = prefix + newName;
+            }
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                await member.setNickname(allNames.join(" | "));
+                await member.setNickname(newName);
             });
             updatedName = true;
         }
