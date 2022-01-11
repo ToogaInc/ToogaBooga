@@ -185,20 +185,22 @@ export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: Dun
         }
     }
 
-    selectMenus.push(
-        new MessageSelectMenu()
-            .setCustomId(`${uIdentifier}_${5}`)
-            .setMinValues(1)
-            .setMaxValues(1)
-            .setPlaceholder("Exaltation Dungeons")
-            .addOptions(exaltDungeons.map(x => {
-                return {
-                    label: x.dungeonName,
-                    value: x.codeName,
-                    emoji: x.portalEmojiId
-                };
-            }))
-    );
+    if(exaltDungeons.length > 0){
+        selectMenus.push(
+            new MessageSelectMenu()
+                .setCustomId(`${uIdentifier}_${5}`)
+                .setMinValues(1)
+                .setMaxValues(1)
+                .setPlaceholder("Exaltation Dungeons")
+                .addOptions(exaltDungeons.map(x => {
+                    return {
+                        label: x.dungeonName,
+                        value: x.codeName,
+                        emoji: x.portalEmojiId
+                    };
+                }))
+        );
+    }
     
     const dungeonSubset = ArrayUtilities.breakArrayIntoSubsets(
         sectionToUse.dungeons.filter(x => x.dungeonCategory !== "Exaltation Dungeons"), 
