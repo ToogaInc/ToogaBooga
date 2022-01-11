@@ -81,6 +81,9 @@ export class AddOrChangeName extends BaseCommand {
             .setCustomId(editId);
         await ctx.interaction.reply({
             content: `Do you want to __add__ \`${ign}\` or __edit__ one of ${member}'s names to \`${ign}\`?`,
+            allowedMentions: {
+                users: []
+            },
             components: AdvancedCollector.getActionRowsFromComponents([
                 addButton,
                 editButton
@@ -161,7 +164,7 @@ export class AddOrChangeName extends BaseCommand {
             if ((member.nickname?.length ?? 0) + ign.length + 4 <= 32
                 && !(member.nickname ?? "").toLowerCase().includes(ign.toLowerCase())) {
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    if (member.nickname) {
+                    if (!member.nickname) {
                         await member.setNickname(ign);
                         return;
                     }

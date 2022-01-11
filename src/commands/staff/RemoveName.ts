@@ -107,6 +107,9 @@ export class RemoveName extends BaseCommand {
         await ctx.interaction.reply({
             content: `Please select one name to remove from ${member}'s database entry. If you want to cancel this,`
                 + " press the **Cancel** button.",
+            allowedMentions: {
+                users: []
+            },
             components: AdvancedCollector.getActionRowsFromComponents([
                 selectMenu,
                 cancelButton
