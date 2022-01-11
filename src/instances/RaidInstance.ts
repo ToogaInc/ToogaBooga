@@ -2394,10 +2394,10 @@ export class RaidInstance {
                     return;
                 }
 
-                const inVcNotInRaidFields = parseSummary.isValid
+                const inRaidNotInVcFields = parseSummary.isValid
                     ? parseSummary.inRaidButNotInVC
                     : [];
-                const inRaidNotInVcFields = parseSummary.isValid
+                const inVcNotInRaidFields = parseSummary.isValid
                     ? parseSummary.inVcButNotInRaid
                     : [];
 
@@ -2429,7 +2429,7 @@ export class RaidInstance {
                 }
 
                 for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
-                    embed.addField("In Raid VC, Not In /who.", StringUtil.codifyString(field.join(", ")));
+                    embed.addField("In Raid VC, Not In /who.", field.join(", "));
                 }
 
                 await this._controlPanelChannel.send({embeds: [embed]}).catch();
