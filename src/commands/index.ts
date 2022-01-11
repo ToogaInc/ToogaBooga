@@ -21,6 +21,7 @@ export * from "./staff/ManualVerifySection";
 export * from "./staff/AddOrChangeName";
 export * from "./staff/RemoveName";
 export * from "./staff/ParseRaidVc";
+export * from "./staff/YoinkVC";
 
 export * from "./punishments/SuspendMember";
 export * from "./punishments/SectionSuspendMember";

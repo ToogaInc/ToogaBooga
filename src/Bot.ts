@@ -125,7 +125,8 @@ export class Bot {
             new Cmds.ManualVerifySection(),
             new Cmds.AddOrChangeName(),
             new Cmds.RemoveName(),
-            new Cmds.ParseRaidVc()
+            new Cmds.ParseRaidVc(),
+            new Cmds.YoinkVC()
         ]);
 
         Bot.Commands.set("Configuration", [
