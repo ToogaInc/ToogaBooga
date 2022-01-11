@@ -5,7 +5,7 @@ import {MongoManager} from "./MongoManager";
 import {IIdNameInfo, IUserInfo} from "../definitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
-interface IResolvedMember {
+export interface IResolvedMember {
     member: GuildMember;
     idNameDoc: IIdNameInfo | null;
     userDoc: IUserInfo | null;
