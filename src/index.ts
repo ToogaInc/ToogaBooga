@@ -1,4 +1,4 @@
-import {OneLifeBot} from "./OneLifeBot";
+import {Bot} from "./Bot";
 import {IConfiguration} from "./definitions";
 import * as fs from "fs";
 import * as path from "path";
@@ -19,7 +19,7 @@ import {MAPPED_AFK_CHECK_REACTIONS} from "./constants/dungeons/MappedAfkCheckRea
 
     const content = fs.readFileSync(path.join(__dirname, "..", "config.production.json"));
     const config: IConfiguration = JSON.parse(content.toString());
-    const bot = new OneLifeBot(config);
+    const bot = new Bot(config);
     bot.startAllEvents();
     await bot.login();
     bot.initServices();

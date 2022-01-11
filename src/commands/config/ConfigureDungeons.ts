@@ -26,7 +26,7 @@ import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
-import {OneLifeBot} from "../../OneLifeBot";
+import {Bot} from "../../Bot";
 import {MongoManager} from "../../managers/MongoManager";
 import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {entryFunction, sendOrEditBotMsg} from "./common/ConfigCommon";
@@ -1492,7 +1492,7 @@ export class ConfigureDungeons extends BaseCommand {
         const imgRes = await Promise.all(
             ctx.guildDoc!.properties.approvedCustomImages.map(img => {
                 return GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    return await OneLifeBot.AxiosClient.head(img.url);
+                    return await Bot.AxiosClient.head(img.url);
                 });
             })
         );

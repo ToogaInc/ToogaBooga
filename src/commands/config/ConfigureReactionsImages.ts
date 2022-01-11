@@ -17,7 +17,7 @@ import {ReactionType} from "../../definitions";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {MongoManager} from "../../managers/MongoManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {OneLifeBot} from "../../OneLifeBot";
+import {Bot} from "../../Bot";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
 import * as Stream from "stream";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
@@ -192,7 +192,7 @@ export class ConfigureReactionsImages extends BaseCommand {
 
         if (!storageChannel) {
             storageChannel = GlobalFgrUtilities.getCachedChannel<TextChannel>(
-                OneLifeBot.BotInstance.config.ids.mainStorageChannel
+                Bot.BotInstance.config.ids.mainStorageChannel
             );
         }
 

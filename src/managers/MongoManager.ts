@@ -1,5 +1,5 @@
 import {Collection as MCollection, Filter, MongoClient, ObjectId, UpdateFilter} from "mongodb";
-import {OneLifeBot} from "../OneLifeBot";
+import {Bot} from "../Bot";
 import {UserManager} from "./UserManager";
 import {Collection, Collection as DCollection, Guild, GuildMember, TextChannel} from "discord.js";
 import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
@@ -814,7 +814,7 @@ export namespace MongoManager {
         const db: IGuildInfo | null = guild ? await getOrCreateGuildDoc(guild.id, true) : null;
         const channels = await Promise.all([
             GlobalFgrUtilities.fetchChannel<TextChannel>(db?.channels.storageChannelId ?? ""),
-            GlobalFgrUtilities.fetchChannel<TextChannel>(OneLifeBot.BotInstance.config.ids.mainStorageChannel)
+            GlobalFgrUtilities.fetchChannel<TextChannel>(Bot.BotInstance.config.ids.mainStorageChannel)
         ]);
 
         for (const channel of channels) {

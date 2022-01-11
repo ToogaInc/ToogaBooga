@@ -1,4 +1,4 @@
-import {OneLifeBot} from "../OneLifeBot";
+import {Bot} from "../Bot";
 import {MongoManager} from "../managers/MongoManager";
 import {StringBuilder} from "../utilities/StringBuilder";
 import {IBotInfo} from "../definitions";
@@ -9,7 +9,7 @@ import getMongoClient = MongoManager.getMongoClient;
 import {HeadcountInstance} from "../instances/HeadcountInstance";
 
 export async function onReadyEvent(): Promise<void> {
-    const botUser = OneLifeBot.BotInstance.client.user;
+    const botUser = Bot.BotInstance.client.user;
 
     // This should theoretically never hit.
     if (!botUser) {
@@ -34,8 +34,8 @@ export async function onReadyEvent(): Promise<void> {
     }
 
     // Now, we want to add any guild docs to the database <=> the guild isn't in the database.
-    await Promise.all(OneLifeBot.BotInstance.client.guilds.cache.map(async x => {
-        if (OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(x.id))
+    await Promise.all(Bot.BotInstance.client.guilds.cache.map(async x => {
+        if (Bot.BotInstance.config.ids.exemptGuilds.includes(x.id))
             return null;
         await MongoManager.getOrCreateGuildDoc(x.id, false);
     }));
@@ -44,7 +44,7 @@ export async function onReadyEvent(): Promise<void> {
     await Promise.all([
         MuteManager.startChecker(guildDocs),
         SuspensionManager.startChecker(guildDocs),
-        ...guildDocs.filter(x => OneLifeBot.BotInstance.client.guilds.cache.has(x.guildId)).map(guildDoc => {
+        ...guildDocs.filter(x => Bot.BotInstance.client.guilds.cache.has(x.guildId)).map(guildDoc => {
             if (guildDoc.activeHeadcounts) {
                 guildDoc.activeHeadcounts.forEach(async hc => {
                     await HeadcountInstance.createNewLivingInstance(guildDoc, hc);

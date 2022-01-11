@@ -1,5 +1,5 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {OneLifeBot} from "../../OneLifeBot";
+import {Bot} from "../../Bot";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
@@ -44,7 +44,7 @@ export class Help extends BaseCommand {
         let showCmdHelp = false;
 
         if (cmdName) {
-            const command = OneLifeBot.NameCommands.get(cmdName);
+            const command = Bot.NameCommands.get(cmdName);
             if (command) {
                 const cmdHelpEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "GREEN")
                     .setTitle(`Command Help: **${command.commandInfo.formalCommandName}**`)
@@ -147,7 +147,7 @@ export class Help extends BaseCommand {
                     : "Below is a list of all supported commands."
             );
 
-        for (const [category, commands] of OneLifeBot.Commands) {
+        for (const [category, commands] of Bot.Commands) {
             helpEmbed.addField(
                 category,
                 StringUtil.codifyString(

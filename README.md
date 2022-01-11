@@ -1,7 +1,11 @@
-# OneLife
+<p align="center">
+  <img src="https://github.com/ewang2002/OneLifeBot/blob/bug_fixes/assets/banner.png"  alt="Bot Banner"/>
+</p>
 
 An open-source [Realm of the Mad God](https://www.realmofthemadgod.com/) designed for cross-verification,
 moderation, and raid management.
+
+The name was inspired by Ooga-Booga, another RotMG Discord bot.
 
 ## Warning
 
@@ -10,7 +14,6 @@ The bot is **not ready for production.** In particular:
 - Lots of refactoring needs to be done (i.e. the codebase is very messy).
 - The documentation (including setup guide) is very incomplete.
 - I did not set up a testing suite or configure ESLint yet.
-- The project's name is a **placeholder** since I'm not creative enough to come up with a name.
 
 It is in your best interest to not use this bot in its current state. More work will be done to fix the bugs and 
 refactor the codebase. Once the bot is sufficiently cleaned/fixed up, a public invite link will be available. 
@@ -23,11 +26,11 @@ customization in mind.
 
 ## Technologies
 
-OneLife actually consists of two projects: the bot itself (this repository);
+Tooga-Booga actually consists of two projects: the bot itself (this repository);
 and [RealmSharper](https://github.com/ewang2002/RealmEyeSharper/), which is how the bot gets its data from RealmEye and
 provides other services like screenshot parsing.
 
-### OneLife
+### Tooga-Booga
 
 - [TypeScript](https://www.typescriptlang.org/)
 - [Node.js](https://nodejs.org/en/)

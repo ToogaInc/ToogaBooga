@@ -11,7 +11,7 @@ import {IIdNameInfo} from "../../definitions";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {StringUtil} from "../../utilities/StringUtilities";
-import {OneLifeBot} from "../../OneLifeBot";
+import {Bot} from "../../Bot";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
 import getDateTime = TimeUtilities.getDateTime;
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
@@ -160,7 +160,7 @@ export class FindPerson extends BaseCommand {
                 .setTitle(`Find Query Failed: **${ignQuery ?? idQuery}**`)
                 .setTimestamp();
             if (nameIdRes) {
-                const guilds = OneLifeBot.BotInstance.client.guilds.cache
+                const guilds = Bot.BotInstance.client.guilds.cache
                     .filter(x => x.members.cache.has(nameIdRes!.currentDiscordId));
 
                 failEmbed.setDescription(

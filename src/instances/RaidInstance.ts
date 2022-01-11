@@ -35,7 +35,7 @@ import {MongoManager} from "../managers/MongoManager";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
-import {OneLifeBot} from "../OneLifeBot";
+import {Bot} from "../Bot";
 import {EmojiConstants} from "../constants/EmojiConstants";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {UserManager} from "../managers/UserManager";
@@ -614,7 +614,7 @@ export class RaidInstance {
                             deny: ["VIEW_CHANNEL"]
                         },
                         {
-                            id: OneLifeBot.BotInstance.client.user!.id,
+                            id: Bot.BotInstance.client.user!.id,
                             allow: ["ADD_REACTIONS", "VIEW_CHANNEL"]
                         },
                         {
@@ -819,7 +819,7 @@ export class RaidInstance {
                             deny: ["VIEW_CHANNEL", "ADD_REACTIONS"]
                         },
                         {
-                            id: OneLifeBot.BotInstance.client.user!.id,
+                            id: Bot.BotInstance.client.user!.id,
                             allow: ["ADD_REACTIONS", "VIEW_CHANNEL"]
                         },
                         {
@@ -1345,7 +1345,7 @@ export class RaidInstance {
         // Make sure the image exists.
         try {
             // Make a request to see if this URL points to the right place.
-            const result = await OneLifeBot.AxiosClient.head(url);
+            const result = await Bot.AxiosClient.head(url);
             if (result.status > 300)
                 return toReturn;
         } catch (e) {

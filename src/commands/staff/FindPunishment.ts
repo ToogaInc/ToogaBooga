@@ -5,7 +5,7 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {OneLifeBot} from "../../OneLifeBot";
+import {Bot} from "../../Bot";
 
 export class FindPunishment extends BaseCommand {
     public constructor() {
@@ -73,7 +73,7 @@ export class FindPunishment extends BaseCommand {
 
 
         // Let bot owners see all moderation history regardless of guild, but no one else
-        if (pInfo.guildId !== ctx.guild!.id && !OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id)) {
+        if (pInfo.guildId !== ctx.guild!.id && !Bot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id)) {
             embed.setDescription(
                 "You do not have permission to view this moderation information because this moderation action was"
                 + " performed in a different server."
@@ -87,7 +87,7 @@ export class FindPunishment extends BaseCommand {
         }
 
         // Bot owner can see guild name in footer
-        if (OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id)) {
+        if (Bot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id)) {
             embed.setFooter({text: `Guild Name/ID: ${guild?.name ?? pInfo.guildId}`});
         }
 

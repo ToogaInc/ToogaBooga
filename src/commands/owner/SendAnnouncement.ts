@@ -2,7 +2,7 @@ import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseC
 import {MessageEmbed} from "discord.js";
 import {MongoManager} from "../../managers/MongoManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {OneLifeBot} from "../../OneLifeBot";
+import {Bot} from "../../Bot";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class SendAnnouncement extends BaseCommand {
@@ -44,10 +44,10 @@ export class SendAnnouncement extends BaseCommand {
         const allGuildDocs = await MongoManager.getGuildCollection().find({}).toArray();
         const embedToSend = new MessageEmbed()
             .setColor("RANDOM")
-            .setTitle("Message from OneLife Developers")
+            .setTitle("Message from the Developers")
             .setDescription(args.value as string)
             .setTimestamp()
-            .setAuthor({name: "OneLife", iconURL: OneLifeBot.BotInstance.client.user?.displayAvatarURL()});
+            .setAuthor({name: "Tooga-Booga", iconURL: Bot.BotInstance.client.user?.displayAvatarURL()});
 
         let numServersSent = 0;
         for await (const guildDoc of allGuildDocs) {
