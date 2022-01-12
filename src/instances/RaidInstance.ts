@@ -937,6 +937,8 @@ export class RaidInstance {
             false
         ).catch();
 
+        this.logRun(memberThatEnded).catch();
+
         // Check feedback channel
         if (!this._thisFeedbackChan)
             return;
@@ -997,8 +999,6 @@ export class RaidInstance {
                 this._thisFeedbackChan.delete()
             ]);
         }, 60 * 1000);
-
-        this.logRun(memberThatEnded).catch();
     }
 
     /**
