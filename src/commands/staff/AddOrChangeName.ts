@@ -72,9 +72,9 @@ export class AddOrChangeName extends BaseCommand {
 
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr, false);
 
-        if (!resMember) {
+        if (!resMember || resMember.member.user.bot) {
             await ctx.interaction.reply({
-                content: `The member, \`${mStr}\`, could not be found.`,
+                content: `The member, \`${mStr}\`, could not be found, or the member you mentioned is a bot.`,
                 ephemeral: true
             });
             return 0;
@@ -84,21 +84,22 @@ export class AddOrChangeName extends BaseCommand {
         // Ask if add or change name
         const uniqueIdentifier = StringUtil.generateRandomString(20);
         const addId = `${uniqueIdentifier}_ADD`;
-        const editId = `${uniqueIdentifier}_EDIT`;
+        const replaceId = `${uniqueIdentifier}_REPLACE`;
         const addButton = AdvancedCollector.cloneButton(ButtonConstants.ADD_BUTTON)
             .setCustomId(addId);
-        const editButton = AdvancedCollector.cloneButton(ButtonConstants.EDIT_BUTTON)
-            .setCustomId(editId);
+        const replaceButton = AdvancedCollector.cloneButton(ButtonConstants.EDIT_BUTTON)
+            .setCustomId(replaceId)
+            .setLabel("Replace");
         const cancelButton = AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
             .setCustomId(`${uniqueIdentifier}_CANCEL`);
         await ctx.interaction.reply({
-            content: `Do you want to __add__ \`${newIgn}\` or __edit__ one of ${member}'s names to \`${newIgn}\`?`,
+            content: `Do you want to __add__ \`${newIgn}\` or __replace__ one of ${member}'s names to \`${newIgn}\`?`,
             allowedMentions: {
                 users: []
             },
             components: AdvancedCollector.getActionRowsFromComponents([
                 addButton,
-                editButton,
+                replaceButton,
                 cancelButton
             ])
         });
@@ -179,8 +180,11 @@ export class AddOrChangeName extends BaseCommand {
 
             let changedNickname = false;
             // Make sure we can edit the name
+            const allNicknames = member.nickname
+                ? UserManager.getAllNames(member.nickname, true)
+                : [];
             if ((member.nickname?.length ?? 0) + newIgn.length + 4 <= 32
-                && !(member.nickname ?? "").toLowerCase().includes(newIgn.toLowerCase())) {
+                && !allNicknames.includes(newIgn.toLowerCase())) {
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
                     if (!member.nickname) {
                         await member.setNickname(newIgn);
@@ -318,7 +322,7 @@ export class AddOrChangeName extends BaseCommand {
         const prefix = UserManager.getPrefix(member.nickname!);
         const allNames = UserManager.getAllNames(member.nickname!);
         if (wasNickname && (member.nickname?.length ?? 0) + newIgn.length + 4 <= 32
-            && !(member.nickname ?? "").toLowerCase().includes(newIgn.toLowerCase())) {
+            && !allNames.map(x => x.toLowerCase()).includes(newIgn.toLowerCase())) {
             const allNames = member.nickname!.split("|");
             const idx = allNames.findIndex(x => x.toLowerCase().includes(oldNameLC));
             if (idx === -1) {

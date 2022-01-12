@@ -52,9 +52,9 @@ export class RemoveName extends BaseCommand {
         const mStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr, false);
 
-        if (!resMember) {
+        if (!resMember || resMember.member.user.bot) {
             await ctx.interaction.reply({
-                content: `The member, \`${mStr}\`, could not be found.`,
+                content: `The member, \`${mStr}\`, could not be found, or the member in question is a bot.`,
                 ephemeral: true
             });
             return 0;
@@ -87,7 +87,7 @@ export class RemoveName extends BaseCommand {
         }
 
         if (names.size === 0) {
-            await ctx.interaction.editReply({
+            await ctx.interaction.reply({
                 content: "This person does not have any names to remove. Please add a name instead.",
                 components: []
             });
@@ -102,7 +102,7 @@ export class RemoveName extends BaseCommand {
             .setMaxValues(1)
             .setPlaceholder("Possible Names to Remove")
             .setOptions(names.map(x => {
-                return {value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database"}
+                return {value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database"};
             }));
         const cancelButton = AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
             .setCustomId(uniqueIdentifier + "_cancel");
@@ -175,9 +175,13 @@ export class RemoveName extends BaseCommand {
         }
 
         let updatedName = false;
-        const prefix = UserManager.getPrefix(member.nickname!);
-        const allNames = UserManager.getAllNames(member.nickname!);
-        if (wasNickname && allNames.length > 1) {
+        const prefix = member.nickname
+            ? UserManager.getPrefix(member.nickname)
+            : "";
+        const allNames = member.nickname
+            ? UserManager.getAllNames(member.nickname)
+            : [];
+        if (wasNickname && allNames.length >= 1) {
             const idx = allNames.findIndex(x => x.toLowerCase().includes(lowerCaseName));
             if (idx === -1) {
                 await ctx.interaction.editReply({
@@ -190,8 +194,8 @@ export class RemoveName extends BaseCommand {
 
             allNames.splice(idx, 1);
 
-            let newName = allNames.join(" | ");
-            if (prefix && !newName.startsWith(prefix)) {
+            let newName = allNames.join(" | ").trim();
+            if (prefix && !newName.startsWith(prefix) && newName.length !== 0) {
                 newName = prefix + newName;
             }
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
