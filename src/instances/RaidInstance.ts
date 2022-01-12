@@ -732,8 +732,8 @@ export class RaidInstance {
         ).catch();
 
         // Update the database so it is clear that we are in raid mode.
-        await this.setRaidStatus(RaidStatus.IN_RUN);
         this.stopAllIntervalsAndCollectors();
+        await this.setRaidStatus(RaidStatus.IN_RUN);
         this.startIntervals();
         this.startControlPanelCollector();
         this.startAfkCheckCollector();
