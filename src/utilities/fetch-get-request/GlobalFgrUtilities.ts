@@ -9,7 +9,7 @@ import {
     User
 } from "discord.js";
 import {MiscUtilities} from "../MiscUtilities";
-import {OneLifeBot} from "../../OneLifeBot";
+import {Bot} from "../../Bot";
 import {IReactionInfo} from "../../definitions";
 
 /**
@@ -40,7 +40,7 @@ export namespace GlobalFgrUtilities {
      */
     export function getCachedChannel<T extends AnyChannel>(channelId: string): T | null {
         if (!MiscUtilities.isSnowflake(channelId)) return null;
-        const c = OneLifeBot.BotInstance.client.channels.cache.get(channelId) ?? null;
+        const c = Bot.BotInstance.client.channels.cache.get(channelId) ?? null;
         return c ? c as T : null;
     }
 
@@ -52,7 +52,7 @@ export namespace GlobalFgrUtilities {
      */
     export async function fetchChannel<T extends AnyChannel>(channelId: string): Promise<T | null> {
         if (!MiscUtilities.isSnowflake(channelId)) return null;
-        const c = await OneLifeBot.BotInstance.client.channels.fetch(channelId) ?? null;
+        const c = await Bot.BotInstance.client.channels.fetch(channelId) ?? null;
         return c ? c as T : null;
     }
 
@@ -65,7 +65,7 @@ export namespace GlobalFgrUtilities {
     export async function fetchGuild(guildId: string): Promise<Guild | null> {
         if (!MiscUtilities.isSnowflake(guildId)) return null;
         try {
-            return OneLifeBot.BotInstance.client.guilds.fetch(guildId);
+            return Bot.BotInstance.client.guilds.fetch(guildId);
         } catch (e) {
             return null;
         }
@@ -78,7 +78,7 @@ export namespace GlobalFgrUtilities {
      */
     export function getCachedEmoji(emojiId: string): GuildEmoji | null {
         if (!MiscUtilities.isSnowflake(emojiId)) return null;
-        return OneLifeBot.BotInstance.client.emojis.cache.get(emojiId) ?? null;
+        return Bot.BotInstance.client.emojis.cache.get(emojiId) ?? null;
     }
 
     /**
@@ -100,7 +100,7 @@ export namespace GlobalFgrUtilities {
      */
     export function hasCachedEmoji(emojiId: string): boolean {
         if (!MiscUtilities.isSnowflake(emojiId)) return false;
-        return OneLifeBot.BotInstance.client.emojis.cache.has(emojiId);
+        return Bot.BotInstance.client.emojis.cache.has(emojiId);
     }
 
 
@@ -111,7 +111,7 @@ export namespace GlobalFgrUtilities {
      */
     export function getCachedUser(userId: string): User | null {
         if (!MiscUtilities.isSnowflake(userId)) return null;
-        return OneLifeBot.BotInstance.client.users.cache.get(userId) ?? null;
+        return Bot.BotInstance.client.users.cache.get(userId) ?? null;
     }
 
     /**
@@ -123,7 +123,7 @@ export namespace GlobalFgrUtilities {
     export async function fetchUser(targetId: string): Promise<User | null> {
         if (!MiscUtilities.isSnowflake(targetId)) return null;
         try {
-            return OneLifeBot.BotInstance.client.users.fetch(targetId);
+            return Bot.BotInstance.client.users.fetch(targetId);
         } catch (e) {
             return null;
         }

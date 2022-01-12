@@ -1,5 +1,5 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
-import {OneLifeBot} from "../../OneLifeBot";
+import {Bot} from "../../Bot";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {StringUtil} from "../../utilities/StringUtilities";
@@ -27,7 +27,7 @@ export class BotInfo extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
-        const instance = OneLifeBot.BotInstance;
+        const instance = Bot.BotInstance;
         const serverCount = instance.client.guilds.cache.size - instance.client.guilds.cache
             .filter(x => instance.config.ids.exemptGuilds.includes(x.id)).size;
         const botOwners = (await Promise.all(

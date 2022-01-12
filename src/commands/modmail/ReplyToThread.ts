@@ -1,6 +1,7 @@
 import {ArgumentType, BaseCommand, ICommandContext} from "../BaseCommand";
 import {ThreadChannel} from "discord.js";
 import {ModmailManager} from "../../managers/ModmailManager";
+import {QuotaManager} from "../../managers/QuotaManager";
 
 export class ReplyToThread extends BaseCommand {
     public constructor() {
@@ -50,12 +51,17 @@ export class ReplyToThread extends BaseCommand {
             return -1;
         }
 
+        const quotaToLog = QuotaManager.findBestQuotaToAdd(ctx.member!, ctx.guildDoc!, "ModmailRespond");
         const resp = ctx.interaction.options.getString("response", true);
         const anon = ctx.interaction.options.getBoolean("anon", false) ?? true;
         const sentSuccess = await ModmailManager.sendMessageToUser(ctx.channel, ctx.user, resp, anon);
         await ctx.interaction.reply({
             content: sentSuccess ? "Sent!" : "The message could not be sent."
         });
+
+        if (quotaToLog) {
+            await QuotaManager.logQuota(ctx.member!, quotaToLog, "ModmailRespond", 1);
+        }
         return 0;
     }
 }

@@ -5,7 +5,7 @@ import {MongoManager} from "./MongoManager";
 import {IIdNameInfo, IUserInfo} from "../definitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
-interface IResolvedMember {
+export interface IResolvedMember {
     member: GuildMember;
     idNameDoc: IIdNameInfo | null;
     userDoc: IUserInfo | null;
@@ -166,6 +166,24 @@ export namespace UserManager {
             userDoc: pUserDocs.length === 0 ? null : pUserDocs[0],
             idNameDoc: pIdNameDocs.length === 0 ? null : pIdNameDocs[0]
         };
+    }
+
+    /**
+     * Gets this person's prefixes. For example, if the name was "!test" then this would return '!'
+     * @param {string} rawName The name.
+     * @returns {string} The prefixes, if any.
+     */
+    export function getPrefix(rawName: string): string {
+        let p = "";
+        for (const c of rawName) {
+            if (CommonRegex.ONLY_LETTERS.test(c) || c === "|" || c === " ") {
+                break;
+            }
+
+            p += c;
+        }
+
+        return p;
     }
 
     /**

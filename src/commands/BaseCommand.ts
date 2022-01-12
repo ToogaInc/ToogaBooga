@@ -8,7 +8,7 @@ import {
     TextBasedChannel,
     User
 } from "discord.js";
-import {OneLifeBot} from "../OneLifeBot";
+import {Bot} from "../Bot";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {IGuildInfo} from "../definitions";
 import {DefinedRole} from "../definitions/Types";
@@ -268,7 +268,7 @@ export abstract class BaseCommand {
         };
 
         // If the command is bot owner only and the person isn't a bot owner, then this person can't run this command.
-        if (this.commandInfo.botOwnerOnly && !OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(userToTest.id))
+        if (this.commandInfo.botOwnerOnly && !Bot.BotInstance.config.ids.botOwnerIds.includes(userToTest.id))
             return results;
 
         // The person tried to run the command in DMs. See if the person can do so.

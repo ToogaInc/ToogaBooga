@@ -255,6 +255,11 @@ export class ManualVerifyMain extends BaseCommand {
             content: `${resMember.member} has been manually verified in the Main section.`
         });
 
+        const bestQuotaRole = QuotaManager.findBestQuotaToAdd(ctx.member!, ctx.guildDoc!, "ManualVerify");
+        if (bestQuotaRole) {
+            await QuotaManager.logQuota(ctx.member!, bestQuotaRole, "ManualVerify", 1);
+        }
+
         return 0;
     }
 }

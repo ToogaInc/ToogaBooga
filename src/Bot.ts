@@ -24,7 +24,7 @@ import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
 import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
 
-export class OneLifeBot {
+export class Bot {
     private readonly _config: IConfiguration;
     private readonly _bot: Client;
     private _eventsIsStarted: boolean = false;
@@ -32,9 +32,9 @@ export class OneLifeBot {
 
     /**
      * The bot instance.
-     * @type {OneLifeBot}
+     * @type {Bot}
      */
-    public static BotInstance: OneLifeBot;
+    public static BotInstance: Bot;
 
     /**
      * The HTTP client used to make web requests.
@@ -104,28 +104,32 @@ export class OneLifeBot {
             ]
         });
 
-        OneLifeBot.BotInstance = this;
-        OneLifeBot.Commands = new Collection<string, Cmds.BaseCommand[]>();
+        Bot.BotInstance = this;
+        Bot.Commands = new Collection<string, Cmds.BaseCommand[]>();
 
-        OneLifeBot.Commands.set("Bot Information", [
+        Bot.Commands.set("Bot Information", [
             new Cmds.Ping(),
             new Cmds.BotInfo(),
             new Cmds.Help()
         ]);
 
-        OneLifeBot.Commands.set("General", [
+        Bot.Commands.set("General", [
             new Cmds.GetStats()
         ]);
 
-        OneLifeBot.Commands.set("Staff", [
+        Bot.Commands.set("Staff", [
             new Cmds.FindPunishment(),
             new Cmds.CheckBlacklist(),
             new Cmds.FindPerson(),
             new Cmds.ManualVerifyMain(),
-            new Cmds.ManualVerifySection()
+            new Cmds.ManualVerifySection(),
+            new Cmds.AddOrChangeName(),
+            new Cmds.RemoveName(),
+            new Cmds.ParseRaidVc(),
+            new Cmds.YoinkVC()
         ]);
 
-        OneLifeBot.Commands.set("Configuration", [
+        Bot.Commands.set("Configuration", [
             new Cmds.ConfigureChannels(),
             new Cmds.ConfigureRoles(),
             new Cmds.ConfigureSections(),
@@ -136,7 +140,7 @@ export class OneLifeBot {
             new Cmds.ConfigureAfkCheck()
         ]);
 
-        OneLifeBot.Commands.set("Punishments", [
+        Bot.Commands.set("Punishments", [
             new Cmds.SuspendMember(),
             new Cmds.SectionSuspendMember(),
             new Cmds.BlacklistMember(),
@@ -148,53 +152,54 @@ export class OneLifeBot {
             new Cmds.UnsuspendFromSection()
         ]);
 
-        OneLifeBot.Commands.set("Bot Owner", [
+        Bot.Commands.set("Bot Owner", [
             new Cmds.SendAnnouncement()
         ]);
 
-        OneLifeBot.Commands.set("Raid Leaders", [
+        Bot.Commands.set("Raid Leaders", [
             new Cmds.StartAfkCheck(),
             new Cmds.StartHeadcount()
         ]);
 
-        OneLifeBot.Commands.set("Logging", [
-            new Cmds.LogLedRun()
+        Bot.Commands.set("Logging", [
+            new Cmds.LogLedRun(),
+            new Cmds.LogKeyPop()
         ]);
 
-        OneLifeBot.Commands.set("Modmail", [
+        Bot.Commands.set("Modmail", [
             new Cmds.ReplyToThread(),
             new Cmds.ArchiveThread()
         ]);
 
-        OneLifeBot.JsonCommands = [];
-        OneLifeBot.NameCommands = new Collection<string, Cmds.BaseCommand>();
-        OneLifeBot.Rest = new REST({version: "9"}).setToken(config.tokens.botToken);
-        for (const command of Array.from(OneLifeBot.Commands.values()).flat()) {
-            OneLifeBot.JsonCommands.push(command.data.toJSON() as RESTPostAPIApplicationCommandsJSONBody);
+        Bot.JsonCommands = [];
+        Bot.NameCommands = new Collection<string, Cmds.BaseCommand>();
+        Bot.Rest = new REST({version: "9"}).setToken(config.tokens.botToken);
+        for (const command of Array.from(Bot.Commands.values()).flat()) {
+            Bot.JsonCommands.push(command.data.toJSON() as RESTPostAPIApplicationCommandsJSONBody);
 
             if (command.data.name !== command.commandInfo.botCommandName)
                 throw new Error(`Names not matched: "${command.data.name}" - "${command.commandInfo.botCommandName}"`);
 
-            if (OneLifeBot.NameCommands.has(command.data.name))
+            if (Bot.NameCommands.has(command.data.name))
                 throw new Error(`Duplicate command "${command.data.name}" registered.`);
 
-            OneLifeBot.NameCommands.set(command.data.name, command);
+            Bot.NameCommands.set(command.data.name, command);
         }
 
         // If length is 0, register globally
         (async () => {
             if (config.slash.guildIds.length === 0) {
-                await OneLifeBot.Rest.put(
+                await Bot.Rest.put(
                     Routes.applicationCommands(config.slash.clientId),
-                    {body: OneLifeBot.JsonCommands}
+                    {body: Bot.JsonCommands}
                 );
             }
             else {
                 await Promise.all(
                     config.slash.guildIds.map(async guildId => {
-                        await OneLifeBot.Rest.put(
+                        await Bot.Rest.put(
                             Routes.applicationGuildCommands(config.slash.clientId, guildId),
-                            {body: OneLifeBot.JsonCommands}
+                            {body: Bot.JsonCommands}
                         );
                     })
                 );

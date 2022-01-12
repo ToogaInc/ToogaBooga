@@ -940,7 +940,7 @@ export class HeadcountInstance {
             // Item display for future use
             const itemDis = getItemDisplay(reactInfo);
             this._pplConfirmingReaction.add(i.user.id);
-            const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse);
+            const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse, null);
             this._pplConfirmingReaction.delete(i.user.id);
 
             if (!res) {

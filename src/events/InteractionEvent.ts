@@ -1,5 +1,5 @@
 import {CommandInteraction, Interaction, Message, NewsChannel, TextChannel} from "discord.js";
-import {OneLifeBot} from "../OneLifeBot";
+import {Bot} from "../Bot";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -21,7 +21,7 @@ import {ButtonConstants} from "../constants/ButtonConstants";
  */
 async function acknowledgeSlashCmd(interaction: CommandInteraction): Promise<void> {
     if (interaction.guild) {
-        if (OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(interaction.guild.id))
+        if (Bot.BotInstance.config.ids.exemptGuilds.includes(interaction.guild.id))
             return;
 
         return slashCommandHandler(
@@ -39,7 +39,7 @@ async function acknowledgeSlashCmd(interaction: CommandInteraction): Promise<voi
  * @param {IGuildInfo} guildDoc The guild document, if any.
  */
 async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: IGuildInfo): Promise<void> {
-    const foundCommand = OneLifeBot.NameCommands.get(interaction.commandName);
+    const foundCommand = Bot.NameCommands.get(interaction.commandName);
     if (!foundCommand)
         return;
 
@@ -116,7 +116,7 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
 
     // Check permissions
     const canRunInfo = foundCommand.hasPermissionToRun(ctx.member!, ctx.guild, guildDoc!);
-    if (!OneLifeBot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id) && !canRunInfo.hasAdmin)
+    if (!Bot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id) && !canRunInfo.hasAdmin)
         foundCommand.addToCooldown(ctx.user);
 
     if (canRunInfo.canRun) {
@@ -180,7 +180,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
 
     // Must be in a non-exempt guild.
     const guild = interaction.guild;
-    if (!guild || OneLifeBot.BotInstance.config.ids.exemptGuilds.includes(guild.id)) return;
+    if (!guild || Bot.BotInstance.config.ids.exemptGuilds.includes(guild.id)) return;
 
     // Make sure we aren't dealing with a bot.
     if (interaction.user.bot) return;

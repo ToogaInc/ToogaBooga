@@ -32,6 +32,8 @@ export namespace QuotaManager {
         "Parse": "Parse",
         "ManualVerify": "Manual Verify",
         "PunishmentIssued": "Punishment Issued",
+        "NameAdjustment": "Name Add/Change/Remove",
+        "ModmailRespond": "Respond to Modmail",
         "RunComplete": "Run Complete",
         "RunAssist": "Run Assist",
         "RunFailed": "Run Failed"
@@ -43,7 +45,9 @@ export namespace QuotaManager {
         "RunFailed",
         "Parse",
         "PunishmentIssued",
-        "ManualVerify"
+        "ManualVerify",
+        "ModmailRespond",
+        "NameAdjustment"
     ];
 
     /**

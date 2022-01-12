@@ -64,6 +64,14 @@ export class ConfigureQuotas extends BaseCommand {
         {
             name: "Punishment Issued",
             key: "PunishmentIssued"
+        },
+        {
+            name: "Name Add/Change/Remove",
+            key: "NameAdjustment"
+        },
+        {
+            name: "Respond to Modmail",
+            key: "ModmailRespond"
         }
     ];
 

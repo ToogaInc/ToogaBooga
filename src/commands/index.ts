@@ -18,6 +18,10 @@ export * from "./staff/CheckBlacklist";
 export * from "./staff/FindPerson";
 export * from "./staff/ManualVerifyMain";
 export * from "./staff/ManualVerifySection";
+export * from "./staff/AddOrChangeName";
+export * from "./staff/RemoveName";
+export * from "./staff/ParseRaidVc";
+export * from "./staff/YoinkVC";
 
 export * from "./punishments/SuspendMember";
 export * from "./punishments/SectionSuspendMember";
@@ -30,6 +34,7 @@ export * from "./punishments/UnsuspendMember";
 export * from "./punishments/UnsuspendFromSection";
 
 export * from "./logging/LogLedRun";
+export * from "./logging/LogKeyPop";
 
 export * from "./owner/SendAnnouncement";
 
