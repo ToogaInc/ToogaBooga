@@ -7,5 +7,7 @@ export namespace GeneralConstants {
         ..."0123456789".split("")
     ];
 
-    export const GITHUB_URL: string = "https://github.com/ewang2002/OneLifeBot/";
+    export const GITHUB_URL: string = "https://github.com/ewang2002/ToogaBooga";
+    export const BOT_BANNER: string = "https://raw.githubusercontent.com/ewang2002/ToogaBooga/bug_fixes/assets/"
+        + "banner.png";
 }

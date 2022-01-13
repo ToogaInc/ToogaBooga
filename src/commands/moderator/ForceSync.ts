@@ -7,6 +7,8 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
 
+// It might be worth blocking access to the bot while this command is running.
+// Or, better yet, making this command bot developer-only
 export class ForceSync extends BaseCommand {
     private _isRunning: boolean = false;
 
@@ -74,7 +76,7 @@ export class ForceSync extends BaseCommand {
 
         const createEmbed = () => {
             const rawPercent = processed / allMembers.length;
-            const roundedPercent = Math.floor((processed / allMembers.length) * 10000) / 100;
+            const roundedPercent = Math.floor(rawPercent * 10000) / 100;
             return MessageUtilities.generateBlankEmbed(ctx.guild!, "RANDOM")
                 .setTitle(`Pass **${numPasses}**`)
                 .setDescription(
