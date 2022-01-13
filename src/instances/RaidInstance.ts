@@ -1373,7 +1373,7 @@ export class RaidInstance {
         }
 
         for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
-            embed.addField("In /who, Not In Raid VC.", StringUtil.codifyString(field.join(", ")));
+            embed.addField("In /who, Not In Raid VC.", field.join(", "));
         }
 
         for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {

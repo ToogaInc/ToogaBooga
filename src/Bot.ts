@@ -117,6 +117,10 @@ export class Bot {
             new Cmds.GetStats()
         ]);
 
+        Bot.Commands.set("Moderator", [
+            new Cmds.ForceSync()
+        ]);
+
         Bot.Commands.set("Staff", [
             new Cmds.FindPunishment(),
             new Cmds.CheckBlacklist(),
@@ -126,7 +130,9 @@ export class Bot {
             new Cmds.AddOrChangeName(),
             new Cmds.RemoveName(),
             new Cmds.ParseRaidVc(),
-            new Cmds.YoinkVC()
+            new Cmds.YoinkVC(),
+            new Cmds.Poll(),
+            new Cmds.Purge()
         ]);
 
         Bot.Commands.set("Configuration", [

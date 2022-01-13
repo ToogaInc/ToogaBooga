@@ -66,12 +66,13 @@ export class GetStats extends BaseCommand {
             return -1;
         }
 
+        await ctx.interaction.deferReply();
         const user = "member" in resMember
             ? resMember.member.user
             : resMember.user;
         const stats = await LoggerManager.getStats(user, ctx.guild?.id);
         if (!stats) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: query === ctx.user.id
                     ? "You do not have anything logged under your account."
                     : `No stats were found for ${mStr}.`,
@@ -212,7 +213,7 @@ export class GetStats extends BaseCommand {
             processKeys(keysPopped);
         }
 
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             embeds: [embed]
         });
         return 0;

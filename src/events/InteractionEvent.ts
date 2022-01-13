@@ -143,7 +143,7 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
 
     if (canRunInfo.missingUserRoles.length !== 0) {
         noPermissionEmbed.addField("Missing Member Roles (Need ≥ 1)", StringUtil.codifyString(canRunInfo
-            .missingUserRoles.join(" ")))
+            .missingUserRoles.join(", ")))
             .addField("Missing Member Roles (Need ≥ 1)", StringUtil.codifyString(canRunInfo.missingUserRoles
                 .join(", ")));
         noPermSb.appendLine()

@@ -12,6 +12,16 @@ export namespace EmojiConstants {
         "8⃣",
         "9⃣",
         "🔟",
+        "🇦",
+        "🇧",
+        "🇨",
+        "🇩",
+        "🇪",
+        "🇫",
+        "🇬",
+        "🇭",
+        "🇮",
+        "🇯"
     ];
 
     export const CLOCK_EMOJI: string = "🕰️";
@@ -68,6 +78,7 @@ export namespace EmojiConstants {
     export const MIC_EMOJI: string = "🎤";
     export const CAM_EMOJI: string = "📷";
     export const TV_EMOJI: string = "📺";
+    export const BAR_GRAPH_EMOJI: string = "📊";
 
     // specific classes
     export const ROGUE: string = "585616162189082626";
