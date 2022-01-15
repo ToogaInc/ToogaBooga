@@ -1,5 +1,5 @@
 // Suppress unused methods for this file.
-// noinspection JSUnusedGlobalSymbols
+// noinspection JSUnusedGlobalSymbols,AssignmentToFunctionParameterJS
 
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {
@@ -898,12 +898,16 @@ export class RaidInstance {
 
     /**
      * Ends the raid.
-     * @param {GuildMember | User} memberEnded The member that ended the raid or aborted the AFK check.
+     * @param {GuildMember | User | null} memberEnded The member that ended the raid or aborted the AFK check.
      */
-    public async endRaid(memberEnded: GuildMember | User): Promise<void> {
+    public async endRaid(memberEnded: GuildMember | User | null): Promise<void> {
         // No raid VC means we haven't started AFK check.
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg)
             return;
+
+        if (!memberEnded) {
+            memberEnded = this._memberInit;
+        }
 
         const resolvedMember = memberEnded instanceof GuildMember
             ? memberEnded
@@ -1364,7 +1368,7 @@ export class RaidInstance {
 
         const embed = MessageUtilities.generateBlankEmbed(initiatedBy, "RANDOM")
             .setTitle(`Parse Results for: **${vc?.name ?? "N/A"}**`)
-            .setFooter({ text: "Completed Time:" })
+            .setFooter({text: "Completed Time:"})
             .setTimestamp();
 
         if (parseSummary.isValid) {
@@ -2153,7 +2157,16 @@ export class RaidInstance {
         // If time expires, then end AFK check immediately.
         this._afkCheckButtonCollector.on("end", (reason: string) => {
             if (reason !== "time") return;
-            this.endAfkCheck(null).then();
+            switch (this._raidStatus) {
+                case RaidStatus.PRE_AFK_CHECK: {
+                    this.startAfkCheck().then();
+                    break;
+                }
+                case RaidStatus.AFK_CHECK: {
+                    this.endAfkCheck(null).then();
+                    break;
+                }
+            }
         });
 
         return true;
@@ -2350,8 +2363,9 @@ export class RaidInstance {
         if (this._raidStatus === RaidStatus.NOTHING) return false;
 
         this._controlPanelReactionCollector = this._controlPanelMsg.createMessageComponentCollector({
-            filter: controlPanelCollectorFilter(this._guildDoc, this._raidSection, this._guild)
-            // Infinite time
+            filter: controlPanelCollectorFilter(this._guildDoc, this._raidSection, this._guild),
+            // TODO let this be customizable?
+            time: this._raidStatus === RaidStatus.IN_RUN ? 4 * 60 * 60 * 1000 : undefined
         });
 
         const validateInVc = async (i: MessageComponentInteraction): Promise<boolean> => {
@@ -2428,6 +2442,7 @@ export class RaidInstance {
             return true;
         }
 
+        // Is in raid
         this._controlPanelReactionCollector.on("collect", async i => {
             if (!(await validateInVc(i))) {
                 return;
@@ -2517,7 +2532,7 @@ export class RaidInstance {
                 }
 
                 const embed = await RaidInstance.interpretParseRes(parseSummary, i.user, this._raidVc);
-                await this._controlPanelChannel.send({ embeds: [embed] }).catch();
+                await this._controlPanelChannel.send({embeds: [embed]}).catch();
                 const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
                 if (!member) {
                     return;
@@ -2531,6 +2546,11 @@ export class RaidInstance {
                 await QuotaManager.logQuota(member, roleId, "Parse", 1);
                 return;
             }
+        });
+
+        this._controlPanelReactionCollector.on("end", async (_, r) => {
+            if (r !== "time") return;
+            this.endRaid(null).catch();
         });
 
         return true;

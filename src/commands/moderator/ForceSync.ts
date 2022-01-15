@@ -158,7 +158,7 @@ export class ForceSync extends BaseCommand {
                     .setTitle(`Completed **${numPasses}** Pass(es)!`)
                     .setDescription(
                         new StringBuilder()
-                            .append(`Processed \`${allMembers.length} / ${allMembers.length}\` Accounts to Database`)
+                            .append(`Processed \`${allMembers.length} / ${allMembers.length}\` Accounts`)
                             .appendLine()
                             .append(StringUtil.getEmojiProgressBar(20, 1))
                             .appendLine()
