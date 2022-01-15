@@ -360,7 +360,7 @@ export class RaidInstance {
             });
         }
 
-        if (this._guildDoc.properties.reactionPoints.some(x => x.value > 0) && this._earlyLocPointCost > 0) {
+        if (this._earlyLocPointCost > 0 && section.otherMajorConfig.afkCheckProperties.pointUserLimit > 0) {
             reactions.set("EARLY_LOC_POINTS", {
                 earlyLocAmt: section.otherMajorConfig.afkCheckProperties.pointUserLimit,
                 isCustomReaction: false,
@@ -383,6 +383,10 @@ export class RaidInstance {
             const [mapKey, info] = x;
             if (mapKey === "NITRO" && this._guild.roles.premiumSubscriberRole) {
                 this._earlyLocToRole.set(mapKey, [this._guild.roles.premiumSubscriberRole]);
+                return;
+            }
+
+            if (mapKey === "EARLY_LOC_POINTS") {
                 return;
             }
 
@@ -918,6 +922,13 @@ export class RaidInstance {
         // We don't care about the result of this function, just that it should run.
         this.cleanUpRaid(false).then();
 
+        // Give point refunds if applicable
+        const earlyLocPts = this._pplWithEarlyLoc.get("EARLY_LOC_POINTS");
+        if ((this._raidStatus === RaidStatus.AFK_CHECK || this._raidStatus === RaidStatus.PRE_AFK_CHECK)
+            && earlyLocPts) {
+            await Promise.all(earlyLocPts.map(x => LoggerManager.logPoints(x.member, this._earlyLocPointCost)));
+        }
+
         // If this method was called during the AFK check, simply abort the AFK check.
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
             this.logEvent(
@@ -937,7 +948,9 @@ export class RaidInstance {
             false
         ).catch();
 
-        this.logRun(memberThatEnded).catch();
+        if (this._raidStatus === RaidStatus.IN_RUN) {
+            this.logRun(memberThatEnded).catch();
+        }
 
         // Check feedback channel
         if (!this._thisFeedbackChan)
@@ -1644,7 +1657,7 @@ export class RaidInstance {
         // Account for the general early location roles.
         if (this._earlyLocToRole.size > 0) {
             prioritySb.append("If you have one of the listed role(s), press the corresponding button.")
-                .appendLine(2);
+                .appendLine(1);
             for (const [mapKey, roles] of this._earlyLocToRole) {
                 const reactionInfo = this._allEssentialOptions.get(mapKey)!;
 
@@ -1660,9 +1673,15 @@ export class RaidInstance {
         }
 
         if (this._allEssentialOptions.size - this._earlyLocToRole.size > 0) {
-            prioritySb.append("⇨ Any __buttons__ containing gear or character preferences is a priority react. If ")
-                .append("you are bringing one of the gear/character choices, press the corresponding button. *Be sure ")
-                .append("to read through the raid guidelines to understand the **specifics** of these choices*.");
+            prioritySb.append("Any __buttons__ containing gear or character preferences is a priority react. If ")
+                .append("you are bringing one of the gear/character choices, press the corresponding button.");
+        }
+
+        const earlyLocInfo = this._allEssentialOptions.get("EARLY_LOC_POINTS");
+        if (earlyLocInfo) {
+            prioritySb.appendLine(2)
+                .append(`If you have **\`${this._earlyLocPointCost}\`** points that you would like to redeem for`)
+                .append("  priority, press the **Points** button.");
         }
 
         const raidStatus = this._raidStatus === RaidStatus.PRE_AFK_CHECK
@@ -2029,14 +2048,21 @@ export class RaidInstance {
             // If we no longer need this anymore, then notify them
             if (!this.stillNeedEssentialReact(mapKey)) {
                 i.reply({
-                    content: `We no longer need ${itemDis}. You can still bring it along, though!`,
+                    content: `Sorry, but the maximum number of ${itemDis} has been reached.`,
                     ephemeral: true
                 }).catch();
                 return;
             }
 
             this._pplConfirmingReaction.add(i.user.id);
-            const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse, this._earlyLocToRole);
+            const res = await confirmReaction(
+                i,
+                this._allEssentialOptions,
+                this._modifiersToUse,
+                this._earlyLocToRole,
+                this._earlyLocPointCost
+            );
+
             if (!this._raidVc) {
                 await i.editReply({
                     content: "The raid you are attempting to react to has been closed or aborted.",
@@ -2046,9 +2072,10 @@ export class RaidInstance {
             }
 
             this._pplConfirmingReaction.delete(i.user.id);
-            if (!res) {
+            if (!res.success) {
                 await i.editReply({
-                    content: "You either timed out, chose to cancel, or did not have Nitro."
+                    content: "You either timed out, chose to cancel, do not have the appropriate priority roles, or"
+                        + " do not have enough points to spend towards this raid."
                         + ` The preference (${itemDis}) that you selected has **not** been logged`
                         + " with the raid leader.",
                     components: []
@@ -2069,7 +2096,11 @@ export class RaidInstance {
             }
 
             // Add to database
-            await this.addEarlyLocationReaction(memberThatResponded, mapKey, res.modifiers, true);
+            await this.addEarlyLocationReaction(memberThatResponded, mapKey, res.react!.modifiers, true);
+            if (res.react?.successFunc) {
+                await res.react.successFunc(memberThatResponded);
+            }
+
             // If we no longer need this, then edit the button so no one else can click on it.
             if (!this.stillNeedEssentialReact(mapKey)) {
                 const idxOfButton = this._afkCheckButtons.findIndex(x => x.customId === mapKey);
@@ -2104,7 +2135,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.KEY_EMOJI} ${memberThatResponded.displayName} (${memberThatResponded.id}) confirmed`
                 + " that he or she has"
-                + ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.modifiers.join(", ")}]\``,
+                + ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.react!.modifiers.join(", ")}]\``,
                 true
             ).catch();
 

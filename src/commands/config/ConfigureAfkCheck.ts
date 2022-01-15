@@ -337,7 +337,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                     newAfkCheckProps.vcLimit = v;
                     break;
                 }
-                case "set_pt_lim": {
+                case "sec_pt_lim": {
                     const p = await askInput<number>(
                         ctx,
                         botMsg,

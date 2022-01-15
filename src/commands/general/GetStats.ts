@@ -1,5 +1,5 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
+import {IResolvedMember, UserManager} from "../../managers/UserManager";
 import {LoggerManager} from "../../managers/LoggerManager";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
@@ -148,8 +148,9 @@ export class GetStats extends BaseCommand {
         };
 
         if (ctx.guild && !showAll) {
+            const pts = await LoggerManager.getPoints((resMember as IResolvedMember).member);
             embed.setTitle(`Stats for **${user.tag}** in **${ctx.guild!}**`)
-                .setDescription(`${EmojiConstants.TICKET_EMOJI} Points: ${stats.points.get(ctx.guild.id) ?? 0}`);
+                .setDescription(`${EmojiConstants.TICKET_EMOJI} Points: ${pts}`);
 
             const dungeonsLed = stats.dungeonsLed.get(ctx.guild.id);
             if (dungeonsLed) {

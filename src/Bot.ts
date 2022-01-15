@@ -169,7 +169,8 @@ export class Bot {
 
         Bot.Commands.set("Logging", [
             new Cmds.LogLedRun(),
-            new Cmds.LogKeyPop()
+            new Cmds.LogKeyPop(),
+            new Cmds.GivePoints()
         ]);
 
         Bot.Commands.set("Modmail", [

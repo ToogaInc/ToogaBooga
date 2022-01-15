@@ -25,6 +25,7 @@ import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilit
 import {StartAfkCheck} from "../commands";
 import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
+import {LoggerManager} from "../managers/LoggerManager";
 
 
 export type ReactionInfoMore = IReactionInfo & {
@@ -32,10 +33,16 @@ export type ReactionInfoMore = IReactionInfo & {
     isCustomReaction: boolean;
     builtInEmoji?: EmojiIdentifierResolvable;
 };
-export interface IKeyReactInfo {
-    mapKey: keyof IMappedAfkCheckReactions;
-    modifiers: string[];
-    accidentCt: number;
+
+export interface IKeyReactResponse {
+    react?: {
+        mapKey: keyof IMappedAfkCheckReactions;
+        modifiers: string[];
+        accidentCt: number;
+        successFunc?: (m: GuildMember) => Promise<void>;
+    };
+
+    success: boolean;
 }
 
 /**
@@ -46,23 +53,21 @@ export interface IKeyReactInfo {
  * @param {readonly IDungeonModifier[]} modifiers The dungeon modifiers that are allowed.
  * @param {Collection<string, Role[]>} earlyLocReactions The early location reactions (mapped by ID) and the roles
  * needed to get access to it.
- * @param {boolean} [isAfk] Whether this is an AFK check. If this is not an AFK check, then only the key checker
- * will be invoked.
- * @returns {Promise<IKeyReactInfo | null>} The reaction result, if any.
+ * @param {number} pointCost The cost, in points, for this raid.
+ * @returns {Promise<IKeyReactResponse | null>} The reaction result, if any.
  */
 export async function confirmReaction(
     interaction: MessageComponentInteraction,
     essentialOptions: Collection<string, ReactionInfoMore>,
     modifiers: readonly IDungeonModifier[],
     earlyLocReactions: Collection<string, Role[]> | null,
-    isAfk: boolean = true
-): Promise<IKeyReactInfo | null> {
+    pointCost: number
+): Promise<IKeyReactResponse> {
     if (!interaction.guild)
-        return null;
-
+        return {success: false};
     const member = await GuildFgrUtilities.fetchGuildMember(interaction.guild, interaction.user.id);
     if (!member)
-        return null;
+        return {success: false};
 
     const mapKey = interaction.customId;
     const reactInfo = essentialOptions.get(mapKey)!;
@@ -161,31 +166,31 @@ export async function confirmReaction(
                 components: []
             });
 
-            return null;
+            return {success: false};
         }
 
         if (modifierRes.isButton()) {
             switch (modifierRes.customId) {
                 case noModifierId: {
-                    return {mapKey, modifiers: [], accidentCt: 0};
+                    return {react: {mapKey, modifiers: [], accidentCt: 0}, success: true};
                 }
                 case noneListedId: {
-                    return {mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0};
+                    return {react: {mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0}, success: true};
                 }
                 default: {
-                    return null;
+                    return {success: false};
                 }
             }
         }
 
         // Should never hit
         if (!modifierRes.isSelectMenu())
-            return null;
+            return {success: false};
 
         const selectedModifiers = modifiers
             .filter(x => modifierRes.values.includes(x.modifierName));
 
-        const returnObj: IKeyReactInfo = {mapKey: mapKey, modifiers: [], accidentCt: 0};
+        const returnObj: IKeyReactResponse = {react: {mapKey: mapKey, modifiers: [], accidentCt: 0}, success: true};
         // Define all possible buttons, don't construct new buttons for each modifier
         const numButtons: MessageButton[] = [];
         const accidentCustomId = `${uniqueIdentifier}_accident`;
@@ -206,7 +211,7 @@ export async function confirmReaction(
         // ask for individual levels.
         for (const modifier of selectedModifiers) {
             if (modifier.maxLevel === 1) {
-                returnObj.modifiers.push(modifier.modifierName);
+                returnObj.react!.modifiers.push(modifier.modifierName);
                 continue;
             }
 
@@ -230,29 +235,61 @@ export async function confirmReaction(
             }, uniqueIdentifier);
 
             if (!levelRes) {
-                return null;
+                return {success: false};
             }
 
             if (levelRes.customId === accidentCustomId) {
-                returnObj.accidentCt++;
+                returnObj.react!.accidentCt++;
                 continue;
             }
 
             if (levelRes.customId === cancelModId)
-                return null;
+                return {success: false};
 
-            returnObj.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
+            returnObj.react!.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
         }
 
         return returnObj;
     }
-    else if (!isAfk)
-        return null;
-
     // Ask the member if they're willing to actually bring said priority item
     const contentDisplay = new StringBuilder()
         .append(`You pressed the ${itemDisplay} button.`)
         .appendLine(2);
+
+    if (mapKey === "EARLY_LOC_POINTS" && essentialOptions.has("EARLY_LOC_POINTS")) {
+        const pointRes = await LoggerManager.getPoints(member);
+        if (pointRes < pointCost) {
+            return {success: false};
+        }
+
+        contentDisplay.append(`You have ${pointRes} out of the ${pointCost} required points needed. Do you want to`)
+            .append(" use your points to gain priority? Note that points give you priority access to a raid; it does")
+            .append(" **not** guarantee a completion on your part or on the raid's part.");
+
+        const [, response] = await AdvancedCollector.askBoolFollowUp({
+            interaction: interaction,
+            time: 15 * 1000,
+            contentToSend: {
+                content: contentDisplay.toString()
+            },
+            channel: interaction.channel as TextChannel
+        });
+
+        if (!response)
+            return {success: false};
+
+        return {
+            react: {
+                mapKey: "EARLY_LOC_POINTS",
+                modifiers: [],
+                accidentCt: 0,
+                successFunc: async m => {
+                    await LoggerManager.logPoints(m, -pointCost);
+                }
+            },
+            success: true
+        };
+    }
 
     if (reactInfo.type === "EARLY_LOCATION" && earlyLocReactions) {
         const validRoles = earlyLocReactions.get(mapKey);
@@ -262,7 +299,7 @@ export async function confirmReaction(
                 content: "An unknown error occurred.",
             });
 
-            return null;
+            return {success: false};
         }
 
         let isFound = false;
@@ -279,7 +316,7 @@ export async function confirmReaction(
                 content: "You don't have a valid role for this!"
             });
 
-            return null;
+            return {success: false};
         }
 
         contentDisplay
@@ -309,9 +346,9 @@ export async function confirmReaction(
 
     // Response of "no" or failure to respond implies no.
     if (!response)
-        return null;
+        return {success: false};
 
-    return {mapKey: mapKey, modifiers: [], accidentCt: 0};
+    return {react: {mapKey, modifiers: [], accidentCt: 0}, success: true};
 }
 
 
