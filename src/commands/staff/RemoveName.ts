@@ -198,10 +198,12 @@ export class RemoveName extends BaseCommand {
             if (prefix && !newName.startsWith(prefix) && newName.length !== 0) {
                 newName = prefix + newName;
             }
-            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+
+            const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await member.setNickname(newName);
+                return true;
             });
-            updatedName = true;
+            updatedName = !!res;
         }
 
         let tFinalStr = updatedDb

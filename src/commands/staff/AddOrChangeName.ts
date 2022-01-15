@@ -185,15 +185,16 @@ export class AddOrChangeName extends BaseCommand {
                 : [];
             if ((member.nickname?.length ?? 0) + newIgn.length + 4 <= 32
                 && !allNicknames.includes(newIgn.toLowerCase())) {
-                await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
                     if (!member.nickname) {
                         await member.setNickname(newIgn);
-                        return;
+                        return true;
                     }
                     await member.setNickname(`${member.nickname} | ${newIgn}`);
+                    return true;
                 });
 
-                changedNickname = true;
+                changedNickname = !!res;
             }
 
             let finalStr = addedToDatabase
@@ -339,10 +340,11 @@ export class AddOrChangeName extends BaseCommand {
             if (prefix && !newName.startsWith(prefix)) {
                 newName = prefix + newName;
             }
-            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await member.setNickname(newName);
+                return true;
             });
-            updatedName = true;
+            updatedName = !!res;
         }
 
         let tFinalStr = updatedDb
