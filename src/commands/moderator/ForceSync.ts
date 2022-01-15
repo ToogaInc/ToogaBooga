@@ -56,7 +56,6 @@ export class ForceSync extends BaseCommand {
         }
 
         await ctx.interaction.deferReply();
-        const batchCount = Math.max(Math.min(ctx.interaction.options.getNumber("batches", false) ?? 100, 500), 50);
         this._isRunning = true;
         const allMembers = (await ctx.guild!.members.fetch()).filter(x => {
             return x.roles.cache.has(memberRole.id) || x.roles.cache.has(ctx.guildDoc!.roles.suspendedRoleId)

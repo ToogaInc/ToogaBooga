@@ -1,9 +1,11 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {ChannelLogsQueryOptions, TextChannel} from "discord.js";
+import {TextChannel} from "discord.js";
 import {MiscUtilities} from "../../utilities/MiscUtilities";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class Purge extends BaseCommand {
+    private static readonly OLDEST_POSS_MSG: number = 1.123e+9;
+
     public constructor() {
         const cmi: ICommandInfo = {
             cmdCode: "PURGE_CMD",
@@ -53,36 +55,22 @@ export class Purge extends BaseCommand {
             return -1;
         }
 
+        const maxNumToDelete = Math.min(ctx.interaction.options.getNumber("amt", true), 1000);
         let num = Math.min(ctx.interaction.options.getNumber("amt", true), 1000);
         await ctx.interaction.reply({
-            content: `Clearing ${num} messages.`,
+            content: `Attempting to clear ${num} messages. Please wait.`,
             ephemeral: true
         });
 
-        let numToClear: number = 0;
-        while (num > 0) {
-            if (num > 100) {
-                numToClear = 100;
-                num -= 100;
-            }
-            else {
-                numToClear = num;
-                num = 0;
-            }
-
-            const q: ChannelLogsQueryOptions = {
-                limit: numToClear
-            };
-
+        let numDeleted = 0;
+        while (true) {
             const groupMsgs = (await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                return await ctx.channel.messages.fetch(q);
-            }))?.filter(x => !x.pinned);
+                return await ctx.channel.messages.fetch({
+                    limit: Math.min(num, 100)
+                });
+            }))?.filter(x => !x.pinned && Date.now() - x.createdTimestamp <= Purge.OLDEST_POSS_MSG);
 
-            if (!groupMsgs) {
-                break;
-            }
-
-            if (groupMsgs.size === 0) {
+            if (!groupMsgs || groupMsgs.size === 0) {
                 break;
             }
 
@@ -95,9 +83,19 @@ export class Purge extends BaseCommand {
                 break;
             }
 
+            num -= groupMsgs.size;
+            numDeleted += groupMsgs.size;
+
+            if (num <= 0) {
+                 break;
+            }
+
             await MiscUtilities.stopFor(3000);
         }
 
+        await ctx.interaction.editReply({
+            content: `Cleared ${numDeleted}/${maxNumToDelete} messages successfully.`
+        });
         return 0;
     }
 }
