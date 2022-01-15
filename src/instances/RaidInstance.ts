@@ -2068,7 +2068,15 @@ export class RaidInstance {
             );
 
             if (!this._raidVc) {
-                await i.editReply({
+                if (res.success || res.errorReply.alreadyReplied) {
+                    await i.editReply({
+                        content: "The raid you are attempting to react to has been closed or aborted.",
+                        components: []
+                    });
+                    return;
+                }
+
+                await i.reply({
                     content: "The raid you are attempting to react to has been closed or aborted.",
                     components: []
                 });
@@ -2077,13 +2085,19 @@ export class RaidInstance {
 
             this._pplConfirmingReaction.delete(i.user.id);
             if (!res.success) {
-                await i.editReply({
-                    content: "You either timed out, chose to cancel, do not have the appropriate priority roles, or"
-                        + " do not have enough points to spend towards this raid."
-                        + ` The preference (${itemDis}) that you selected has **not** been logged`
-                        + " with the raid leader.",
-                    components: []
-                });
+                if (res.errorReply.alreadyReplied) {
+                    await i.editReply({
+                        content: res.errorReply.errorMsg,
+                        components: []
+                    });
+                }
+                else {
+                    await i.reply({
+                        content: res.errorReply.errorMsg,
+                        ephemeral: true,
+                        components: []
+                    });
+                }
                 return;
             }
 

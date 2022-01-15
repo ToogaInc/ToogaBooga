@@ -950,12 +950,19 @@ export class HeadcountInstance {
             this._pplConfirmingReaction.delete(i.user.id);
 
             if (!res.success) {
-                await i.editReply({
-                    content: "You either did not respond to a question that was asked, or chose to cancel this"
-                        + ` process. Either way, the preference (${itemDis}) that you selected has **not** been logged`
-                        + " with the raid leader.",
-                    components: []
-                });
+                if (res.errorReply.alreadyReplied) {
+                    await i.editReply({
+                        content: res.errorReply.errorMsg,
+                        components: []
+                    });
+                }
+                else {
+                    await i.reply({
+                        content: res.errorReply.errorMsg,
+                        ephemeral: true,
+                        components: []
+                    });
+                }
                 return;
             }
 
