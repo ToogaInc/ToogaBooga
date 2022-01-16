@@ -6,6 +6,9 @@ import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
+import {IRealmIgn} from "../../definitions";
+import {FindCursor} from "mongodb";
+import {MessageEmbed} from "discord.js";
 
 // It might be worth blocking access to the bot while this command is running.
 // Or, better yet, making this command bot developer-only
@@ -55,8 +58,18 @@ export class ForceSync extends BaseCommand {
             return -1;
         }
 
-        await ctx.interaction.deferReply();
         this._isRunning = true;
+
+        const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RANDOM")
+            .setTitle("Preparing to Sync.")
+            .setDescription("Fetching all members in this server...")
+            .setFooter({text: "This might take a while, please wait."})
+            .setTimestamp();
+
+        await ctx.interaction.reply({
+            embeds: [embed]
+        });
+
         const allMembers = (await ctx.guild!.members.fetch()).filter(x => {
             return x.roles.cache.has(memberRole.id) || x.roles.cache.has(ctx.guildDoc!.roles.suspendedRoleId)
                 && !!x.nickname;
@@ -64,8 +77,49 @@ export class ForceSync extends BaseCommand {
             return {member: x, names: x.nickname ? UserManager.getAllNames(x.nickname) : []};
         });
 
-        const allDocs = await MongoManager.getIdNameCollection().find({}).toArray();
-        const namesUsed = new Set<string>(allDocs.flatMap(x => x.rotmgNames).map(x => x.lowercaseIgn));
+        const allDocs: FindCursor<{
+            rotmgNames: IRealmIgn[]
+        }> = MongoManager.getIdNameCollection().find({}).project({
+            rotmgNames: 1
+        });
+
+        let retDocs = 0;
+        const ttlDocs = await allDocs.count();
+        const namesUsed = new Set<string>();
+
+        const initEmbed = (): MessageEmbed => {
+            const rawPercent = retDocs / ttlDocs;
+            const roundedPercent = Math.floor(rawPercent * 10000) / 100;
+            embed.setDescription(
+                new StringBuilder()
+                    .append(`Retrieved \`${retDocs} / ${ttlDocs}\` Documents.`).appendLine()
+                    .append(StringUtil.getEmojiProgressBar(20, rawPercent)).appendLine()
+                    .append(`Percent Completed: \`${roundedPercent}\`%`)
+                    .toString()
+            );
+
+            return embed;
+        };
+
+        const initialInterval = setInterval(async () => {
+            await ctx.interaction.editReply({
+                embeds: [initEmbed()]
+            });
+        }, 3 * 1000);
+
+        await ctx.interaction.editReply({
+            embeds: [initEmbed()]
+        });
+
+        await allDocs.forEach(doc => {
+            for (const name of doc.rotmgNames) {
+                namesUsed.add(name.lowercaseIgn);
+            }
+
+            ++retDocs;
+        });
+
+        clearInterval(initialInterval);
 
         const timeStart = Date.now();
         let added = 0;
@@ -89,7 +143,7 @@ export class ForceSync extends BaseCommand {
                 .addField("Skipped", StringUtil.codifyString(skipped), true)
                 .addField("Status", StringUtil.codifyString("Processing..."))
                 .setFooter({
-                    text: `${namesUsed.size} names & ${allDocs.length} entries originally in database.`
+                    text: `${namesUsed.size} names & ${ttlDocs} entries originally in database.`
                 })
                 .setTimestamp();
         };
@@ -172,7 +226,7 @@ export class ForceSync extends BaseCommand {
                         TimeUtilities.formatDuration(Date.now() - timeStart, false))
                     )
                     .setFooter({
-                        text: `${namesUsed.size} names & ${allDocs.length} entries originally in database.`
+                        text: `${namesUsed.size} names & ${ttlDocs} entries originally in database.`
                     })
                     .setTimestamp()
             ]
