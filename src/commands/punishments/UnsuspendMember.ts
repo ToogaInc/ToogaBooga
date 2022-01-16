@@ -4,6 +4,7 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {SuspensionManager} from "../../managers/PunishmentManager";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import {preCheckPunishment} from "./common/PunishmentCommon";
 
 export class UnsuspendMember extends BaseCommand {
     public static readonly ERROR_NO_UNSUSPEND_STR: string = new StringBuilder()
@@ -58,18 +59,15 @@ export class UnsuspendMember extends BaseCommand {
             ctx.guild!,
             ctx.interaction.options.getString("member", true)
         );
-        if (!resMember) {
-            await ctx.interaction.editReply({
-                content: "This member could not be resolved. Please try again.",
-            });
 
-            return 0;
+        if (!(await preCheckPunishment(ctx.interaction, ctx.member!, resMember))) {
+            return -1;
         }
 
         const reason = ctx.interaction.options.getString("reason", true);
         const currTime = Date.now();
 
-        const unsuspensionRes = await SuspensionManager.removeSuspension(resMember.member, ctx.member!, {
+        const unsuspensionRes = await SuspensionManager.removeSuspension(resMember!.member, ctx.member!, {
             evidence: [],
             guildDoc: ctx.guildDoc!,
             reason: reason
@@ -85,7 +83,7 @@ export class UnsuspendMember extends BaseCommand {
 
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "GREEN")
             .setTitle("Suspension Removed.")
-            .setDescription(`You have unsuspended ${resMember.member} (${resMember.member.displayName}).`)
+            .setDescription(`You have unsuspended ${resMember!.member} (${resMember!.member.displayName}).`)
             .addField("Reason", StringUtil.codifyString(reason))
             .setTimestamp();
 

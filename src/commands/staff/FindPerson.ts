@@ -93,6 +93,7 @@ export class FindPerson extends BaseCommand {
             return -1;
         }
 
+        await ctx.interaction.deferReply();
         let targetMember: GuildMember | null = null;
         let nameIdRes: IIdNameInfo | null = null;
 
@@ -113,7 +114,6 @@ export class FindPerson extends BaseCommand {
                     // nicknames
                     limit: 10
                 });
-
 
                 if (results.size > 0) {
                     for (const [id, member] of results) {
@@ -186,7 +186,7 @@ export class FindPerson extends BaseCommand {
                 failEmbed.setDescription(`**\`${ignQuery ?? idQuery}\`** was not found in this server.`);
             }
 
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 embeds: [failEmbed]
             });
             return 0;
@@ -330,7 +330,7 @@ export class FindPerson extends BaseCommand {
         if (userDoc && ctx.guildDoc && ctx.guild) {
             const thisGuildPunishmentHist = userDoc.details.moderationHistory.filter(x => x.guildId === ctx.guild!.id);
             if (thisGuildPunishmentHist.length === 0) {
-                await ctx.interaction.reply({
+                await ctx.interaction.editReply({
                     embeds: [successEmbed]
                 });
                 return 0;
@@ -427,7 +427,7 @@ export class FindPerson extends BaseCommand {
                     .setCustomId(nextId)
             ];
 
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 embeds: [successEmbed],
                 components: AdvancedCollector.getActionRowsFromComponents(components)
             });
@@ -483,7 +483,7 @@ export class FindPerson extends BaseCommand {
             return 0;
         }
 
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             embeds: [successEmbed]
         });
 

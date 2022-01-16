@@ -5,6 +5,7 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {MongoManager} from "../../managers/MongoManager";
 import {PunishmentManager} from "../../managers/PunishmentManager";
 import generateRandomString = StringUtil.generateRandomString;
+import {preCheckPunishment} from "./common/PunishmentCommon";
 
 export class WarnMember extends BaseCommand {
     public constructor() {
@@ -60,12 +61,8 @@ export class WarnMember extends BaseCommand {
         await ctx.interaction.deferReply();
         const mStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
-        if (!resMember) {
-            await ctx.interaction.editReply({
-                content: "This member could not be resolved. Please try again.",
-            });
-
-            return 0;
+        if (!(await preCheckPunishment(ctx.interaction, ctx.member!, resMember))) {
+            return -1;
         }
 
         const reason = ctx.interaction.options.getString("reason", true);
@@ -74,12 +71,12 @@ export class WarnMember extends BaseCommand {
 
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
             .setTitle("Warning Issued.")
-            .setDescription(`You have issued a warning to ${resMember.member} (${resMember.member.displayName}).`)
+            .setDescription(`You have issued a warning to ${resMember!.member} (${resMember!.member.displayName}).`)
             .addField("Reason", StringUtil.codifyString(reason))
             .addField("Moderation ID", StringUtil.codifyString(warningId))
             .setTimestamp();
 
-        const logInfo = await PunishmentManager.logPunishment(resMember.member, "Warn", {
+        const logInfo = await PunishmentManager.logPunishment(resMember!.member, "Warn", {
             actionIdToUse: warningId,
             evidence: [],
             guild: ctx.guild!,

@@ -25,6 +25,7 @@ import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilit
 import {StartAfkCheck} from "../commands";
 import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
+import {LoggerManager} from "../managers/LoggerManager";
 
 
 export type ReactionInfoMore = IReactionInfo & {
@@ -32,11 +33,22 @@ export type ReactionInfoMore = IReactionInfo & {
     isCustomReaction: boolean;
     builtInEmoji?: EmojiIdentifierResolvable;
 };
-export interface IKeyReactInfo {
-    mapKey: keyof IMappedAfkCheckReactions;
-    modifiers: string[];
-    accidentCt: number;
-}
+
+export type KeyReactResponse = {
+    success: true;
+    react: {
+        mapKey: keyof IMappedAfkCheckReactions;
+        modifiers: string[];
+        accidentCt: number;
+        successFunc?: (m: GuildMember) => Promise<void>;
+    };
+} | {
+    success: false;
+    errorReply: {
+        errorMsg: string;
+        alreadyReplied: boolean;
+    }
+};
 
 /**
  * Confirms the key reacts. This asks the person what modifiers the key has.
@@ -46,23 +58,36 @@ export interface IKeyReactInfo {
  * @param {readonly IDungeonModifier[]} modifiers The dungeon modifiers that are allowed.
  * @param {Collection<string, Role[]>} earlyLocReactions The early location reactions (mapped by ID) and the roles
  * needed to get access to it.
- * @param {boolean} [isAfk] Whether this is an AFK check. If this is not an AFK check, then only the key checker
- * will be invoked.
- * @returns {Promise<IKeyReactInfo | null>} The reaction result, if any.
+ * @param {number} pointCost The cost, in points, for this raid.
+ * @returns {Promise<KeyReactResponse>} The reaction result, if any.
  */
 export async function confirmReaction(
     interaction: MessageComponentInteraction,
     essentialOptions: Collection<string, ReactionInfoMore>,
     modifiers: readonly IDungeonModifier[],
     earlyLocReactions: Collection<string, Role[]> | null,
-    isAfk: boolean = true
-): Promise<IKeyReactInfo | null> {
-    if (!interaction.guild)
-        return null;
+    pointCost: number
+): Promise<KeyReactResponse> {
+    if (!interaction.guild) {
+        return {
+            success: false,
+            errorReply: {
+                errorMsg: "An unknown error occurred.",
+                alreadyReplied: false
+            }
+        };
+    }
 
     const member = await GuildFgrUtilities.fetchGuildMember(interaction.guild, interaction.user.id);
-    if (!member)
-        return null;
+    if (!member) {
+        return {
+            success: false,
+            errorReply: {
+                errorMsg: "An unknown error occurred.",
+                alreadyReplied: false
+            }
+        };
+    }
 
     const mapKey = interaction.customId;
     const reactInfo = essentialOptions.get(mapKey)!;
@@ -161,31 +186,50 @@ export async function confirmReaction(
                 components: []
             });
 
-            return null;
+            return {
+                success: false,
+                errorReply: {
+                    alreadyReplied: true,
+                    errorMsg: `You did not respond to the question in time. Your ${itemDisplay} has not been logged.`
+                }
+            };
         }
 
         if (modifierRes.isButton()) {
             switch (modifierRes.customId) {
                 case noModifierId: {
-                    return {mapKey, modifiers: [], accidentCt: 0};
+                    return {react: {mapKey, modifiers: [], accidentCt: 0}, success: true};
                 }
                 case noneListedId: {
-                    return {mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0};
+                    return {react: {mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0}, success: true};
                 }
                 default: {
-                    return null;
+                    return {
+                        success: false,
+                        errorReply: {
+                            alreadyReplied: true,
+                            errorMsg: `You have canceled this process. Your ${itemDisplay} has not been logged.`
+                        }
+                    };
                 }
             }
         }
 
         // Should never hit
-        if (!modifierRes.isSelectMenu())
-            return null;
+        if (!modifierRes.isSelectMenu()) {
+            return {
+                success: false,
+                errorReply: {
+                    alreadyReplied: true,
+                    errorMsg: `An unknown error occurred. Your ${itemDisplay} has not been logged.`
+                }
+            };
+        }
 
         const selectedModifiers = modifiers
             .filter(x => modifierRes.values.includes(x.modifierName));
 
-        const returnObj: IKeyReactInfo = {mapKey: mapKey, modifiers: [], accidentCt: 0};
+        const returnObj: KeyReactResponse = {react: {mapKey: mapKey, modifiers: [], accidentCt: 0}, success: true};
         // Define all possible buttons, don't construct new buttons for each modifier
         const numButtons: MessageButton[] = [];
         const accidentCustomId = `${uniqueIdentifier}_accident`;
@@ -206,7 +250,7 @@ export async function confirmReaction(
         // ask for individual levels.
         for (const modifier of selectedModifiers) {
             if (modifier.maxLevel === 1) {
-                returnObj.modifiers.push(modifier.modifierName);
+                returnObj.react!.modifiers.push(modifier.modifierName);
                 continue;
             }
 
@@ -230,39 +274,101 @@ export async function confirmReaction(
             }, uniqueIdentifier);
 
             if (!levelRes) {
-                return null;
+                return {
+                    success: false,
+                    errorReply: {
+                        alreadyReplied: true,
+                        errorMsg: `You did not respond to the question in time, so your ${itemDisplay} wasn't logged.`
+                    }
+                };
             }
 
             if (levelRes.customId === accidentCustomId) {
-                returnObj.accidentCt++;
+                returnObj.react!.accidentCt++;
                 continue;
             }
 
-            if (levelRes.customId === cancelModId)
-                return null;
+            if (levelRes.customId === cancelModId) {
+                return {
+                    success: false,
+                    errorReply: {
+                        alreadyReplied: true,
+                        errorMsg: `You canceled this process, so your ${itemDisplay} wasn't logged.`
+                    }
+                };
+            }
 
-            returnObj.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
+            returnObj.react!.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
         }
 
         return returnObj;
     }
-    else if (!isAfk)
-        return null;
 
     // Ask the member if they're willing to actually bring said priority item
     const contentDisplay = new StringBuilder()
         .append(`You pressed the ${itemDisplay} button.`)
         .appendLine(2);
 
+    if (mapKey === "EARLY_LOC_POINTS" && essentialOptions.has("EARLY_LOC_POINTS")) {
+        const pointRes = await LoggerManager.getPoints(member);
+        if (pointRes < pointCost) {
+            return {
+                success: false,
+                errorReply: {
+                    alreadyReplied: false,
+                    errorMsg: "Sorry, but you can't use your points right now. "
+                        + `You only have \`${pointRes}\` out of the \`${pointCost}\` required points.`
+                }
+            };
+        }
+
+        contentDisplay.append(`You have ${pointRes} out of the ${pointCost} required points needed. Do you want to`)
+            .append(" use your points to gain priority? Note that points give you priority access to a raid; it does")
+            .append(" **not** guarantee a completion on your part or on the raid's part.");
+
+        const [, response] = await AdvancedCollector.askBoolFollowUp({
+            interaction: interaction,
+            time: 15 * 1000,
+            contentToSend: {
+                content: contentDisplay.toString()
+            },
+            channel: interaction.channel as TextChannel
+        });
+
+        if (!response) {
+            return {
+                success: false,
+                errorReply: {
+                    alreadyReplied: true,
+                    errorMsg: "You did not respond to the question in time, or you responded with `No`. Either way,"
+                        + ` your ${itemDisplay} was not logged.`
+                }
+            };
+        }
+
+        return {
+            react: {
+                mapKey: "EARLY_LOC_POINTS",
+                modifiers: [],
+                accidentCt: 0,
+                successFunc: async m => {
+                    await LoggerManager.logPoints(m, -pointCost);
+                }
+            },
+            success: true
+        };
+    }
+
     if (reactInfo.type === "EARLY_LOCATION" && earlyLocReactions) {
         const validRoles = earlyLocReactions.get(mapKey);
         if (!validRoles) {
-            await interaction.reply({
-                ephemeral: true,
-                content: "An unknown error occurred.",
-            });
-
-            return null;
+            return {
+                success: false,
+                errorReply: {
+                    errorMsg: "An unknown error occurred. It's possible that this role wasn't configured properly.",
+                    alreadyReplied: false
+                }
+            };
         }
 
         let isFound = false;
@@ -274,12 +380,13 @@ export async function confirmReaction(
         }
 
         if (!isFound) {
-            await interaction.reply({
-                ephemeral: true,
-                content: "You don't have a valid role for this!"
-            });
-
-            return null;
+            return {
+                success: false,
+                errorReply: {
+                    errorMsg: `Sorry, but you don't have the required role(s) to get priority for ${itemDisplay}.`,
+                    alreadyReplied: false
+                }
+            };
         }
 
         contentDisplay
@@ -308,10 +415,18 @@ export async function confirmReaction(
     });
 
     // Response of "no" or failure to respond implies no.
-    if (!response)
-        return null;
+    if (!response) {
+        return {
+            success: false,
+            errorReply: {
+                errorMsg: `You responded with \`No\` or this question timed out. Your ${itemDisplay} was not logged`
+                    + " with the raid leader.",
+                alreadyReplied: true
+            }
+        };
+    }
 
-    return {mapKey: mapKey, modifiers: [], accidentCt: 0};
+    return {react: {mapKey, modifiers: [], accidentCt: 0}, success: true};
 }
 
 
@@ -495,7 +610,7 @@ export function controlPanelCollectorFilter(guildDoc: IGuildInfo, section: ISect
             // Moderation team roles
             guildDoc.roles.staffRoles.moderation.helperRoleId,
             guildDoc.roles.staffRoles.moderation.securityRoleId,
-            guildDoc.roles.staffRoles.moderation.officerRoleId,            
+            guildDoc.roles.staffRoles.moderation.officerRoleId,
             guildDoc.roles.staffRoles.moderation.moderatorRoleId
         ];
 
@@ -507,7 +622,7 @@ export function controlPanelCollectorFilter(guildDoc: IGuildInfo, section: ISect
 
         return neededRoles.some(x => GuildFgrUtilities.memberHasCachedRole(member, x))
             || member.permissions.has("ADMINISTRATOR");
-    }
+    };
 }
 
 /**
@@ -518,7 +633,7 @@ export function controlPanelCollectorFilter(guildDoc: IGuildInfo, section: ISect
  * @return {boolean} Whether the person can run a raid in this dungeon.
  */
 export function hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMember,
-    roleCol: Collection<DefinedRole, string[]>): boolean {
+                               roleCol: Collection<DefinedRole, string[]>): boolean {
     if (!roleReqs || roleReqs.length === 0)
         return true;
 

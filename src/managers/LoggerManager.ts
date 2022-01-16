@@ -3,7 +3,6 @@ import {MongoManager} from "./MongoManager";
 import {Filter, UpdateFilter} from "mongodb";
 import {IGuildInfo, IUserInfo} from "../definitions";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
 
 export namespace LoggerManager {
@@ -47,13 +46,6 @@ export namespace LoggerManager {
          * where the key is the dungeon name (not ID) and the value is the number completed/failed/assisted.
          */
         dungeonsLed: Collection<string, DungeonLedType>;
-
-        /**
-         * The points that this person has.
-         *
-         * @type {Collection<string, number>}
-         */
-        points: Collection<string, number>;
     }
 
     /**
@@ -239,8 +231,7 @@ export namespace LoggerManager {
             dungeonRuns: new Collection<string, Collection<string, {
                 completed: number;
                 failed: number
-            }>>(),
-            points: new Collection<string, number>()
+            }>>()
         };
 
         const guildDoc = guildId
@@ -256,8 +247,6 @@ export namespace LoggerManager {
             const [type, gId, vId, ...rest] = key.split(":");
             switch (type) {
                 case "P": {
-                    const guild = await GlobalFgrUtilities.fetchGuild(gId);
-                    stats.points.set(guild?.name ?? `ID: ${gId}`, value);
                     break;
                 }
                 case "K": {

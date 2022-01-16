@@ -5,6 +5,7 @@ import {MuteManager} from "../../managers/PunishmentManager";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import generateRandomString = StringUtil.generateRandomString;
+import {preCheckPunishment} from "./common/PunishmentCommon";
 
 export class UnmuteMember extends BaseCommand {
     public static readonly ERROR_NO_UNMUTE_STR: string = new StringBuilder()
@@ -66,19 +67,15 @@ export class UnmuteMember extends BaseCommand {
         await ctx.interaction.deferReply();
         const mStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
-        if (!resMember) {
-            await ctx.interaction.editReply({
-                content: "This member could not be resolved. Please try again.",
-            });
-
-            return 0;
+        if (!(await preCheckPunishment(ctx.interaction, ctx.member!, resMember))) {
+            return -1;
         }
 
         const unmuteId = `Unmute_${Date.now()}_${generateRandomString(15)}`;
         const reason = ctx.interaction.options.getString("reason", true);
         const currTime = Date.now();
 
-        const unmuteRes = await MuteManager.removeMute(resMember.member, ctx.member!, {
+        const unmuteRes = await MuteManager.removeMute(resMember!.member, ctx.member!, {
             evidence: [],
             guildDoc: ctx.guildDoc!,
             reason: reason
@@ -94,7 +91,7 @@ export class UnmuteMember extends BaseCommand {
 
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "GREEN")
             .setTitle("Unmute Issued.")
-            .setDescription(`You have unmuted ${resMember.member} (${resMember.member.displayName}).`)
+            .setDescription(`You have unmuted ${resMember!.member} (${resMember!.member.displayName}).`)
             .addField("Reason", StringUtil.codifyString(reason))
             .setTimestamp();
 

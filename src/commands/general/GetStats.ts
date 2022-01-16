@@ -1,5 +1,5 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
+import {IResolvedMember, UserManager} from "../../managers/UserManager";
 import {LoggerManager} from "../../managers/LoggerManager";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
@@ -66,12 +66,13 @@ export class GetStats extends BaseCommand {
             return -1;
         }
 
+        await ctx.interaction.deferReply();
         const user = "member" in resMember
             ? resMember.member.user
             : resMember.user;
         const stats = await LoggerManager.getStats(user, ctx.guild?.id);
         if (!stats) {
-            await ctx.interaction.reply({
+            await ctx.interaction.editReply({
                 content: query === ctx.user.id
                     ? "You do not have anything logged under your account."
                     : `No stats were found for ${mStr}.`,
@@ -147,8 +148,9 @@ export class GetStats extends BaseCommand {
         };
 
         if (ctx.guild && !showAll) {
+            const pts = await LoggerManager.getPoints((resMember as IResolvedMember).member);
             embed.setTitle(`Stats for **${user.tag}** in **${ctx.guild!}**`)
-                .setDescription(`${EmojiConstants.TICKET_EMOJI} Points: ${stats.points.get(ctx.guild.id) ?? 0}`);
+                .setDescription(`${EmojiConstants.TICKET_EMOJI} Points: ${pts}`);
 
             const dungeonsLed = stats.dungeonsLed.get(ctx.guild.id);
             if (dungeonsLed) {
@@ -212,7 +214,7 @@ export class GetStats extends BaseCommand {
             processKeys(keysPopped);
         }
 
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             embeds: [embed]
         });
         return 0;

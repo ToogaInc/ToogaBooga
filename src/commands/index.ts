@@ -22,6 +22,8 @@ export * from "./staff/AddOrChangeName";
 export * from "./staff/RemoveName";
 export * from "./staff/ParseRaidVc";
 export * from "./staff/YoinkVC";
+export * from "./staff/Poll";
+export * from "./staff/Purge";
 
 export * from "./punishments/SuspendMember";
 export * from "./punishments/SectionSuspendMember";
@@ -35,6 +37,7 @@ export * from "./punishments/UnsuspendFromSection";
 
 export * from "./logging/LogLedRun";
 export * from "./logging/LogKeyPop";
+export * from "./logging/GivePoints";
 
 export * from "./owner/SendAnnouncement";
 
@@ -45,3 +48,5 @@ export * from "./general/GetStats";
 
 export * from "./modmail/ReplyToThread";
 export * from "./modmail/ArchiveThread";
+
+export * from "./moderator/ForceSync";

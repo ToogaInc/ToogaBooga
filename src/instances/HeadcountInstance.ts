@@ -940,20 +940,33 @@ export class HeadcountInstance {
             // Item display for future use
             const itemDis = getItemDisplay(reactInfo);
             this._pplConfirmingReaction.add(i.user.id);
-            const res = await confirmReaction(i, this._allEssentialOptions, this._modifiersToUse, null);
+            const res = await confirmReaction(
+                i,
+                this._allEssentialOptions,
+                this._modifiersToUse,
+                null,
+                -1
+            );
             this._pplConfirmingReaction.delete(i.user.id);
 
-            if (!res) {
-                await i.editReply({
-                    content: "You either did not respond to a question that was asked, or chose to cancel this"
-                        + ` process. Either way, the preference (${itemDis}) that you selected has **not** been logged`
-                        + " with the raid leader.",
-                    components: []
-                });
+            if (!res.success) {
+                if (res.errorReply.alreadyReplied) {
+                    await i.editReply({
+                        content: res.errorReply.errorMsg,
+                        components: []
+                    });
+                }
+                else {
+                    await i.reply({
+                        content: res.errorReply.errorMsg,
+                        ephemeral: true,
+                        components: []
+                    });
+                }
                 return;
             }
 
-            await this.addKeyReact(memberThatResponded, mapKey, res.modifiers, true);
+            await this.addKeyReact(memberThatResponded, mapKey, res.react!.modifiers, true);
             await i.editReply({
                 content: `Your ${itemDis} has been logged with the raid leader. Note that this is a *headcount* so`
                     + " your key may not be used at all. Make sure anyone can direct message you; your raid leader"

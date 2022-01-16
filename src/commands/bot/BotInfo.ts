@@ -44,17 +44,19 @@ export class BotInfo extends BaseCommand {
             .addField("Server Count", StringUtil.codifyString(serverCount), true)
             .addField(
                 "Uptime",
-                StringUtil.codifyString(TimeUtilities.formatDuration(Date.now() - instance.instanceStarted.getTime())),
-                true
+                StringUtil.codifyString(
+                    TimeUtilities.formatDuration(Date.now() - instance.instanceStarted.getTime(), false)
+                ), true
             )
-            .addField("Bot Owner(s)", botOwners.map(x => `${x} (${x!.tag})`).join(", "))
+            .addField("Bot Developer(s)", botOwners.map(x => `${x} (${x!.tag})`).join("\n"))
             .addField("Github Link", `Click [Here](${GeneralConstants.GITHUB_URL})`)
             .addField(
                 "Invite Policy",
                 "Please message a bot owner directly if you are interested in getting this bot for your server. We"
                 + " may or may not accommodate your request."
             )
-            .setThumbnail(instance.client.user!.displayAvatarURL());
+            .setThumbnail(instance.client.user!.displayAvatarURL())
+            .setImage(GeneralConstants.BOT_BANNER);
 
         await ctx.interaction.reply({
             embeds: [embed]
