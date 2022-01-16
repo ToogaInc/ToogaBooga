@@ -6,6 +6,7 @@ import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {MessageSelectMenu, MessageSelectOptionData} from "discord.js";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
+import {preCheckPunishment} from "./common/PunishmentCommon";
 
 export class UnsuspendFromSection extends BaseCommand {
     public constructor() {
@@ -52,17 +53,13 @@ export class UnsuspendFromSection extends BaseCommand {
         await ctx.interaction.deferReply();
         const mStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
-        if (!resMember) {
-            await ctx.interaction.editReply({
-                content: "This member could not be resolved. Please try again.",
-            });
-
-            return 0;
+        if (!(await preCheckPunishment(ctx.interaction, ctx.member!, resMember))) {
+            return -1;
         }
 
         const sections = ctx.guildDoc!.guildSections.filter(sec => {
             // Not suspended in section = nothing to do here
-            if (sec.moderation.sectionSuspended.every(susInfo => susInfo.affectedUser.id !== resMember.member.id)) {
+            if (sec.moderation.sectionSuspended.every(susInfo => susInfo.affectedUser.id !== resMember!.member.id)) {
                 return false;
             }
 
@@ -125,7 +122,7 @@ export class UnsuspendFromSection extends BaseCommand {
         const reason = ctx.interaction.options.getString("reason", true);
         const currTime = Date.now();
 
-        const unsuspensionRes = await SuspensionManager.removeSectionSuspension(resMember.member, ctx.member!, {
+        const unsuspensionRes = await SuspensionManager.removeSectionSuspension(resMember!.member, ctx.member!, {
             section: sectionPicked,
             evidence: [],
             guildDoc: ctx.guildDoc!,
@@ -143,7 +140,7 @@ export class UnsuspendFromSection extends BaseCommand {
 
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "GREEN")
             .setTitle("Section Suspension Removed.")
-            .setDescription(`You have unsuspended ${resMember.member} (${resMember.member.displayName}) from the`
+            .setDescription(`You have unsuspended ${resMember!.member} (${resMember!.member.displayName}) from the`
                 + ` section: **\`${sectionPicked.sectionName}\`**`)
             .addField("Reason", StringUtil.codifyString(reason))
             .setTimestamp();

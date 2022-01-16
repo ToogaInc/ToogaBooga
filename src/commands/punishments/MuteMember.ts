@@ -6,6 +6,7 @@ import {MuteManager} from "../../managers/PunishmentManager";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import generateRandomString = StringUtil.generateRandomString;
+import {preCheckPunishment} from "./common/PunishmentCommon";
 
 export class MuteMember extends BaseCommand {
     public static readonly ERROR_NO_MUTE_STR: string = new StringBuilder()
@@ -78,12 +79,8 @@ export class MuteMember extends BaseCommand {
         await ctx.interaction.deferReply();
         const mStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, mStr);
-        if (!resMember) {
-            await ctx.interaction.editReply({
-                content: "This member could not be resolved. Please try again.",
-            });
-
-            return 0;
+        if (!(await preCheckPunishment(ctx.interaction, ctx.member!, resMember))) {
+            return -1;
         }
 
         const muteId = `Mute_${Date.now()}_${generateRandomString(15)}`;
@@ -94,7 +91,7 @@ export class MuteMember extends BaseCommand {
         const reason = ctx.interaction.options.getString("reason", true);
         const currTime = Date.now();
 
-        const muteRes = await MuteManager.addMute(resMember.member, ctx.member!, {
+        const muteRes = await MuteManager.addMute(resMember!.member, ctx.member!, {
             duration: parsedDuration?.ms ?? -1,
             evidence: [],
             guildDoc: ctx.guildDoc!,
@@ -111,7 +108,7 @@ export class MuteMember extends BaseCommand {
 
         const finalEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
             .setTitle("Mute Issued.")
-            .setDescription(`You have issued a mute to ${resMember.member} (${resMember.member.displayName}).`)
+            .setDescription(`You have issued a mute to ${resMember!.member} (${resMember!.member.displayName}).`)
             .addField("Reason", StringUtil.codifyString(reason))
             .addField("Duration", StringUtil.codifyString(parsedDuration?.formatted ?? "Indefinite"))
             .setTimestamp();

@@ -9,6 +9,8 @@ import {MessageSelectMenu, MessageSelectOptionData} from "discord.js";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {SuspendMember} from "./SuspendMember";
+import {preCheckPunishment} from "./common/PunishmentCommon";
+import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class SectionSuspendMember extends BaseCommand {
     private static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
@@ -73,17 +75,13 @@ export class SectionSuspendMember extends BaseCommand {
         const memberStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, memberStr);
 
-        if (!resMember) {
-            await ctx.interaction.editReply({
-                content: "This member could not be resolved. Please try again.",
-            });
-
-            return 0;
+        if (!(await preCheckPunishment(ctx.interaction, ctx.member!, resMember))) {
+            return -1;
         }
 
         const sections = ctx.guildDoc!.guildSections.filter(section => {
             // Already suspended = cannot suspend again
-            if (section.moderation.sectionSuspended.some(x => x.affectedUser.id === resMember.member.id)) {
+            if (section.moderation.sectionSuspended.some(x => x.affectedUser.id === resMember!.member.id)) {
                 return false;
             }
 
@@ -148,7 +146,7 @@ export class SectionSuspendMember extends BaseCommand {
 
         const reason = ctx.interaction.options.getString("reason", true);
 
-        const susRes = await SuspensionManager.tryAddSectionSuspension(resMember.member, ctx.member!, {
+        const susRes = await SuspensionManager.tryAddSectionSuspension(resMember!.member, ctx.member!, {
             duration: parsedDuration?.ms ?? -1,
             evidence: [],
             guildDoc: ctx.guildDoc!,
@@ -167,7 +165,7 @@ export class SectionSuspendMember extends BaseCommand {
 
         const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
             .setTitle("Section Suspension Issued.")
-            .setDescription(`${resMember.member} has been suspended from \`${sectionPicked.sectionName}\`.`)
+            .setDescription(`${resMember!.member} has been suspended from \`${sectionPicked.sectionName}\`.`)
             .addField("Reason", StringUtil.codifyString(reason))
             .addField("Duration", StringUtil.codifyString(parsedDuration?.formatted ?? "Indefinite"))
             .setTimestamp();
@@ -180,6 +178,14 @@ export class SectionSuspendMember extends BaseCommand {
                 "Something went wrong when trying to save this punishment into the user's punishment history. The"
                 + " user is still suspended, though."
             );
+        }
+
+        const allActiveSecRaids = ctx.guildDoc!.activeRaids
+            .filter(x => x.sectionIdentifier === sectionPicked.uniqueIdentifier);
+        if (resMember?.member.voice && allActiveSecRaids.some(x => x.vcId === resMember.member.voice.channelId)) {
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await resMember.member.voice.disconnect("Section Suspended.");
+            });
         }
 
         await ctx.interaction.editReply({

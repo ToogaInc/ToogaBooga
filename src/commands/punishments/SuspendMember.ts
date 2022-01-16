@@ -5,6 +5,8 @@ import {SuspensionManager} from "../../managers/PunishmentManager";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
+import {preCheckPunishment} from "./common/PunishmentCommon";
+import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class SuspendMember extends BaseCommand {
     public static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
@@ -69,12 +71,8 @@ export class SuspendMember extends BaseCommand {
         const memberStr = ctx.interaction.options.getString("member", true);
         const resMember = await UserManager.resolveMember(ctx.guild!, memberStr);
 
-        if (!resMember) {
-            await ctx.interaction.editReply({
-                content: "This member could not be resolved. Please try again.",
-            });
-
-            return 0;
+        if (!(await preCheckPunishment(ctx.interaction, ctx.member!, resMember))) {
+            return -1;
         }
 
         const durationStr = ctx.interaction.options.getString("duration", false);
@@ -82,7 +80,7 @@ export class SuspendMember extends BaseCommand {
 
         const reason = ctx.interaction.options.getString("reason", true);
 
-        const susRes = await SuspensionManager.tryAddSuspension(resMember.member, ctx.member!, {
+        const susRes = await SuspensionManager.tryAddSuspension(resMember!.member, ctx.member!, {
             duration: parsedDuration?.ms ?? -1,
             evidence: [],
             guildDoc: ctx.guildDoc!,
@@ -99,7 +97,7 @@ export class SuspendMember extends BaseCommand {
 
         const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
             .setTitle("Suspension Issued.")
-            .setDescription(`${resMember.member} has been suspended successfully.`)
+            .setDescription(`${resMember!.member} has been suspended successfully.`)
             .addField("Reason", StringUtil.codifyString(reason))
             .addField("Duration", StringUtil.codifyString(parsedDuration?.formatted ?? "Indefinite"))
             .setTimestamp();
@@ -112,6 +110,12 @@ export class SuspendMember extends BaseCommand {
                 "Something went wrong when trying to save this punishment into the user's punishment history. The"
                 + " user is still suspended, though."
             );
+        }
+
+        if (resMember?.member.voice) {
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await resMember.member.voice.disconnect("Suspended.");
+            });
         }
 
         await ctx.interaction.editReply({
