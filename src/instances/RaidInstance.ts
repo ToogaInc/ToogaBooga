@@ -1360,10 +1360,10 @@ export class RaidInstance {
     public static async interpretParseRes(parseSummary: IParseResponse, initiatedBy: User,
                                           vc: VoiceChannel): Promise<MessageEmbed> {
         const inVcNotInRaidFields = parseSummary.isValid
-            ? parseSummary.inRaidButNotInVC
+            ? parseSummary.inVcButNotInRaid
             : [];
         const inRaidNotInVcFields = parseSummary.isValid
-            ? parseSummary.inVcButNotInRaid
+            ? parseSummary.inRaidButNotInVC
             : [];
 
         const embed = MessageUtilities.generateBlankEmbed(initiatedBy, "RANDOM")
