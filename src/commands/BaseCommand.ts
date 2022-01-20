@@ -313,6 +313,12 @@ export abstract class BaseCommand {
             return results;
         }
 
+        // If this is a bot developer, give full access
+        if (Bot.BotInstance.config.ids.botOwnerIds.includes(userToTest.id)) {
+            results.canRun = results.missingBotPerms.length === 0;
+            return results;
+        }
+
         // See if custom permissions are defined.
         // If so, use it.
         const customPermData = guildDoc.properties.customCmdPermissions.find(x => x.key === this.commandInfo.cmdCode);
