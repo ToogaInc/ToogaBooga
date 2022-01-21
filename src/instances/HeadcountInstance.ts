@@ -411,6 +411,7 @@ export class HeadcountInstance {
      * Starts a headcount.
      */
     public async startHeadcount(): Promise<void> {
+        console.log(`${this._leaderName} started ${this._dungeon.dungeonName} headcount.`);
         const verifiedRole = await GuildFgrUtilities.fetchRole(this._guild, this._raidSection.roles.verifiedRoleId);
         if (!verifiedRole)
             throw new ReferenceError("Verified role not defined.");
@@ -427,7 +428,7 @@ export class HeadcountInstance {
 
         // Create our initial AFK check message.
         this._headcountMsg = await this._headcountChannel.send({
-            content: "@here A headcount is currently ongoing.",
+            content: `@here A ${this._dungeon.dungeonName} headcount has started.`,
             embeds: [this.getHeadcountEmbed()!],
             components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
         });
@@ -447,7 +448,7 @@ export class HeadcountInstance {
     public async endHeadcount(): Promise<void> {
         // No raid VC means we haven't started AFK check.
         if (!this._headcountMsg || !this._controlPanelMsg
-            || this._headcountStatus === HeadcountStatus.HEADCOUNT_FINISHED)
+            || this._headcountStatus !== HeadcountStatus.HEADCOUNT_IN_PROGRESS)
             return;
 
         // Update the database so it is clear that we are in raid mode.
@@ -479,16 +480,86 @@ export class HeadcountInstance {
         this.startControlPanelCollector();
         this.startIntervals();
 
-        // And edit the AFK check message + start the collector.
+        // Edit the headcount message
         await this._headcountMsg.edit({
             embeds: [this.getHeadcountEmbed()!],
-            content: "The headcount is now over.",
+            content: "@here",
             components: AdvancedCollector.getActionRowsFromComponents(
                 this._afkCheckButtons.map(x => x.setDisabled(true))
             )
         }).catch();
     }
 
+    
+    /**
+     * Aborts a headcount
+     */
+     public async abortHeadcount(): Promise<void> {
+        console.log("Aborting headcount...");
+        if (!this._headcountMsg || !this._controlPanelMsg)
+            return;
+ 
+        this._headcountStatus = HeadcountStatus.HEADCOUNT_ABORTED;
+
+        // Stop 0: Stop all collectors
+        this.stopAllIntervalsAndCollectors("Headcount aborted.");
+        // Step 1: Remove from ActiveRaids collection
+        if (this._headcountMsg) {
+            HeadcountInstance.ActiveHeadcounts.delete(this._headcountMsg.id);
+        }
+
+        await Promise.all([
+            // Step 2: Remove the raid object. We don't need it anymore.
+            // Also stop all collectors.
+            this.removeHeadcountFromDatabase(),
+            // Step 3: Remove the control panel message.
+            MessageUtilities.tryDelete(this._controlPanelMsg),
+        ]);
+
+        // Edit the headcount message
+        await this._headcountMsg.edit({
+            embeds: [this.getHeadcountEmbed()!],
+            content: "@here",
+            components: [],
+        }).catch();
+        await this._headcountMsg.reactions.removeAll().catch();
+        console.log("Headcount aborted.");
+     }
+
+    /**
+     * Converts a headcount
+     */
+     public async convertHeadcount(): Promise<void> {
+        console.log("Converting headcount...");
+        if (!this._headcountMsg || !this._controlPanelMsg)
+            return;
+ 
+        this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTED;
+
+        // Stop 0: Stop all collectors
+        this.stopAllIntervalsAndCollectors("Headcount converted.");
+        // Step 1: Remove from ActiveRaids collection
+        if (this._headcountMsg) {
+            HeadcountInstance.ActiveHeadcounts.delete(this._headcountMsg.id);
+        }
+
+        await Promise.all([
+            // Step 2: Remove the raid object. We don't need it anymore.
+            // Also stop all collectors.
+            this.removeHeadcountFromDatabase(),
+            // Step 3: Remove the control panel message.
+            MessageUtilities.tryDelete(this._controlPanelMsg),
+        ]);
+        
+        // Edit the headcount message
+        await this._headcountMsg.edit({
+            embeds: [this.getHeadcountEmbed()!],
+            content: "@here",
+            components: [],
+        }).catch();
+        await this._headcountMsg.reactions.removeAll().catch();
+        console.log("Headcount converted.");
+     }
 
     /**
      * Creates a headcount embed.
@@ -536,33 +607,52 @@ export class HeadcountInstance {
         const l = this._pplWithEarlyLoc.get("interested")!.length;
         earlyReactInfo.unshift(`- ${EmojiConstants.GREEN_CHECK_EMOJI} ${l} People Interested.`);
 
-        if (earlyReactInfo.length > 0) {
+        //Do not include react information for aborted or converted headcounts
+        if (earlyReactInfo.length > 0 && this._headcountStatus != HeadcountStatus.HEADCOUNT_ABORTED
+            && this._headcountStatus != HeadcountStatus.HEADCOUNT_CONVERTED) {
             headcountEmbed.addField("Reaction Status", earlyReactInfo.join("\n"));
         }
-
-        // If headcount is finished, just let them know.
-        if (this._headcountStatus === HeadcountStatus.HEADCOUNT_FINISHED) {
-            headcountEmbed
+        switch (this._headcountStatus){
+            case HeadcountStatus.HEADCOUNT_FINISHED:
+                headcountEmbed
                 .setAuthor({
-                    name: "The headcount has been ended.",
+                    name: `The ${this._dungeon.dungeonName} headcount has ended.`,
                     iconURL: this._memberInit.user.displayAvatarURL()
                 })
-                .setDescription("This headcount is now over. Please wait for the raid leader.");
-            return headcountEmbed;
+                .setDescription("Please wait for the raid leader to continue.");
+                return headcountEmbed;
+            
+            case HeadcountStatus.HEADCOUNT_CONVERTED:
+                headcountEmbed
+                .setAuthor({
+                    name: `The ${this._dungeon.dungeonName} headcount has been converted to an AFK check.`,
+                    iconURL: this._memberInit.user.displayAvatarURL()
+                })
+                .setDescription("Good luck, and have a great raid!");
+                return headcountEmbed;
+            
+            case HeadcountStatus.HEADCOUNT_ABORTED:
+                headcountEmbed
+                .setAuthor({
+                    name: `The ${this._dungeon.dungeonName} headcount has been aborted`,
+                    iconURL: this._memberInit.user.displayAvatarURL()
+                })
+                .setDescription("We apologize for the inconvenience. Keep an eye out for new headcounts.");
+                return headcountEmbed;
+            
+            default:
+                headcountEmbed
+                .setAuthor({
+                    name: `${this._leaderName} has started a ${this._dungeon.dungeonName} headcount.`,
+                    iconURL: this._memberInit.user.displayAvatarURL()
+                })
+                .setDescription(
+                    "If you are interested in joining this raid, if it occurs, press the **`Interested`** button. If you"
+                    + " have any key(s) and would like to pop, press the corresponding buttons/reactions. Otherwise,"
+                    + " react with your class/gear choices."
+                );
+                return headcountEmbed;
         }
-
-        headcountEmbed
-            .setAuthor({
-                name: `${this._leaderName} has started a ${this._dungeon.dungeonName} headcount.`,
-                iconURL: this._memberInit.user.displayAvatarURL()
-            })
-            .setDescription(
-                "If you are interested in joining this raid, if it occurs, press the **`Interested`** button. If you"
-                + " have any key(s) and would like to pop, press the corresponding buttons/reactions. Otherwise,"
-                + " react with your class/gear choices."
-            );
-
-        return headcountEmbed;
     }
 
     /**
@@ -677,15 +767,17 @@ export class HeadcountInstance {
             if (r !== "time") {
                 return;
             }
-
-            this.cleanUpHeadcount().then();
+            //Headcount timed out, abort
+            console.log("Time limit reached.");
+            this.abortHeadcount().then();
         });
 
         this._controlPanelReactionCollector.on("collect", async i => {
             await i.deferUpdate();
             switch (i.customId) {
                 case HeadcountInstance.CONVERT_TO_AFK_CHECK_ID: {
-                    await this.cleanUpHeadcount();
+                    console.log(`${this._leaderName} converted ${this._dungeon.dungeonName} headcount to afk check.`);
+                    this.convertHeadcount().then();
                     // TODO make sure this doesn't bypass the max number of raids
                     const rm = await RaidInstance.new(i.member! as GuildMember, this._guildDoc, this._raidSection,
                         this._dungeon);
@@ -693,14 +785,17 @@ export class HeadcountInstance {
                     return;
                 }
                 case HeadcountInstance.ABORT_HEADCOUNT_ID: {
-                    this.cleanUpHeadcount().then();
+                    console.log(`${this._leaderName} aborted ${this._dungeon.dungeonName} headcount.`);
+                    this.abortHeadcount().then();
                     return;
                 }
                 case HeadcountInstance.DELETE_HEADCOUNT_ID: {
-                    this.cleanUpHeadcount().then();
+                    console.log(`${this._leaderName} aborted ${this._dungeon.dungeonName} headcount after ending.`);
+                    this.abortHeadcount().then();
                     return;
                 }
                 case HeadcountInstance.END_HEADCOUNT_ID: {
+                    console.log(`${this._leaderName} ended ${this._dungeon.dungeonName} headcount.`);
                     this.endHeadcount().then();
                     return;
                 }
@@ -864,6 +959,7 @@ export class HeadcountInstance {
      * Cleans the headcount up. This will remove the control panel message, and remove the headcount from the database.
      */
     public async cleanUpHeadcount(): Promise<void> {
+        console.log("Cleaning headcount...");
         // Stop 0: Stop all collectors
         this.stopAllIntervalsAndCollectors();
         // Step 1: Remove from ActiveRaids collection
@@ -880,8 +976,8 @@ export class HeadcountInstance {
             // Step 4: Unpin the AFK check message.
             MessageUtilities.tryDelete(this._headcountMsg)
         ]);
+        console.log("Headcount has been cleaned!");
     }
-
     /**
      * Starts a headcount collector. Only works during a headcount.
      * @returns {boolean} Whether the collector started successfully.
@@ -996,5 +1092,7 @@ export class HeadcountInstance {
 enum HeadcountStatus {
     NOTHING,
     HEADCOUNT_IN_PROGRESS,
-    HEADCOUNT_FINISHED
+    HEADCOUNT_FINISHED,
+    HEADCOUNT_ABORTED,
+    HEADCOUNT_CONVERTED,
 }
