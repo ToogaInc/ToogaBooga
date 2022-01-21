@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/ewang2002/OneLifeBot/blob/bug_fixes/assets/banner.png"  alt="Bot Banner"/>
+  <img src="https://github.com/ewang2002/ToogaBooga/blob/master/assets/banner.png"  alt="Bot Banner"/>
 </p>
 
 An open-source [Realm of the Mad God](https://www.realmofthemadgod.com/) Discord bot designed for cross-verification,
