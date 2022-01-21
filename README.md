@@ -2,7 +2,7 @@
   <img src="https://github.com/ewang2002/OneLifeBot/blob/bug_fixes/assets/banner.png"  alt="Bot Banner"/>
 </p>
 
-An open-source [Realm of the Mad God](https://www.realmofthemadgod.com/) designed for cross-verification,
+An open-source [Realm of the Mad God](https://www.realmofthemadgod.com/) Discord bot designed for cross-verification,
 moderation, and raid management.
 
 The name was inspired by Ooga-Booga, another RotMG Discord bot.
