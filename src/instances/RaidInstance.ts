@@ -776,7 +776,7 @@ export class RaidInstance {
             .setColor(
                 this._dungeon.dungeonColors.length === 0
                     ? [255, 255, 255]
-                    : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
+                    : this._dungeon.dungeonColors[0]
             ).setAuthor({
                 name: `${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
                 iconURL: this._memberInit.user.displayAvatarURL()
@@ -1705,7 +1705,7 @@ export class RaidInstance {
             .setColor(
                 this._dungeon.dungeonColors.length === 0
                     ? [255, 255, 255]
-                    : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
+                    : this._dungeon.dungeonColors[0]
             );
 
         if (this._afkCheckMsg && this._afkCheckMsg.embeds[0].thumbnail)
@@ -1795,7 +1795,7 @@ export class RaidInstance {
             .setTimestamp()
             .setColor(this._dungeon.dungeonColors.length === 0
                 ? [255, 255, 255]
-                : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
+                : this._dungeon.dungeonColors[0]
             ).addField("General Status", generalStatus.toString());
 
         if (this._controlPanelMsg && this._controlPanelMsg.embeds[0].thumbnail)

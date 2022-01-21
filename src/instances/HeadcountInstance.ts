@@ -575,7 +575,7 @@ export class HeadcountInstance {
             .setColor(
                 this._dungeon.dungeonColors.length === 0
                     ? [255, 255, 255]
-                    : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
+                    : this._dungeon.dungeonColors[0]
             );
 
         if (this._headcountMsg && this._headcountMsg.embeds[0].thumbnail)
@@ -675,7 +675,7 @@ export class HeadcountInstance {
             .setTimestamp()
             .setColor(this._dungeon.dungeonColors.length === 0
                 ? [255, 255, 255]
-                : ArrayUtilities.getRandomElement(this._dungeon.dungeonColors)
+                : this._dungeon.dungeonColors[0]
             );
 
         if (this._controlPanelMsg && this._controlPanelMsg.embeds[0].thumbnail)
