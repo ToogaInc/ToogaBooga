@@ -124,6 +124,11 @@ export class HeadcountInstance {
     // All modifiers that we should be referring to.
     private readonly _modifiersToUse: readonly IDungeonModifier[];
 
+    // The headcount embed color.
+    private static readonly DEFAULT_EMBED_COLOR: number = 16777215; //default to white
+    private _embedColor: number;
+
+
     /**
      * Creates a new `HeadcountInstance` object.
      * @param {GuildMember} memberInit The member that initiated this headcount.
@@ -147,6 +152,7 @@ export class HeadcountInstance {
         this._modifiersToUse = DEFAULT_MODIFIERS;
         this._headcountButtonCollector = null;
         this._controlPanelReactionCollector = null;
+        this._embedColor = HeadcountInstance.DEFAULT_EMBED_COLOR;
 
         const brokenUpName = UserManager.getAllNames(memberInit.displayName);
         this._leaderName = brokenUpName.length > 0
@@ -419,6 +425,11 @@ export class HeadcountInstance {
         // Don't use setRaidStatus since we didn't save the afk check info yet
         this._headcountStatus = HeadcountStatus.HEADCOUNT_IN_PROGRESS;
 
+        // Obtain dungeon color for embeds
+        if(this._dungeon.dungeonColors.length !== 0){
+            this._embedColor = ArrayUtilities.getRandomElement(this._dungeon.dungeonColors);
+        }
+
         // Create our initial control panel message.
         this._controlPanelMsg = await this._controlPanelChannel.send({
             embeds: [this.getControlPanelEmbed()!],
@@ -572,11 +583,7 @@ export class HeadcountInstance {
         const headcountEmbed = new MessageEmbed()
             .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Headcount.`})
             .setTimestamp()
-            .setColor(
-                this._dungeon.dungeonColors.length === 0
-                    ? [255, 255, 255]
-                    : this._dungeon.dungeonColors[0]
-            );
+            .setColor(this._embedColor);
 
         if (this._headcountMsg && this._headcountMsg.embeds[0].thumbnail)
             headcountEmbed.setThumbnail(this._headcountMsg.embeds[0].thumbnail.url);
@@ -673,10 +680,7 @@ export class HeadcountInstance {
                 text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`
             })
             .setTimestamp()
-            .setColor(this._dungeon.dungeonColors.length === 0
-                ? [255, 255, 255]
-                : this._dungeon.dungeonColors[0]
-            );
+            .setColor(this._embedColor);
 
         if (this._controlPanelMsg && this._controlPanelMsg.embeds[0].thumbnail)
             controlPanelEmbed.setThumbnail(this._controlPanelMsg.embeds[0].thumbnail.url);

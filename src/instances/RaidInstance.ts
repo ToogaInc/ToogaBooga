@@ -237,6 +237,10 @@ export class RaidInstance {
     // All modifiers that we should be referring to.
     private readonly _modifiersToUse: readonly IDungeonModifier[];
 
+    // The afk embed color.
+    private static readonly DEFAULT_EMBED_COLOR: number = 16777215; //default to white
+    private _embedColor: number;
+
     /**
      * Creates a new `RaidInstance` object.
      * @param {GuildMember} memberInit The member that initiated this raid.
@@ -261,6 +265,7 @@ export class RaidInstance {
         this._raidSection = section;
         this._membersThatJoined = [];
         this._modifiersToUse = DEFAULT_MODIFIERS;
+        this._embedColor = RaidInstance.DEFAULT_EMBED_COLOR;
 
         this._logChan = null;
         this._thisFeedbackChan = null;
@@ -597,6 +602,12 @@ export class RaidInstance {
 
         // Don't use setRaidStatus since we didn't save the afk check info yet
         this._raidStatus = RaidStatus.PRE_AFK_CHECK;
+        
+        // Obtain dungeon color for embeds
+        if(this._dungeon.dungeonColors.length !== 0){
+            this._embedColor = ArrayUtilities.getRandomElement(this._dungeon.dungeonColors);
+        }
+
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
         const [vc, logChannel] = await Promise.all([
             this._guild.channels.create(`${EmojiConstants.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
@@ -773,11 +784,8 @@ export class RaidInstance {
         this.startIntervals();
 
         const afkEndedEmbed = new MessageEmbed()
-            .setColor(
-                this._dungeon.dungeonColors.length === 0
-                    ? [255, 255, 255]
-                    : this._dungeon.dungeonColors[0]
-            ).setAuthor({
+            .setColor(this._embedColor)
+            .setAuthor({
                 name: `${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
                 iconURL: this._memberInit.user.displayAvatarURL()
             })
@@ -1702,11 +1710,7 @@ export class RaidInstance {
             .setDescription(descSb.toString())
             .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: ${raidStatus}.`})
             .setTimestamp()
-            .setColor(
-                this._dungeon.dungeonColors.length === 0
-                    ? [255, 255, 255]
-                    : this._dungeon.dungeonColors[0]
-            );
+            .setColor(this._embedColor);
 
         if (this._afkCheckMsg && this._afkCheckMsg.embeds[0].thumbnail)
             afkCheckEmbed.setThumbnail(this._afkCheckMsg.embeds[0].thumbnail.url);
@@ -1793,10 +1797,8 @@ export class RaidInstance {
             .setTitle(`**${this._dungeon.dungeonName}** Raid.`)
             .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`})
             .setTimestamp()
-            .setColor(this._dungeon.dungeonColors.length === 0
-                ? [255, 255, 255]
-                : this._dungeon.dungeonColors[0]
-            ).addField("General Status", generalStatus.toString());
+            .setColor(this._embedColor)
+            .addField("General Status", generalStatus.toString());
 
         if (this._controlPanelMsg && this._controlPanelMsg.embeds[0].thumbnail)
             controlPanelEmbed.setThumbnail(this._controlPanelMsg.embeds[0].thumbnail.url);
