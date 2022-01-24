@@ -90,7 +90,8 @@ export namespace TimeUtilities {
     /**
      * Gets the current time in a nice string format.
      * @param {Date | number} [date = new Date()] The date to choose, if any.
-     * @param {string} [timezone] The timezone, if applicable. Otherwise, GMT is used.
+     * @param {string} [timezone] The timezone, if applicable. Otherwise, GMT is used. See
+     * https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for a full list.
      * @returns {string} The current formatter date & time.
      */
     export function getDateTime(date: Date | number = new Date(), timezone: string = "Atlantic/Reykjavik"): string {

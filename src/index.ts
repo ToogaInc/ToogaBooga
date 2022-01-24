@@ -25,14 +25,34 @@ import {MAPPED_AFK_CHECK_REACTIONS} from "./constants/dungeons/MappedAfkCheckRea
     bot.initServices();
 })();
 
-process.on("rejectionHandled", e => {
+process.on("unhandledRejection", e => {
     console.error(
         new StringBuilder()
-            .append(`[${TimeUtilities.getDateTime()}]`)
-            .appendLine(2)
-            .append(e)
+            .append(`[${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}] ${e}`)
             .appendLine()
             .append("=====================================")
             .toString()
     );
 });
+
+process.on("uncaughtException", e => {
+    console.error(
+        new StringBuilder()
+            .append(`[${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}] ${e.name}`)
+            .appendLine()
+            .append(e.message)
+            .appendLine(2)
+            .append(e.stack)
+            .appendLine()
+            .append("=====================================")
+            .toString()
+    );
+    process.exit(1);
+});
+
+// Hijack console.info so it has date.
+const l = console.info;
+console.info = function (...args) {
+    const date = `[${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}]`;
+    l.apply(this, [date, ...args, "\n"]);
+};
