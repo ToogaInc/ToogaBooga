@@ -1,4 +1,3 @@
-import {ObjectId} from "mongodb";
 import {
     IAfkCheckProperties,
     IRaidChannels,
@@ -16,10 +15,6 @@ import {
 import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
 import {MainLogType, MainOnlyModLogType, QuotaLogType, SectionLogType, SectionModLogType} from "./Types";
 
-export interface IBaseDocument<T = ObjectId> {
-    _id: T;
-}
-
 export interface IBotInfo {
     activeEvents: {
         issuedTime: number;
@@ -34,7 +29,7 @@ export interface IBotInfo {
 /**
  * An interface that represents a guild document that is stored in MongoDB.
  */
-export interface IGuildInfo extends IBaseDocument {
+export interface IGuildInfo {
     /**
      * The guild ID.
      *
@@ -524,14 +519,14 @@ export interface IQuotaInfo {
  * a person that we're trying to blacklist that hasn't verified with the bot. When said person verifies with the
  * bot, we can remove the entry from this document and put the entry into the person's punishment history.
  */
-export interface IUnclaimedBlacklistInfo extends IPunishmentHistoryEntry, IBaseDocument {
+export interface IUnclaimedBlacklistInfo extends IPunishmentHistoryEntry {
 }
 
 /**
  * An interface that represents a linked Discord ID to a series of linked IGNs. Any person that verifies through the
  * bot will have this entry, which will then be put in the associated Mongo collection.
  */
-export interface IIdNameInfo extends IBaseDocument {
+export interface IIdNameInfo {
     /**
      * The discord ID.
      *
@@ -697,7 +692,7 @@ export interface ISectionInfo {
  * user data needs to be stored. In particular, this will store data like number of keys popped, number of vials
  * stored, and more.
  */
-export interface IUserInfo extends IBaseDocument {
+export interface IUserInfo {
     /**
      * The Discord ID of the user. Data stored in this object will be associated to the user. The Discord ID may
      * also be found in `IIdNameInfo`.

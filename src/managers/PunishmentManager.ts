@@ -580,7 +580,7 @@ export namespace PunishmentManager {
 
                 // For logging purposes
                 if (nameRes.length > 1)
-                    console.log(`[name] ${member.name} has multiple documents in IDName Collection.`);
+                    console.info(`[name] ${member.name} has multiple documents in IDName Collection.`);
             }
             else {
                 const idRes = await MongoManager.findIdInIdNameCollection(member.id);
@@ -590,7 +590,7 @@ export namespace PunishmentManager {
                 }
 
                 if (idRes.length > 1)
-                    console.log(`[id] ${member.id} has multiple documents in IDName Collection.`);
+                    console.info(`[id] ${member.id} has multiple documents in IDName Collection.`);
 
                 filterQuery.$or?.push({
                     discordId: member.id
@@ -620,6 +620,7 @@ export namespace PunishmentManager {
                 return null;
 
             const addRes = await MongoManager.getUnclaimedBlacklistCollection().insertOne(entry);
+
             const doc = await MongoManager.getUnclaimedBlacklistCollection().findOne({_id: addRes.insertedId});
             if (doc) {
                 await sendLoggingAndNoticeMsg();
@@ -817,7 +818,7 @@ export namespace SuspensionManager {
 
                     const details = suspendedPplArr[i];
                     if (member.id !== details.affectedUser.id) {
-                        console.log(`[INFO] ${guild.name}/${sectionId}/${member.id} incorrect entry given.`);
+                        console.info(`[INFO] ${guild.name}/${sectionId}/${member.id} incorrect entry given.`);
                         continue;
                     }
 

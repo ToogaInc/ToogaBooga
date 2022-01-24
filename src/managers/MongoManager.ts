@@ -1,4 +1,4 @@
-import {Collection as MCollection, Filter, MongoClient, ObjectId, UpdateFilter} from "mongodb";
+import {Collection as MCollection, Filter, MongoClient, UpdateFilter} from "mongodb";
 import {Bot} from "../Bot";
 import {UserManager} from "./UserManager";
 import {Collection, Collection as DCollection, Guild, GuildMember, TextChannel} from "discord.js";
@@ -497,7 +497,6 @@ export namespace MongoManager {
      */
     export function getDefaultGuildConfig(guildId: string): IGuildInfo {
         return {
-            _id: new ObjectId(),
             activeRaids: [],
             activeHeadcounts: [],
             manualVerificationEntries: [],
@@ -572,7 +571,6 @@ export namespace MongoManager {
      */
     export function getDefaultUserConfig(userId: string, ign?: string): IUserInfo {
         return {
-            _id: new ObjectId(),
             details: {moderationHistory: [], universalNotes: "", guildNotes: []},
             discordId: userId,
             loggedInfo: []
@@ -587,7 +585,6 @@ export namespace MongoManager {
      */
     export function getDefaultIdNameObj(userId: string, ign?: string): IIdNameInfo {
         return {
-            _id: new ObjectId(),
             rotmgNames: ign ? [{lowercaseIgn: ign.toLowerCase(), ign: ign}] : [],
             currentDiscordId: userId,
             pastDiscordIds: [],
@@ -665,7 +662,10 @@ export namespace MongoManager {
             return CachedGuildCollection.get(id)!;
         }
 
-        const docs: IGuildInfo[] = await getGuildCollection().find({guildId: id}).toArray();
+        // Keep getting "Type instantiation is excessively deep and possibly infinite" even though... there's nothing
+        // infinite about this type...
+        // @ts-ignore
+        const docs = await getGuildCollection().find({guildId: id}).toArray();
         if (docs.length === 0) {
             const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(id));
             const doc = await getGuildCollection().findOne({_id: insertRes.insertedId});
@@ -688,8 +688,10 @@ export namespace MongoManager {
      * @param {UpdateFilter<IGuildInfo>} update The update query.
      * @return {Promise<IGuildInfo | null>} The new guild document, if any.
      */
-    export async function updateAndFetchGuildDoc(filter: Filter<IGuildInfo>,
-                                                 update: UpdateFilter<IGuildInfo>): Promise<IGuildInfo | null> {
+    export async function updateAndFetchGuildDoc(
+        filter: Filter<IGuildInfo>,
+        update: UpdateFilter<IGuildInfo>
+    ): Promise<IGuildInfo | null> {
         const res = await getGuildCollection().findOneAndUpdate(filter, update, {
             returnDocument: "after"
         });
