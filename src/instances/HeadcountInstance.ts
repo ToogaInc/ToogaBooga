@@ -426,7 +426,7 @@ export class HeadcountInstance {
         this._headcountStatus = HeadcountStatus.HEADCOUNT_IN_PROGRESS;
 
         // Obtain dungeon color for embeds
-        if(this._dungeon.dungeonColors.length !== 0){
+        if (this._dungeon.dungeonColors.length !== 0) {
             this._embedColor = ArrayUtilities.getRandomElement(this._dungeon.dungeonColors);
         }
 
@@ -501,15 +501,15 @@ export class HeadcountInstance {
         }).catch();
     }
 
-    
+
     /**
      * Aborts a headcount
      */
-     public async abortHeadcount(): Promise<void> {
+    public async abortHeadcount(): Promise<void> {
         console.info("Aborting headcount...");
         if (!this._headcountMsg || !this._controlPanelMsg)
             return;
- 
+
         this._headcountStatus = HeadcountStatus.HEADCOUNT_ABORTED;
 
         // Stop 0: Stop all collectors
@@ -535,16 +535,16 @@ export class HeadcountInstance {
         }).catch();
         await this._headcountMsg.reactions.removeAll().catch();
         console.info("Headcount aborted.");
-     }
+    }
 
     /**
      * Converts a headcount
      */
-     public async convertHeadcount(): Promise<void> {
+    public async convertHeadcount(): Promise<void> {
         console.info("Converting headcount...");
         if (!this._headcountMsg || !this._controlPanelMsg)
             return;
- 
+
         this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTED;
 
         // Stop 0: Stop all collectors
@@ -561,7 +561,7 @@ export class HeadcountInstance {
             // Step 3: Remove the control panel message.
             MessageUtilities.tryDelete(this._controlPanelMsg),
         ]);
-        
+
         // Edit the headcount message
         await this._headcountMsg.edit({
             embeds: [this.getHeadcountEmbed()!],
@@ -570,7 +570,7 @@ export class HeadcountInstance {
         }).catch();
         await this._headcountMsg.reactions.removeAll().catch();
         console.info("Headcount converted.");
-     }
+    }
 
     /**
      * Creates a headcount embed.
@@ -619,45 +619,45 @@ export class HeadcountInstance {
             && this._headcountStatus !== HeadcountStatus.HEADCOUNT_CONVERTED) {
             headcountEmbed.addField("Reaction Status", earlyReactInfo.join("\n"));
         }
-        switch (this._headcountStatus){
+        switch (this._headcountStatus) {
             case HeadcountStatus.HEADCOUNT_FINISHED:
                 headcountEmbed
-                .setAuthor({
-                    name: `The ${this._dungeon.dungeonName} headcount has ended.`,
-                    iconURL: this._memberInit.user.displayAvatarURL()
-                })
-                .setDescription("Please wait for the raid leader to continue.");
+                    .setAuthor({
+                        name: `The ${this._dungeon.dungeonName} headcount has ended.`,
+                        iconURL: this._memberInit.user.displayAvatarURL()
+                    })
+                    .setDescription("Please wait for the raid leader to continue.");
                 return headcountEmbed;
-            
+
             case HeadcountStatus.HEADCOUNT_CONVERTED:
                 headcountEmbed
-                .setAuthor({
-                    name: `The ${this._dungeon.dungeonName} headcount has been converted to an AFK check.`,
-                    iconURL: this._memberInit.user.displayAvatarURL()
-                })
-                .setDescription("Good luck, and have a great raid!");
+                    .setAuthor({
+                        name: `The ${this._dungeon.dungeonName} headcount has been converted to an AFK check.`,
+                        iconURL: this._memberInit.user.displayAvatarURL()
+                    })
+                    .setDescription("Good luck, and have a great raid!");
                 return headcountEmbed;
-            
+
             case HeadcountStatus.HEADCOUNT_ABORTED:
                 headcountEmbed
-                .setAuthor({
-                    name: `The ${this._dungeon.dungeonName} headcount has been aborted`,
-                    iconURL: this._memberInit.user.displayAvatarURL()
-                })
-                .setDescription("We apologize for the inconvenience. Keep an eye out for new headcounts.");
+                    .setAuthor({
+                        name: `The ${this._dungeon.dungeonName} headcount has been aborted`,
+                        iconURL: this._memberInit.user.displayAvatarURL()
+                    })
+                    .setDescription("We apologize for the inconvenience. Keep an eye out for new headcounts.");
                 return headcountEmbed;
-            
+
             default:
                 headcountEmbed
-                .setAuthor({
-                    name: `${this._leaderName} has started a ${this._dungeon.dungeonName} headcount.`,
-                    iconURL: this._memberInit.user.displayAvatarURL()
-                })
-                .setDescription(
-                    "If you are interested in joining this raid, if it occurs, press the **`Interested`** button. If you"
-                    + " have any key(s) and would like to pop, press the corresponding buttons/reactions. Otherwise,"
-                    + " react with your class/gear choices."
-                );
+                    .setAuthor({
+                        name: `${this._leaderName} has started a ${this._dungeon.dungeonName} headcount.`,
+                        iconURL: this._memberInit.user.displayAvatarURL()
+                    })
+                    .setDescription(
+                        "If you are interested in joining this raid, if it occurs, press the **`Interested`** button. If you"
+                        + " have any key(s) and would like to pop, press the corresponding buttons/reactions. Otherwise,"
+                        + " react with your class/gear choices."
+                    );
                 return headcountEmbed;
         }
     }
@@ -982,6 +982,7 @@ export class HeadcountInstance {
         ]);
         console.info("Headcount has been cleaned!");
     }
+
     /**
      * Starts a headcount collector. Only works during a headcount.
      * @returns {boolean} Whether the collector started successfully.
