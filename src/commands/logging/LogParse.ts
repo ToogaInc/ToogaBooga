@@ -1,23 +1,17 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {UserManager} from "../../managers/UserManager";
 import {MongoManager} from "../../managers/MongoManager";
-import {MessageSelectMenu} from "discord.js";
-import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
-import {LoggerManager} from "../../managers/LoggerManager";
 import {QuotaManager} from "../../managers/QuotaManager";
-import {QuotaLogType} from "../../definitions/Types";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {Logger} from "../../utilities/Logger";
 
 export class LogParse extends BaseCommand{
 
-    private logger : Logger;
+    private _logger : Logger;
 
     public constructor() {
         const cmi: ICommandInfo = {
@@ -58,7 +52,7 @@ export class LogParse extends BaseCommand{
         };
         super(cmi);        
 
-        this.logger = new Logger(require('path').basename(__filename));
+        this._logger = new Logger(__filename);
     }
 
     /**
@@ -92,7 +86,7 @@ export class LogParse extends BaseCommand{
 
         const cInt = ctx.interaction.options.getInteger("completed", false) ?? 1;
 
-        this.logger.info("Logging " + cInt + " parses for " + memberToLogAs.displayName + "...");
+        this._logger.info("Logging " + cInt + " parses for " + memberToLogAs.displayName + "...");
 
         const uniqueId = StringUtil.generateRandomString(20);
         await ctx.interaction.reply({
@@ -131,7 +125,7 @@ export class LogParse extends BaseCommand{
         }, uniqueId);
 
         if (!selection || selection.customId === uniqueId+ButtonConstants.CANCEL_ID){
-            this.logger.info("Logparse cancelled for " + memberToLogAs.displayName);
+            this._logger.info("Logparse cancelled for " + memberToLogAs.displayName);
             await ctx.interaction.editReply({
                 components: [],
                 content: "You cancelled the logging process.",
@@ -154,7 +148,7 @@ export class LogParse extends BaseCommand{
             embeds: []
         });
 
-        this.logger.info("Logparse completed for " + memberToLogAs.displayName);
+        this._logger.info("Logparse completed for " + memberToLogAs.displayName);
         return 0;
     }
 }
