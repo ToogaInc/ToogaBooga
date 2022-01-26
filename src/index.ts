@@ -49,10 +49,3 @@ process.on("uncaughtException", e => {
     );
     process.exit(1);
 });
-
-// Hijack console.info so it has date.
-const l = console.info;
-console.info = function (...args) {
-    const date = `[${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}]`;
-    l.apply(this, [date, ...args, "\n"]);
-};

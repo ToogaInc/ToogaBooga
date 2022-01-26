@@ -37,6 +37,7 @@ export * from "./punishments/UnsuspendFromSection";
 
 export * from "./logging/LogLedRun";
 export * from "./logging/LogKeyPop";
+export * from "./logging/LogParse";
 export * from "./logging/GivePoints";
 
 export * from "./owner/SendAnnouncement";

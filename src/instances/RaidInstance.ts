@@ -1402,7 +1402,7 @@ export class RaidInstance {
         }
 
         for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
-            embed.addField("In Raid VC, Not In /who.", StringUtil.codifyString(field.join(", ")));
+            embed.addField("In Raid VC, Not In /who.", field.join(", "));
         }
 
         return embed;
@@ -1448,7 +1448,7 @@ export class RaidInstance {
                 .map(x => x.toLowerCase());
             const idx = parsedNames.findIndex(name => igns.includes(name.toLowerCase()));
             if (idx === -1) return;
-            toReturn.inVcButNotInRaid.push(member);
+            toReturn.inVcButNotInRaid.push(member.displayName);
         });
 
         // Get people in raid but not in the VC. Could be crashers.
@@ -3068,7 +3068,7 @@ enum RaidStatus {
 }
 
 interface IParseResponse {
-    inVcButNotInRaid: GuildMember[];
+    inVcButNotInRaid: string[];
     inRaidButNotInVC: string[];
     isValid: boolean;
 }

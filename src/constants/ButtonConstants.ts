@@ -39,6 +39,13 @@ export namespace ButtonConstants {
         .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI)
         .setStyle("SUCCESS");
 
+    export const CONTINUE_ID: string = "continue";
+    export const CONTINUE_BUTTON: Readonly<MessageButton> = new MessageButton()
+        .setLabel("Continue")
+        .setCustomId(SAVE_ID)
+        .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI)
+        .setStyle("SUCCESS");
+
     export const CANCEL_LOGGING_ID: string = "cancel_logging_id";
     export const CANCEL_LOGGING_BUTTON: Readonly<MessageButton> = new MessageButton()
         .setCustomId(CANCEL_LOGGING_ID)

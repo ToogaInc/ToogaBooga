@@ -126,7 +126,7 @@ export class LogKeyPop extends BaseCommand {
             components: AdvancedCollector.getActionRowsFromComponents([
                 ...selectMenus,
                 AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
-                    .setCustomId(uniqueId + "_CANCEL")
+                    .setCustomId(uniqueId + ButtonConstants.CANCEL_ID)
             ])
         });
 

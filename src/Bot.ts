@@ -170,6 +170,7 @@ export class Bot {
         Bot.Commands.set("Logging", [
             new Cmds.LogLedRun(),
             new Cmds.LogKeyPop(),
+            new Cmds.LogParse(),
             new Cmds.GivePoints()
         ]);
 

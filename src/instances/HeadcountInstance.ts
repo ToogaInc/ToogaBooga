@@ -457,6 +457,7 @@ export class HeadcountInstance {
      * Ends a headcount.
      */
     public async endHeadcount(): Promise<void> {
+        console.info("Ending headcount...");
         // No raid VC means we haven't started AFK check.
         if (!this._headcountMsg || !this._controlPanelMsg
             || this._headcountStatus !== HeadcountStatus.HEADCOUNT_IN_PROGRESS)
@@ -499,6 +500,7 @@ export class HeadcountInstance {
                 this._afkCheckButtons.map(x => x.setDisabled(true))
             )
         }).catch();
+        console.info("Headcount ended.");
     }
 
 
@@ -772,7 +774,7 @@ export class HeadcountInstance {
                 return;
             }
             //Headcount timed out, abort
-            console.info("Time limit reached.");
+            console.info("Control panel timed out.  Aborting headcount.");
             this.abortHeadcount().then();
         });
 
@@ -1079,6 +1081,7 @@ export class HeadcountInstance {
         // If time expires, then end headcount immediately.
         this._headcountButtonCollector.on("end", (reason: string) => {
             if (reason !== "time") return;
+            console.info("Headcount collector timed out.  Ending headcount.")
             this.endHeadcount().then();
         });
 
