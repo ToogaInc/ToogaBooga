@@ -1,8 +1,10 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {VoiceChannel} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import {Logger} from "../../utilities/Logger";
 
 export class ClearVC extends BaseCommand {
+    private _logger = new Logger(__filename);
     public constructor() {
         const cmi: ICommandInfo = {
             cmdCode: "CLEAR_VC_CMD",
@@ -42,8 +44,9 @@ export class ClearVC extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
-        
         const channel = ctx.interaction.options.getChannel("vc", true);
+        this._logger.info(`${ctx.member?.displayName} used ClearVC on ${channel}`);
+
         if (!(channel instanceof VoiceChannel)) {
             await ctx.interaction.reply({
                 content: "You must select a voice channel for this to work.",
@@ -62,7 +65,8 @@ export class ClearVC extends BaseCommand {
                 });
             })
         );
-
+        
+        this._logger.info(`${ctx.member?.displayName} used ClearVC to remove ${ct} users from ${channel}`);
         await ctx.interaction.editReply({
             content: `Disconnected ${ct} members from ${channel}.`
         });

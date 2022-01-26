@@ -31,33 +31,33 @@ export class Logger {
      * Logs information to console with time and file information
      * @param {*} s the message to log to the console
      */
-    public info(s: any): void {
-        console.info("[INFO]", Logger.getCurrentTime(), this.formattedPath, s);
+    public info(...args: any[]): void {
+        console.info("[INFO]", Logger.getCurrentTime(), this.formattedPath, args);
     }
 
     /**
      * Logs debug information to the console with the time and file information.
      * @param {*} s the message to log to the console.
      */
-     public debug(s: any): void {
+     public debug(...args: any[]): void {
         if(!this.outputDebug) return;
-        console.debug("[DEBUG]", Logger.getCurrentTime(), this.formattedPath, s);
+        console.debug("[DEBUG]", Logger.getCurrentTime(), this.formattedPath, args);
     }
 
     /**
      * Logs a warning to the console with the time and file information.
      * @param {*} s the message to log to the console.
      */
-    public warn(s: any): void {
-        console.warn("[WARN]", Logger.getCurrentTime(), this.formattedPath, s);
+    public warn(...args: any[]): void {
+        console.warn("[WARN]", Logger.getCurrentTime(), this.formattedPath, args);
     }
 
     /**
      * Logs error message to console with time and file information
      * @param {*} s the error message to log to the console
      */
-    public error(s: any): void {
-        console.error("[ERROR]", Logger.getCurrentTime(), this.formattedPath, s);
+    public error(...args: any[]): void {
+        console.error("[ERROR]", Logger.getCurrentTime(), this.formattedPath, args);
     }
 
     /**

@@ -1,8 +1,10 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {VoiceChannel} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import {Logger} from "../../utilities/Logger";
 
 export class YoinkVC extends BaseCommand {
+    private _logger = new Logger(__filename);
     public constructor() {
         const cmi: ICommandInfo = {
             cmdCode: "YOINK_VC_CMD",
@@ -77,7 +79,8 @@ export class YoinkVC extends BaseCommand {
                 });
             })
         );
-
+        
+        this._logger.info(`${ctx.member?.displayName} used YoinkVC to move ${ct} users from ${channel} to ${ctx.member!.voice.channel!}`);
         await ctx.interaction.editReply({
             content: `Moved ${ct} members from ${channel} to ${ctx.member!.voice.channel!}.`
         });
