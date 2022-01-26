@@ -51,7 +51,7 @@ export namespace QuotaManager {
         "NameAdjustment"
     ];
 
-    const _logger: Logger = new Logger(__filename, true);
+    const _logger: Logger = new Logger(__filename, false);
     /**
      * Checks if the string is of some quota type.
      * @param {string} str The string to test.

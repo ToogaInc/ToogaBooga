@@ -32,7 +32,7 @@ export class Logger {
      * @param {*} s the message to log to the console
      */
     public info(s: any): void {
-        console.info("[INFO]", this.formattedPath, Logger.getCurrentTime(), s);
+        console.info("[INFO]", Logger.getCurrentTime(), this.formattedPath, s);
     }
 
     /**
@@ -40,7 +40,7 @@ export class Logger {
      * @param {*} s the message to log to the console.
      */
      public debug(s: any): void {
-        console.warn("[DEBUG]", this.formattedPath, Logger.getCurrentTime(), s);
+        console.warn("[DEBUG]", Logger.getCurrentTime(), this.formattedPath, s);
     }
 
     /**
@@ -48,7 +48,7 @@ export class Logger {
      * @param {*} s the message to log to the console.
      */
     public warn(s: any): void {
-        console.warn("[WARN]", this.formattedPath, Logger.getCurrentTime(), s);
+        console.warn("[WARN]", Logger.getCurrentTime(), this.formattedPath, s);
     }
 
     /**
@@ -56,7 +56,7 @@ export class Logger {
      * @param {*} s the error message to log to the console
      */
     public error(s: any): void {
-        console.error("[ERROR]", this.formattedPath, Logger.getCurrentTime(), s);
+        console.error("[ERROR]", Logger.getCurrentTime(), this.formattedPath, s);
     }
 
     /**
