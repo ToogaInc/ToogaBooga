@@ -20,10 +20,10 @@ export class Logger {
 
     /**
      * Gets the current time.
-     * @returns The current time, formatted.
+     * @returns The current time, formatted to EST.
      */
     private static getCurrentTime(): string {
-        return `[${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}]`;
+        return `[${TimeUtilities.getDateTime(Date.now(), "America/New_York")}]`;
     }
 
     /**

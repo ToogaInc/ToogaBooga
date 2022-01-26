@@ -28,6 +28,7 @@ import {GeneralConstants} from "../constants/GeneralConstants";
 import {RaidInstance} from "./RaidInstance";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {Logger} from "../utilities/Logger";
+import {TimeUtilities} from "../utilities/TimeUtilities";
 
 export class HeadcountInstance {
     
@@ -132,7 +133,10 @@ export class HeadcountInstance {
     private static readonly DEFAULT_EMBED_COLOR: number = 16777215; //default to white
     private _embedColor: number;
 
-
+    // The headcount start time and expiration time
+    private _startTime: number;
+    private _expTime: number;
+    private static readonly DEFAULT_HEADCOUNT_DURATION: number = 60*60*1000; //1 hour in milliseconds
     /**
      * Creates a new `HeadcountInstance` object.
      * @param {GuildMember} memberInit The member that initiated this headcount.
@@ -144,7 +148,7 @@ export class HeadcountInstance {
     private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
                         dungeon: IDungeonInfo | ICustomDungeonInfo) {
         this._logger = new Logger(__filename);
-        this._logger.setDebugOutput(true);
+        this._logger.setDebugOutput(false);
 
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
@@ -160,6 +164,9 @@ export class HeadcountInstance {
         this._headcountButtonCollector = null;
         this._controlPanelReactionCollector = null;
         this._embedColor = HeadcountInstance.DEFAULT_EMBED_COLOR;
+        this._startTime = Date.now();
+        this._expTime = this._startTime + (section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? HeadcountInstance.DEFAULT_HEADCOUNT_DURATION);
+        this._logger.debug(`Timeout duration in milliseconds: ` + section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? HeadcountInstance.DEFAULT_HEADCOUNT_DURATION);
 
         const brokenUpName = UserManager.getAllNames(memberInit.displayName);
         this._leaderName = brokenUpName.length > 0
@@ -175,6 +182,10 @@ export class HeadcountInstance {
             memberInit.guild,
             section.channels.raids.controlPanelChannelId
         )!;
+
+        this._logger.info(`Headcount constructed with leader: ` + this._leaderName + `, dungeon: ` + this._dungeon.dungeonName);
+        this._logger.info(`Headcount start time: ${TimeUtilities.getDateTime(this._startTime, "America/New_York")}`);
+        this._logger.info(`Headcount expiration time: ${TimeUtilities.getDateTime(this._expTime, "America/New_York")}`);
 
         // Which essential reacts are we going to use.
         const reactions = getReactions(dungeon, guildDoc);
@@ -357,12 +368,20 @@ export class HeadcountInstance {
         if (!hcMsg || !controlPanelMsg) return null;
 
         // Create the raid manager instance.
-        const hc = new HeadcountInstance(memberInit, guildDoc, section, dungeon);
+        const hc = new HeadcountInstance(memberInit, guildDoc, section, dungeon);   
 
         hc._headcountMsg = hcMsg;
         hc._controlPanelMsg = controlPanelMsg;
         hc._headcountStatus = hcInfo.status;
         hc._addedToDb = true;
+
+        // If the hc has expired, abort the headcount and return
+        hc._startTime = hcInfo.startTime;
+        hc._expTime = hcInfo.expirationTime;
+        if(Date.now() > hc._expTime) {
+            hc.abortHeadcount().then();
+            return null;
+        }    
 
         // Add early location entries.
         for await (const entry of hcInfo.earlyLocationReactions) {
@@ -398,6 +417,12 @@ export class HeadcountInstance {
             if (!this._headcountMsg) {
                 this.stopAllIntervalsAndCollectors();
                 return;
+            }
+
+            if(Date.now() > this._expTime){
+                this._logger.info("Timing out headcount: " + this._leaderName + ", " + this._dungeon.dungeonName);
+                this.abortHeadcount().then();
+                return true;
             }
 
             await this._headcountMsg.edit({
@@ -469,9 +494,10 @@ export class HeadcountInstance {
         if (!this._headcountMsg || !this._controlPanelMsg
             || this._headcountStatus !== HeadcountStatus.HEADCOUNT_IN_PROGRESS)
             return;
-
-        // Update the database so it is clear that we are in raid mode.
         this._headcountStatus = HeadcountStatus.HEADCOUNT_FINISHED;
+        
+        // Update the database so it is clear that we are in raid mode.    
+        this._logger.debug("Updating database for headcount.");    
         const res = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
             "activeRaids.headcountMessageId": this._headcountMsg.id
@@ -485,21 +511,26 @@ export class HeadcountInstance {
             this._guildDoc = res;
         }
 
-        this.stopAllIntervalsAndCollectors();
-        this.startControlPanelCollector();
+        this._logger.debug("Stopping intervals and collectors.");   
+        //this.stopAllIntervalsAndCollectors();
+        //this.startControlPanelCollector();
 
         // End the collector since it's useless. We'll use it again though.
         this.stopAllIntervalsAndCollectors("Headcount ended.");
 
         // Edit the control panel accordingly and re-react and start collector + intervals again.
+        this._logger.debug("Editing control panel.");   
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
             components: HeadcountInstance.END_HEADCOUNT_BUTTONS
         }).catch();
+
+        this._logger.debug("Restarting control panel collector and intervals.");  
         this.startControlPanelCollector();
         this.startIntervals();
 
         // Edit the headcount message
+        this._logger.debug("Editing the headcount message.");  
         await this._headcountMsg.edit({
             embeds: [this.getHeadcountEmbed()!],
             content: "@here",
@@ -524,10 +555,11 @@ export class HeadcountInstance {
         // Stop 0: Stop all collectors
         this.stopAllIntervalsAndCollectors("Headcount aborted.");
         // Step 1: Remove from ActiveRaids collection
+        this._logger.debug("Removing headcount from active raids.");
         if (this._headcountMsg) {
             HeadcountInstance.ActiveHeadcounts.delete(this._headcountMsg.id);
         }
-
+        this._logger.debug("Removing headcount from database and deleting control panel.");
         await Promise.all([
             // Step 2: Remove the raid object. We don't need it anymore.
             // Also stop all collectors.
@@ -536,12 +568,15 @@ export class HeadcountInstance {
             MessageUtilities.tryDelete(this._controlPanelMsg),
         ]);
 
+        this._logger.debug("Editing headcount message.");
         // Edit the headcount message
         await this._headcountMsg.edit({
             embeds: [this.getHeadcountEmbed()!],
             content: "@here",
             components: [],
         }).catch();
+
+        this._logger.debug("Removing reactions.");
         await this._headcountMsg.reactions.removeAll().catch();
         this._logger.info("Headcount aborted.");
     }
@@ -587,7 +622,7 @@ export class HeadcountInstance {
      * @private
      */
     public getHeadcountEmbed(): MessageEmbed | null {
-        this._logger.debug("Getting headcount embed for leader: " + this._leaderName + ", dungeon: " + this._dungeon.dungeonName);
+        this._logger.debug("Getting headcount embed: " + this._leaderName + ", " + this._dungeon.dungeonName);
         if (this._headcountStatus === HeadcountStatus.NOTHING) return null;
 
         const headcountEmbed = new MessageEmbed()
@@ -678,6 +713,7 @@ export class HeadcountInstance {
      * @private
      */
     public getControlPanelEmbed(): MessageEmbed | null {
+        this._logger.debug("Getting headcount control panel: " + this._leaderName + ", " + this._dungeon.dungeonName);
         if (this._headcountStatus === HeadcountStatus.NOTHING) return null;
 
         const controlPanelEmbed = new MessageEmbed()
@@ -687,9 +723,9 @@ export class HeadcountInstance {
             })
             .setTitle(`**${this._dungeon.dungeonName}** Headcount.`)
             .setFooter({
-                text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`
+                text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.  Expires at `
+                        + `${TimeUtilities.getDateTime(this._expTime, "America/New_York")} EST`
             })
-            .setTimestamp()
             .setColor(this._embedColor);
 
         if (this._controlPanelMsg && this._controlPanelMsg.embeds[0].thumbnail)
@@ -903,6 +939,8 @@ export class HeadcountInstance {
 
         const hcObj: IHeadcountInfo = {
             dungeonCodeName: this._dungeon.codeName,
+            startTime: this._startTime,
+            expirationTime: this._expTime,
             memberInit: this._memberInit.id,
             raidChannels: this._raidSection.channels.raids,
             headcountMessageId: this._headcountMsg.id,

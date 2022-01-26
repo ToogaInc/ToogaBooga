@@ -1,6 +1,6 @@
 // Suppress unused methods for this file.
 // noinspection JSUnusedGlobalSymbols,AssignmentToFunctionParameterJS
-
+import {Logger} from "../utilities/Logger";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {
     Collection,
@@ -67,6 +67,7 @@ const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"
  * This class represents a raid.
  */
 export class RaidInstance {
+    private _logger: Logger;   
     /**
      * A collection of active AFK checks and raids. The key is the AFK check message ID and the value is the raid
      * manager object.
@@ -251,6 +252,9 @@ export class RaidInstance {
      */
     private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
                         dungeon: IDungeonInfo | ICustomDungeonInfo, raidOptions?: IRaidOptions) {
+        this._logger = new Logger(__filename);
+        this._logger.setDebugOutput(false);
+
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
         this._dungeon = dungeon;
@@ -1653,6 +1657,7 @@ export class RaidInstance {
      * @private
      */
     public getAfkCheckEmbed(): MessageEmbed | null {
+        this._logger.debug("Getting afk message embed: " + this._leaderName + ", " + this._dungeon.dungeonName);
         if (!this._raidVc) return null;
         if (this._raidStatus === RaidStatus.NOTHING || this._raidStatus === RaidStatus.IN_RUN) return null;
 
@@ -1769,6 +1774,7 @@ export class RaidInstance {
      * @private
      */
     public getControlPanelEmbed(): MessageEmbed | null {
+        this._logger.debug("Getting afk control panel embed: " + this._leaderName + ", " + this._dungeon.dungeonName);
         if (!this._raidVc) return null;
         if (this._raidStatus === RaidStatus.NOTHING) return null;
 
