@@ -40,7 +40,8 @@ export class Logger {
      * @param {*} s the message to log to the console.
      */
      public debug(s: any): void {
-        console.warn("[DEBUG]", Logger.getCurrentTime(), this.formattedPath, s);
+        if(!this.outputDebug) return;
+        console.debug("[DEBUG]", Logger.getCurrentTime(), this.formattedPath, s);
     }
 
     /**
