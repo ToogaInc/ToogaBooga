@@ -242,6 +242,9 @@ export class RaidInstance {
     private static readonly DEFAULT_EMBED_COLOR: number = 16777215; //default to white
     private _embedColor: number;
 
+    // Instance information for logging
+    private readonly _instanceInfo: string;
+
     /**
      * Creates a new `RaidInstance` object.
      * @param {GuildMember} memberInit The member that initiated this raid.
@@ -252,8 +255,7 @@ export class RaidInstance {
      */
     private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
                         dungeon: IDungeonInfo | ICustomDungeonInfo, raidOptions?: IRaidOptions) {
-        this._logger = new Logger(__filename);
-        this._logger.setDebugOutput(false);
+        this._logger = new Logger(__filename, true);
 
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
@@ -301,6 +303,8 @@ export class RaidInstance {
             memberInit.guild,
             guildDoc.channels.raids.raidHistChannelId
         );
+        this._instanceInfo = `[${this._leaderName}, ${this._dungeon.dungeonName}]`
+        this._logger.info(`${this._instanceInfo} AFK check constructed`);
 
         // Which essential reacts are we going to use.
         const reactions = getReactions(dungeon, guildDoc);
@@ -505,6 +509,9 @@ export class RaidInstance {
      */
     public static async createNewLivingInstance(guildDoc: IGuildInfo,
                                                 raidInfo: IRaidInfo): Promise<RaidInstance | null> {
+        const logger = new Logger(__filename, false);
+        logger.info("Creating new raid instance from active raid");
+
         const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
         if (!guild) return null;
 
@@ -550,6 +557,7 @@ export class RaidInstance {
         const rm = new RaidInstance(memberInit, guildDoc, section, dungeon, {
             location: raidInfo.location
         });
+        logger.info(`${rm._instanceInfo} RaidInstance created`);
 
         rm._raidVc = raidVc;
         rm._afkCheckMsg = afkCheckMsg;
@@ -600,6 +608,7 @@ export class RaidInstance {
      * @throws {ReferenceError} If the verified role for the section does not exist.
      */
     public async startPreAfkCheck(): Promise<void> {
+        this._logger.info(`${this._instanceInfo} Starting Pre-AFK Check`);
         const verifiedRole = await GuildFgrUtilities.fetchRole(this._guild, this._raidSection.roles.verifiedRoleId);
         if (!verifiedRole)
             throw new ReferenceError("Verified role not defined.");
@@ -681,6 +690,7 @@ export class RaidInstance {
     public async startAfkCheck(): Promise<void> {
         if (!this._afkCheckMsg || !this._controlPanelMsg || !this._raidVc || !this._afkCheckChannel)
             return;
+        this._logger.info(`${this._instanceInfo} Starting AFK Check`);
 
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
@@ -736,6 +746,7 @@ export class RaidInstance {
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg || this._raidStatus !== RaidStatus.AFK_CHECK)
             return;
 
+        this._logger.info(`${this._instanceInfo} Ending AFK Check`);
         // Resolve the member that ended the AFK check.
         let member: GuildMember | null;
         if (memberEnded instanceof User)
@@ -916,7 +927,7 @@ export class RaidInstance {
         // No raid VC means we haven't started AFK check.
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg)
             return;
-
+        this._logger.info(`${this._instanceInfo} Ending Raid`);
         if (!memberEnded) {
             memberEnded = this._memberInit;
         }
@@ -1657,7 +1668,7 @@ export class RaidInstance {
      * @private
      */
     public getAfkCheckEmbed(): MessageEmbed | null {
-        this._logger.debug("Getting afk message embed: " + this._leaderName + ", " + this._dungeon.dungeonName);
+        this._logger.debug(`${this._instanceInfo} Getting raid AFK check embed`);
         if (!this._raidVc) return null;
         if (this._raidStatus === RaidStatus.NOTHING || this._raidStatus === RaidStatus.IN_RUN) return null;
 
@@ -1774,7 +1785,7 @@ export class RaidInstance {
      * @private
      */
     public getControlPanelEmbed(): MessageEmbed | null {
-        this._logger.debug("Getting afk control panel embed: " + this._leaderName + ", " + this._dungeon.dungeonName);
+        this._logger.debug(`${this._instanceInfo} Getting raid control panel embed`);
         if (!this._raidVc) return null;
         if (this._raidStatus === RaidStatus.NOTHING) return null;
 
@@ -1919,6 +1930,7 @@ export class RaidInstance {
      * @private
      */
     private stopAllIntervalsAndCollectors(reason?: string): void {
+        this._logger.info(`${this._instanceInfo} Stopping all intervals and collectors for reason: ${reason ?? `none`}`);
         if (this._intervalsAreRunning) {
             if (this._afkCheckInterval) {
                 clearInterval(this._afkCheckInterval);
@@ -1947,6 +1959,7 @@ export class RaidInstance {
     private startIntervals(): boolean {
         if (!this._afkCheckMsg || !this._controlPanelMsg) return false;
         if (this._intervalsAreRunning || this._raidStatus === RaidStatus.NOTHING) return false;
+        this._logger.info(`${this._instanceInfo} Starting all intervals`);
         this._intervalsAreRunning = true;
 
         // If we're in AFK check mode, then start intervals for AFK check message + control panel message.
@@ -2002,6 +2015,8 @@ export class RaidInstance {
         if (this._afkCheckButtonCollector) return false;
         if (this._raidStatus !== RaidStatus.AFK_CHECK && this._raidStatus !== RaidStatus.PRE_AFK_CHECK)
             return false;
+
+        this._logger.info(`${this._instanceInfo} Starting raid AFK Check collector`);
 
         this._afkCheckButtonCollector = this._afkCheckMsg.createMessageComponentCollector({
             filter: i => !i.user.bot && this._allEssentialOptions.has(i.customId),
@@ -2383,7 +2398,7 @@ export class RaidInstance {
         if (!this._controlPanelMsg) return false;
         if (this._controlPanelReactionCollector) return false;
         if (this._raidStatus === RaidStatus.NOTHING) return false;
-
+        this._logger.info(`${this._instanceInfo} Starting raid control panel collector`);
         this._controlPanelReactionCollector = this._controlPanelMsg.createMessageComponentCollector({
             filter: controlPanelCollectorFilter(this._guildDoc, this._raidSection, this._guild),
             // TODO let this be customizable?

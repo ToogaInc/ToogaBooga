@@ -11,11 +11,12 @@ export class Logger {
     /**
      * Creates a new `Logger` object.
      * @param {string} filePath The file using the logger. Use `__filename`.
+     * @param {boolean} debug Whether to output DEBUG messages, default = false
      */
-    public constructor(fileName: string) {
+    public constructor(fileName: string, debug = false) {
         this.path = require("path").basename(fileName);
         this.formattedPath = `[${this.path}]`;
-        this.outputDebug = false;
+        this.outputDebug = debug;
     }
 
     /**
