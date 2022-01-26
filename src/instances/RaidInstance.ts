@@ -242,6 +242,11 @@ export class RaidInstance {
     private static readonly DEFAULT_EMBED_COLOR: number = 16777215; //default to white
     private _embedColor: number;
 
+    // The raid instance start time and expiration time
+    private _startTime: number;
+    private _expTime: number;
+    private static readonly DEFAULT_RAID_DURATION: number = 60*60*1000; //1 hour in milliseconds
+
     // Instance information for logging
     private readonly _instanceInfo: string;
 
@@ -255,7 +260,7 @@ export class RaidInstance {
      */
     private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
                         dungeon: IDungeonInfo | ICustomDungeonInfo, raidOptions?: IRaidOptions) {
-        this._logger = new Logger(__filename, true);
+        this._logger = new Logger(__filename, false);
 
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
@@ -272,6 +277,10 @@ export class RaidInstance {
         this._membersThatJoined = [];
         this._modifiersToUse = DEFAULT_MODIFIERS;
         this._embedColor = RaidInstance.DEFAULT_EMBED_COLOR;
+        this._startTime = Date.now();
+        //this._expTime = this._startTime + 1000*20; //Testing
+        this._expTime = this._startTime + (section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? RaidInstance.DEFAULT_RAID_DURATION);
+        this._logger.debug(`Timeout duration in milliseconds: ` + section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? RaidInstance.DEFAULT_RAID_DURATION);
 
         this._logChan = null;
         this._thisFeedbackChan = null;
@@ -304,7 +313,9 @@ export class RaidInstance {
             guildDoc.channels.raids.raidHistChannelId
         );
         this._instanceInfo = `[${this._leaderName}, ${this._dungeon.dungeonName}]`
-        this._logger.info(`${this._instanceInfo} AFK check constructed`);
+        this._logger.info(`${this._instanceInfo} Raid constructed`);
+        this._logger.debug(`${this._instanceInfo} Raid start time: ${TimeUtilities.getDateTime(this._startTime, "America/New_York")}`);
+        this._logger.debug(`${this._instanceInfo} Raid expiration time: ${TimeUtilities.getDateTime(this._expTime, "America/New_York")}`);
 
         // Which essential reacts are we going to use.
         const reactions = getReactions(dungeon, guildDoc);
@@ -564,6 +575,17 @@ export class RaidInstance {
         rm._controlPanelMsg = controlPanelMsg;
         rm._raidStatus = raidInfo.status;
         rm._addedToDb = true;
+
+        // If the raid has expired, abort the raid and return
+        rm._startTime = raidInfo.startTime;
+        rm._expTime = raidInfo.expirationTime;
+        if(Date.now() > rm._expTime) {
+            logger.info(`${rm._instanceInfo} RaidInstance expired, cleaning.`);
+            rm.cleanUpRaid(true).then();
+            return null;
+        }    
+
+
         rm._thisFeedbackChan = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
             raidInfo.otherChannels.feedbackChannelId
@@ -1340,6 +1362,8 @@ export class RaidInstance {
 
         const raidObj: IRaidInfo = {
             dungeonCodeName: this._dungeon.codeName,
+            startTime: this._startTime,
+            expirationTime: this._expTime,
             memberInit: this._memberInit.id,
             raidChannels: this._raidSection.channels.raids,
             afkCheckMessageId: this._afkCheckMsg.id,
@@ -1812,7 +1836,10 @@ export class RaidInstance {
                 iconURL: this._memberInit.user.displayAvatarURL()
             })
             .setTitle(`**${this._dungeon.dungeonName}** Raid.`)
-            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.`})
+            .setFooter({
+                text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.  Expires in `
+                        + `${Math.trunc((this._expTime-Date.now())/(1000*60))} minutes.`
+            })
             .setTimestamp()
             .setColor(this._embedColor)
             .addField("General Status", generalStatus.toString());
@@ -1968,6 +1995,12 @@ export class RaidInstance {
                 if (!this._afkCheckMsg) {
                     this.stopAllIntervalsAndCollectors();
                     return;
+                }
+
+                if(Date.now() > this._expTime){
+                    this._logger.info(`${this._instanceInfo} Raid expired, cleaning`);
+                    this.cleanUpRaid(true).then();
+                    return true;
                 }
 
                 await this._afkCheckMsg.edit({
