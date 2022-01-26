@@ -18,6 +18,7 @@ export class ManualVerifyMain extends BaseCommand {
             botCommandName: "manualverifymain",
             description: "Manually verifies a person in the Main section.",
             rolePermissions: [
+                "Helper",
                 "Security",
                 "Officer",
                 "Moderator",
