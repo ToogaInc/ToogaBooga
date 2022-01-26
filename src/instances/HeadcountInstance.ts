@@ -568,19 +568,25 @@ export class HeadcountInstance {
         if (this._headcountMsg) {
             HeadcountInstance.ActiveHeadcounts.delete(this._headcountMsg.id);
         }
-        this._logger.debug(`${this._instanceInfo} Removing from database and deleting control panel`);
+        this._logger.debug(`${this._instanceInfo} Removing from database`);
         await Promise.all([
             // Step 2: Remove the raid object. We don't need it anymore.
             // Also stop all collectors.
             this.removeHeadcountFromDatabase(),
-            // Step 3: Remove the control panel message.
-            MessageUtilities.tryDelete(this._controlPanelMsg),
         ]);
 
         this._logger.debug(`${this._instanceInfo} Editing headcount embed`);
         // Edit the headcount message
         await this._headcountMsg.edit({
             embeds: [this.getHeadcountEmbed()!],
+            content: "@here",
+            components: [],
+        }).catch();
+
+        this._logger.debug(`${this._instanceInfo} Editing control panel embed`);
+        // Edit the control panel
+        await this._controlPanelMsg.edit({
+            embeds: [this.getControlPanelEmbed()!],
             content: "@here",
             components: [],
         }).catch();
@@ -611,8 +617,6 @@ export class HeadcountInstance {
             // Step 2: Remove the raid object. We don't need it anymore.
             // Also stop all collectors.
             this.removeHeadcountFromDatabase(),
-            // Step 3: Remove the control panel message.
-            MessageUtilities.tryDelete(this._controlPanelMsg),
         ]);
 
         // Edit the headcount message
@@ -621,6 +625,15 @@ export class HeadcountInstance {
             content: "@here",
             components: [],
         }).catch();
+
+        this._logger.debug(`${this._instanceInfo} Editing control panel embed`);
+        // Edit the control panel
+        await this._controlPanelMsg.edit({
+            embeds: [this.getControlPanelEmbed()!],
+            content: "@here",
+            components: [],
+        }).catch();
+
         await this._headcountMsg.reactions.removeAll().catch();
         this._logger.info(`${this._instanceInfo} Headcount converted`);
     }
@@ -732,9 +745,10 @@ export class HeadcountInstance {
             })
             .setTitle(`**${this._dungeon.dungeonName}** Headcount.`)
             .setFooter({
-                text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.  Expires at `
-                        + `${TimeUtilities.getDateTime(this._expTime, "America/New_York")} EST`
+                text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.  Expires in `
+                        + `${Math.trunc((this._expTime-Date.now())/(1000*60))} minutes.`
             })
+            .setTimestamp()
             .setColor(this._embedColor);
 
         if (this._controlPanelMsg && this._controlPanelMsg.embeds[0].thumbnail)
@@ -743,23 +757,35 @@ export class HeadcountInstance {
             controlPanelEmbed.setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url);
 
         const descSb = new StringBuilder();
-        if (this._headcountStatus === HeadcountStatus.HEADCOUNT_IN_PROGRESS) {
-            descSb.append("This headcount is currently in **PROGRESS** mode.").appendLine()
+        switch (this._headcountStatus) {
+            case HeadcountStatus.HEADCOUNT_IN_PROGRESS:
+                descSb.append("This headcount is currently in **PROGRESS** mode.").appendLine()
                 .append("⇨ **Press** the **`End Headcount`** button to end this headcount. You will be able to convert")
                 .append(" the headcount to an AFK check after the headcount has been ended.").appendLine()
                 .append("⇨ **Press** the **`Abort Headcount`** button to abort this headcount. This will clear the")
-                .append(" headcount and the control panel.").appendLine(2);
-        }
-        else {
-            descSb.append("This headcount is currently in **EVALUATION** mode.").appendLine()
+                .append(" headcount and the control panel.").appendLine(2)
+                .append(`**${this._pplWithEarlyLoc.get("interested")!.length}** member(s) are interested in joining.`);
+                break;
+            case HeadcountStatus.HEADCOUNT_ABORTED:
+                descSb.append("This headcount is currently **ABORTED**.").appendLine()
+                .append("This panel will remain behind.").appendLine(2)
+                .append(`**${this._pplWithEarlyLoc.get("interested")!.length}** member(s) were interested in joining.`);
+                break;
+            case HeadcountStatus.HEADCOUNT_CONVERTED:
+                descSb.append("This headcount has been **CONVERTED TO AFK CHECK**.").appendLine()
+                .append("This panel will remain behind.").appendLine(2)
+                .append(`**${this._pplWithEarlyLoc.get("interested")!.length}** member(s) were interested in joining.`);
+                break;
+            default:
+                descSb.append("This headcount is currently in **EVALUATION** mode.").appendLine()
                 .append("⇨ **Press** the **`Convert to AFK Check`** button to convert this headcount to an AFK check.")
                 .append(" This will manually clear this headcount and then start an AFK check with the same dungeon")
                 .append(" used for this headcount. *Note* that you will need to set a location.").appendLine()
                 .append("⇨ **Press** the **`Delete Headcount`** button to delete this headcount. __Make sure you do")
-                .append(" this__ if you don't want to convert this headcount to an AFK check.").appendLine(2);
+                .append(" this__ if you don't want to convert this headcount to an AFK check.").appendLine(2)
+                .append(`**${this._pplWithEarlyLoc.get("interested")!.length}** member(s) are interested in joining.`);
+                break;
         }
-
-        descSb.append(`**${this._pplWithEarlyLoc.get("interested")!.length}** member(s) are interested in joining.`);
         controlPanelEmbed.setDescription(descSb.toString());
 
         // Display reactions properly
