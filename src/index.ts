@@ -28,7 +28,7 @@ import {MAPPED_AFK_CHECK_REACTIONS} from "./constants/dungeons/MappedAfkCheckRea
 process.on("unhandledRejection", e => {
     console.error(
         new StringBuilder()
-            .append(`[${TimeUtilities.getDateTime(Date.now(), "America/New_York")}] ${e}`)
+            .append(`[${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}] ${e}`)
             .appendLine()
             .append("=====================================")
             .toString()
@@ -38,7 +38,7 @@ process.on("unhandledRejection", e => {
 process.on("uncaughtException", e => {
     console.error(
         new StringBuilder()
-            .append(`[${TimeUtilities.getDateTime(Date.now(), "America/New_York")}] ${e.name}`)
+            .append(`[${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}] ${e.name}`)
             .appendLine()
             .append(e.message)
             .appendLine(2)
