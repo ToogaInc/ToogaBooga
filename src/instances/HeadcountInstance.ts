@@ -587,7 +587,6 @@ export class HeadcountInstance {
         // Edit the control panel
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
-            content: "@here",
             components: [],
         }).catch();
 
@@ -630,7 +629,6 @@ export class HeadcountInstance {
         // Edit the control panel
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
-            content: "@here",
             components: [],
         }).catch();
 
@@ -930,6 +928,7 @@ export class HeadcountInstance {
      */
     private async addKeyReact(member: GuildMember, reactionCodeName: string, modifiers: string[],
                               addToDb: boolean = false): Promise<boolean> {
+        this._logger.info(`${this._instanceInfo} Adding Key React for ${member.displayName} with a ${reactionCodeName}`)
         if (!this._pplWithEarlyLoc.has(reactionCodeName))
             return false;
 
@@ -1083,6 +1082,7 @@ export class HeadcountInstance {
         });
 
         this._headcountButtonCollector.on("collect", async i => {
+            
             if (this._pplConfirmingReaction.has(i.user.id)) {
                 i.reply({
                     content: "You are in the process of confirming a reaction. If you accidentally dismissed the"
@@ -1104,6 +1104,7 @@ export class HeadcountInstance {
             const mapKey = i.customId;
             const reactInfo = this._allEssentialOptions.get(mapKey)!;
             const members = this._pplWithEarlyLoc.get(mapKey)!;
+            this._logger.info(`${this._instanceInfo} Collected reaction from ${memberThatResponded.displayName}`)
             // If the member already got this, then don't let them get this again.
             if (members.some(x => x.member.id === i.user.id)) {
                 i.reply({
@@ -1115,6 +1116,7 @@ export class HeadcountInstance {
 
             // Interested is not a key but pretend it is
             if (mapKey === "interested") {
+                this._logger.info(`${this._instanceInfo} ${memberThatResponded.displayName} confirmed Interested`)
                 await this.addKeyReact(memberThatResponded, mapKey, [], true);
                 i.reply({
                     content: "You have indicated that you are interested in joining this raid, if it occurs.",

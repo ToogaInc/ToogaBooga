@@ -26,6 +26,7 @@ import {StartAfkCheck} from "../commands";
 import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {LoggerManager} from "../managers/LoggerManager";
+import {Logger} from "../utilities/Logger";
 
 
 export type ReactionInfoMore = IReactionInfo & {
@@ -49,6 +50,8 @@ export type KeyReactResponse = {
         alreadyReplied: boolean;
     }
 };
+
+const logger = new Logger(__filename);
 
 /**
  * Confirms the key reacts. This asks the person what modifiers the key has.
@@ -93,6 +96,8 @@ export async function confirmReaction(
     const reactInfo = essentialOptions.get(mapKey)!;
     const itemDisplay = getItemDisplay(reactInfo);
     const uniqueIdentifier = StringUtil.generateRandomString(20);
+
+    logger.info(`Confirming reaction: ${member.displayName} reacting with ${itemDisplay}`);
 
     if (reactInfo.type === "KEY") {
         const selectMenu = new MessageSelectMenu()
@@ -186,6 +191,7 @@ export async function confirmReaction(
                 components: []
             });
 
+            logger.info(`Reaction for ${member.displayName} timed out`);
             return {
                 success: false,
                 errorReply: {
@@ -204,6 +210,7 @@ export async function confirmReaction(
                     return {react: {mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0}, success: true};
                 }
                 default: {
+                    logger.info(`Reaction for ${member.displayName} cancelled`);
                     return {
                         success: false,
                         errorReply: {
@@ -274,6 +281,7 @@ export async function confirmReaction(
             }, uniqueIdentifier);
 
             if (!levelRes) {
+                logger.info(`Reaction for ${member.displayName} timed out`);
                 return {
                     success: false,
                     errorReply: {
@@ -289,6 +297,7 @@ export async function confirmReaction(
             }
 
             if (levelRes.customId === cancelModId) {
+                logger.info(`Reaction for ${member.displayName} cancelled`);
                 return {
                     success: false,
                     errorReply: {
@@ -300,7 +309,7 @@ export async function confirmReaction(
 
             returnObj.react!.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
         }
-
+        logger.info(`Reaction for ${member.displayName} confirmed`);
         return returnObj;
     }
 
@@ -312,6 +321,7 @@ export async function confirmReaction(
     if (mapKey === "EARLY_LOC_POINTS" && essentialOptions.has("EARLY_LOC_POINTS")) {
         const pointRes = await LoggerManager.getPoints(member);
         if (pointRes < pointCost) {
+            logger.info(`Reaction for ${member.displayName} cancelled due to lack of points`);
             return {
                 success: false,
                 errorReply: {
@@ -336,6 +346,7 @@ export async function confirmReaction(
         });
 
         if (!response) {
+            logger.info(`Reaction for ${member.displayName} cancelled`);
             return {
                 success: false,
                 errorReply: {
@@ -345,7 +356,7 @@ export async function confirmReaction(
                 }
             };
         }
-
+        logger.info(`Reaction for ${member.displayName} confirmed`);
         return {
             react: {
                 mapKey: "EARLY_LOC_POINTS",
@@ -362,6 +373,7 @@ export async function confirmReaction(
     if (reactInfo.type === "EARLY_LOCATION" && earlyLocReactions) {
         const validRoles = earlyLocReactions.get(mapKey);
         if (!validRoles) {
+            logger.error(`Reaction for ${member.displayName} failed due to error with role config`);
             return {
                 success: false,
                 errorReply: {
@@ -380,6 +392,7 @@ export async function confirmReaction(
         }
 
         if (!isFound) {
+            logger.info(`Reaction for ${member.displayName} failed due to lack of roles`);
             return {
                 success: false,
                 errorReply: {
@@ -416,6 +429,7 @@ export async function confirmReaction(
 
     // Response of "no" or failure to respond implies no.
     if (!response) {
+        logger.info(`Reaction for ${member.displayName} cancelled`);
         return {
             success: false,
             errorReply: {
@@ -425,7 +439,7 @@ export async function confirmReaction(
             }
         };
     }
-
+    logger.info(`Reaction for ${member.displayName} confirmed`);
     return {react: {mapKey, modifiers: [], accidentCt: 0}, success: true};
 }
 
