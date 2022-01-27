@@ -1217,7 +1217,7 @@ export class RaidInstance {
      * @private
      */
     private async updateLocation(newLoc: string): Promise<boolean> {
-        this._logger.info(`${this._instanceInfo} Updating location of raid to ${newLoc}}`)
+        this._logger.info(`${this._instanceInfo} Updating location of raid to ${newLoc}}`);
         if (!this._raidVc || !this._addedToDb)
             return false;
 
@@ -1342,7 +1342,7 @@ export class RaidInstance {
      * @private
      */
     private sendMsgToEarlyLocationPeople(msgOpt: MessageOptions): void {
-        this._logger.info(`${this._instanceInfo} Sending message to early location receivers: ${msgOpt.content}`)
+        this._logger.info(`${this._instanceInfo} Sending message to early location receivers: ${msgOpt.content}`);
         const sentMsgTo: string[] = [];
         for (const [, members] of this._pplWithEarlyLoc) {
             members.forEach(async obj => {
@@ -1517,7 +1517,7 @@ export class RaidInstance {
      * of the raid is deleted.
      */
     public async cleanUpRaid(force: boolean): Promise<void> {
-        this._logger.info(`${this._instanceInfo} Cleaning up raid`)
+        this._logger.info(`${this._instanceInfo} Cleaning up raid`);
         this.stopAllIntervalsAndCollectors();
         // Step 1: Remove from ActiveRaids collection
         if (this._afkCheckMsg) {
@@ -1645,7 +1645,7 @@ export class RaidInstance {
      * @returns {Promise<boolean>} True if the bot was able to ask for a new location (regardless of the response).
      */
     public async getNewLocation(requestedAuthor: User): Promise<boolean> {
-        this._logger.info(`${this._instanceInfo} Requesting new location`)
+        this._logger.info(`${this._instanceInfo} Requesting new location`);
         if (!this._raidVc)
             return false;
         const descSb = new StringBuilder()
@@ -1693,7 +1693,7 @@ export class RaidInstance {
                 .append(`the raid location. Your new location is: **${this._location}**.`)
                 .toString()
         });
-        this._logger.info(`${this._instanceInfo} Location change successful`)
+        this._logger.info(`${this._instanceInfo} Location change successful`);
         return true;
     }
 
@@ -2106,10 +2106,10 @@ export class RaidInstance {
             const reactInfo = this._allEssentialOptions.get(mapKey)!;
             const members = this._pplWithEarlyLoc.get(mapKey)!;
 
-            this._logger.info(`${this._instanceInfo} Collected reaction from ${memberThatResponded.displayName}`)
+            this._logger.info(`${this._instanceInfo} Collected reaction from ${memberThatResponded.displayName}`);
             // If the member already got this, then don't let them get this again.
             if (members.some(x => x.member.id === i.user.id)) {
-                this._logger.info(`${this._instanceInfo} Reaction was already accounted for`)
+                this._logger.info(`${this._instanceInfo} Reaction was already accounted for`);
                 i.reply({
                     content: "You have already selected this!",
                     ephemeral: true
@@ -2121,7 +2121,7 @@ export class RaidInstance {
             const itemDis = getItemDisplay(reactInfo);
             // If we no longer need this anymore, then notify them
             if (!this.stillNeedEssentialReact(mapKey)) {
-                this._logger.info(`${this._instanceInfo} Reaction no longer essential, person not moved`)
+                this._logger.info(`${this._instanceInfo} Reaction no longer essential, person not moved`);
                 i.reply({
                     content: `Sorry, but the maximum number of ${itemDis} has been reached.`,
                     ephemeral: true
@@ -2139,7 +2139,7 @@ export class RaidInstance {
             );
 
             if (!this._raidVc) {
-                this._logger.info(`${this._instanceInfo} Raid closed during reaction`)
+                this._logger.info(`${this._instanceInfo} Raid closed during reaction`);
                 if (res.success || res.errorReply.alreadyReplied) {
                     await i.editReply({
                         content: "The raid you are attempting to react to has been closed or aborted.",
@@ -2175,7 +2175,7 @@ export class RaidInstance {
 
             // Make sure we can actually give early location. It might have changed.
             if (!this.stillNeedEssentialReact(mapKey)) {
-                this._logger.info(`${this._instanceInfo} Reaction no longer essential, person not moved`)
+                this._logger.info(`${this._instanceInfo} Reaction no longer essential, person not moved`);
                 await i.editReply({
                     content: reactInfo.type === "EARLY_LOCATION"
                         ? "Although you reacted with this button, you are not able to receive early location"
@@ -2194,11 +2194,11 @@ export class RaidInstance {
 
             // If we no longer need this, then edit the button so no one else can click on it.
             if (!this.stillNeedEssentialReact(mapKey)) {
-                this._logger.info(`${this._instanceInfo} Reaction no longer essential, disabling button`)
+                this._logger.info(`${this._instanceInfo} Reaction no longer essential, disabling button`);
                 const idxOfButton = this._afkCheckButtons.findIndex(x => x.customId === mapKey);
                 this._afkCheckButtons[idxOfButton].setDisabled(true);
             }
-            this._logger.info(`${this._instanceInfo} Reaction confirmed`)
+            this._logger.info(`${this._instanceInfo} Reaction confirmed`);
             const confirmationContent = new StringBuilder()
                 .append(`Thank you for confirming your choice of: `).append(itemDis)
                 .appendLine(2)
@@ -2234,7 +2234,7 @@ export class RaidInstance {
             if (memberThatResponded.voice.channel) {
                 if (memberThatResponded.voice.channelId === this._raidVc.id)
                     return;
-                this._logger.info(`${this._instanceInfo} Moving ${memberThatResponded.displayName} into raid VC`)
+                this._logger.info(`${this._instanceInfo} Moving ${memberThatResponded.displayName} into raid VC`);
                 memberThatResponded.voice.setChannel(this._raidVc).catch();
                 return;
             }
