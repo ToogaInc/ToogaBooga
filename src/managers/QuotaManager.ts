@@ -635,6 +635,7 @@ export namespace QuotaManager {
         );
         const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - Date.now(), false);
 
+        const MILL_TO_MIN = 1000*60;
         const quotaPtDisplay = getPointListAsString(guildDoc, quotaInfo);
         const embed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
             .setTitle(`Active Quota: ${role.name}`)
@@ -657,7 +658,7 @@ export namespace QuotaManager {
                     .toString()
             )
             .setTimestamp()
-            .setFooter({text: "Leaderboard Updated Every 30 Seconds. Last Updated:"});
+            .setFooter({text: `Leaderboard updated every ${QuotaService.timeToUpdate/MILL_TO_MIN} minute${QuotaService.timeToUpdate!==MILL_TO_MIN ? `s` : ``}. Last Updated:`});
 
         if (quotaInfo.quotaLog.length === 0)
             return embed;
@@ -707,7 +708,7 @@ export namespace QuotaManager {
 // Service that updates quota leaderboards every 5 minutes
 export namespace QuotaService {
     const _logger: Logger = new Logger(__filename, false);
-    const timeToUpdate: number = 5*60*1000;
+    export const timeToUpdate: number = 3*60*1000;
 
     let _isRunning = false;
 
