@@ -189,8 +189,8 @@ export class HeadcountInstance {
 
         this._instanceInfo = `[${this._leaderName}, ${this._dungeon.dungeonName}]`;
         this._logger.info(`${this._instanceInfo} Headcount constructed`);
-        this._logger.debug(`${this._instanceInfo} Headcount start time: ${TimeUtilities.getDateTime(this._startTime, "America/New_York")}`);
-        this._logger.debug(`${this._instanceInfo} Headcount expiration time: ${TimeUtilities.getDateTime(this._expTime, "America/New_York")}`);
+        this._logger.debug(`${this._instanceInfo} Headcount start time: ${TimeUtilities.getDateTime(this._startTime, "America/Los_Angeles")}`);
+        this._logger.debug(`${this._instanceInfo} Headcount expiration time: ${TimeUtilities.getDateTime(this._expTime, "America/Los_Angeles")}`);
 
         // Which essential reacts are we going to use.
         const reactions = getReactions(dungeon, guildDoc);
@@ -928,7 +928,7 @@ export class HeadcountInstance {
      */
     private async addKeyReact(member: GuildMember, reactionCodeName: string, modifiers: string[],
                               addToDb: boolean = false): Promise<boolean> {
-        this._logger.info(`${this._instanceInfo} Adding Key React for ${member.displayName} with a ${reactionCodeName}`)
+        this._logger.info(`${this._instanceInfo} Adding Key React for ${member.displayName} with a ${reactionCodeName}`);
         if (!this._pplWithEarlyLoc.has(reactionCodeName))
             return false;
 
@@ -1104,7 +1104,7 @@ export class HeadcountInstance {
             const mapKey = i.customId;
             const reactInfo = this._allEssentialOptions.get(mapKey)!;
             const members = this._pplWithEarlyLoc.get(mapKey)!;
-            this._logger.info(`${this._instanceInfo} Collected reaction from ${memberThatResponded.displayName}`)
+            this._logger.info(`${this._instanceInfo} Collected reaction from ${memberThatResponded.displayName}`);
             // If the member already got this, then don't let them get this again.
             if (members.some(x => x.member.id === i.user.id)) {
                 i.reply({
@@ -1116,7 +1116,7 @@ export class HeadcountInstance {
 
             // Interested is not a key but pretend it is
             if (mapKey === "interested") {
-                this._logger.info(`${this._instanceInfo} ${memberThatResponded.displayName} confirmed Interested`)
+                this._logger.info(`${this._instanceInfo} ${memberThatResponded.displayName} confirmed Interested`);
                 await this.addKeyReact(memberThatResponded, mapKey, [], true);
                 i.reply({
                     content: "You have indicated that you are interested in joining this raid, if it occurs.",
@@ -1166,7 +1166,7 @@ export class HeadcountInstance {
         // If time expires, then end headcount immediately.
         this._headcountButtonCollector.on("end", (reason: string) => {
             if (reason !== "time") return;
-            this._logger.info("Headcount collector timed out.  Ending headcount.")
+            this._logger.info("Headcount collector timed out.  Ending headcount.");
             this.endHeadcount().then();
         });
 

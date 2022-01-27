@@ -21,16 +21,16 @@ export async function onReadyEvent(): Promise<void> {
     }
 
     // This will throw an error if something went wrong when trying to connect.
-    logger.info("Getting the MongoDB Client.")
+    logger.info("Getting the MongoDB Client.");
     getMongoClient();
 
     // If the bot doc isn't in the database, then we add it.
-    logger.info("Ensuring bot is in the database.")
+    logger.info("Ensuring bot is in the database.");
     const thisBotCollection = await MongoManager.getBotCollection()
         .findOne({clientId: botUser.id});
 
     if (!thisBotCollection) {
-        logger.info("Bot not found in database, adding to database collection.")
+        logger.info("Bot not found in database, adding to database collection.");
         const newCollectionObj: IBotInfo = {
             activeEvents: [],
             clientId: botUser.id
@@ -40,14 +40,14 @@ export async function onReadyEvent(): Promise<void> {
     }
 
     // Now, we want to add any guild docs to the database <=> the guild isn't in the database.
-    logger.info("Ensuring each guild is in the database.")
+    logger.info("Ensuring each guild is in the database.");
     await Promise.all(Bot.BotInstance.client.guilds.cache.map(async x => {
         if (Bot.BotInstance.config.ids.exemptGuilds.includes(x.id))
             return null;
         await MongoManager.getOrCreateGuildDoc(x.id, false);
     }));
 
-    logger.info("Resuming any interrupted instances.")
+    logger.info("Resuming any interrupted instances.");
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
     await Promise.all([
         MuteManager.startChecker(guildDocs),
@@ -65,5 +65,5 @@ export async function onReadyEvent(): Promise<void> {
         })
     ]);
 
-    logger.info(`${botUser.tag} events have started successfully.`)
+    logger.info(`${botUser.tag} events have started successfully.`);
 }

@@ -314,8 +314,8 @@ export class RaidInstance {
         );
         this._instanceInfo = `[${this._leaderName}, ${this._dungeon.dungeonName}]`
         this._logger.info(`${this._instanceInfo} Raid constructed`);
-        this._logger.debug(`${this._instanceInfo} Raid start time: ${TimeUtilities.getDateTime(this._startTime, "America/New_York")}`);
-        this._logger.debug(`${this._instanceInfo} Raid expiration time: ${TimeUtilities.getDateTime(this._expTime, "America/New_York")}`);
+        this._logger.debug(`${this._instanceInfo} Raid start time: ${TimeUtilities.getDateTime(this._startTime, "America/Los_Angeles")}`);
+        this._logger.debug(`${this._instanceInfo} Raid expiration time: ${TimeUtilities.getDateTime(this._expTime, "America/Los_Angeles")}`);
 
         // Which essential reacts are we going to use.
         const reactions = getReactions(dungeon, guildDoc);

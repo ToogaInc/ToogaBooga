@@ -24,7 +24,7 @@ export class Logger {
      * @returns The current time, formatted to EST.
      */
     private static getCurrentTime(): string {
-        return `[${TimeUtilities.getDateTime(Date.now(), "America/New_York")}]`;
+        return `[${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}]`;
     }
 
     /**
