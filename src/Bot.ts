@@ -141,7 +141,7 @@ export class Bot {
             new Cmds.RemoveName(),
             new Cmds.ParseRaidVc(),
             new Cmds.YoinkVC(),
-            new Cmds.ClearVC(),
+            new Cmds.CleanVC(),
             new Cmds.Poll(),
             new Cmds.Purge()
         ]);

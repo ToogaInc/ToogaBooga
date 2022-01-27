@@ -3,13 +3,13 @@ import {VoiceChannel} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {Logger} from "../../utilities/Logger";
 
-export class ClearVC extends BaseCommand {
+export class CleanVC extends BaseCommand {
     private _logger = new Logger(__filename);
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "CLEAR_VC_CMD",
-            formalCommandName: "Clear VC",
-            botCommandName: "clear",
+            cmdCode: "CLEAN_VC_CMD",
+            formalCommandName: "Clean VC",
+            botCommandName: "clean",
             description: "Removes all members from a VC.",
             rolePermissions: [
                 "Security",
@@ -26,7 +26,7 @@ export class ClearVC extends BaseCommand {
                 {
                     displayName: "VC to Remove Members from",
                     argName: "vc",
-                    desc: "The voice channel that should be cleared.",
+                    desc: "The voice channel that should be cleaned.",
                     type: ArgumentType.Channel,
                     prettyType: "Voice Channel",
                     required: true,
@@ -45,7 +45,7 @@ export class ClearVC extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const channel = ctx.interaction.options.getChannel("vc", true);
-        this._logger.info(`${ctx.member?.displayName} used ClearVC on ${channel}`);
+        this._logger.info(`${ctx.member?.displayName} used CleanVC on ${channel}`);
 
         if (!(channel instanceof VoiceChannel)) {
             await ctx.interaction.reply({
@@ -66,7 +66,7 @@ export class ClearVC extends BaseCommand {
             })
         );
         
-        this._logger.info(`${ctx.member?.displayName} used ClearVC to remove ${ct} users from ${channel}`);
+        this._logger.info(`${ctx.member?.displayName} used CleanVC to remove ${ct} users from ${channel}`);
         await ctx.interaction.editReply({
             content: `Disconnected ${ct} members from ${channel}.`
         });
