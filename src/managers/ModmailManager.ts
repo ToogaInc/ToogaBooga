@@ -19,8 +19,11 @@ import {EmojiConstants} from "../constants/EmojiConstants";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {StringUtil} from "../utilities/StringUtilities";
+import {Logger} from "../utilities/Logger";
 
 export namespace ModmailManager {
+
+    const _logger = new Logger(__filename, false);
     /**
      * Checks whether the original message satisfies the preconditions for a modmail message. The preconditions are:
      * - The original message's channel must be a `TextChannel`.
@@ -319,10 +322,6 @@ export namespace ModmailManager {
 
         if (guildsToChoose.length === 0) {
             return null;
-        }
-
-        if (guildsToChoose.length === 1) {
-            return guildsToChoose[0];
         }
 
         const uniqueId = StringUtil.generateRandomString(20);
