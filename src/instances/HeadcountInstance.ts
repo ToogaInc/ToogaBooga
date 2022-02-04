@@ -103,10 +103,6 @@ export class HeadcountInstance {
     // The control panel message.
     private _controlPanelMsg: Message | null;
 
-    // The timeout used to update the AFK check message with information regarding reactions.
-    private _headcountInterval: NodeJS.Timeout | null;
-    // The timeout used to update the control panel message with information regarding reactions.
-    private _controlPanelInterval: NodeJS.Timeout | null;
     // Whether these intervals are running.
     private _intervalsAreRunning: boolean = false;
 
@@ -141,6 +137,9 @@ export class HeadcountInstance {
     // Instance information for logging
     private _instanceInfo: string;
 
+    // Time between panel updates in ms
+    private readonly _intervalDelay: number = 5000;
+
     /**
      * Creates a new `HeadcountInstance` object.
      * @param {GuildMember} memberInit The member that initiated this headcount.
@@ -160,8 +159,6 @@ export class HeadcountInstance {
         this._headcountStatus = HeadcountStatus.NOTHING;
         this._headcountMsg = null;
         this._controlPanelMsg = null;
-        this._headcountInterval = null;
-        this._controlPanelInterval = null;
         this._guildDoc = guildDoc;
         this._raidSection = section;
         this._modifiersToUse = DEFAULT_MODIFIERS;
@@ -170,7 +167,6 @@ export class HeadcountInstance {
         this._embedColor = HeadcountInstance.DEFAULT_EMBED_COLOR;
         this._startTime = Date.now();
         this._expTime = this._startTime + (section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? HeadcountInstance.DEFAULT_HEADCOUNT_DURATION);
-        this._logger.debug(`Timeout duration in milliseconds: ` + section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? HeadcountInstance.DEFAULT_HEADCOUNT_DURATION);
 
         const brokenUpName = UserManager.getAllNames(memberInit.displayName);
         this._leaderName = brokenUpName.length > 0
@@ -413,49 +409,6 @@ export class HeadcountInstance {
     }
 
     /**
-     * Starts the intervals, which periodically updates the headcount message and the control panel message.
-     * @return {boolean} Whether the intervals started.
-     * @private
-     */
-    private startIntervals(): boolean {
-        if (!this._headcountMsg || !this._controlPanelMsg) return false;
-        if (this._intervalsAreRunning || this._headcountStatus !== HeadcountStatus.HEADCOUNT_IN_PROGRESS) return false;
-        this._intervalsAreRunning = true;
-        this._logger.info(`${this._instanceInfo} Starting all intervals`);
-
-        this._headcountInterval = setInterval(async () => {
-            if (!this._headcountMsg) {
-                this.stopAllIntervalsAndCollectors();
-                return;
-            }
-
-            if(Date.now() > this._expTime){
-                this._logger.info(`${this._instanceInfo} Headcount expired, aborting`);
-                this.abortHeadcount().then();
-                return true;
-            }
-
-            await this._headcountMsg.edit({
-                embeds: [this.getHeadcountEmbed()!],
-                components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
-            }).catch();
-        }, 4 * 1000);
-
-        this._controlPanelInterval = setInterval(async () => {
-            if (!this._controlPanelMsg) {
-                this.stopAllIntervalsAndCollectors();
-                return;
-            }
-
-            await this._controlPanelMsg.edit({
-                embeds: [this.getControlPanelEmbed()!]
-            }).catch();
-        }, 4 * 1000);
-
-        return true;
-    }
-
-    /**
      * Starts a headcount.
      */
     public async startHeadcount(): Promise<void> {
@@ -525,10 +478,10 @@ export class HeadcountInstance {
         this._logger.debug(`${this._instanceInfo} Stopping intervals and collectors`);   
 
         // End the collector since it's useless. We'll use it again though.
-        this.stopAllIntervalsAndCollectors("Headcount ended.");
+        await this.stopAllIntervalsAndCollectors("Headcount ended.");
 
         // Edit the control panel accordingly and re-react and start collector + intervals again.
-        this._logger.debug(`${this._instanceInfo} Editing headcount control panel`);   
+        this._logger.debug(`${this._instanceInfo} Replacing the headcount control panel`); 
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
             components: HeadcountInstance.END_HEADCOUNT_BUTTONS
@@ -562,7 +515,7 @@ export class HeadcountInstance {
         this._headcountStatus = HeadcountStatus.HEADCOUNT_ABORTED;
 
         // Stop 0: Stop all collectors
-        this.stopAllIntervalsAndCollectors("Headcount aborted.");
+        await this.stopAllIntervalsAndCollectors("Headcount aborted.");
         // Step 1: Remove from ActiveRaids collection
         this._logger.debug(`${this._instanceInfo} Removing from active raids`);
         if (this._headcountMsg) {
@@ -583,8 +536,7 @@ export class HeadcountInstance {
             components: [],
         }).catch();
 
-        this._logger.debug(`${this._instanceInfo} Editing control panel embed`);
-        // Edit the control panel
+        this._logger.debug(`${this._instanceInfo} Replacing the headcount control panel`); 
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
             components: [],
@@ -606,7 +558,7 @@ export class HeadcountInstance {
         this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTED;
 
         // Stop 0: Stop all collectors
-        this.stopAllIntervalsAndCollectors("Headcount converted.");
+        await this.stopAllIntervalsAndCollectors("Headcount converted.");
         // Step 1: Remove from ActiveRaids collection
         if (this._headcountMsg) {
             HeadcountInstance.ActiveHeadcounts.delete(this._headcountMsg.id);
@@ -625,8 +577,7 @@ export class HeadcountInstance {
             components: [],
         }).catch();
 
-        this._logger.debug(`${this._instanceInfo} Editing control panel embed`);
-        // Edit the control panel
+        this._logger.debug(`${this._instanceInfo} Replacing the headcount control panel`); 
         await this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!],
             components: [],
@@ -821,7 +772,7 @@ export class HeadcountInstance {
                     .toString()
             );
         }
-
+        
         const nModReactInfoFields = ArrayUtilities.arrayToStringFields(cpFields, (_, elem) => elem);
         let title = "Priority Reaction Information";
         for (const field of nModReactInfoFields) {
@@ -894,28 +845,110 @@ export class HeadcountInstance {
      * @param {string} [reason] The reason.
      * @private
      */
-    private stopAllIntervalsAndCollectors(reason?: string): void {
+    private async stopAllIntervalsAndCollectors(reason?: string) {
         this._logger.info(`${this._instanceInfo} Stopping all intervals and collectors for reason: ${reason ?? null}`);
-        if (this._intervalsAreRunning) {
-            if (this._headcountInterval) {
-                clearInterval(this._headcountInterval);
-                this._headcountInterval = null;
-            }
+        this._intervalsAreRunning = false;
 
-            if (this._controlPanelInterval) {
-                clearInterval(this._controlPanelInterval);
-                this._controlPanelInterval = null;
-            }
-
-            this._intervalsAreRunning = false;
-        }
-
-        this._controlPanelReactionCollector?.stop(reason);
+        this._controlPanelReactionCollector?.stop();
         this._controlPanelReactionCollector = null;
-        this._headcountButtonCollector?.stop(reason);
+
+        this._headcountButtonCollector?.stop();
         this._headcountButtonCollector = null;
+        return;
     }
 
+    
+    /**
+     * Starts the intervals, which periodically updates the headcount message and the control panel message.
+     * @return {boolean} Whether the intervals started.
+     * @private
+     */
+     private startIntervals(): boolean {
+        if (!this._headcountMsg || !this._controlPanelMsg) return false;
+        if (this._intervalsAreRunning || this._headcountStatus !== HeadcountStatus.HEADCOUNT_IN_PROGRESS) return false;
+        this._intervalsAreRunning = true;
+        this._logger.info(`${this._instanceInfo} Starting all intervals`);
+
+        this.updateControlPanel();
+        this.updateHeadcountPanel();
+        
+        return true;
+    }
+
+    /**
+     * Interval for control panel
+     */
+    private async updateControlPanel(){
+        this._logger.debug(`${this._instanceInfo} Control Panel Interval`);
+        /**
+         * If control panel does not exist,
+         * Stop intervals and return*/
+        if(!this._controlPanelMsg){
+            await this.stopAllIntervalsAndCollectors("Control panel does not exist");
+            return;
+        }
+        /**If intervals have stopped,
+         * return
+         */
+        if(!this._intervalsAreRunning){
+            return;
+        }
+        /**
+         * If headcount times out.
+         * stop intervals and return
+         */
+         if(Date.now() > this._expTime){
+            this._logger.info(`${this._instanceInfo} Headcount expired, aborting`);
+            this.abortHeadcount().then();
+            return true;
+        }
+
+        const editMessage = this._controlPanelMsg.edit({
+            embeds: [this.getControlPanelEmbed()!]
+        })
+
+        const delayUpdate = this.delay(this._intervalDelay);
+
+        await Promise.all([editMessage, delayUpdate]).catch();
+        this.updateControlPanel();
+    }
+
+    /**
+     * Interval for headcount panel
+     */
+    private async updateHeadcountPanel(){
+        this._logger.debug(`${this._instanceInfo} Headcount Panel Interval`);
+        /**
+         * If headcount panel does not exist,
+         * Stop intervals and return*/
+        if(!this._headcountMsg){
+            await this.stopAllIntervalsAndCollectors("Headcount message does not exist");
+            return;
+        }
+        /**If intervals have stopped,
+         * return
+         */
+        if(!this._intervalsAreRunning){
+            return;
+        }
+        const editMessage = this._headcountMsg.edit({
+            embeds: [this.getHeadcountEmbed()!],
+        })
+
+        const delayUpdate = this.delay(this._intervalDelay);
+
+        await Promise.all([editMessage, delayUpdate]).catch();
+        this.updateHeadcountPanel();
+    }
+
+    /**
+     * Helper method for intervals that returns a delay as a Promise
+     * @param ms number of ms to delay for
+     * @returns Promise
+     */
+    private delay(ms: number){
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     /**
      * Adds an early location entry to the early location map, optionally also saving it to the database.
@@ -1048,7 +1081,7 @@ export class HeadcountInstance {
     public async cleanUpHeadcount(): Promise<void> {
         this._logger.info(`${this._instanceInfo} Cleaning headcount`);
         // Stop 0: Stop all collectors
-        this.stopAllIntervalsAndCollectors();
+        await this.stopAllIntervalsAndCollectors();
         // Step 1: Remove from ActiveRaids collection
         if (this._headcountMsg) {
             HeadcountInstance.ActiveHeadcounts.delete(this._headcountMsg.id);

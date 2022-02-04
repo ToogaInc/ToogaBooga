@@ -191,11 +191,7 @@ export class RaidInstance {
     // The control panel message.
     private _controlPanelMsg: Message | null;
 
-    // The timeout used to update the AFK check message with information regarding reactions.
-    private _afkCheckInterval: NodeJS.Timeout | null;
-    // The timeout used to update the control panel message with information regarding reactions.
-    private _controlPanelInterval: NodeJS.Timeout | null;
-    // Whether these intervals are running.
+    // Whether intervals are running.
     private _intervalsAreRunning: boolean = false;
 
     // The collector waiting for interactions from users.
@@ -250,6 +246,10 @@ export class RaidInstance {
     // Instance information for logging
     private readonly _instanceInfo: string;
 
+    // Time between panel updates in ms
+    private readonly _intervalDelay: number = 5000;
+
+
     /**
      * Creates a new `RaidInstance` object.
      * @param {GuildMember} memberInit The member that initiated this raid.
@@ -270,8 +270,6 @@ export class RaidInstance {
         this._raidVc = null;
         this._afkCheckMsg = null;
         this._controlPanelMsg = null;
-        this._afkCheckInterval = null;
-        this._controlPanelInterval = null;
         this._guildDoc = guildDoc;
         this._raidSection = section;
         this._membersThatJoined = [];
@@ -739,7 +737,7 @@ export class RaidInstance {
         }
         await this._raidVc.permissionOverwrites.set(this.getPermissionsForRaidVc(true));
 
-        this.stopAllIntervalsAndCollectors();
+        await this.stopAllIntervalsAndCollectors();
         this.startIntervals();
         this.startControlPanelCollector();
         this.startAfkCheckCollector();
@@ -788,7 +786,7 @@ export class RaidInstance {
         ).catch();
 
         // Update the database so it is clear that we are in raid mode.
-        this.stopAllIntervalsAndCollectors();
+        await this.stopAllIntervalsAndCollectors();
         await this.setRaidStatus(RaidStatus.IN_RUN);
         this.startIntervals();
         this.startControlPanelCollector();
@@ -1518,7 +1516,7 @@ export class RaidInstance {
      */
     public async cleanUpRaid(force: boolean): Promise<void> {
         this._logger.info(`${this._instanceInfo} Cleaning up raid`);
-        this.stopAllIntervalsAndCollectors();
+        await this.stopAllIntervalsAndCollectors();
         // Step 1: Remove from ActiveRaids collection
         if (this._afkCheckMsg) {
             RaidInstance.ActiveRaids.delete(this._afkCheckMsg.id);
@@ -1967,86 +1965,115 @@ export class RaidInstance {
      * @param {string} [reason] The reason.
      * @private
      */
-    private stopAllIntervalsAndCollectors(reason?: string): void {
-        this._logger.info(`${this._instanceInfo} Stopping all intervals and collectors for reason: ${reason ?? `none`}`);
-        if (this._intervalsAreRunning) {
-            if (this._afkCheckInterval) {
-                clearInterval(this._afkCheckInterval);
-                this._afkCheckInterval = null;
-            }
+     private async stopAllIntervalsAndCollectors(reason?: string) {
+        this._logger.info(`${this._instanceInfo} Stopping all intervals and collectors for reason: ${reason ?? null}`);
+        this._intervalsAreRunning = false;
 
-            if (this._controlPanelInterval) {
-                clearInterval(this._controlPanelInterval);
-                this._controlPanelInterval = null;
-            }
-
-            this._intervalsAreRunning = false;
-        }
-
-        this._controlPanelReactionCollector?.stop(reason);
+        this._controlPanelReactionCollector?.stop();
         this._controlPanelReactionCollector = null;
-        this._afkCheckButtonCollector?.stop(reason);
+
+        this._afkCheckButtonCollector?.stop();
         this._afkCheckButtonCollector = null;
+        return;
     }
 
+    
     /**
-     * Starts the intervals, which periodically updates the AFK check message and the control panel message.
+     * Starts the intervals, which periodically updates the headcount message and the control panel message.
      * @return {boolean} Whether the intervals started.
      * @private
      */
-    private startIntervals(): boolean {
+     private startIntervals(): boolean {
         if (!this._afkCheckMsg || !this._controlPanelMsg) return false;
         if (this._intervalsAreRunning || this._raidStatus === RaidStatus.NOTHING) return false;
         this._logger.info(`${this._instanceInfo} Starting all intervals`);
         this._intervalsAreRunning = true;
 
-        // If we're in AFK check mode, then start intervals for AFK check message + control panel message.
-        if (this._raidStatus === RaidStatus.AFK_CHECK || this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
-            this._afkCheckInterval = setInterval(async () => {
-                if (!this._afkCheckMsg) {
-                    this.stopAllIntervalsAndCollectors();
-                    return;
-                }
+        this.updateControlPanel();
+        this.updateRaidPanel();
+        
+        return true;
+    }
 
-                if(Date.now() > this._expTime){
-                    this._logger.info(`${this._instanceInfo} Raid expired, cleaning`);
-                    this.cleanUpRaid(true).then();
-                    return true;
-                }
-
-                await this._afkCheckMsg.edit({
-                    embeds: [this.getAfkCheckEmbed()!],
-                    components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
-                }).catch();
-            }, 4 * 1000);
-
-            this._controlPanelInterval = setInterval(async () => {
-                if (!this._controlPanelMsg) {
-                    this.stopAllIntervalsAndCollectors();
-                    return;
-                }
-
-                await this._controlPanelMsg.edit({
-                    embeds: [this.getControlPanelEmbed()!]
-                }).catch();
-            }, 4 * 1000);
-
+    /**
+     * Interval for control panel
+     */
+    private async updateControlPanel(){
+        this._logger.debug(`${this._instanceInfo} Control Panel Interval`);
+        /**
+         * If control panel does not exist,
+         * Stop intervals and return*/
+         if (!this._controlPanelMsg || !this._raidVc) {
+            await this.stopAllIntervalsAndCollectors("Control panel or raid vc does not exist");
+            return;
+        }
+        /**If intervals have stopped,
+         * Return
+         */
+        if(!this._intervalsAreRunning){
+            return;
+        }
+        /**
+         * If headcount times out.
+         * stop intervals and return
+         */
+         if(Date.now() > this._expTime){
+            this._logger.info(`${this._instanceInfo} Headcount expired, aborting`);
+            this.cleanUpRaid(true).then();
             return true;
         }
 
-        // Otherwise, we're in raid mode and we only need to update the control panel message.
-        this._controlPanelInterval = setInterval(async () => {
-            if (!this._controlPanelMsg || !this._raidVc) {
-                this.stopAllIntervalsAndCollectors();
-                return;
-            }
+        const editMessage = this._controlPanelMsg.edit({
+            embeds: [this.getControlPanelEmbed()!]
+        })
 
-            await this._controlPanelMsg.edit({
-                embeds: [this.getControlPanelEmbed()!]
-            }).catch();
-        }, 5 * 1000);
+        const delayUpdate = this.delay(this._intervalDelay);
 
-        return true;
+        await Promise.all([editMessage, delayUpdate]).catch();
+        this.updateControlPanel();
+    }
+
+    /**
+     * Interval for headcount panel
+     */
+    private async updateRaidPanel(){
+        this._logger.debug(`${this._instanceInfo} Raid Panel Interval`);
+        /**
+         * If headcount panel does not exist,
+         * Stop intervals and return*/
+        if(!this._afkCheckMsg){
+            await this.stopAllIntervalsAndCollectors("Raid msg does not exist");
+            return;
+        }
+        /**If intervals have stopped,
+         * return
+         */
+        if(!this._intervalsAreRunning){
+            return;
+        }
+        /**If not in AFK check,
+         * no need to update panel, return
+         */
+        if (this._raidStatus !== RaidStatus.AFK_CHECK && this._raidStatus !== RaidStatus.PRE_AFK_CHECK) {
+            return;
+        }
+        const editMessage = this._afkCheckMsg.edit({
+            embeds: [this.getAfkCheckEmbed()!],
+        })
+
+        const delayUpdate = this.delay(this._intervalDelay);
+
+        await Promise.all([editMessage, delayUpdate]).catch();
+        this.updateRaidPanel();
+    }
+
+    /**
+     * Helper method for intervals that returns a delay as a Promise
+     * @param ms number of ms to delay for
+     * @returns Promise
+     */
+    private delay(ms: number){
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**

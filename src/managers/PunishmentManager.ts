@@ -766,7 +766,7 @@ export namespace SuspensionManager {
      */
     async function suspensionChecker(): Promise<void> {
         if (!_isRunning) return;
-        _logger.info("Running SuspensionManager checker");
+        _logger.debug("Running SuspensionManager checker");
         // Remove all elements before checking.
         while (_queuedDelSuspendedMembers.size() > 0) {
             const dequeuedElem = _queuedDelSuspendedMembers.dequeue();
@@ -888,7 +888,7 @@ export namespace SuspensionManager {
             }
         }
 
-        _logger.info("SuspensionManager finished");
+        _logger.debug("SuspensionManager finished");
         // Now, wait one minute before trying again.
         setTimeout(suspensionChecker, timeToUpdate);
     }
@@ -1304,7 +1304,7 @@ export namespace MuteManager {
      */
     async function muteChecker(): Promise<void> {
         if (!_isRunning) return;
-        _logger.info("Running MuteManager checker");
+        _logger.debug("Running MuteManager checker");
         // Remove all users that were already queued for unmuting from checker
         while (_queuedDelMutedUsers.size() > 0) {
             const dequeuedElem = _queuedDelMutedUsers.dequeue();
@@ -1350,7 +1350,7 @@ export namespace MuteManager {
                 });
             }
         }
-        _logger.info("MuteManager finished");
+        _logger.debug("MuteManager finished");
         setTimeout(muteChecker, timeToUpdate);
     }
 

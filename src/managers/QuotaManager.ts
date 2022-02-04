@@ -806,7 +806,7 @@ export namespace QuotaService {
                 });
             }
         }
-        _logger.info("Quota service finished.");
+        _logger.debug("Quota service finished.");
         setTimeout(run, timeToUpdate);
     }
 }
