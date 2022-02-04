@@ -668,3 +668,34 @@ export function hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMemb
 
     return false;
 }
+
+/**
+ * Sends a temporary message to given text channel
+ * @param channel the channel
+ * @param message the content to send
+ * @param duration number of ms to delay for
+ * @returns Promise
+ */
+export async function sendTemporaryAlert(channel: TextChannel | null, message: string, duration: number){
+    if(!channel) return;
+
+    const tempMsg = await channel.send({
+        content: message,
+    });
+    
+    await Promise.all([tempMsg, delay(duration)]);
+    if(tempMsg){
+        tempMsg.delete().catch();
+    }
+    return;
+
+}
+
+/**
+     * Helper method for intervals that returns a delay as a Promise
+     * @param ms number of ms to delay for
+     * @returns Promise
+     */
+export async function delay(ms: number){
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

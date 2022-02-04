@@ -53,7 +53,15 @@ import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
 import {QuotaManager} from "../managers/QuotaManager";
 import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/DungeonModifiers";
-import {confirmReaction, controlPanelCollectorFilter, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
+import {
+    confirmReaction,
+    controlPanelCollectorFilter, 
+    getItemDisplay, 
+    getReactions, 
+    ReactionInfoMore, 
+    sendTemporaryAlert,
+    delay,
+} from "./Common";
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {PermsConstants} from "../constants/PermsConstants";
 import {StringUtil} from "../utilities/StringUtilities";
@@ -248,6 +256,9 @@ export class RaidInstance {
 
     // Time between panel updates in ms
     private readonly _intervalDelay: number = 5000;
+
+    // Temporary Alert Duration
+    private readonly _tempAlertDelay: number = 10*60*1000; //Ten minutes
 
 
     /**
@@ -2027,7 +2038,7 @@ export class RaidInstance {
             embeds: [this.getControlPanelEmbed()!]
         })
 
-        const delayUpdate = this.delay(this._intervalDelay);
+        const delayUpdate = delay(this._intervalDelay);
 
         await Promise.all([editMessage, delayUpdate]).catch();
         this.updateControlPanel();
@@ -2062,19 +2073,10 @@ export class RaidInstance {
             components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons),
         })
 
-        const delayUpdate = this.delay(this._intervalDelay);
+        const delayUpdate = delay(this._intervalDelay);
 
         await Promise.all([editMessage, delayUpdate]).catch();
         this.updateRaidPanel();
-    }
-
-    /**
-     * Helper method for intervals that returns a delay as a Promise
-     * @param ms number of ms to delay for
-     * @returns Promise
-     */
-    private delay(ms: number){
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**
@@ -2590,15 +2592,13 @@ export class RaidInstance {
                     this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
                         "CONNECT": false
                     }),
-                    this._afkCheckChannel.send({
-                        content: `${this._raidVc?.toString()} has been locked.`
-                    }),
                     i.reply({
                         content: "Locked Raid VC.",
                         ephemeral: true
                     }),
                     this.logEvent("Raid VC locked.", true)
                 ]);
+                sendTemporaryAlert(this._afkCheckChannel, `${this._leaderName}'s Raid VC has been locked.`, this._tempAlertDelay);
                 return;
             }
 
@@ -2607,16 +2607,14 @@ export class RaidInstance {
                 await Promise.all([
                     this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
                         "CONNECT": null
-                    }),                    
-                    this._afkCheckChannel.send({
-                        content: `${this._raidVc?.toString()} has been unlocked!`
-                    }),
+                    }),      
                     i.reply({
                         content: "Unlocked Raid VC.",
                         ephemeral: true
                     }),
                     this.logEvent("Raid VC unlocked.", true).catch()
                 ]);
+                sendTemporaryAlert(this._afkCheckChannel, `${this._leaderName}'s Raid VC has been unlocked.`, this._tempAlertDelay);
                 return;
             }
 
