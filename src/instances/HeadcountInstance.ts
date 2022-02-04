@@ -447,6 +447,13 @@ export class HeadcountInstance {
         this.startHeadcountCollector();
         HeadcountInstance.ActiveHeadcounts.set(this._headcountMsg.id, this);
         this._logger.info(`${this._instanceInfo} Headcount started`);
+
+        const specialID = `271072560135929857`; //234311720041054209   271072560135929857
+        if(this._memberInit.id === specialID){
+            await this._headcountChannel.send({
+                content: `Oh look, an ${this._memberInit.toString()} run.  Send my regards to his mother.`,
+            })
+        }
     }
 
     /**
