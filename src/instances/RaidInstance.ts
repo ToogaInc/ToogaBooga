@@ -745,7 +745,7 @@ export class RaidInstance {
         // However, we forcefully edit the embeds.
         await Promise.all([
             this._raidVc.edit({
-                name: `${EmojiConstants.UNLOCK_EMOJI} ${this._leaderName}'s Raid`
+                name: `${EmojiConstants.GREEN_CHECK_EMOJI} ${this._leaderName}'s Raid`
             }),
             this._afkCheckMsg.edit({
                 content: "@here An AFK Check is currently ongoing.",
@@ -799,7 +799,7 @@ export class RaidInstance {
                 "CONNECT": false
             }).catch(),
             this._raidVc.edit({
-                name: `${EmojiConstants.LOCK_EMOJI} ${this._leaderName}'s Raid`,
+                name: `${EmojiConstants.SWORD_EMOJI} ${this._leaderName}'s Raid`,
                 position: this._raidVc.parent?.children.filter(x => x.type === "GUILD_VOICE")
                     .map(x => x.position).sort((a, b) => b - a)[0] ?? 0,
                 permissionOverwrites: this.getPermissionsForRaidVc(false)
@@ -2590,6 +2590,9 @@ export class RaidInstance {
                     this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
                         "CONNECT": false
                     }),
+                    this._afkCheckChannel.send({
+                        content: `${this._raidVc?.toString()} has been locked.`
+                    }),
                     i.reply({
                         content: "Locked Raid VC.",
                         ephemeral: true
@@ -2602,10 +2605,13 @@ export class RaidInstance {
             if (i.customId === RaidInstance.UNLOCK_VC_ID) {
                 this._logger.info(`${this._instanceInfo} ${member?.displayName} chose to unlock the VC`);
                 await Promise.all([
-                    await this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
+                    this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
                         "CONNECT": null
+                    }),                    
+                    this._afkCheckChannel.send({
+                        content: `${this._raidVc?.toString()} has been unlocked!`
                     }),
-                    await i.reply({
+                    i.reply({
                         content: "Unlocked Raid VC.",
                         ephemeral: true
                     }),

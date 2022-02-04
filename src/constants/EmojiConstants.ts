@@ -34,6 +34,7 @@ export namespace EmojiConstants {
     export const THIRD_PLACE_EMOJI: string = "🥉";
 
     export const CROSSED_SWORDS_EMOJI: string = "⚔️";
+    export const SWORD_EMOJI: string = "🗡️";
     export const MULTIPLE_FLAGS_EMOJI: string = "🎏";
 
     export const LONG_UP_ARROW_EMOJI: string = "⬆️";
