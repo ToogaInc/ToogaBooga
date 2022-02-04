@@ -2018,7 +2018,7 @@ export class RaidInstance {
          * stop intervals and return
          */
          if(Date.now() > this._expTime){
-            this._logger.info(`${this._instanceInfo} Headcount expired, aborting`);
+            this._logger.info(`${this._instanceInfo} Raid expired, aborting`);
             this.cleanUpRaid(true).then();
             return true;
         }
