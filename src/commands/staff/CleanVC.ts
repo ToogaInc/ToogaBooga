@@ -2,6 +2,7 @@ import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseC
 import {VoiceChannel} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {Logger} from "../../utilities/Logger";
+import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 
 export class CleanVC extends BaseCommand {
     private _logger = new Logger(__filename);
@@ -44,8 +45,10 @@ export class CleanVC extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        const guildDoc = ctx.guildDoc;
         const channel = ctx.interaction.options.getChannel("vc", true);
         const member = ctx.member;
+
         if(!member) {
             await ctx.interaction.reply({
                 content: "An unknown error occurred.",
@@ -54,7 +57,13 @@ export class CleanVC extends BaseCommand {
             return -1;   
         }
 
-        this._logger.info(`${member.displayName} used CleanVC on ${channel}`);
+        if(!guildDoc) {
+            await ctx.interaction.reply({
+                content: "An unknown error occurred.",
+                ephemeral: true
+            });
+            return -1;   
+        }
 
         if (!(channel instanceof VoiceChannel)) {
             await ctx.interaction.reply({
@@ -63,14 +72,18 @@ export class CleanVC extends BaseCommand {
             });
             return -1;
         }
-        
+                
+        this._logger.info(`${member.displayName} used CleanVC on ${channel}`);
         await ctx.interaction.deferReply();
+
         let ct = 0;
+        const teamRoleId = guildDoc.roles.staffRoles.teamRoleId;
+
         await Promise.all(
             channel.members.map(async x => {
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    /**Do not clean members of higher roles */
-                    if (channel.guild.ownerId === x.id || x.roles.highest.comparePositionTo(member.roles.highest) >= 0) {
+                    /**Do not clean staff members */
+                    if (member.roles.cache.has(teamRoleId)) {
                         return;
                     }
                     await x.voice.disconnect();
