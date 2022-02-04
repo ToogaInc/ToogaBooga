@@ -67,7 +67,8 @@ export class Poll extends BaseCommand {
         }
 
         const reactions: EmojiIdentifierResolvable[] = [];
-        const desc = new StringBuilder(ctx.interaction.options.getString("question", true)).appendLine(2);
+        const question = ctx.interaction.options.getString("question", true);
+        const desc = new StringBuilder();
 
         if(options.length === 0){
             desc.append(`${EmojiConstants.NUMERICAL_EMOJIS[0]} Yes\n`);
@@ -83,9 +84,13 @@ export class Poll extends BaseCommand {
             }
         }
         const embed = MessageUtilities.generateBlankEmbed(ctx.user, "RANDOM")
-            .setTitle(`${EmojiConstants.BAR_GRAPH_EMOJI} Poll`)
-            .setDescription(desc.toString())
-            .setTimestamp();        
+            .setAuthor({
+                name: `${ctx.member?.displayName}`,
+                iconURL: ctx.user.displayAvatarURL()
+            })
+            .setTitle(`${EmojiConstants.BAR_GRAPH_EMOJI} Poll: ${question}`)
+            .setTimestamp(null)
+            .setDescription(desc.toString());  
 
         const m = await GlobalFgrUtilities.sendMsg(ctx.channel, {embeds: [embed]});
         if (!m) {
