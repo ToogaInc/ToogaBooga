@@ -45,7 +45,16 @@ export class CleanVC extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const channel = ctx.interaction.options.getChannel("vc", true);
-        this._logger.info(`${ctx.member?.displayName} used CleanVC on ${channel}`);
+        const member = ctx.member;
+        if(!member) {
+            await ctx.interaction.reply({
+                content: "An unknown error occurred.",
+                ephemeral: true
+            });
+            return -1;   
+        }
+
+        this._logger.info(`${member.displayName} used CleanVC on ${channel}`);
 
         if (!(channel instanceof VoiceChannel)) {
             await ctx.interaction.reply({
@@ -60,6 +69,10 @@ export class CleanVC extends BaseCommand {
         await Promise.all(
             channel.members.map(async x => {
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    /**Do not clean members of higher roles */
+                    if (channel.guild.ownerId === x.id || x.roles.highest.comparePositionTo(member.roles.highest) >= 0) {
+                        return;
+                    }
                     await x.voice.disconnect();
                     ct++;
                 });
