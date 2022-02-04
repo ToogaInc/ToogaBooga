@@ -705,7 +705,7 @@ export namespace SuspensionManager {
     // Time between each checker
     const timeToUpdate: number = 60*1000;
 
-    const _logger = new Logger(__filename, true);
+    const _logger = new Logger(__filename, false);
 
     let _isRunning = false;
 
