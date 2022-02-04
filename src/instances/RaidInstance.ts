@@ -2059,6 +2059,7 @@ export class RaidInstance {
         }
         const editMessage = this._afkCheckMsg.edit({
             embeds: [this.getAfkCheckEmbed()!],
+            components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons),
         })
 
         const delayUpdate = this.delay(this._intervalDelay);
