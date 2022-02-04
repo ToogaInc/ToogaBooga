@@ -7,8 +7,10 @@ import {TimeUtilities} from "../../utilities/TimeUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import generateRandomString = StringUtil.generateRandomString;
 import {preCheckPunishment} from "./common/PunishmentCommon";
+import {Logger} from "../../utilities/Logger"
 
 export class MuteMember extends BaseCommand {
+    private readonly _logger: Logger = new Logger(__filename);
     public static readonly ERROR_NO_MUTE_STR: string = new StringBuilder()
         .append("Something went wrong when trying to mute this person.").appendLine()
         .append("- The person already has the muted role. In this case, manually remove the Muted role and")
@@ -47,11 +49,11 @@ export class MuteMember extends BaseCommand {
                     displayName: "Duration",
                     argName: "duration",
                     desc: "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
-                        + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
+                        + " example, to specify 3 days, use \"3d\" as the duration. Duration of -1"
                         + " implies an indefinite mute. Not specifying the time unit for the mute implies days.",
                     type: ArgumentType.String,
                     prettyType: "String",
-                    required: false,
+                    required: true,
                     example: ["3h10m", "10w10h8d-1m"]
                 },
                 {
@@ -85,7 +87,11 @@ export class MuteMember extends BaseCommand {
 
         const muteId = `Mute_${Date.now()}_${generateRandomString(15)}`;
 
-        const durationStr = ctx.interaction.options.getString("duration", false);
+        let durationStr = ctx.interaction.options.getString("duration", false);
+        if(durationStr === "-1") durationStr = null;
+        
+        this._logger.info(`Issuing mute for ${resMember?.member.displayName} of duration ${durationStr}`);
+
         const parsedDuration = durationStr ? TimeUtilities.parseTimeUnit(durationStr) : null;
 
         const reason = ctx.interaction.options.getString("reason", true);

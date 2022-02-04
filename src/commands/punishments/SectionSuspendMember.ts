@@ -11,8 +11,10 @@ import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {SuspendMember} from "./SuspendMember";
 import {preCheckPunishment} from "./common/PunishmentCommon";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import {Logger} from "../../utilities/Logger"
 
 export class SectionSuspendMember extends BaseCommand {
+    private readonly _logger: Logger = new Logger(__filename);
     private static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
         .append("Something went wrong when trying to suspend this person.").appendLine()
         .append("- The person already has the suspended role. In this case, manually remove the Suspended role and")
@@ -43,11 +45,11 @@ export class SectionSuspendMember extends BaseCommand {
                     displayName: "Duration",
                     argName: "duration",
                     desc: "The duration. Supported time units are minutes (m), hours (h), days (d), weeks (w). For"
-                        + " example, to specify 3 days, use \"3d\" as the duration. Not specifying a duration at all"
+                        + " example, to specify 3 days, use \"3d\" as the duration. Duration of -1"
                         + " implies an indefinite suspension. Not specifying the time unit implies days.",
                     type: ArgumentType.String,
                     prettyType: "String",
-                    required: false,
+                    required: true,
                     example: ["3h10m", "10w10h8d-1m"]
                 },
                 {
@@ -141,7 +143,11 @@ export class SectionSuspendMember extends BaseCommand {
 
         const sectionPicked = sections.find(x => x.uniqueIdentifier === result.values[0])!;
 
-        const durationStr = ctx.interaction.options.getString("duration", false);
+        let durationStr = ctx.interaction.options.getString("duration", false);
+        if(durationStr === "-1") durationStr = null;
+        
+        this._logger.info(`Issuing mute for ${resMember?.member.displayName} of duration ${durationStr}`);
+
         const parsedDuration = durationStr ? TimeUtilities.parseTimeUnit(durationStr) : null;
 
         const reason = ctx.interaction.options.getString("reason", true);
