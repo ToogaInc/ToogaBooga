@@ -83,7 +83,7 @@ export class CleanVC extends BaseCommand {
             channel.members.map(async x => {
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
                     /**Do not clean staff members */
-                    if (member.roles.cache.has(teamRoleId)) {
+                    if (x.roles.cache.has(teamRoleId)) {
                         return;
                     }
                     await x.voice.disconnect();
