@@ -13,8 +13,8 @@ import {preCheckPunishment} from "./common/PunishmentCommon";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {Logger} from "../../utilities/Logger"
 
+const LOGGER: Logger = new Logger(__filename, false);
 export class SectionSuspendMember extends BaseCommand {
-    private readonly _logger: Logger = new Logger(__filename);
     private static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
         .append("Something went wrong when trying to suspend this person.").appendLine()
         .append("- The person already has the suspended role. In this case, manually remove the Suspended role and")
@@ -146,7 +146,7 @@ export class SectionSuspendMember extends BaseCommand {
         let durationStr = ctx.interaction.options.getString("duration", false);
         if(durationStr === "-1") durationStr = null;
         
-        this._logger.info(`Issuing mute for ${resMember?.member.displayName} of duration ${durationStr}`);
+        LOGGER.info(`Issuing mute for ${resMember?.member.displayName} of duration ${durationStr}`);
 
         const parsedDuration = durationStr ? TimeUtilities.parseTimeUnit(durationStr) : null;
 

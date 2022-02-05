@@ -9,9 +9,8 @@ import {QuotaManager} from "../../managers/QuotaManager";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {Logger} from "../../utilities/Logger";
 
+const LOGGER: Logger = new Logger(__filename, false);
 export class LogParse extends BaseCommand{
-
-    private _logger : Logger;
 
     public constructor() {
         const cmi: ICommandInfo = {
@@ -51,8 +50,6 @@ export class LogParse extends BaseCommand{
             botOwnerOnly: false
         };
         super(cmi);        
-
-        this._logger = new Logger(__filename);
     }
 
     /**
@@ -86,7 +83,7 @@ export class LogParse extends BaseCommand{
 
         const cInt = ctx.interaction.options.getInteger("completed", false) ?? 1;
 
-        this._logger.info("Logging " + cInt + " parses for " + memberToLogAs.displayName + "...");
+        LOGGER.info("Logging " + cInt + " parses for " + memberToLogAs.displayName + "...");
 
         const uniqueId = StringUtil.generateRandomString(20);
         await ctx.interaction.reply({
@@ -125,7 +122,7 @@ export class LogParse extends BaseCommand{
         }, uniqueId);
 
         if (!selection || selection.customId === uniqueId+ButtonConstants.CANCEL_ID){
-            this._logger.info("Logparse cancelled for " + memberToLogAs.displayName);
+            LOGGER.info("Logparse cancelled for " + memberToLogAs.displayName);
             await ctx.interaction.editReply({
                 components: [],
                 content: "You cancelled the logging process.",
@@ -148,7 +145,7 @@ export class LogParse extends BaseCommand{
             embeds: []
         });
 
-        this._logger.info("Logparse completed for " + memberToLogAs.displayName);
+        LOGGER.info("Logparse completed for " + memberToLogAs.displayName);
         return 0;
     }
 }

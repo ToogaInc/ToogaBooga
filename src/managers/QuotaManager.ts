@@ -28,6 +28,7 @@ import {DungeonUtilities} from "../utilities/DungeonUtilities";
 import {EmojiConstants} from "../constants/EmojiConstants";
 import {Logger} from "../utilities/Logger";
 
+const LOGGER: Logger = new Logger(__filename, false);
 export namespace QuotaManager {
     export const ALL_QUOTAS_KV: { [key: string]: string } = {
         "Parse": "Parse",
@@ -51,7 +52,6 @@ export namespace QuotaManager {
         "NameAdjustment"
     ];
 
-    const _logger: Logger = new Logger(__filename, false);
     /**
      * Checks if the string is of some quota type.
      * @param {string} str The string to test.
@@ -79,7 +79,7 @@ export namespace QuotaManager {
      * @returns {Promise<boolean>} Whether this was successful.
      */
     export async function resetQuota(guild: Guild, roleId: string): Promise<boolean> {
-        _logger.info(`Resetting quota for roleid ${roleId}`);
+        LOGGER.info(`Resetting quota for roleid ${roleId}`);
 
         const guildDoc = await MongoManager.getOrCreateGuildDoc(guild, true);
         if (!guildDoc)
@@ -328,7 +328,7 @@ export namespace QuotaManager {
      * @param {Guild} guild The guild.
      */
     export async function resetAllQuota(guild: Guild): Promise<void> {
-        _logger.info(`Resetting all quotas for guild ${guild.name}`);
+        LOGGER.info(`Resetting all quotas for guild ${guild.name}`);
         const doc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
         await Promise.all(doc.quotas.quotaInfo.map(async x => resetQuota(guild, x.roleId)));
     }
@@ -351,7 +351,7 @@ export namespace QuotaManager {
      */
     export function findBestQuotaToAdd(member: GuildMember, guildDoc: IGuildInfo, logType: QuotaLogType,
                                        dungeonId?: string): string | null {
-        _logger.info(`Finding best quota to add ${logType} for ${member.displayName}`);
+        LOGGER.info(`Finding best quota to add ${logType} for ${member.displayName}`);
         let resolvedLogType: string = logType;
         if (logType === "RunAssist" || logType === "RunComplete" || logType === "RunFailed") {
             if (!dungeonId) return null;
@@ -366,13 +366,13 @@ export namespace QuotaManager {
                 // - Run_____                       For all dungeons (i.e. no ID specifier).
                 && (x.pointValues.find(y => y.key === resolvedLogType || y.key === logType)?.value ?? 0) > 0;
         });
-        _logger.debug(`Available quotas for ${resolvedLogType}: ${availableQuotas.toLocaleString()}`);
+        LOGGER.debug(`Available quotas for ${resolvedLogType}: ${availableQuotas.toLocaleString()}`);
 
         if (availableQuotas.length === 0)
             return null;
 
         /**TODO: Remove duplicate roles for same section type (Oryx Leader should ignore AlmostOryxLeader) */
-        _logger.debug(`ADDRESS THIS TODO`);
+        LOGGER.debug(`ADDRESS THIS TODO`);
         const quotaData: QuotaMemberInfo[] = availableQuotas.map(x => {
             const curPts = calcTotalQuotaPtsForMember(member.id, x.roleId, guildDoc);
             return {
@@ -384,7 +384,7 @@ export namespace QuotaManager {
         });
 
         quotaData.sort((a, b) => a.percentComplete - b.percentComplete);
-        _logger.debug(`Selected ${quotaData[0].roleId}`);
+        LOGGER.debug(`Selected ${quotaData[0].roleId}`);
         return quotaData[0].roleId;
     }
 
@@ -397,7 +397,7 @@ export namespace QuotaManager {
      */
     export async function logQuota(member: GuildMember, roleId: string, logType: string,
                                    amt: number): Promise<void> {
-        _logger.info(`Logging quota for ${member.displayName}, role: ${roleId}, type: ${logType}, amount: ${amt}`);
+        LOGGER.info(`Logging quota for ${member.displayName}, role: ${roleId}, type: ${logType}, amount: ${amt}`);
         await MongoManager.updateAndFetchGuildDoc({
             guildId: member.guild.id,
             "quotas.quotaInfo.roleId": roleId
@@ -622,7 +622,7 @@ export namespace QuotaManager {
      */
     export async function getQuotaLeaderboardEmbed(guild: Guild, guildDoc: IGuildInfo,
                                                    quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
-        _logger.debug(`Getting Quota Leaderboard Embed: ${quotaInfo.roleId}`);
+        LOGGER.debug(`Getting Quota Leaderboard Embed: ${quotaInfo.roleId}`);
         const role = GuildFgrUtilities.getCachedRole(guild, quotaInfo.roleId);
         if (!role)
             return null;
@@ -707,7 +707,6 @@ export namespace QuotaManager {
 
 // Service that updates quota leaderboards every 5 minutes
 export namespace QuotaService {
-    const _logger: Logger = new Logger(__filename, false);
     export const timeToUpdate: number = 3*60*1000;
 
     let _isRunning = false;
@@ -717,7 +716,7 @@ export namespace QuotaService {
      */
     export async function startService(): Promise<void> {
         if (_isRunning) return;
-        _logger.info("Starting Quota Service");
+        LOGGER.info("Starting Quota Service");
         const docs = await MongoManager.getGuildCollection().find().toArray();
         if (docs.length > 0) {
             const allQuotasToReset: Promise<boolean>[] = [];
@@ -750,7 +749,7 @@ export namespace QuotaService {
      * Stops the quota service.
      */
     export function stopService(): void {
-        _logger.info("Stopping Quota Service");
+        LOGGER.info("Stopping Quota Service");
         if (!_isRunning) return;
         _isRunning = false;
     }
@@ -760,7 +759,7 @@ export namespace QuotaService {
      * @private
      */
     async function run(): Promise<void> {
-        _logger.info("Running quota service to update quotas.");
+        LOGGER.info("Running quota service to update quotas.");
         const allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
         for await (const guildDoc of allGuildDocs) {
             if (guildDoc.quotas.quotaInfo.length === 0)
@@ -806,7 +805,7 @@ export namespace QuotaService {
                 });
             }
         }
-        _logger.debug("Quota service finished.");
+        LOGGER.debug("Quota service finished.");
         setTimeout(run, timeToUpdate);
     }
 }

@@ -21,9 +21,9 @@ import {ButtonConstants} from "../constants/ButtonConstants";
 import {StringUtil} from "../utilities/StringUtilities";
 import {Logger} from "../utilities/Logger";
 
+const LOGGER: Logger = new Logger(__filename, false);
 export namespace ModmailManager {
 
-    const _logger = new Logger(__filename, false);
     /**
      * Checks whether the original message satisfies the preconditions for a modmail message. The preconditions are:
      * - The original message's channel must be a `TextChannel`.

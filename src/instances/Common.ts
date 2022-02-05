@@ -28,6 +28,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {LoggerManager} from "../managers/LoggerManager";
 import {Logger} from "../utilities/Logger";
 
+const LOGGER: Logger = new Logger(__filename, false);
 
 export type ReactionInfoMore = IReactionInfo & {
     earlyLocAmt: number;
@@ -50,8 +51,6 @@ export type KeyReactResponse = {
         alreadyReplied: boolean;
     }
 };
-
-const logger = new Logger(__filename);
 
 /**
  * Confirms the key reacts. This asks the person what modifiers the key has.
@@ -97,7 +96,7 @@ export async function confirmReaction(
     const itemDisplay = getItemDisplay(reactInfo);
     const uniqueIdentifier = StringUtil.generateRandomString(20);
 
-    logger.info(`Confirming reaction: ${member.displayName} reacting with ${itemDisplay}`);
+    LOGGER.info(`Confirming reaction: ${member.displayName} reacting with ${itemDisplay}`);
 
     if (reactInfo.type === "KEY") {
         const selectMenu = new MessageSelectMenu()
@@ -191,7 +190,7 @@ export async function confirmReaction(
                 components: []
             });
 
-            logger.info(`Reaction for ${member.displayName} timed out`);
+            LOGGER.info(`Reaction for ${member.displayName} timed out`);
             return {
                 success: false,
                 errorReply: {
@@ -210,7 +209,7 @@ export async function confirmReaction(
                     return {react: {mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0}, success: true};
                 }
                 default: {
-                    logger.info(`Reaction for ${member.displayName} cancelled`);
+                    LOGGER.info(`Reaction for ${member.displayName} cancelled`);
                     return {
                         success: false,
                         errorReply: {
@@ -281,7 +280,7 @@ export async function confirmReaction(
             }, uniqueIdentifier);
 
             if (!levelRes) {
-                logger.info(`Reaction for ${member.displayName} timed out`);
+                LOGGER.info(`Reaction for ${member.displayName} timed out`);
                 return {
                     success: false,
                     errorReply: {
@@ -297,7 +296,7 @@ export async function confirmReaction(
             }
 
             if (levelRes.customId === cancelModId) {
-                logger.info(`Reaction for ${member.displayName} cancelled`);
+                LOGGER.info(`Reaction for ${member.displayName} cancelled`);
                 return {
                     success: false,
                     errorReply: {
@@ -309,7 +308,7 @@ export async function confirmReaction(
 
             returnObj.react!.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
         }
-        logger.info(`Reaction for ${member.displayName} confirmed`);
+        LOGGER.info(`Reaction for ${member.displayName} confirmed`);
         return returnObj;
     }
 
@@ -321,7 +320,7 @@ export async function confirmReaction(
     if (mapKey === "EARLY_LOC_POINTS" && essentialOptions.has("EARLY_LOC_POINTS")) {
         const pointRes = await LoggerManager.getPoints(member);
         if (pointRes < pointCost) {
-            logger.info(`Reaction for ${member.displayName} cancelled due to lack of points`);
+            LOGGER.info(`Reaction for ${member.displayName} cancelled due to lack of points`);
             return {
                 success: false,
                 errorReply: {
@@ -346,7 +345,7 @@ export async function confirmReaction(
         });
 
         if (!response) {
-            logger.info(`Reaction for ${member.displayName} cancelled`);
+            LOGGER.info(`Reaction for ${member.displayName} cancelled`);
             return {
                 success: false,
                 errorReply: {
@@ -356,7 +355,7 @@ export async function confirmReaction(
                 }
             };
         }
-        logger.info(`Reaction for ${member.displayName} confirmed`);
+        LOGGER.info(`Reaction for ${member.displayName} confirmed`);
         return {
             react: {
                 mapKey: "EARLY_LOC_POINTS",
@@ -373,7 +372,7 @@ export async function confirmReaction(
     if (reactInfo.type === "EARLY_LOCATION" && earlyLocReactions) {
         const validRoles = earlyLocReactions.get(mapKey);
         if (!validRoles) {
-            logger.error(`Reaction for ${member.displayName} failed due to error with role config`);
+            LOGGER.error(`Reaction for ${member.displayName} failed due to error with role config`);
             return {
                 success: false,
                 errorReply: {
@@ -392,7 +391,7 @@ export async function confirmReaction(
         }
 
         if (!isFound) {
-            logger.info(`Reaction for ${member.displayName} failed due to lack of roles`);
+            LOGGER.info(`Reaction for ${member.displayName} failed due to lack of roles`);
             return {
                 success: false,
                 errorReply: {
@@ -429,7 +428,7 @@ export async function confirmReaction(
 
     // Response of "no" or failure to respond implies no.
     if (!response) {
-        logger.info(`Reaction for ${member.displayName} cancelled`);
+        LOGGER.info(`Reaction for ${member.displayName} cancelled`);
         return {
             success: false,
             errorReply: {
@@ -439,7 +438,7 @@ export async function confirmReaction(
             }
         };
     }
-    logger.info(`Reaction for ${member.displayName} confirmed`);
+    LOGGER.info(`Reaction for ${member.displayName} confirmed`);
     return {react: {mapKey, modifiers: [], accidentCt: 0}, success: true};
 }
 
@@ -671,10 +670,10 @@ export function hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMemb
 
 /**
  * Sends a temporary message to given text channel
- * @param channel the channel
- * @param message the content to send
- * @param duration number of ms to delay for
- * @returns Promise
+ * @param {TextChannel | null} channel the channel
+ * @param {string} message the content to send
+ * @param {number} duration number of ms to delay for
+ * @returns {Promise<void>} a promise
  */
 export async function sendTemporaryAlert(channel: TextChannel | null, message: string, duration: number){
     if(!channel) return;
@@ -684,18 +683,16 @@ export async function sendTemporaryAlert(channel: TextChannel | null, message: s
     });
     
     await Promise.all([tempMsg, delay(duration)]);
-    if(tempMsg){
-        tempMsg.delete().catch();
-    }
+    tempMsg.delete().catch();
+    
     return;
-
 }
 
 /**
-     * Helper method for intervals that returns a delay as a Promise
-     * @param ms number of ms to delay for
-     * @returns Promise
-     */
+ * Helper method for intervals that returns a delay as a Promise
+ * @param {number} ms number of ms to delay for
+ * @returns {Promise<void>} a promise
+ */
 export async function delay(ms: number){
     return new Promise(resolve => setTimeout(resolve, ms));
 }

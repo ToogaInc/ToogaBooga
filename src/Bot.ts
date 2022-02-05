@@ -25,9 +25,9 @@ import {REST} from "@discordjs/rest";
 import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
 import {Logger} from "./utilities/Logger";
 
-export class Bot {
+const LOGGER: Logger = new Logger(__filename, false);
 
-    private _logger: Logger;
+export class Bot {
 
     private readonly _config: IConfiguration;
     private readonly _bot: Client;
@@ -80,10 +80,9 @@ export class Bot {
      * @throws {Error} If a command name was registered twice or if `data.name` is not equal to `botCommandName`.
      */
     public constructor(config: IConfiguration | null) {
-        this._logger = new Logger(__filename, false);
 
         if (!config) {
-            this._logger.error("No config file given.");
+            LOGGER.error("No config file given.");
             throw new Error("No config file given.");
         }
 
@@ -112,9 +111,9 @@ export class Bot {
             ]
         });
         Bot.BotInstance = this;
-        this._logger.info(`Starting Bot`);
+        LOGGER.info(`Starting Bot`);
 
-        this._logger.info(`Configuring commands`);
+        LOGGER.info(`Configuring commands`);
         Bot.Commands = new Collection<string, Cmds.BaseCommand[]>();
 
         Bot.Commands.set("Bot Information", [
@@ -233,7 +232,7 @@ export class Bot {
         if (this._eventsIsStarted)
             return;
 
-        this._logger.info("Starting all events");
+        LOGGER.info("Starting all events");
 
         this._bot.on("ready", async () => onReadyEvent());
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
@@ -256,7 +255,7 @@ export class Bot {
             this.startAllEvents();
 
         // connects to the database
-        this._logger.info("Connecting bot to database");
+        LOGGER.info("Connecting bot to database");
         await MongoManager.connect({
             dbUrl: this._config.database.connectionString,
             dbName: this._config.database.dbName,
@@ -268,7 +267,7 @@ export class Bot {
         });
 
         // logs into the bot
-        this._logger.info("Logging in bot");
+        LOGGER.info("Logging in bot");
         await this._bot.login(this._config.tokens.botToken);
     }
 
@@ -279,7 +278,7 @@ export class Bot {
      */
     public initServices(): boolean {
         // MuteManager + SuspensionManager started in ready event.
-        this._logger.info("Starting Quota Service");
+        LOGGER.info("Starting Quota Service");
         QuotaService.startService().then();
         return true;
     }

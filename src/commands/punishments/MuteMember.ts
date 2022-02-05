@@ -9,8 +9,8 @@ import generateRandomString = StringUtil.generateRandomString;
 import {preCheckPunishment} from "./common/PunishmentCommon";
 import {Logger} from "../../utilities/Logger"
 
+const LOGGER: Logger = new Logger(__filename, false);
 export class MuteMember extends BaseCommand {
-    private readonly _logger: Logger = new Logger(__filename);
     public static readonly ERROR_NO_MUTE_STR: string = new StringBuilder()
         .append("Something went wrong when trying to mute this person.").appendLine()
         .append("- The person already has the muted role. In this case, manually remove the Muted role and")
@@ -90,7 +90,7 @@ export class MuteMember extends BaseCommand {
         let durationStr = ctx.interaction.options.getString("duration", false);
         if(durationStr === "-1") durationStr = null;
         
-        this._logger.info(`Issuing mute for ${resMember?.member.displayName} of duration ${durationStr}`);
+        LOGGER.info(`Issuing mute for ${resMember?.member.displayName} of duration ${durationStr}`);
 
         const parsedDuration = durationStr ? TimeUtilities.parseTimeUnit(durationStr) : null;
 

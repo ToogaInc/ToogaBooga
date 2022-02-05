@@ -3,9 +3,8 @@ import {VoiceChannel} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {Logger} from "../../utilities/Logger";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
-
+const LOGGER: Logger = new Logger(__filename, false);
 export class CleanVC extends BaseCommand {
-    private _logger = new Logger(__filename);
     public constructor() {
         const cmi: ICommandInfo = {
             cmdCode: "CLEAN_VC_CMD",
@@ -73,7 +72,7 @@ export class CleanVC extends BaseCommand {
             return -1;
         }
                 
-        this._logger.info(`${member.displayName} used CleanVC on ${channel}`);
+        LOGGER.info(`${member.displayName} used CleanVC on ${channel}`);
         await ctx.interaction.deferReply();
 
         let ct = 0;
@@ -82,7 +81,7 @@ export class CleanVC extends BaseCommand {
         await Promise.all(
             channel.members.map(async x => {
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    /**Do not clean staff members */
+                    // Do not clean staff members
                     if (x.roles.cache.has(teamRoleId)) {
                         return;
                     }
@@ -92,7 +91,7 @@ export class CleanVC extends BaseCommand {
             })
         );
         
-        this._logger.info(`${ctx.member?.displayName} used CleanVC to remove ${ct} users from ${channel}`);
+        LOGGER.info(`${ctx.member?.displayName} used CleanVC to remove ${ct} users from ${channel}`);
         await ctx.interaction.editReply({
             content: `Disconnected ${ct} members from ${channel}.`
         });
