@@ -248,7 +248,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                 )
                 .addField(
                     "AFK Check Expiration Time",
-                    StringUtil.codifyString(TimeUtilities.formatDuration(newAfkCheckProps.afkCheckTimeout, false)),
+                    StringUtil.codifyString(TimeUtilities.formatDuration(newAfkCheckProps.afkCheckTimeout, true, false)),
                     true
                 )
                 .addField(
@@ -523,7 +523,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                                         + " you can set is 5 minutes and the highest is 2 hours. After the time is"
                                         + " gone, the AFK check will automatically end. The current time is set to:"
                                         + StringUtil.codifyString(
-                                            TimeUtilities.formatDuration(newAfkCheckProps.afkCheckTimeout, false)
+                                            TimeUtilities.formatDuration(newAfkCheckProps.afkCheckTimeout, true, false)
                                         )
                                         + "Please type the duration now. Supported time units are minutes (m) or hours"
                                         + " (h). For example, to specify 1 hour and 10 minutes, use \"1h10m\" as the"

@@ -61,7 +61,7 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
         const onCooldownEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "RED")
             .setTitle("On Cooldown.")
             .setDescription("You are currently on cooldown.")
-            .addField("Remaining", StringUtil.codifyString(TimeUtilities.formatDuration(cooldownLeft, false)))
+            .addField("Remaining", StringUtil.codifyString(TimeUtilities.formatDuration(cooldownLeft, true, false)))
             .setTimestamp();
         return interaction.reply({
             embeds: [onCooldownEmbed],

@@ -63,6 +63,7 @@ export class Logger {
     /**
      * Decides if logger should output DEBUG messages or not
      * @param {*} bool true if DEBUG output desired, false otherwise
+     * @returns {void}
      */
     public setDebugOutput(bool: boolean){
         this.outputDebug = bool;

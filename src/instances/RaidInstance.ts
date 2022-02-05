@@ -1857,7 +1857,7 @@ export class RaidInstance {
             .setTitle(`**${this._dungeon.dungeonName}** Raid.`)
             .setFooter({
                 text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.  Expires in `
-                        + `${Math.trunc((this._expTime-Date.now())/(1000*60))} minutes.`
+                        + `${TimeUtilities.formatDuration(this._expTime-Date.now(), false, false)}.`
             })
             .setTimestamp()
             .setColor(this._embedColor)

@@ -301,7 +301,7 @@ export namespace PunishmentManager {
             .toString();
 
         const durationStr = new StringBuilder()
-            .append(`- Duration: ${entry.duration! === -1 ? "N/A" : TimeUtilities.formatDuration(entry.duration!)}`)
+            .append(`- Duration: ${entry.duration! === -1 ? "N/A" : TimeUtilities.formatDuration(entry.duration!, true, false)}`)
             .appendLine()
             .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${TimeUtilities.getDateTime(entry.expiresAt!)} GMT`}`)
             .toString();

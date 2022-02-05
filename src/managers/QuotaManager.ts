@@ -288,7 +288,7 @@ export namespace QuotaManager {
             guildDoc.quotas.resetTime.dayOfWeek,
             guildDoc.quotas.resetTime.time
         );
-        const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - startTime.getTime());
+        const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - startTime.getTime(), true);
 
         if (role) {
             oldQuotas.quotaLog = [];
@@ -633,7 +633,7 @@ export namespace QuotaManager {
             guildDoc.quotas.resetTime.dayOfWeek,
             guildDoc.quotas.resetTime.time
         );
-        const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - Date.now(), false);
+        const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - Date.now(), true, false);
 
         const MILL_TO_MIN = 1000*60;
         const quotaPtDisplay = getPointListAsString(guildDoc, quotaInfo);

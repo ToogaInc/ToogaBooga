@@ -59,7 +59,7 @@ export namespace TimeUtilities {
             validStr = true;
         }
 
-        return validStr ? {ms: duration, formatted: formatDuration(duration, false)} : null;
+        return validStr ? {ms: duration, formatted: formatDuration(duration, true, false)} : null;
     }
 
     /**
@@ -136,12 +136,12 @@ export namespace TimeUtilities {
     /**
      * Converts the specified non-negative duration to a formatted string.
      * @param {number} dur The non-negative duration, in milliseconds.
+     * @param {boolean} includeSeconds Whether to include the seconds portion in the formatted string.
      * @param {boolean} [includeMs] Whether to include the milliseconds portion in the formatted string.
      * @returns {string} The string representation of the duration.
-     * @throws {Error} When a negative number is given.
      */
-    export function formatDuration(dur: number, includeMs: boolean = true): string {
-        if (dur < 0) throw new Error("negative time");
+    export function formatDuration(dur: number, includeSeconds: boolean, includeMs: boolean = true): string {
+        dur = Math.max(0, dur);
 
         const days = Math.floor(dur / 8.64e+7);
         dur %= 8.64e+7;
@@ -156,7 +156,7 @@ export namespace TimeUtilities {
         if (days > 0) finalArr.push(`${days} Days`);
         if (hours > 0) finalArr.push(`${hours} Hours`);
         if (minutes > 0) finalArr.push(`${minutes} Minutes`);
-        if (seconds > 0) finalArr.push(`${seconds} Seconds`);
+        if (seconds > 0 && includeSeconds) finalArr.push(`${seconds} Seconds`);
         if (dur > 0 && includeMs) finalArr.push(`${dur} Milliseconds`);
         return finalArr.length > 0 ? finalArr.join(", ") : "0 Seconds";
     }
