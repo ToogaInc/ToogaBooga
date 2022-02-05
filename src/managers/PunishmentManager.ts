@@ -10,6 +10,9 @@ import {Filter} from "mongodb";
 import {Queue} from "../utilities/Queue";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {MessageUtilities} from "../utilities/MessageUtilities";
+import {Logger} from "../utilities/Logger";
+
+const LOGGER: Logger = new Logger(__filename, false);
 
 interface IPunishmentCommandResult {
     /**
@@ -207,6 +210,9 @@ export namespace PunishmentManager {
         punishmentType: AllModLogType,
         details: IPunishmentDetails
     ): Promise<string | null> {
+        
+        LOGGER.info(`Logging punishment for ${"name" in member ? member.name : member.displayName}, type: ${punishmentType}`);
+
         let logChannel: TextChannel | null;
         let resolvedModType: MainOnlyModLogType | SectionModLogType | null;
 
@@ -295,7 +301,7 @@ export namespace PunishmentManager {
             .toString();
 
         const durationStr = new StringBuilder()
-            .append(`- Duration: ${entry.duration! === -1 ? "N/A" : TimeUtilities.formatDuration(entry.duration!)}`)
+            .append(`- Duration: ${entry.duration! === -1 ? "N/A" : TimeUtilities.formatDuration(entry.duration!, true, false)}`)
             .appendLine()
             .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${TimeUtilities.getDateTime(entry.expiresAt!)} GMT`}`)
             .toString();
@@ -580,7 +586,7 @@ export namespace PunishmentManager {
 
                 // For logging purposes
                 if (nameRes.length > 1)
-                    console.info(`[name] ${member.name} has multiple documents in IDName Collection.`);
+                    LOGGER.info(`[name] ${member.name} has multiple documents in IDName Collection.`);
             }
             else {
                 const idRes = await MongoManager.findIdInIdNameCollection(member.id);
@@ -590,7 +596,7 @@ export namespace PunishmentManager {
                 }
 
                 if (idRes.length > 1)
-                    console.info(`[id] ${member.id} has multiple documents in IDName Collection.`);
+                    LOGGER.info(`[id] ${member.id} has multiple documents in IDName Collection.`);
 
                 filterQuery.$or?.push({
                     discordId: member.id
@@ -697,6 +703,8 @@ export namespace SuspensionManager {
     const _queuedDelSectionSuspendedMembers = new Queue<ISuspendedUser & { guildId: string; sectionId: string; }>();
     const _queuedDelSectionIds = new Queue<{ guildId: string; sectionId: string; }>();
 
+    // Time between each checker
+    const timeToUpdate: number = 60*1000;
 
     let _isRunning = false;
 
@@ -708,6 +716,7 @@ export namespace SuspensionManager {
     export async function startChecker(documents: IGuildInfo[] = []): Promise<void> {
         if (_isRunning) return;
         _isRunning = true;
+        LOGGER.info("Starting SuspensionManager checker");
 
         if (documents.length > 0) {
             for await (const guildDoc of documents) {
@@ -746,6 +755,7 @@ export namespace SuspensionManager {
      */
     export function stopChecker(): void {
         if (!_isRunning) return;
+        LOGGER.info("Stopping SuspensionManager checker");
         _isRunning = false;
     }
 
@@ -755,7 +765,7 @@ export namespace SuspensionManager {
      */
     async function suspensionChecker(): Promise<void> {
         if (!_isRunning) return;
-
+        LOGGER.debug("Running SuspensionManager checker");
         // Remove all elements before checking.
         while (_queuedDelSuspendedMembers.size() > 0) {
             const dequeuedElem = _queuedDelSuspendedMembers.dequeue();
@@ -818,7 +828,7 @@ export namespace SuspensionManager {
 
                     const details = suspendedPplArr[i];
                     if (member.id !== details.affectedUser.id) {
-                        console.info(`[INFO] ${guild.name}/${sectionId}/${member.id} incorrect entry given.`);
+                        LOGGER.info(`${guild.name}/${sectionId}/${member.id} incorrect entry given.`);
                         continue;
                     }
 
@@ -877,8 +887,9 @@ export namespace SuspensionManager {
             }
         }
 
+        LOGGER.debug("SuspensionManager finished");
         // Now, wait one minute before trying again.
-        setTimeout(suspensionChecker, 60 * 1000);
+        setTimeout(suspensionChecker, timeToUpdate);
     }
 
     /**
@@ -895,6 +906,8 @@ export namespace SuspensionManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
     ): Promise<IPunishmentCommandResult> {
+
+        LOGGER.info(`${mod?.displayName} is suspending ${member.displayName}`);
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (GuildFgrUtilities.memberHasCachedRole(member, info.guildDoc.roles.suspendedRoleId)
             || info.guildDoc.moderation.suspendedUsers.some(x => x.affectedUser.id === member.id))
@@ -987,6 +1000,7 @@ export namespace SuspensionManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "section" | "duration">
     ): Promise<IPunishmentCommandResult> {
+        LOGGER.info(`${mod ? mod.displayName : `Bot`} is removing suspension for ${member.displayName}`);
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
             ? lookupSuspension(info.guildDoc, null, {actionId: info.actionId})
@@ -1062,6 +1076,7 @@ export namespace SuspensionManager {
         mod: GuildMember | null,
         info: IAdditionalPunishmentParams
     ): Promise<IPunishmentCommandResult> {
+        LOGGER.info(`${mod ? mod.displayName : `Bot`} is section suspending ${member.displayName}`);
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (info.section.moderation.sectionSuspended.some(x => x.affectedUser.id === member.id))
             return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
@@ -1138,6 +1153,7 @@ export namespace SuspensionManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "duration">
     ): Promise<IPunishmentCommandResult> {
+        LOGGER.info(`${mod ? mod.displayName : `Bot`} is removing section suspension for ${member.displayName}`);
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
             ? lookupSuspension(info.guildDoc, info.section, {actionId: info.actionId})
@@ -1202,6 +1218,7 @@ export namespace SuspensionManager {
         memberId?: string;
         actionId?: string;
     }): ISuspendedUser | null {
+        LOGGER.info(`Looking up suspension`);
         if (!lookupType.memberId && !lookupType.actionId)
             return null;
 
@@ -1241,6 +1258,9 @@ export namespace MuteManager {
     export const MutedMembers = new Collection<string, IMutedUser[]>();
     const _queuedDelMutedUsers = new Queue<IMutedUser & { guildId: string; }>();
 
+    // Time between each checker
+    const timeToUpdate: number = 60*1000;
+
     let _isRunning = false;
 
     /**
@@ -1251,7 +1271,7 @@ export namespace MuteManager {
     export async function startChecker(documents: IGuildInfo[] = []): Promise<void> {
         if (_isRunning) return;
         _isRunning = true;
-
+        LOGGER.info("Starting MuteManager checker");
         if (documents.length > 0) {
             for await (const guildDoc of documents) {
                 const serverSus = new Collection<string, IMutedUser[]>();
@@ -1272,6 +1292,7 @@ export namespace MuteManager {
      */
     export function stopChecker(): void {
         if (!_isRunning) return;
+        LOGGER.info("Stopping MuteManager checker");
         _isRunning = false;
     }
 
@@ -1281,6 +1302,7 @@ export namespace MuteManager {
      */
     async function muteChecker(): Promise<void> {
         if (!_isRunning) return;
+        LOGGER.debug("Running MuteManager checker");
         // Remove all users that were already queued for unmuting from checker
         while (_queuedDelMutedUsers.size() > 0) {
             const dequeuedElem = _queuedDelMutedUsers.dequeue();
@@ -1326,8 +1348,8 @@ export namespace MuteManager {
                 });
             }
         }
-
-        setTimeout(muteChecker, 60 * 1000);
+        LOGGER.debug("MuteManager finished");
+        setTimeout(muteChecker, timeToUpdate);
     }
 
     /**
@@ -1344,9 +1366,11 @@ export namespace MuteManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
     ): Promise<IPunishmentCommandResult> {
+        LOGGER.info(`${mod ? mod.displayName : `Bot`} is adding mute for ${member.displayName}`);
         // Create the role if it doesn't already exist.
         let mutedRole = await GuildFgrUtilities.fetchRole(member.guild, info.guildDoc.roles.mutedRoleId);
         if (!mutedRole) {
+            LOGGER.info(`Muted role does not exist, creating role`);
             mutedRole = await member.guild.roles.create({
                 name: "Muted",
                 permissions: []
@@ -1446,6 +1470,7 @@ export namespace MuteManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "section" | "duration">
     ): Promise<IPunishmentCommandResult> {
+        LOGGER.info(`${mod ? mod.displayName : `Bot`} is removing mute for ${member.displayName}`);
         if (!GuildFgrUtilities.hasCachedRole(member.guild, info.guildDoc.roles.mutedRoleId))
             return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
 
@@ -1499,6 +1524,7 @@ export namespace MuteManager {
      */
     export async function removeAllMuteInGuild(guild: Guild, mod: GuildMember | null,
                                                reason?: string): Promise<boolean> {
+        LOGGER.info(`${mod ? mod.displayName : `Bot`} is removing all mutes for the server`);
         MutedMembers.get(guild.id)?.forEach(x => {
             _queuedDelMutedUsers.enqueue({...x, guildId: guild.id});
         });
@@ -1544,6 +1570,7 @@ export namespace MuteManager {
         memberId?: string;
         actionId?: string;
     }): IMutedUser | null {
+        LOGGER.info(`Looking up mute`);
         if (!lookupType.memberId && !lookupType.actionId)
             return null;
 

@@ -223,7 +223,7 @@ export class ForceSync extends BaseCommand {
                     .addField("Skipped", StringUtil.codifyString(skipped), true)
                     .addField("Status", StringUtil.codifyString("Completed!"))
                     .addField("Time Taken", StringUtil.codifyString(
-                        TimeUtilities.formatDuration(Date.now() - timeStart, false))
+                        TimeUtilities.formatDuration(Date.now() - timeStart, true, false))
                     )
                     .setFooter({
                         text: `${namesUsed.size} names & ${ttlDocs} entries originally in database.`

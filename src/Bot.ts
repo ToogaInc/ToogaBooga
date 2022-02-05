@@ -23,8 +23,12 @@ import {
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
 import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
+import {Logger} from "./utilities/Logger";
+
+const LOGGER: Logger = new Logger(__filename, false);
 
 export class Bot {
+
     private readonly _config: IConfiguration;
     private readonly _bot: Client;
     private _eventsIsStarted: boolean = false;
@@ -76,8 +80,11 @@ export class Bot {
      * @throws {Error} If a command name was registered twice or if `data.name` is not equal to `botCommandName`.
      */
     public constructor(config: IConfiguration | null) {
-        if (!config)
+
+        if (!config) {
+            LOGGER.error("No config file given.");
             throw new Error("No config file given.");
+        }
 
         this._instanceStarted = new Date();
         this._config = config;
@@ -103,8 +110,10 @@ export class Bot {
                 "GUILD_MESSAGE_REACTIONS"
             ]
         });
-
         Bot.BotInstance = this;
+        LOGGER.info(`Starting Bot`);
+
+        LOGGER.info(`Configuring commands`);
         Bot.Commands = new Collection<string, Cmds.BaseCommand[]>();
 
         Bot.Commands.set("Bot Information", [
@@ -131,6 +140,7 @@ export class Bot {
             new Cmds.RemoveName(),
             new Cmds.ParseRaidVc(),
             new Cmds.YoinkVC(),
+            new Cmds.CleanVC(),
             new Cmds.Poll(),
             new Cmds.Purge()
         ]);
@@ -170,6 +180,7 @@ export class Bot {
         Bot.Commands.set("Logging", [
             new Cmds.LogLedRun(),
             new Cmds.LogKeyPop(),
+            new Cmds.LogParse(),
             new Cmds.GivePoints()
         ]);
 
@@ -221,6 +232,8 @@ export class Bot {
         if (this._eventsIsStarted)
             return;
 
+        LOGGER.info("Starting all events");
+
         this._bot.on("ready", async () => onReadyEvent());
         this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
         this._bot.on("guildCreate", async (g: Guild) => onGuildCreateEvent(g));
@@ -242,6 +255,7 @@ export class Bot {
             this.startAllEvents();
 
         // connects to the database
+        LOGGER.info("Connecting bot to database");
         await MongoManager.connect({
             dbUrl: this._config.database.connectionString,
             dbName: this._config.database.dbName,
@@ -251,7 +265,9 @@ export class Bot {
             idNameColName: this.config.database.collectionNames.idNameCollection,
             unclaimedBlName: this.config.database.collectionNames.unclaimedBlCollection
         });
+
         // logs into the bot
+        LOGGER.info("Logging in bot");
         await this._bot.login(this._config.tokens.botToken);
     }
 
@@ -262,6 +278,7 @@ export class Bot {
      */
     public initServices(): boolean {
         // MuteManager + SuspensionManager started in ready event.
+        LOGGER.info("Starting Quota Service");
         QuotaService.startService().then();
         return true;
     }

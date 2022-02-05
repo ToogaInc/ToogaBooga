@@ -22,6 +22,7 @@ export * from "./staff/AddOrChangeName";
 export * from "./staff/RemoveName";
 export * from "./staff/ParseRaidVc";
 export * from "./staff/YoinkVC";
+export * from "./staff/CleanVC";
 export * from "./staff/Poll";
 export * from "./staff/Purge";
 
@@ -37,6 +38,7 @@ export * from "./punishments/UnsuspendFromSection";
 
 export * from "./logging/LogLedRun";
 export * from "./logging/LogKeyPop";
+export * from "./logging/LogParse";
 export * from "./logging/GivePoints";
 
 export * from "./owner/SendAnnouncement";

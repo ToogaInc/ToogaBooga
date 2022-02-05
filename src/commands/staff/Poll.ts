@@ -4,6 +4,7 @@ import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {EmojiIdentifierResolvable} from "discord.js";
 import {EmojiConstants} from "../../constants/EmojiConstants";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import {StringBuilder} from "../../utilities/StringBuilder";
 
 export class Poll extends BaseCommand {
     public constructor() {
@@ -66,26 +67,30 @@ export class Poll extends BaseCommand {
         }
 
         const reactions: EmojiIdentifierResolvable[] = [];
-        const embed = MessageUtilities.generateBlankEmbed(ctx.user, "RANDOM")
-            .setTitle(`${EmojiConstants.BAR_GRAPH_EMOJI} Poll`)
-            .setDescription(ctx.interaction.options.getString("question", true))
-            .setTimestamp();
+        const question = ctx.interaction.options.getString("question", true);
+        const desc = new StringBuilder();
 
-        if (options.length === 0) {
-            reactions.push(
-                EmojiConstants.UP_TRIANGLE_EMOJI,
-                EmojiConstants.LONG_SIDEWAYS_ARROW_EMOJI,
-                EmojiConstants.DOWN_TRIANGLE_EMOJI
-            );
-        }
-        else {
+        if(options.length === 0){
+            desc.append(`${EmojiConstants.NUMERICAL_EMOJIS[0]} Yes\n`);
+            desc.append(`${EmojiConstants.NUMERICAL_EMOJIS[1]} No\n`);
+            reactions.push(EmojiConstants.NUMERICAL_EMOJIS[0]);
+            reactions.push(EmojiConstants.NUMERICAL_EMOJIS[1]);
+        } else {
             let i = 0;
             for (const option of options) {
+                desc.append(`${EmojiConstants.NUMERICAL_EMOJIS[i]} ${option}\n`);
                 reactions.push(EmojiConstants.NUMERICAL_EMOJIS[i]);
-                embed.addField(`Choice ${EmojiConstants.NUMERICAL_EMOJIS[i]}`, option, true);
                 i++;
             }
         }
+        const embed = MessageUtilities.generateBlankEmbed(ctx.user, "RANDOM")
+            .setAuthor({
+                name: `${ctx.member?.displayName}`,
+                iconURL: ctx.user.displayAvatarURL()
+            })
+            .setTitle(`${EmojiConstants.BAR_GRAPH_EMOJI} Poll: ${question}`)
+            .setTimestamp(null)
+            .setDescription(desc.toString());  
 
         const m = await GlobalFgrUtilities.sendMsg(ctx.channel, {embeds: [embed]});
         if (!m) {

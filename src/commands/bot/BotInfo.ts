@@ -45,7 +45,7 @@ export class BotInfo extends BaseCommand {
             .addField(
                 "Uptime",
                 StringUtil.codifyString(
-                    TimeUtilities.formatDuration(Date.now() - instance.instanceStarted.getTime(), false)
+                    TimeUtilities.formatDuration(Date.now() - instance.instanceStarted.getTime(), true, false)
                 ), true
             )
             .addField("Bot Developer(s)", botOwners.map(x => `${x} (${x!.tag})`).join("\n"))

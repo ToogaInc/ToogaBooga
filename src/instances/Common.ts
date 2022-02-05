@@ -26,7 +26,9 @@ import {StartAfkCheck} from "../commands";
 import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
 import {LoggerManager} from "../managers/LoggerManager";
+import {Logger} from "../utilities/Logger";
 
+const LOGGER: Logger = new Logger(__filename, false);
 
 export type ReactionInfoMore = IReactionInfo & {
     earlyLocAmt: number;
@@ -93,6 +95,8 @@ export async function confirmReaction(
     const reactInfo = essentialOptions.get(mapKey)!;
     const itemDisplay = getItemDisplay(reactInfo);
     const uniqueIdentifier = StringUtil.generateRandomString(20);
+
+    LOGGER.info(`Confirming reaction: ${member.displayName} reacting with ${itemDisplay}`);
 
     if (reactInfo.type === "KEY") {
         const selectMenu = new MessageSelectMenu()
@@ -186,6 +190,7 @@ export async function confirmReaction(
                 components: []
             });
 
+            LOGGER.info(`Reaction for ${member.displayName} timed out`);
             return {
                 success: false,
                 errorReply: {
@@ -204,6 +209,7 @@ export async function confirmReaction(
                     return {react: {mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0}, success: true};
                 }
                 default: {
+                    LOGGER.info(`Reaction for ${member.displayName} cancelled`);
                     return {
                         success: false,
                         errorReply: {
@@ -274,6 +280,7 @@ export async function confirmReaction(
             }, uniqueIdentifier);
 
             if (!levelRes) {
+                LOGGER.info(`Reaction for ${member.displayName} timed out`);
                 return {
                     success: false,
                     errorReply: {
@@ -289,6 +296,7 @@ export async function confirmReaction(
             }
 
             if (levelRes.customId === cancelModId) {
+                LOGGER.info(`Reaction for ${member.displayName} cancelled`);
                 return {
                     success: false,
                     errorReply: {
@@ -300,7 +308,7 @@ export async function confirmReaction(
 
             returnObj.react!.modifiers.push(`${modifier.modifierName} ${levelRes.customId.split("_")[1]}`);
         }
-
+        LOGGER.info(`Reaction for ${member.displayName} confirmed`);
         return returnObj;
     }
 
@@ -312,6 +320,7 @@ export async function confirmReaction(
     if (mapKey === "EARLY_LOC_POINTS" && essentialOptions.has("EARLY_LOC_POINTS")) {
         const pointRes = await LoggerManager.getPoints(member);
         if (pointRes < pointCost) {
+            LOGGER.info(`Reaction for ${member.displayName} cancelled due to lack of points`);
             return {
                 success: false,
                 errorReply: {
@@ -336,6 +345,7 @@ export async function confirmReaction(
         });
 
         if (!response) {
+            LOGGER.info(`Reaction for ${member.displayName} cancelled`);
             return {
                 success: false,
                 errorReply: {
@@ -345,7 +355,7 @@ export async function confirmReaction(
                 }
             };
         }
-
+        LOGGER.info(`Reaction for ${member.displayName} confirmed`);
         return {
             react: {
                 mapKey: "EARLY_LOC_POINTS",
@@ -362,6 +372,7 @@ export async function confirmReaction(
     if (reactInfo.type === "EARLY_LOCATION" && earlyLocReactions) {
         const validRoles = earlyLocReactions.get(mapKey);
         if (!validRoles) {
+            LOGGER.error(`Reaction for ${member.displayName} failed due to error with role config`);
             return {
                 success: false,
                 errorReply: {
@@ -380,6 +391,7 @@ export async function confirmReaction(
         }
 
         if (!isFound) {
+            LOGGER.info(`Reaction for ${member.displayName} failed due to lack of roles`);
             return {
                 success: false,
                 errorReply: {
@@ -416,6 +428,7 @@ export async function confirmReaction(
 
     // Response of "no" or failure to respond implies no.
     if (!response) {
+        LOGGER.info(`Reaction for ${member.displayName} cancelled`);
         return {
             success: false,
             errorReply: {
@@ -425,7 +438,7 @@ export async function confirmReaction(
             }
         };
     }
-
+    LOGGER.info(`Reaction for ${member.displayName} confirmed`);
     return {react: {mapKey, modifiers: [], accidentCt: 0}, success: true};
 }
 
@@ -653,4 +666,33 @@ export function hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMemb
     }
 
     return false;
+}
+
+/**
+ * Sends a temporary message to given text channel
+ * @param {TextChannel | null} channel the channel
+ * @param {string} message the content to send
+ * @param {number} duration number of ms to delay for
+ * @returns {Promise<void>} a promise
+ */
+export async function sendTemporaryAlert(channel: TextChannel | null, message: string, duration: number){
+    if(!channel) return;
+
+    const tempMsg = await channel.send({
+        content: message,
+    });
+    
+    await Promise.all([tempMsg, delay(duration)]);
+    tempMsg.delete().catch();
+    
+    return;
+}
+
+/**
+ * Helper method for intervals that returns a delay as a Promise
+ * @param {number} ms number of ms to delay for
+ * @returns {Promise<void>} a promise
+ */
+export async function delay(ms: number){
+    return new Promise(resolve => setTimeout(resolve, ms));
 }

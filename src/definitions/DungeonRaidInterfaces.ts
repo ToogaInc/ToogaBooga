@@ -455,7 +455,7 @@ export interface IAfkCheckProperties {
     };
 
     /**
-     * The AFK check timeout, in minutes. You must specify a timeout. The maximum timeout is 2 hours.
+     * The AFK check timeout, in milliseconds. You must specify a timeout. The maximum timeout is 2 hours.
      *
      * @type {number}
      */
@@ -540,6 +540,20 @@ export interface IRaidInfo {
      * @type {string}
      */
     memberInit: string;
+
+     /**
+     * The time the raid was started.
+     *
+     * @type {number}
+     */
+      startTime: number;
+
+      /**
+       * The time the raid should expire.
+       *
+       * @type {number}
+       */
+      expirationTime: number;
 
     /**
      * The raid channels. We use this in case the channels were changed.
@@ -685,6 +699,20 @@ export interface IHeadcountInfo {
      * @type {string}
      */
     memberInit: string;
+
+    /**
+     * The time the headcount was started.
+     *
+     * @type {number}
+     */
+    startTime: number;
+
+    /**
+     * The time the headcount should expire.
+     *
+     * @type {number}
+     */
+    expirationTime: number;
 
     /**
      * The raid channels. We use this in case the channels were changed.

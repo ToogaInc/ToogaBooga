@@ -132,7 +132,7 @@ export class FindPunishment extends BaseCommand {
             if (typeof pInfo.duration !== "undefined" && pInfo.duration !== -1) {
                 embed.addField(
                     "Duration",
-                    StringUtil.codifyString(TimeUtilities.formatDuration(pInfo.duration, false))
+                    StringUtil.codifyString(TimeUtilities.formatDuration(pInfo.duration, true, false))
                 );
             }
 

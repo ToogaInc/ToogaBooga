@@ -2,15 +2,15 @@ import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseC
 import {VoiceChannel} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {Logger} from "../../utilities/Logger";
-
+import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 const LOGGER: Logger = new Logger(__filename, false);
-export class YoinkVC extends BaseCommand {
+export class CleanVC extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "YOINK_VC_CMD",
-            formalCommandName: "Yoink VC",
-            botCommandName: "yoink",
-            description: "Moves all members from a VC to the person's current VC.",
+            cmdCode: "CLEAN_VC_CMD",
+            formalCommandName: "Clean VC",
+            botCommandName: "clean",
+            description: "Removes all members from a VC.",
             rolePermissions: [
                 "Security",
                 "Officer",
@@ -24,9 +24,9 @@ export class YoinkVC extends BaseCommand {
             commandCooldown: 3 * 1000,
             argumentInfo: [
                 {
-                    displayName: "VC to Steal Members from",
+                    displayName: "VC to Remove Members from",
                     argName: "vc",
-                    desc: "The voice channel where the bot should move the members out of.",
+                    desc: "The voice channel that should be cleaned.",
                     type: ArgumentType.Channel,
                     prettyType: "Voice Channel",
                     required: true,
@@ -44,15 +44,26 @@ export class YoinkVC extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
-        if (!ctx.member!.voice.channel) {
+        const guildDoc = ctx.guildDoc;
+        const channel = ctx.interaction.options.getChannel("vc", true);
+        const member = ctx.member;
+
+        if(!member) {
             await ctx.interaction.reply({
-                content: "You need to be in a voice channel.",
+                content: "An unknown error occurred.",
                 ephemeral: true
             });
-            return -1;
+            return -1;   
         }
 
-        const channel = ctx.interaction.options.getChannel("vc", true);
+        if(!guildDoc) {
+            await ctx.interaction.reply({
+                content: "An unknown error occurred.",
+                ephemeral: true
+            });
+            return -1;   
+        }
+
         if (!(channel instanceof VoiceChannel)) {
             await ctx.interaction.reply({
                 content: "You must select a voice channel for this to work.",
@@ -60,29 +71,29 @@ export class YoinkVC extends BaseCommand {
             });
             return -1;
         }
-
-        if (!(ctx.member!.voice.channel instanceof VoiceChannel)) {
-            await ctx.interaction.reply({
-                content: "This command can only be executed in a voice channel.",
-                ephemeral: true
-            });
-            return -1;
-        }
-
+                
+        LOGGER.info(`${member.displayName} used CleanVC on ${channel}`);
         await ctx.interaction.deferReply();
+
         let ct = 0;
+        const teamRoleId = guildDoc.roles.staffRoles.teamRoleId;
+
         await Promise.all(
             channel.members.map(async x => {
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await x.voice.setChannel(ctx.member!.voice.channel!);
+                    // Do not clean staff members
+                    if (x.roles.cache.has(teamRoleId)) {
+                        return;
+                    }
+                    await x.voice.disconnect();
                     ct++;
                 });
             })
         );
         
-        LOGGER.info(`${ctx.member?.displayName} used YoinkVC to move ${ct} users from ${channel} to ${ctx.member!.voice.channel!}`);
+        LOGGER.info(`${ctx.member?.displayName} used CleanVC to remove ${ct} users from ${channel}`);
         await ctx.interaction.editReply({
-            content: `Moved ${ct} members from ${channel} to ${ctx.member!.voice.channel!}.`
+            content: `Disconnected ${ct} members from ${channel}.`
         });
 
         return 0;

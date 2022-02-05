@@ -189,7 +189,8 @@ export class LogLedRun extends BaseCommand {
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 ...selectMenus,
-                ButtonConstants.CANCEL_BUTTON
+                AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
+                    .setCustomId(uniqueId + ButtonConstants.CANCEL_ID)
             ])
         });
 
