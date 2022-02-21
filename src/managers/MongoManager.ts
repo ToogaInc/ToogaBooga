@@ -662,9 +662,6 @@ export namespace MongoManager {
             return CachedGuildCollection.get(id)!;
         }
 
-        // Keep getting "Type instantiation is excessively deep and possibly infinite" even though... there's nothing
-        // infinite about this type...
-        // @ts-ignore
         const docs = await getGuildCollection().find({guildId: id}).toArray();
         if (docs.length === 0) {
             const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(id));

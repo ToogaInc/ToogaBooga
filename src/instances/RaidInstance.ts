@@ -55,16 +55,15 @@ import {QuotaManager} from "../managers/QuotaManager";
 import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/DungeonModifiers";
 import {
     confirmReaction,
-    controlPanelCollectorFilter, 
-    getItemDisplay, 
-    getReactions, 
-    ReactionInfoMore, 
+    controlPanelCollectorFilter,
+    getItemDisplay,
+    getReactions,
+    ReactionInfoMore,
     sendTemporaryAlert,
     delay,
 } from "./Common";
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {PermsConstants} from "../constants/PermsConstants";
-import {StringUtil} from "../utilities/StringUtilities";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
@@ -72,6 +71,7 @@ const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"
 
 
 const LOGGER: Logger = new Logger(__filename, false);
+
 /**
  * This class represents a raid.
  */
@@ -250,7 +250,7 @@ export class RaidInstance {
     // The raid instance start time and expiration time
     private _startTime: number;
     private _expTime: number;
-    private static readonly DEFAULT_RAID_DURATION: number = 60*60*1000; //1 hour in milliseconds
+    private static readonly DEFAULT_RAID_DURATION: number = 60 * 60 * 1000; //1 hour in milliseconds
 
     // Instance information for logging
     private readonly _instanceInfo: string;
@@ -259,7 +259,7 @@ export class RaidInstance {
     private readonly _intervalDelay: number = 5000;
 
     // Temporary Alert Duration
-    private readonly _tempAlertDelay: number = 10*60*1000; //Ten minutes
+    private readonly _tempAlertDelay: number = 10 * 60 * 1000; //Ten minutes
 
 
     /**
@@ -321,7 +321,7 @@ export class RaidInstance {
             memberInit.guild,
             guildDoc.channels.raids.raidHistChannelId
         );
-        this._instanceInfo = `[${this._leaderName}, ${this._dungeon.dungeonName}]`
+        this._instanceInfo = `[${this._leaderName}, ${this._dungeon.dungeonName}]`;
         LOGGER.info(`${this._instanceInfo} Raid constructed`);
         LOGGER.debug(`${this._instanceInfo} Raid start time: ${TimeUtilities.getDateTime(this._startTime, "America/Los_Angeles")}`);
         LOGGER.debug(`${this._instanceInfo} Raid expiration time: ${TimeUtilities.getDateTime(this._expTime, "America/Los_Angeles")}`);
@@ -587,11 +587,11 @@ export class RaidInstance {
         // If the raid has expired, abort the raid and return
         rm._startTime = raidInfo.startTime;
         rm._expTime = raidInfo.expirationTime;
-        if(Date.now() > rm._expTime) {
+        if (Date.now() > rm._expTime) {
             LOGGER.info(`${rm._instanceInfo} RaidInstance expired, cleaning.`);
             rm.cleanUpRaid(true).then();
             return null;
-        }    
+        }
 
 
         rm._thisFeedbackChan = GuildFgrUtilities.getCachedChannel<TextChannel>(
@@ -645,9 +645,9 @@ export class RaidInstance {
 
         // Don't use setRaidStatus since we didn't save the afk check info yet
         this._raidStatus = RaidStatus.PRE_AFK_CHECK;
-        
+
         // Obtain dungeon color for embeds
-        if(this._dungeon.dungeonColors.length !== 0){
+        if (this._dungeon.dungeonColors.length !== 0) {
             this._embedColor = ArrayUtilities.getRandomElement(this._dungeon.dungeonColors);
         }
 
@@ -820,7 +820,7 @@ export class RaidInstance {
         await this.updateMembersArr();
 
         // End the collector since it's useless. We'll use it again though.
-        this.stopAllIntervalsAndCollectors("AFK Check ended.");
+        this.stopAllIntervalsAndCollectors("AFK Check ended.").catch();
 
         // Remove reactions from AFK check.
         await this._afkCheckMsg.reactions.removeAll().catch();
@@ -1162,6 +1162,7 @@ export class RaidInstance {
         if (!this._addedToDb || !this._raidVc) return false;
 
         this._thisFeedbackChan = channel;
+        // @ts-ignore
         const res = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
@@ -1186,7 +1187,7 @@ export class RaidInstance {
      */
     private async addEarlyLocationReaction(member: GuildMember, reactionCodeName: string, modifiers: string[],
                                            addToDb: boolean = false): Promise<boolean> {
-        LOGGER.info(`${this._instanceInfo} Adding early location for ${member.displayName} with a ${reactionCodeName}`)
+        LOGGER.info(`${this._instanceInfo} Adding early location for ${member.displayName} with a ${reactionCodeName}`);
         if (!this._pplWithEarlyLoc.has(reactionCodeName))
             return false;
         const reactInfo = this._allEssentialOptions.get(reactionCodeName);
@@ -1857,7 +1858,7 @@ export class RaidInstance {
             .setTitle(`**${this._dungeon.dungeonName}** Raid.`)
             .setFooter({
                 text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.  Expires in `
-                        + `${TimeUtilities.formatDuration(this._expTime-Date.now(), false, false)}.`
+                    + `${TimeUtilities.formatDuration(this._expTime - Date.now(), false, false)}.`
             })
             .setTimestamp()
             .setColor(this._embedColor)
@@ -1975,7 +1976,7 @@ export class RaidInstance {
      * @param {string} [reason] The reason.
      * @private
      */
-     private async stopAllIntervalsAndCollectors(reason?: string) {
+    private async stopAllIntervalsAndCollectors(reason?: string) {
         LOGGER.info(`${this._instanceInfo} Stopping all intervals and collectors for reason: ${reason ?? null}`);
         this._intervalsAreRunning = false;
 
@@ -1987,47 +1988,47 @@ export class RaidInstance {
         return;
     }
 
-    
+
     /**
      * Starts the intervals, which periodically updates the headcount message and the control panel message.
      * @return {boolean} Whether the intervals started.
      * @private
      */
-     private startIntervals(): boolean {
+    private startIntervals(): boolean {
         if (!this._afkCheckMsg || !this._controlPanelMsg) return false;
         if (this._intervalsAreRunning || this._raidStatus === RaidStatus.NOTHING) return false;
         LOGGER.info(`${this._instanceInfo} Starting all intervals`);
         this._intervalsAreRunning = true;
 
-        this.updateControlPanel();
-        this.updateRaidPanel();
-        
+        this.updateControlPanel().catch();
+        this.updateRaidPanel().catch();
+
         return true;
     }
 
     /**
      * Interval for control panel
      */
-    private async updateControlPanel(){
+    private async updateControlPanel() {
         LOGGER.debug(`${this._instanceInfo} Control Panel Interval`);
         /**
          * If control panel does not exist,
          * Stop intervals and return*/
-         if (!this._controlPanelMsg || !this._raidVc) {
+        if (!this._controlPanelMsg || !this._raidVc) {
             await this.stopAllIntervalsAndCollectors("Control panel or raid vc does not exist");
             return;
         }
         /**If intervals have stopped,
          * Return
          */
-        if(!this._intervalsAreRunning){
+        if (!this._intervalsAreRunning) {
             return;
         }
         /**
          * If headcount times out.
          * stop intervals and return
          */
-         if(Date.now() > this._expTime){
+        if (Date.now() > this._expTime) {
             LOGGER.info(`${this._instanceInfo} Raid expired, aborting`);
             this.cleanUpRaid(true).then();
             return true;
@@ -2035,30 +2036,30 @@ export class RaidInstance {
 
         const editMessage = this._controlPanelMsg.edit({
             embeds: [this.getControlPanelEmbed()!]
-        })
+        });
 
         const delayUpdate = delay(this._intervalDelay);
 
         await Promise.all([editMessage, delayUpdate]).catch();
-        this.updateControlPanel();
+        this.updateControlPanel().catch();
     }
 
     /**
      * Interval for headcount panel
      */
-    private async updateRaidPanel(){
+    private async updateRaidPanel() {
         LOGGER.debug(`${this._instanceInfo} Raid Panel Interval`);
         /**
          * If headcount panel does not exist,
          * Stop intervals and return*/
-        if(!this._afkCheckMsg){
+        if (!this._afkCheckMsg) {
             await this.stopAllIntervalsAndCollectors("Raid msg does not exist");
             return;
         }
         /**If intervals have stopped,
          * return
          */
-        if(!this._intervalsAreRunning){
+        if (!this._intervalsAreRunning) {
             return;
         }
         /**If not in AFK check,
@@ -2070,12 +2071,12 @@ export class RaidInstance {
         const editMessage = this._afkCheckMsg.edit({
             embeds: [this.getAfkCheckEmbed()!],
             components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons),
-        })
+        });
 
         const delayUpdate = delay(this._intervalDelay);
 
         await Promise.all([editMessage, delayUpdate]).catch();
-        this.updateRaidPanel();
+        this.updateRaidPanel().catch();
     }
 
     /**
@@ -2259,7 +2260,7 @@ export class RaidInstance {
                 + ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.react!.modifiers.join(", ")}]\``,
                 true
             ).catch();
-            
+
             if (memberThatResponded.voice.channel) {
                 if (memberThatResponded.voice.channelId === this._raidVc.id)
                     return;
@@ -2597,7 +2598,11 @@ export class RaidInstance {
                     }),
                     this.logEvent("Raid VC locked.", true)
                 ]);
-                sendTemporaryAlert(this._afkCheckChannel, `${this._leaderName}'s Raid VC has been locked.`, this._tempAlertDelay);
+                sendTemporaryAlert(
+                    this._afkCheckChannel,
+                    `${this._leaderName}'s Raid VC has been locked.`,
+                    this._tempAlertDelay
+                ).catch();
                 return;
             }
 
@@ -2606,14 +2611,18 @@ export class RaidInstance {
                 await Promise.all([
                     this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
                         "CONNECT": null
-                    }),      
+                    }),
                     i.reply({
                         content: "Unlocked Raid VC.",
                         ephemeral: true
                     }),
                     this.logEvent("Raid VC unlocked.", true).catch()
                 ]);
-                sendTemporaryAlert(this._afkCheckChannel, `${this._leaderName}'s Raid VC has been unlocked.`, this._tempAlertDelay);
+                sendTemporaryAlert(
+                    this._afkCheckChannel,
+                    `${this._leaderName}'s Raid VC has been unlocked.`,
+                    this._tempAlertDelay
+                ).catch();
                 return;
             }
 

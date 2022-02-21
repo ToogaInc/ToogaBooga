@@ -635,7 +635,7 @@ export namespace QuotaManager {
         );
         const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - Date.now(), true, false);
 
-        const MILL_TO_MIN = 1000*60;
+        const timeToUpdate = QuotaService.TIME_TO_UPDATE / (1000 * 60);
         const quotaPtDisplay = getPointListAsString(guildDoc, quotaInfo);
         const embed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
             .setTitle(`Active Quota: ${role.name}`)
@@ -658,7 +658,7 @@ export namespace QuotaManager {
                     .toString()
             )
             .setTimestamp()
-            .setFooter({text: `Leaderboard updated every ${QuotaService.timeToUpdate/MILL_TO_MIN} minute${QuotaService.timeToUpdate!==MILL_TO_MIN ? `s` : ``}. Last Updated:`});
+            .setFooter({text: `Leaderboard updated every ${timeToUpdate} minute(s). Last Updated:`});
 
         if (quotaInfo.quotaLog.length === 0)
             return embed;
@@ -705,11 +705,43 @@ export namespace QuotaManager {
     }
 }
 
-// Service that updates quota leaderboards every 5 minutes
+// Service that updates quota leaderboards every 3 minutes
 export namespace QuotaService {
-    export const timeToUpdate: number = 3*60*1000;
+    export const TIME_TO_UPDATE: number = 3 * 60 * 1000;
 
     let _isRunning = false;
+
+    /**
+     * Checks what quotas need to be reset.
+     * @param {IGuildInfo[]} docs The documents.
+     * @returns {number} The number of quotas that were reset.
+     * @private
+     */
+    async function checkQuotasToReset(docs: IGuildInfo[]): Promise<number> {
+        const allQuotasToReset: Promise<boolean>[] = [];
+        for (const doc of docs) {
+            const guild = await GlobalFgrUtilities.fetchGuild(doc.guildId);
+            if (!guild)
+                continue;
+
+            doc.quotas.quotaInfo.filter(quotaInfo => {
+                const endTime = TimeUtilities.getNextDate(
+                    quotaInfo.lastReset,
+                    doc.quotas.resetTime.dayOfWeek,
+                    doc.quotas.resetTime.time
+                );
+
+                return endTime.getTime() - Date.now() < 0;
+            }).forEach(quotasToReset => {
+                allQuotasToReset.push(QuotaManager.resetQuota(guild, quotasToReset.roleId));
+            });
+
+            await Promise.all(allQuotasToReset);
+        }
+
+        return allQuotasToReset.length;
+    }
+
 
     /**
      * Starts the quota service. When started, the bot will update all quotas every 5 minutes.
@@ -719,26 +751,7 @@ export namespace QuotaService {
         LOGGER.info("Starting Quota Service");
         const docs = await MongoManager.getGuildCollection().find().toArray();
         if (docs.length > 0) {
-            const allQuotasToReset: Promise<boolean>[] = [];
-            for (const doc of docs) {
-                const guild = await GlobalFgrUtilities.fetchGuild(doc.guildId);
-                if (!guild)
-                    continue;
-
-                doc.quotas.quotaInfo.filter(quotaInfo => {
-                    const endTime = TimeUtilities.getNextDate(
-                        quotaInfo.lastReset,
-                        doc.quotas.resetTime.dayOfWeek,
-                        doc.quotas.resetTime.time
-                    );
-
-                    return endTime.getTime() - Date.now() < 0;
-                }).forEach(quotasToReset => {
-                    allQuotasToReset.push(QuotaManager.resetQuota(guild, quotasToReset.roleId));
-                });
-
-                await Promise.all(allQuotasToReset);
-            }
+            await checkQuotasToReset(docs);
         }
 
         _isRunning = true;
@@ -760,7 +773,11 @@ export namespace QuotaService {
      */
     async function run(): Promise<void> {
         LOGGER.info("Running quota service to update quotas.");
-        const allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
+        let allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
+        if (await checkQuotasToReset(allGuildDocs) > 0) {
+            allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
+        }
+
         for await (const guildDoc of allGuildDocs) {
             if (guildDoc.quotas.quotaInfo.length === 0)
                 continue;
@@ -805,7 +822,8 @@ export namespace QuotaService {
                 });
             }
         }
+
         LOGGER.debug("Quota service finished.");
-        setTimeout(run, timeToUpdate);
+        setTimeout(run, TIME_TO_UPDATE);
     }
 }
