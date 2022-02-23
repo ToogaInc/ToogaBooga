@@ -1,9 +1,7 @@
 import {Bot} from "../Bot";
 import {MongoManager} from "../managers/MongoManager";
-import {StringBuilder} from "../utilities/StringBuilder";
 import {IBotInfo} from "../definitions";
 import {MuteManager, SuspensionManager} from "../managers/PunishmentManager";
-import {TimeUtilities} from "../utilities/TimeUtilities";
 import {RaidInstance} from "../instances/RaidInstance";
 import getMongoClient = MongoManager.getMongoClient;
 import {HeadcountInstance} from "../instances/HeadcountInstance";
@@ -48,6 +46,7 @@ export async function onReadyEvent(): Promise<void> {
     }));
 
     LOGGER.info("Resuming any interrupted instances.");
+    // @ts-ignore
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
     await Promise.all([
         MuteManager.startChecker(guildDocs),
