@@ -878,7 +878,15 @@ export class RaidInstance {
                         },
                         {
                             id: this._guild.roles.everyone,
-                            deny: ["VIEW_CHANNEL", "ADD_REACTIONS"]
+                            deny: [
+                                "VIEW_CHANNEL",
+                                "ADD_REACTIONS",
+                                "ATTACH_FILES",
+                                "EMBED_LINKS",
+                                "CREATE_PUBLIC_THREADS",
+                                "CREATE_PRIVATE_THREADS",
+                                "USE_EXTERNAL_STICKERS"
+                            ]
                         },
                         {
                             id: Bot.BotInstance.client.user!.id,
