@@ -230,8 +230,8 @@ export namespace MiscUtilities {
         export function getRoleName(roleId: string, guild: Guild): string {
             LOGGER.debug(`Obtaining role name from ${roleId}`);
             const role = guild.roles.cache.find(r => r.id === roleId);
-            const ret = role ? role.name : "NOT_FOUND";
-            return ret;
+            if(!role) return "";
+            return role.name;
     }    
 
 }
