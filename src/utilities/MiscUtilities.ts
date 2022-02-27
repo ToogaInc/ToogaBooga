@@ -20,7 +20,7 @@ import {ButtonConstants} from "../constants/ButtonConstants";
 import {PermsConstants} from "../constants/PermsConstants";
 import {Logger} from "../utilities/Logger";
 
-const LOGGER: Logger = new Logger(__filename, true);
+const LOGGER: Logger = new Logger(__filename, false);
 
 export namespace MiscUtilities {
     /**

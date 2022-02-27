@@ -29,7 +29,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {EmojiConstants} from "../constants/EmojiConstants";
 import {Logger} from "../utilities/Logger";
 
-const LOGGER: Logger = new Logger(__filename, true);
+const LOGGER: Logger = new Logger(__filename, false);
 export namespace QuotaManager {
     export const ALL_QUOTAS_KV: { [key: string]: string } = {
         "Parse": "Parse",
