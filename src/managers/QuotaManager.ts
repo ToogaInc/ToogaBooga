@@ -19,12 +19,13 @@ import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilit
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {IGuildInfo, IQuotaInfo} from "../definitions";
+import {IGuildInfo, IQuotaInfo, ISectionInfo} from "../definitions";
 import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
 import {GeneralConstants} from "../constants/GeneralConstants";
 import {DungeonUtilities} from "../utilities/DungeonUtilities";
+import {MiscUtilities} from "../utilities/MiscUtilities";
 import {EmojiConstants} from "../constants/EmojiConstants";
 import {Logger} from "../utilities/Logger";
 
@@ -79,7 +80,7 @@ export namespace QuotaManager {
      * @returns {Promise<boolean>} Whether this was successful.
      */
     export async function resetQuota(guild: Guild, roleId: string): Promise<boolean> {
-        LOGGER.info(`Resetting quota for roleid ${roleId}`);
+        LOGGER.info(`Resetting quota for roleid ${MiscUtilities.getRoleName(roleId, guild)}`);
 
         const guildDoc = await MongoManager.getOrCreateGuildDoc(guild, true);
         if (!guildDoc)
@@ -217,6 +218,7 @@ export namespace QuotaManager {
         // If there's nothing to update, then we don't need to send inactive quota
         const finalSummaryStr = new StringBuilder()
             .append("================= QUOTA SUMMARY =================").appendLine()
+            .append(`- Role: ${MiscUtilities.getRoleName(oldQuotas.roleId, guild)}`)
             .append(`- Start Time: ${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT`).appendLine()
             .append(`- End Time: ${TimeUtilities.getDateTime(Date.now())} GMT`).appendLine()
             .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine()
@@ -366,14 +368,56 @@ export namespace QuotaManager {
                 // - Run_____                       For all dungeons (i.e. no ID specifier).
                 && (x.pointValues.find(y => y.key === resolvedLogType || y.key === logType)?.value ?? 0) > 0;
         });
-        LOGGER.debug(`Available quotas for ${resolvedLogType}: ${availableQuotas.toLocaleString()}`);
 
-        if (availableQuotas.length === 0)
+        if (availableQuotas.length === 0){
+            LOGGER.info(`No available quotas for ${member.displayName} to add ${resolvedLogType}.`);
             return null;
+        }
 
-        /**TODO: Remove duplicate roles for same section type (Oryx Leader should ignore AlmostOryxLeader) */
-        LOGGER.debug(`ADDRESS THIS TODO`);
-        const quotaData: QuotaMemberInfo[] = availableQuotas.map(x => {
+        let bestQuotas: IQuotaInfo[] = [];
+        const sections = MongoManager.getAllSections(guildDoc);
+
+        /* For each section, check if an available quota is in that section
+         * If so, only choose the quota for the highest role available for that section
+         */
+        sections.forEach(section => {
+
+            let bestQuotaInSection: IQuotaInfo | undefined;
+
+            availableQuotas.forEach(quota => {
+                const vetLeaderId = section.roles.leaders.sectionVetLeaderRoleId;
+                const leaderId = section.roles.leaders.sectionLeaderRoleId;
+                const almostLeaderId = section.roles.leaders.sectionAlmostLeaderRoleId;
+
+                switch(quota.roleId){
+                    case vetLeaderId: //If vet, override any other id
+                        bestQuotaInSection = quota;
+                        break;
+                    case leaderId: //If leader, override if not vet
+                        if(!bestQuotaInSection || (bestQuotaInSection.roleId !== vetLeaderId)){
+                            bestQuotaInSection = quota;
+                        }
+                        break;
+                    case almostLeaderId: //If almost, do not override
+                        if(!bestQuotaInSection){
+                            bestQuotaInSection = quota;
+                        }
+                        break;
+                }
+                return;
+            })
+            
+            if(bestQuotaInSection) {
+                bestQuotas.push(bestQuotaInSection);
+            }
+        })
+
+        //If no best quotas were found, just use the available quotas
+        if(!bestQuotas.length){
+            bestQuotas = availableQuotas;
+        }
+
+        const quotaData: QuotaMemberInfo[] = bestQuotas.map(x => {
             const curPts = calcTotalQuotaPtsForMember(member.id, x.roleId, guildDoc);
             return {
                 roleId: x.roleId,
@@ -384,7 +428,7 @@ export namespace QuotaManager {
         });
 
         quotaData.sort((a, b) => a.percentComplete - b.percentComplete);
-        LOGGER.debug(`Selected ${quotaData[0].roleId}`);
+        LOGGER.debug(`Selected ${MiscUtilities.getRoleName(quotaData[0].roleId, member.guild)}`);
         return quotaData[0].roleId;
     }
 
@@ -397,7 +441,7 @@ export namespace QuotaManager {
      */
     export async function logQuota(member: GuildMember, roleId: string, logType: string,
                                    amt: number): Promise<void> {
-        LOGGER.info(`Logging quota for ${member.displayName}, role: ${roleId}, type: ${logType}, amount: ${amt}`);
+        LOGGER.info(`Logging quota for ${member.displayName}, role: ${MiscUtilities.getRoleName(roleId, member.guild)}, type: ${logType}, amount: ${amt}`);
         await MongoManager.updateAndFetchGuildDoc({
             guildId: member.guild.id,
             "quotas.quotaInfo.roleId": roleId
@@ -622,7 +666,7 @@ export namespace QuotaManager {
      */
     export async function getQuotaLeaderboardEmbed(guild: Guild, guildDoc: IGuildInfo,
                                                    quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
-        LOGGER.debug(`Getting Quota Leaderboard Embed: ${quotaInfo.roleId}`);
+        LOGGER.debug(`Getting Quota Leaderboard Embed: ${MiscUtilities.getRoleName(quotaInfo.roleId, guild)}`);
         const role = GuildFgrUtilities.getCachedRole(guild, quotaInfo.roleId);
         if (!role)
             return null;

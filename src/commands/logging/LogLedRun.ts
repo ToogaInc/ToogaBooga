@@ -21,7 +21,7 @@ export class LogLedRun extends BaseCommand {
             formalCommandName: "Log Led Run(s) Command",
             botCommandName: "logrun",
             description: "Logs one or more runs that a leader led. You can log completions/fails/assists for"
-                + " yourself or someone else.",
+                + " yourself or someone else.  Defaults to 1 completed run.",
             commandCooldown: 0,
             generalPermissions: [],
             argumentInfo: [
@@ -107,14 +107,7 @@ export class LogLedRun extends BaseCommand {
         }
 
         if (completedRuns === 0 && assistedRuns === 0 && failedRuns === 0) {
-            await ctx.interaction.reply({
-                ephemeral: true,
-                content: "You aren't logging anything. In order to use this command, you need to log at least one"
-                    + " of: completed runs, assisted runs, or failed runs. **If** you are trying to remove runs, you"
-                    + " need to contact someone with the HRL/Officer or higher role."
-            });
-
-            return 0;
+            completedRuns = 1;
         }
 
         let memberToLogAs = ctx.member!;
