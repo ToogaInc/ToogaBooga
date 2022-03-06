@@ -1029,7 +1029,7 @@ export class RaidInstance {
             return;
 
         await this._thisFeedbackChan.send({
-            content: "You have **one** minute remaining to submit your feedback. If you can't submit your feedback"
+            content: "You have **ten** minutes remaining to submit your feedback. If you can't submit your feedback"
                 + " in time, you can still submit your feedback via modmail."
         });
 
@@ -1083,7 +1083,7 @@ export class RaidInstance {
                 this.compileHistory(this._raidStorageChan, sb.toString()),
                 this._thisFeedbackChan.delete()
             ]);
-        }, 60 * 1000);
+        }, 10 * 60 * 1000);
     }
 
     /**
