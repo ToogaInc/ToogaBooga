@@ -290,8 +290,10 @@ export class RaidInstance {
         this._embedColor = RaidInstance.DEFAULT_EMBED_COLOR;
         this._startTime = Date.now();
         //this._expTime = this._startTime + 1000*20; //Testing
-        this._expTime = this._startTime + (section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? RaidInstance.DEFAULT_RAID_DURATION);
-        LOGGER.debug(`Timeout duration in milliseconds: ` + section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? RaidInstance.DEFAULT_RAID_DURATION);
+        this._expTime = this._startTime + (section.otherMajorConfig.afkCheckProperties.afkCheckTimeout
+            ?? RaidInstance.DEFAULT_RAID_DURATION);
+        LOGGER.debug(`Timeout duration in milliseconds: ` + section.otherMajorConfig.afkCheckProperties.afkCheckTimeout
+            ?? RaidInstance.DEFAULT_RAID_DURATION);
 
         this._logChan = null;
         this._thisFeedbackChan = null;
@@ -1562,6 +1564,7 @@ export class RaidInstance {
             // Step 6: Delete the logging channel
             GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await this._logChan?.delete();
+                this._logChan = null;
             })
         ]);
 
