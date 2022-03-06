@@ -1451,13 +1451,12 @@ export class RaidInstance {
             embed.setDescription(
                 new StringBuilder("Parse Successful.")
                     .appendLine()
-                    .append(`- ${parseSummary.inRaidButNotInVC.length} player(s) are in the /who screenshot `)
-                    .append("but not in the raid voice channel.")
+                    .append(`- \`${parseSummary.inRaidButNotInVC.length}\` player(s) in /who screenshot, not in VC.`)
                     .appendLine()
-                    .append(`- ${parseSummary.inVcButNotInRaid.length} player(s) are in the raid voice  `)
-                    .append("channel but not in the /who screenshot.")
+                    .append(`- \`${parseSummary.inVcButNotInRaid.length}\` player(s) in VC, not in /who screenshot.`)
                     .appendLine(2)
-                    .append("`/who` Results:")
+                    .append(`__${parseSummary.whoRes.length} Names Parsed__`)
+                    .appendLine()
                     .append(StringUtil.codifyString(parseSummary.whoRes.join(", ")))
                     .toString()
             );
