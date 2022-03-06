@@ -33,14 +33,7 @@ interface ISectionCreateChoice {
 }
 
 export class ConfigureSections extends BaseCommand {
-    private static readonly CHANNEL_COLLECTOR_FUNC = async (msg: Message) => {
-        const channel = ParseUtilities.parseChannel(msg);
-        return channel && channel instanceof TextChannel
-            ? channel
-            : undefined;
-        // tslint:disable-next-line:semicolon
-    };
-
+    public static readonly MAXIMUM_SECTIONS_ALLOWED: number = 10;
     private static readonly COLLECTOR_BASE_OPTIONS = {
         deleteBaseMsgAfterComplete: false,
         acknowledgeImmediately: true,
@@ -56,6 +49,32 @@ export class ConfigureSections extends BaseCommand {
         ButtonConstants.BACK_BUTTON,
         ButtonConstants.QUIT_BUTTON
     ];
+
+    public constructor() {
+        super({
+            cmdCode: "CONFIGURE_SECTION_COMMAND",
+            formalCommandName: "Configure Section Command",
+            botCommandName: "configsections",
+            description: "Allows the user to add or remove sections",
+            commandCooldown: 10 * 1000,
+            argumentInfo: [],
+            generalPermissions: ["MANAGE_GUILD"],
+            rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
+            botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
+            guildOnly: true,
+            botOwnerOnly: false,
+            guildConcurrencyLimit: 1,
+            allowMultipleExecutionByUser: false
+        });
+    }
+
+    private static readonly CHANNEL_COLLECTOR_FUNC = async (msg: Message) => {
+        const channel = ParseUtilities.parseChannel(msg);
+        return channel && channel instanceof TextChannel
+            ? channel
+            : undefined;
+        // tslint:disable-next-line:semicolon
+    };
 
     private static readonly SECTION_CREATE_CHOICES: ISectionCreateChoice[] = [
         {
@@ -122,26 +141,6 @@ export class ConfigureSections extends BaseCommand {
             }
         }
     ];
-
-    public static readonly MAXIMUM_SECTIONS_ALLOWED: number = 10;
-
-    public constructor() {
-        super({
-            cmdCode: "CONFIGURE_SECTION_COMMAND",
-            formalCommandName: "Configure Section Command",
-            botCommandName: "configsections",
-            description: "Allows the user to add or remove sections",
-            commandCooldown: 10 * 1000,
-            argumentInfo: [],
-            generalPermissions: ["MANAGE_GUILD"],
-            rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
-            botPermissions: ["ADD_REACTIONS", "MANAGE_MESSAGES"],
-            guildOnly: true,
-            botOwnerOnly: false,
-            guildConcurrencyLimit: 1,
-            allowMultipleExecutionByUser: false
-        });
-    }
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {

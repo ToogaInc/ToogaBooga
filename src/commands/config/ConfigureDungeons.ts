@@ -100,6 +100,113 @@ export class ConfigureDungeons extends BaseCommand {
         });
     }
 
+    /**
+     * Checks if the dungeon override object is the default one.
+     * @param {IDungeonOverrideInfo} dgnOverride The dungeon override object.
+     * @param {IDungeonInfo} origDungeon The original dungeon.
+     * @returns {boolean} Whether this is a default dungeon override object.
+     */
+    public static isDefaultOverride(dgnOverride: IDungeonOverrideInfo, origDungeon: IDungeonInfo): boolean {
+        if (origDungeon.otherReactions.length !== dgnOverride.otherReactions.length)
+            return false;
+        if (origDungeon.keyReactions.length !== dgnOverride.keyReactions.length)
+            return false;
+
+        // Check modifiers
+        if (DEFAULT_MODIFIERS.length !== dgnOverride.allowedModifiers.length) {
+            return false;
+        }
+
+        const a = [...DEFAULT_MODIFIERS.map(x => x.modifierId)];
+        const b = [...dgnOverride.allowedModifiers];
+        a.sort();
+        b.sort();
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) {
+                return false;
+            }
+        }
+
+        // Check reactions
+        let numEq = 0;
+        for (const oR of origDungeon.otherReactions) {
+            const testVal = dgnOverride.otherReactions
+                .some(x => x.maxEarlyLocation === oR.maxEarlyLocation && x.mapKey === oR.mapKey);
+            if (!testVal)
+                return false;
+            numEq++;
+        }
+
+        for (const oR of dgnOverride.otherReactions) {
+            const testVal = origDungeon.otherReactions
+                .some(x => x.maxEarlyLocation === oR.maxEarlyLocation && x.mapKey === oR.mapKey);
+            if (!testVal)
+                return false;
+            numEq--;
+        }
+
+        if (numEq !== 0)
+            return false;
+
+        for (const oR of origDungeon.keyReactions) {
+            const testVal = dgnOverride.keyReactions
+                .some(x => x.maxEarlyLocation === oR.maxEarlyLocation && x.mapKey === oR.mapKey);
+            if (!testVal)
+                return false;
+            numEq++;
+        }
+
+        for (const oR of dgnOverride.keyReactions) {
+            const testVal = origDungeon.keyReactions
+                .some(x => x.maxEarlyLocation === oR.maxEarlyLocation && x.mapKey === oR.mapKey);
+            if (!testVal)
+                return false;
+            numEq--;
+        }
+
+        if (numEq !== 0)
+            return false;
+
+        return dgnOverride.nitroEarlyLocationLimit === -1
+            && dgnOverride.vcLimit === -1
+            && dgnOverride.pointCost === 0
+            && dgnOverride.roleRequirement.length === 0;
+    }
+
+    /**
+     * Clones a dungeon, creating a custom dungeon in the process.
+     * @param {IDungeonInfo} dgn The dungeon.
+     * @returns {ICustomDungeonInfo} The custom dungeon.
+     * @private
+     */
+    private static cloneDungeonForCustom(dgn: IDungeonInfo): ICustomDungeonInfo {
+        // Deep clone of everything
+        return {
+            bossLinks: dgn.bossLinks.map(x => {
+                return {...x};
+            }),
+            codeName: `[[${dgn.codeName}:${Date.now()}:${StringUtil.generateRandomString(5)}]]`,
+            dungeonCategory: dgn.dungeonCategory,
+            dungeonColors: dgn.dungeonColors.slice(),
+            dungeonName: dgn.dungeonName,
+            isBuiltIn: false,
+            keyReactions: dgn.keyReactions.map(x => {
+                return {...x};
+            }),
+            otherReactions: dgn.otherReactions.map(x => {
+                return {...x};
+            }),
+            portalEmojiId: dgn.portalEmojiId,
+            portalLink: {...dgn.portalLink},
+            nitroEarlyLocationLimit: -1,
+            pointCost: 0,
+            vcLimit: -1,
+            roleRequirement: [],
+            logFor: null,
+            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
+        } as ICustomDungeonInfo;
+    }
+
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
@@ -449,79 +556,6 @@ export class ConfigureDungeons extends BaseCommand {
                 }
             }
         }
-    }
-
-    /**
-     * Checks if the dungeon override object is the default one.
-     * @param {IDungeonOverrideInfo} dgnOverride The dungeon override object.
-     * @param {IDungeonInfo} origDungeon The original dungeon.
-     * @returns {boolean} Whether this is a default dungeon override object.
-     */
-    public static isDefaultOverride(dgnOverride: IDungeonOverrideInfo, origDungeon: IDungeonInfo): boolean {
-        if (origDungeon.otherReactions.length !== dgnOverride.otherReactions.length)
-            return false;
-        if (origDungeon.keyReactions.length !== dgnOverride.keyReactions.length)
-            return false;
-
-        // Check modifiers
-        if (DEFAULT_MODIFIERS.length !== dgnOverride.allowedModifiers.length) {
-            return false;
-        }
-
-        const a = [...DEFAULT_MODIFIERS.map(x => x.modifierId)];
-        const b = [...dgnOverride.allowedModifiers];
-        a.sort();
-        b.sort();
-        for (let i = 0; i < a.length; i++) {
-            if (a[i] !== b[i]) {
-                return false;
-            }
-        }
-
-        // Check reactions
-        let numEq = 0;
-        for (const oR of origDungeon.otherReactions) {
-            const testVal = dgnOverride.otherReactions
-                .some(x => x.maxEarlyLocation === oR.maxEarlyLocation && x.mapKey === oR.mapKey);
-            if (!testVal)
-                return false;
-            numEq++;
-        }
-
-        for (const oR of dgnOverride.otherReactions) {
-            const testVal = origDungeon.otherReactions
-                .some(x => x.maxEarlyLocation === oR.maxEarlyLocation && x.mapKey === oR.mapKey);
-            if (!testVal)
-                return false;
-            numEq--;
-        }
-
-        if (numEq !== 0)
-            return false;
-
-        for (const oR of origDungeon.keyReactions) {
-            const testVal = dgnOverride.keyReactions
-                .some(x => x.maxEarlyLocation === oR.maxEarlyLocation && x.mapKey === oR.mapKey);
-            if (!testVal)
-                return false;
-            numEq++;
-        }
-
-        for (const oR of dgnOverride.keyReactions) {
-            const testVal = origDungeon.keyReactions
-                .some(x => x.maxEarlyLocation === oR.maxEarlyLocation && x.mapKey === oR.mapKey);
-            if (!testVal)
-                return false;
-            numEq--;
-        }
-
-        if (numEq !== 0)
-            return false;
-
-        return dgnOverride.nitroEarlyLocationLimit === -1
-            && dgnOverride.vcLimit === -1
-            && dgnOverride.pointCost === 0
-            && dgnOverride.roleRequirement.length === 0;
     }
 
     /**
@@ -1226,6 +1260,17 @@ export class ConfigureDungeons extends BaseCommand {
     }
 
     /**
+     * Disposes this instance. Use this function to clean up any messages that were used.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     */
+    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
+        }
+    }
+
+    /**
      * Configures the modifiers for this dungeon.
      * @param {ICommandContext} ctx The command context.
      * @param {Message} botMsg The bot message.
@@ -1351,41 +1396,6 @@ export class ConfigureDungeons extends BaseCommand {
                 }
             }
         }
-    }
-
-
-    /**
-     * Clones a dungeon, creating a custom dungeon in the process.
-     * @param {IDungeonInfo} dgn The dungeon.
-     * @returns {ICustomDungeonInfo} The custom dungeon.
-     * @private
-     */
-    private static cloneDungeonForCustom(dgn: IDungeonInfo): ICustomDungeonInfo {
-        // Deep clone of everything
-        return {
-            bossLinks: dgn.bossLinks.map(x => {
-                return {...x};
-            }),
-            codeName: `[[${dgn.codeName}:${Date.now()}:${StringUtil.generateRandomString(5)}]]`,
-            dungeonCategory: dgn.dungeonCategory,
-            dungeonColors: dgn.dungeonColors.slice(),
-            dungeonName: dgn.dungeonName,
-            isBuiltIn: false,
-            keyReactions: dgn.keyReactions.map(x => {
-                return {...x};
-            }),
-            otherReactions: dgn.otherReactions.map(x => {
-                return {...x};
-            }),
-            portalEmojiId: dgn.portalEmojiId,
-            portalLink: {...dgn.portalLink},
-            nitroEarlyLocationLimit: -1,
-            pointCost: 0,
-            vcLimit: -1,
-            roleRequirement: [],
-            logFor: null,
-            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
-        } as ICustomDungeonInfo;
     }
 
     /**
@@ -1629,7 +1639,6 @@ export class ConfigureDungeons extends BaseCommand {
             }
         }
     }
-
 
     /**
      * Configures a generic setting. Similar in nature to `configReactions` but allows for multiple different
@@ -2219,17 +2228,6 @@ export class ConfigureDungeons extends BaseCommand {
                 await MiscUtilities.stopFor(5 * 1000);
                 m.delete();
             });
-        }
-    }
-
-    /**
-     * Disposes this instance. Use this function to clean up any messages that were used.
-     * @param {ICommandContext} ctx The command context.
-     * @param {Message} botMsg The bot message.
-     */
-    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg) {
-            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

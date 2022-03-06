@@ -618,6 +618,17 @@ export class ConfigureAfkCheck extends BaseCommand {
     }
 
     /**
+     * Disposes this instance. Use this function to clean up any messages that were used.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     */
+    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
+        }
+    }
+
+    /**
      * Allows the user to configure raid VC permissions.
      * @param {ICommandContext} ctx The command context.
      * @param {Message} botMsg The bot message.
@@ -918,17 +929,6 @@ export class ConfigureAfkCheck extends BaseCommand {
                     return {value: null, status: TimedStatus.TIMED_OUT};
                 }
             }
-        }
-    }
-
-    /**
-     * Disposes this instance. Use this function to clean up any messages that were used.
-     * @param {ICommandContext} ctx The command context.
-     * @param {Message} botMsg The bot message.
-     */
-    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg) {
-            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

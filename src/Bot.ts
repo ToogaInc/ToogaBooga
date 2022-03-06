@@ -36,29 +36,21 @@ const LOGGER: Logger = new Logger(__filename, false);
 
 export class Bot {
 
-    private readonly _config: IConfiguration;
-    private readonly _bot: Client;
-    private _eventsIsStarted: boolean = false;
-    private readonly _instanceStarted: Date;
-
     /**
      * The bot instance.
      * @type {Bot}
      */
     public static BotInstance: Bot;
-
     /**
      * The HTTP client used to make web requests.
      * @type {AxiosInstance}
      */
     public static AxiosClient: AxiosInstance = axios.create();
-
     /**
      * All commands. The key is the category name and the value is the array of commands.
      * @type {Collection<string, BaseCommand[]>}
      */
     public static Commands: Collection<string, Cmds.BaseCommand[]>;
-
     /**
      * All commands. The key is the name of the command (essentially, the slash command name) and the value is the
      * command object.
@@ -68,7 +60,6 @@ export class Bot {
      * @type {Collection<string, BaseCommand>}
      */
     public static NameCommands: Collection<string, Cmds.BaseCommand>;
-
     /**
      * All commands. This is sent to Discord for the purpose of slash commands.
      *
@@ -77,8 +68,11 @@ export class Bot {
      * @type {object[]}
      */
     public static JsonCommands: RESTPostAPIApplicationCommandsJSONBody[];
-
     public static Rest: REST;
+    private readonly _config: IConfiguration;
+    private readonly _bot: Client;
+    private _eventsIsStarted: boolean = false;
+    private readonly _instanceStarted: Date;
 
     /**
      * Constructs a new Discord bot.
@@ -234,6 +228,32 @@ export class Bot {
     }
 
     /**
+     * Returns the Discord client.
+     *
+     * @returns {Client} The client.
+     */
+    public get client(): Client {
+        return this._bot;
+    }
+
+    /**
+     * Returns the Configuration object.
+     *
+     * @returns {IConfiguration} The configuration object.
+     */
+    public get config(): IConfiguration {
+        return this._config;
+    }
+
+    /**
+     * Returns the date and time for which this instance was started.
+     * @return {Date} The date.
+     */
+    public get instanceStarted(): Date {
+        return this._instanceStarted;
+    }
+
+    /**
      * Defines all necessary events for the bot to work.
      */
     public startAllEvents(): void {
@@ -289,31 +309,5 @@ export class Bot {
         LOGGER.info("Starting Quota Service");
         QuotaService.startService().then();
         return true;
-    }
-
-    /**
-     * Returns the Discord client.
-     *
-     * @returns {Client} The client.
-     */
-    public get client(): Client {
-        return this._bot;
-    }
-
-    /**
-     * Returns the Configuration object.
-     *
-     * @returns {IConfiguration} The configuration object.
-     */
-    public get config(): IConfiguration {
-        return this._config;
-    }
-
-    /**
-     * Returns the date and time for which this instance was started.
-     * @return {Date} The date.
-     */
-    public get instanceStarted(): Date {
-        return this._instanceStarted;
     }
 }

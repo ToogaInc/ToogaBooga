@@ -62,6 +62,22 @@ export class ConfigureVerification extends BaseCommand {
         });
     }
 
+    /**
+     * Gets all buttons for controlling various interfaces.
+     * @param {MessageButton} buttons The buttons to add.
+     * @return {MessageButton[]} The new buttons array.
+     * @private
+     */
+    private static getButtons(...buttons: MessageButton[]): MessageButton[] {
+        return [
+            ButtonConstants.BACK_BUTTON,
+            ButtonConstants.UP_BUTTON,
+            ButtonConstants.DOWN_BUTTON,
+            ...buttons,
+            ButtonConstants.SAVE_BUTTON
+        ];
+    }
+
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
@@ -990,6 +1006,151 @@ export class ConfigureVerification extends BaseCommand {
     }
 
     /**
+     * Allows the user to configure character requirements.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     * @param {ICharacterReq} charInfo The character requirements.
+     * @return {Promise<TimedResult<IExaltationReq>>} The new character requirements, if any.
+     */
+    public async configCharacters(ctx: ICommandContext, botMsg: Message,
+                                  charInfo: ICharacterReq): Promise<TimedResult<ICharacterReq>> {
+        const newCharRequirements: ICharacterReq = {
+            checkThis: charInfo.checkThis,
+            statsNeeded: charInfo.statsNeeded.slice() as [
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number
+            ],
+            checkPastDeaths: charInfo.checkPastDeaths
+        };
+
+        const checkPastDeathsButton = new MessageButton()
+            .setStyle("PRIMARY")
+            .setCustomId("past_deaths");
+
+        const buttons: MessageButton[] = ConfigureVerification.getButtons(checkPastDeathsButton);
+        const embed = new MessageEmbed()
+            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setTitle("Configure Character Requirement")
+            .setDescription(
+                new StringBuilder()
+                    .append("Here, you will be able to configure the specific character requirements needed to verify")
+                    .append(" in this server. As a fair warning, keep in mind that RealmEye does not currently have")
+                    .append(" character stats updated. It is, thus, recommended that you check past deaths or find")
+                    .append(" a different way to validate the person's maxed characters. Here are the instructions:")
+                    .appendLine()
+                    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected number`)
+                    .append(" of maxed stats. You can press the **Up**/**Down** buttons to navigate between this.")
+                    .appendLine()
+                    .append("- Once you select the appropriate number of maxed stats, type a non-negative integer.")
+                    .appendLine()
+                    .append("- Regardless of what you select, you can press the **(Don't) Check Past Deaths** button")
+                    .append(" to either check the graveyard history, or not to. It is strongly recommended that you")
+                    .append(" keep this on.").appendLine()
+                    .append("- Once you are done, press the **Save** button to save your changes, or the **Back**")
+                    .append(" button to go back without saving your changes.")
+                    .toString()
+            );
+
+        let selectedIdx = 0;
+        while (true) {
+            checkPastDeathsButton.setLabel(
+                newCharRequirements.checkPastDeaths
+                    ? "Don't Check Past Deaths"
+                    : "Check Past Deaths"
+            );
+
+            embed.fields = [];
+            for (let i = 0; i < newCharRequirements.statsNeeded.length; i++) {
+                const numOfThis = newCharRequirements.statsNeeded[i];
+                if (i === selectedIdx) {
+                    embed.addField(
+                        `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${i}/8 Characters`,
+                        StringUtil.codifyString(`Minimum Needed: ${numOfThis}`)
+                    );
+                    continue;
+                }
+
+                embed.addField(
+                    `${i}/8 Characters`,
+                    StringUtil.codifyString(`Minimum Needed: ${numOfThis}`)
+                );
+            }
+
+            await botMsg.edit({
+                embeds: [embed],
+                components: AdvancedCollector.getActionRowsFromComponents(buttons)
+            });
+
+            const selectedChoice = await AdvancedCollector.startDoubleCollector<number>({
+                acknowledgeImmediately: true,
+                cancelFlag: null,
+                clearInteractionsAfterComplete: false,
+                deleteBaseMsgAfterComplete: false,
+                deleteResponseMessage: true,
+                duration: 60 * 1000,
+                oldMsg: botMsg,
+                targetAuthor: ctx.user,
+                targetChannel: ctx.channel
+            }, m => {
+                const num = Number.parseInt(m.content, 10);
+                return Number.isNaN(num)
+                    ? undefined
+                    : Math.max(0, num);
+            });
+
+            if (selectedChoice === null)
+                return {value: null, status: TimedStatus.TIMED_OUT};
+
+            if (typeof selectedChoice === "number") {
+                newCharRequirements.statsNeeded[selectedIdx] = selectedChoice;
+                continue;
+            }
+
+            switch (selectedChoice.customId) {
+                case "past_deaths": {
+                    newCharRequirements.checkPastDeaths = !newCharRequirements.checkPastDeaths;
+                    break;
+                }
+                case ButtonConstants.BACK_ID: {
+                    return {value: charInfo, status: TimedStatus.SUCCESS};
+                }
+                case ButtonConstants.UP_ID: {
+                    selectedIdx = (selectedIdx + newCharRequirements.statsNeeded.length
+                        - 1) % newCharRequirements.statsNeeded.length;
+                    break;
+                }
+                case ButtonConstants.DOWN_ID: {
+                    selectedIdx++;
+                    selectedIdx %= newCharRequirements.statsNeeded.length;
+                    break;
+                }
+                case ButtonConstants.SAVE_ID: {
+                    newCharRequirements.checkThis = newCharRequirements.statsNeeded.some(x => x > 0);
+                    return {value: newCharRequirements, status: TimedStatus.SUCCESS};
+                }
+            }
+        }
+    }
+
+    /**
+     * Disposes this instance. Use this function to clean up any messages that were used.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     */
+    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
+        }
+    }
+
+    /**
      * Configures the dungeon requirements for this section.
      * @param {ICommandContext} ctx The command context.
      * @param {Message} botMsg The bot message.
@@ -1197,168 +1358,6 @@ export class ConfigureVerification extends BaseCommand {
                     return {value: newDungeonReq, status: TimedStatus.SUCCESS};
                 }
             }
-        }
-    }
-
-    /**
-     * Allows the user to configure character requirements.
-     * @param {ICommandContext} ctx The command context.
-     * @param {Message} botMsg The bot message.
-     * @param {ICharacterReq} charInfo The character requirements.
-     * @return {Promise<TimedResult<IExaltationReq>>} The new character requirements, if any.
-     */
-    public async configCharacters(ctx: ICommandContext, botMsg: Message,
-                                  charInfo: ICharacterReq): Promise<TimedResult<ICharacterReq>> {
-        const newCharRequirements: ICharacterReq = {
-            checkThis: charInfo.checkThis,
-            statsNeeded: charInfo.statsNeeded.slice() as [
-                number,
-                number,
-                number,
-                number,
-                number,
-                number,
-                number,
-                number,
-                number
-            ],
-            checkPastDeaths: charInfo.checkPastDeaths
-        };
-
-        const checkPastDeathsButton = new MessageButton()
-            .setStyle("PRIMARY")
-            .setCustomId("past_deaths");
-
-        const buttons: MessageButton[] = ConfigureVerification.getButtons(checkPastDeathsButton);
-        const embed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
-            .setTitle("Configure Character Requirement")
-            .setDescription(
-                new StringBuilder()
-                    .append("Here, you will be able to configure the specific character requirements needed to verify")
-                    .append(" in this server. As a fair warning, keep in mind that RealmEye does not currently have")
-                    .append(" character stats updated. It is, thus, recommended that you check past deaths or find")
-                    .append(" a different way to validate the person's maxed characters. Here are the instructions:")
-                    .appendLine()
-                    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected number`)
-                    .append(" of maxed stats. You can press the **Up**/**Down** buttons to navigate between this.")
-                    .appendLine()
-                    .append("- Once you select the appropriate number of maxed stats, type a non-negative integer.")
-                    .appendLine()
-                    .append("- Regardless of what you select, you can press the **(Don't) Check Past Deaths** button")
-                    .append(" to either check the graveyard history, or not to. It is strongly recommended that you")
-                    .append(" keep this on.").appendLine()
-                    .append("- Once you are done, press the **Save** button to save your changes, or the **Back**")
-                    .append(" button to go back without saving your changes.")
-                    .toString()
-            );
-
-        let selectedIdx = 0;
-        while (true) {
-            checkPastDeathsButton.setLabel(
-                newCharRequirements.checkPastDeaths
-                    ? "Don't Check Past Deaths"
-                    : "Check Past Deaths"
-            );
-
-            embed.fields = [];
-            for (let i = 0; i < newCharRequirements.statsNeeded.length; i++) {
-                const numOfThis = newCharRequirements.statsNeeded[i];
-                if (i === selectedIdx) {
-                    embed.addField(
-                        `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${i}/8 Characters`,
-                        StringUtil.codifyString(`Minimum Needed: ${numOfThis}`)
-                    );
-                    continue;
-                }
-
-                embed.addField(
-                    `${i}/8 Characters`,
-                    StringUtil.codifyString(`Minimum Needed: ${numOfThis}`)
-                );
-            }
-
-            await botMsg.edit({
-                embeds: [embed],
-                components: AdvancedCollector.getActionRowsFromComponents(buttons)
-            });
-
-            const selectedChoice = await AdvancedCollector.startDoubleCollector<number>({
-                acknowledgeImmediately: true,
-                cancelFlag: null,
-                clearInteractionsAfterComplete: false,
-                deleteBaseMsgAfterComplete: false,
-                deleteResponseMessage: true,
-                duration: 60 * 1000,
-                oldMsg: botMsg,
-                targetAuthor: ctx.user,
-                targetChannel: ctx.channel
-            }, m => {
-                const num = Number.parseInt(m.content, 10);
-                return Number.isNaN(num)
-                    ? undefined
-                    : Math.max(0, num);
-            });
-
-            if (selectedChoice === null)
-                return {value: null, status: TimedStatus.TIMED_OUT};
-
-            if (typeof selectedChoice === "number") {
-                newCharRequirements.statsNeeded[selectedIdx] = selectedChoice;
-                continue;
-            }
-
-            switch (selectedChoice.customId) {
-                case "past_deaths": {
-                    newCharRequirements.checkPastDeaths = !newCharRequirements.checkPastDeaths;
-                    break;
-                }
-                case ButtonConstants.BACK_ID: {
-                    return {value: charInfo, status: TimedStatus.SUCCESS};
-                }
-                case ButtonConstants.UP_ID: {
-                    selectedIdx = (selectedIdx + newCharRequirements.statsNeeded.length
-                        - 1) % newCharRequirements.statsNeeded.length;
-                    break;
-                }
-                case ButtonConstants.DOWN_ID: {
-                    selectedIdx++;
-                    selectedIdx %= newCharRequirements.statsNeeded.length;
-                    break;
-                }
-                case ButtonConstants.SAVE_ID: {
-                    newCharRequirements.checkThis = newCharRequirements.statsNeeded.some(x => x > 0);
-                    return {value: newCharRequirements, status: TimedStatus.SUCCESS};
-                }
-            }
-        }
-    }
-
-    /**
-     * Gets all buttons for controlling various interfaces.
-     * @param {MessageButton} buttons The buttons to add.
-     * @return {MessageButton[]} The new buttons array.
-     * @private
-     */
-    private static getButtons(...buttons: MessageButton[]): MessageButton[] {
-        return [
-            ButtonConstants.BACK_BUTTON,
-            ButtonConstants.UP_BUTTON,
-            ButtonConstants.DOWN_BUTTON,
-            ...buttons,
-            ButtonConstants.SAVE_BUTTON
-        ];
-    }
-
-
-    /**
-     * Disposes this instance. Use this function to clean up any messages that were used.
-     * @param {ICommandContext} ctx The command context.
-     * @param {Message} botMsg The bot message.
-     */
-    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg) {
-            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

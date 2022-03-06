@@ -77,7 +77,9 @@ export class HeadcountInstance {
             .setCustomId(HeadcountInstance.DELETE_HEADCOUNT_ID)
             .setStyle("DANGER")
     ]);
-
+    // The headcount embed color.
+    private static readonly DEFAULT_EMBED_COLOR: number = 16777215; //default to white
+    private static readonly DEFAULT_HEADCOUNT_DURATION: number = 60 * 60 * 1000; //1 hour in milliseconds
     // The guild that this AFK check is in.
     private readonly _guild: Guild;
     // The dungeon.
@@ -88,58 +90,46 @@ export class HeadcountInstance {
     private readonly _controlPanelChannel: TextChannel;
     // The section.
     private readonly _raidSection: ISectionInfo;
+    // All essential options (options that give early location). Equivalent to _afkCheckButtons but as raw data
     // Nonessential reactions. These are reactions that don't give any perks. More can be added at any point.
     private readonly _nonEssentialReactions: EmojiIdentifierResolvable[];
+    // A collection that contains the IAfkCheckReaction.mapKey as the key and the members with the corresponding
     // Buttons to display on the AFK check. These should only contain essential buttons.
     private readonly _afkCheckButtons: MessageButton[];
-    // All essential options (options that give early location). Equivalent to _afkCheckButtons but as raw data
     // instead of buttons. The key is the mapping key.
     private readonly _allEssentialOptions: Collection<string, ReactionInfoMore>;
-    // A collection that contains the IAfkCheckReaction.mapKey as the key and the members with the corresponding
     // item as the value.
     private readonly _pplWithEarlyLoc: Collection<string, { member: GuildMember, modifiers: string[] }[]>;
-
     // The guild doc.
     private _guildDoc: IGuildInfo;
     // Current raid status.
     private _headcountStatus: HeadcountStatus;
-
     // The headcount message.
     private _headcountMsg: Message | null;
     // The control panel message.
     private _controlPanelMsg: Message | null;
-
     // Whether these intervals are running.
     private _intervalsAreRunning: boolean = false;
-
     // The collector waiting for interactions from users.
     private _headcountButtonCollector: InteractionCollector<MessageComponentInteraction> | null;
     // The collector waiting for interactions from staff.
     private _controlPanelReactionCollector: InteractionCollector<MessageComponentInteraction> | null;
-
     // The member that initiated this.
     private readonly _memberInit: GuildMember;
+
+    // Anyone that is currently confirming their reaction with the bot.
     // The leader's name (as a string).
     private readonly _leaderName: string;
     // Whether this has already been added to the database
     private _addedToDb: boolean = false;
-
-    // Anyone that is currently confirming their reaction with the bot.
     // This is so we don't have double reactions
     private _pplConfirmingReaction: Set<string> = new Set();
-
     // All modifiers that we should be referring to.
     private readonly _modifiersToUse: readonly IDungeonModifier[];
-
-    // The headcount embed color.
-    private static readonly DEFAULT_EMBED_COLOR: number = 16777215; //default to white
     private _embedColor: number;
-
     // The headcount start time and expiration time
     private _startTime: number;
     private _expTime: number;
-    private static readonly DEFAULT_HEADCOUNT_DURATION: number = 60 * 60 * 1000; //1 hour in milliseconds
-
     // Instance information for logging
     private _instanceInfo: string;
 
@@ -286,6 +276,14 @@ export class HeadcountInstance {
         });
 
         this._pplWithEarlyLoc.set("interested", []);
+    }
+
+    public get headcountMessage(): Message | null {
+        return this._headcountMsg;
+    }
+
+    public get controlPanelMessage(): Message | null {
+        return this._controlPanelMsg;
     }
 
     /**
@@ -471,7 +469,7 @@ export class HeadcountInstance {
             return;
         this._headcountStatus = HeadcountStatus.HEADCOUNT_FINISHED;
 
-        // Update the database so it is clear that we are in raid mode.    
+        // Update the database so it is clear that we are in raid mode.
         LOGGER.debug(`${this._instanceInfo} Updating database for headcount.`);
         const res = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
@@ -513,7 +511,6 @@ export class HeadcountInstance {
         }).catch();
         LOGGER.info(`${this._instanceInfo} Headcount ended`);
     }
-
 
     /**
      * Aborts a headcount
@@ -794,6 +791,66 @@ export class HeadcountInstance {
     }
 
     /**
+     * Gets the corresponding `IHeadcountInfo` object. Everything should be initialized before this is called or this
+     * will return null.
+     * @returns {IHeadcountInfo | null} The raid object, which can be saved to a database. `null` if this headcount
+     * check has not been started yet.
+     */
+    public getHeadcountInfoObject(): IHeadcountInfo | null {
+        if (!this._headcountMsg || !this._controlPanelMsg)
+            return null;
+
+        const hcObj: IHeadcountInfo = {
+            dungeonCodeName: this._dungeon.codeName,
+            startTime: this._startTime,
+            expirationTime: this._expTime,
+            memberInit: this._memberInit.id,
+            raidChannels: this._raidSection.channels.raids,
+            headcountMessageId: this._headcountMsg.id,
+            controlPanelMessageId: this._controlPanelMsg.id,
+            status: this._headcountStatus,
+            sectionIdentifier: this._raidSection.uniqueIdentifier,
+            earlyLocationReactions: []
+        };
+
+        for (const [key, val] of this._pplWithEarlyLoc) {
+            val.forEach(obj => {
+                hcObj.earlyLocationReactions.push({
+                    userId: obj.member.id,
+                    reactCodeName: key,
+                    modifiers: obj.modifiers
+                });
+            });
+        }
+
+        return hcObj;
+    }
+
+    /**
+     * Cleans the headcount up. This will remove the control panel message, and remove the headcount from the database.
+     */
+    public async cleanUpHeadcount(): Promise<void> {
+        LOGGER.info(`${this._instanceInfo} Cleaning headcount`);
+        // Stop 0: Stop all collectors
+        await this.stopAllIntervalsAndCollectors();
+        // Step 1: Remove from ActiveRaids collection
+        if (this._headcountMsg) {
+            HeadcountInstance.ActiveHeadcounts.delete(this._headcountMsg.id);
+        }
+
+        await Promise.all([
+            // Step 2: Remove the raid object. We don't need it anymore.
+            // Also stop all collectors.
+            this.removeHeadcountFromDatabase(),
+            // Step 3: Remove the control panel message.
+            MessageUtilities.tryDelete(this._controlPanelMsg),
+            // Step 4: Unpin the AFK check message.
+            MessageUtilities.tryDelete(this._headcountMsg)
+        ]);
+        LOGGER.info(`${this._instanceInfo} Headcount cleaned`);
+    }
+
+    /**
      * Starts a control panel collector.
      * @returns {boolean} Whether the collector started successfully.
      * @private
@@ -867,7 +924,6 @@ export class HeadcountInstance {
         this._headcountButtonCollector = null;
         return;
     }
-
 
     /**
      * Starts the intervals, which periodically updates the headcount message and the control panel message.
@@ -999,42 +1055,6 @@ export class HeadcountInstance {
     }
 
     /**
-     * Gets the corresponding `IHeadcountInfo` object. Everything should be initialized before this is called or this
-     * will return null.
-     * @returns {IHeadcountInfo | null} The raid object, which can be saved to a database. `null` if this headcount
-     * check has not been started yet.
-     */
-    public getHeadcountInfoObject(): IHeadcountInfo | null {
-        if (!this._headcountMsg || !this._controlPanelMsg)
-            return null;
-
-        const hcObj: IHeadcountInfo = {
-            dungeonCodeName: this._dungeon.codeName,
-            startTime: this._startTime,
-            expirationTime: this._expTime,
-            memberInit: this._memberInit.id,
-            raidChannels: this._raidSection.channels.raids,
-            headcountMessageId: this._headcountMsg.id,
-            controlPanelMessageId: this._controlPanelMsg.id,
-            status: this._headcountStatus,
-            sectionIdentifier: this._raidSection.uniqueIdentifier,
-            earlyLocationReactions: []
-        };
-
-        for (const [key, val] of this._pplWithEarlyLoc) {
-            val.forEach(obj => {
-                hcObj.earlyLocationReactions.push({
-                    userId: obj.member.id,
-                    reactCodeName: key,
-                    modifiers: obj.modifiers
-                });
-            });
-        }
-
-        return hcObj;
-    }
-
-    /**
      * Adds the headcount object to the database. This should only be called once the headcount has started.
      * @returns {Promise<boolean>} Whether this was successful.
      * @private
@@ -1076,30 +1096,6 @@ export class HeadcountInstance {
         if (!res) return false;
         this._guildDoc = res;
         return true;
-    }
-
-    /**
-     * Cleans the headcount up. This will remove the control panel message, and remove the headcount from the database.
-     */
-    public async cleanUpHeadcount(): Promise<void> {
-        LOGGER.info(`${this._instanceInfo} Cleaning headcount`);
-        // Stop 0: Stop all collectors
-        await this.stopAllIntervalsAndCollectors();
-        // Step 1: Remove from ActiveRaids collection
-        if (this._headcountMsg) {
-            HeadcountInstance.ActiveHeadcounts.delete(this._headcountMsg.id);
-        }
-
-        await Promise.all([
-            // Step 2: Remove the raid object. We don't need it anymore.
-            // Also stop all collectors.
-            this.removeHeadcountFromDatabase(),
-            // Step 3: Remove the control panel message.
-            MessageUtilities.tryDelete(this._controlPanelMsg),
-            // Step 4: Unpin the AFK check message.
-            MessageUtilities.tryDelete(this._headcountMsg)
-        ]);
-        LOGGER.info(`${this._instanceInfo} Headcount cleaned`);
     }
 
     /**
@@ -1207,14 +1203,6 @@ export class HeadcountInstance {
         });
 
         return true;
-    }
-
-    public get headcountMessage(): Message | null {
-        return this._headcountMsg;
-    }
-
-    public get controlPanelMessage(): Message | null {
-        return this._controlPanelMsg;
     }
 }
 
