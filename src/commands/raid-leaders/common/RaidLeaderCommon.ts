@@ -1,27 +1,16 @@
-import {
-    Collection,
-    TextChannel,
-    Role,
-    MessageSelectMenu, MessageActionRow, SelectMenuInteraction,
-} from "discord.js"
-import {
-    ISectionInfo,
-    IDungeonInfo,
-} from "../../../definitions"
-import { DefinedRole } from "../../../definitions/Types";
-import {
-    canManageRaidsIn,
-    hasPermsToRaid,
-} from "../../../instances/Common";
-import { ICommandContext } from "../../../commands";
-import { DUNGEON_DATA } from "../../../constants/dungeons/DungeonData";
-import { DungeonUtilities } from "../../../utilities/DungeonUtilities";
-import { ArrayUtilities } from "../../../utilities/ArrayUtilities";
-import { MessageUtilities } from "../../../utilities/MessageUtilities";
-import { ButtonConstants } from "../../../constants/ButtonConstants";
-import { GuildFgrUtilities } from "../../../utilities/fetch-get-request/GuildFgrUtilities";
-import { StringUtil } from "../../../utilities/StringUtilities";
-import { AdvancedCollector } from "../../../utilities/collectors/AdvancedCollector";
+import {Collection, MessageActionRow, MessageSelectMenu, Role, SelectMenuInteraction, TextChannel,} from "discord.js";
+import {IDungeonInfo, ISectionInfo,} from "../../../definitions";
+import {DefinedRole} from "../../../definitions/Types";
+import {canManageRaidsIn, hasPermsToRaid,} from "../../../instances/Common";
+import {ICommandContext} from "../../../commands";
+import {DUNGEON_DATA} from "../../../constants/dungeons/DungeonData";
+import {DungeonUtilities} from "../../../utilities/DungeonUtilities";
+import {ArrayUtilities} from "../../../utilities/ArrayUtilities";
+import {MessageUtilities} from "../../../utilities/MessageUtilities";
+import {ButtonConstants} from "../../../constants/ButtonConstants";
+import {GuildFgrUtilities} from "../../../utilities/fetch-get-request/GuildFgrUtilities";
+import {StringUtil} from "../../../utilities/StringUtilities";
+import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
 
 
 export type DungeonSelectionType = {
@@ -40,9 +29,9 @@ export type DungeonSelectionType = {
  * @param {ISectionInfo[]>} allSections All Guild Sections.
  * @return {Promise<DungeonSelectionType[]>} All sections the leader can lead in.
  */
- export async function getAvailableSections(ctx: ICommandContext, allRolePerms: Collection<DefinedRole, string[]>,
-    allSections: ISectionInfo[]): Promise<DungeonSelectionType[]> {
-    
+export async function getAvailableSections(ctx: ICommandContext, allRolePerms: Collection<DefinedRole, string[]>,
+                                           allSections: ISectionInfo[]): Promise<DungeonSelectionType[]> {
+
     const availableSections: DungeonSelectionType[] = [];
     for (const section of allSections) {
         if (!canManageRaidsIn(section, ctx.member!, ctx.guildDoc!))
@@ -179,13 +168,13 @@ export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: Dun
     const selectMenus: MessageSelectMenu[] = [];
 
     let exaltDungeons = [];
-    for(let i = 0; i < sectionToUse.dungeons.length; i++){
-        if(sectionToUse.dungeons[i].dungeonCategory === "Exaltation Dungeons"){
+    for (let i = 0; i < sectionToUse.dungeons.length; i++) {
+        if (sectionToUse.dungeons[i].dungeonCategory === "Exaltation Dungeons") {
             exaltDungeons.push(sectionToUse.dungeons[i]);
         }
     }
 
-    if(exaltDungeons.length > 0){
+    if (exaltDungeons.length > 0) {
         selectMenus.push(
             new MessageSelectMenu()
                 .setCustomId(`${uIdentifier}_${5}`)
@@ -201,9 +190,9 @@ export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: Dun
                 }))
         );
     }
-    
+
     const dungeonSubset = ArrayUtilities.breakArrayIntoSubsets(
-        sectionToUse.dungeons.filter(x => x.dungeonCategory !== "Exaltation Dungeons"), 
+        sectionToUse.dungeons.filter(x => x.dungeonCategory !== "Exaltation Dungeons"),
         25
     );
     for (let i = 0; i < Math.min(4, dungeonSubset.length); i++) {
@@ -212,7 +201,7 @@ export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: Dun
                 .setCustomId(`${uIdentifier}_${i}`)
                 .setMinValues(1)
                 .setMaxValues(1)
-                .setPlaceholder("All Dungeons " + (i+1))
+                .setPlaceholder("All Dungeons " + (i + 1))
                 .addOptions(dungeonSubset[i].map(x => {
                     return {
                         label: x.dungeonName,

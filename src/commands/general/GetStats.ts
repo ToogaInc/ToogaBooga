@@ -4,9 +4,9 @@ import {LoggerManager} from "../../managers/LoggerManager";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {Collection} from "discord.js";
+import {EmojiConstants} from "../../constants/EmojiConstants";
 import DungeonLedType = LoggerManager.DungeonLedType;
 import DungeonRanType = LoggerManager.DungeonRunType;
-import {EmojiConstants} from "../../constants/EmojiConstants";
 
 export class GetStats extends BaseCommand {
     public constructor() {

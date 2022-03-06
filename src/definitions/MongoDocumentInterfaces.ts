@@ -1,7 +1,12 @@
 import {
     IAfkCheckProperties,
+    ICustomDungeonInfo,
+    IDungeonOverrideInfo,
+    IHeadcountInfo,
+    ImageInfo,
     IRaidChannels,
-    IRaidInfo, IReactionInfo, ICustomDungeonInfo, ImageInfo, IDungeonOverrideInfo, IHeadcountInfo
+    IRaidInfo,
+    IReactionInfo
 } from "./DungeonRaidInterfaces";
 import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
 import {IModmailThread} from "./ModmailInterfaces";

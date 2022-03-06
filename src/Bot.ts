@@ -1,24 +1,31 @@
 import {IConfiguration} from "./definitions";
 import {
     Client,
-    Collection, DMChannel, Guild, GuildChannel, GuildMember,
-    Interaction, Message, PartialMessage, ThreadChannel,
+    Collection,
+    DMChannel,
+    Guild,
+    GuildChannel,
+    GuildMember,
+    Interaction,
+    Message,
+    PartialMessage,
+    ThreadChannel,
     VoiceState
 } from "discord.js";
 import {MongoManager} from "./managers/MongoManager";
 import axios, {AxiosInstance} from "axios";
 import * as Cmds from "./commands";
 import {
+    onChannelDeleteEvent,
     onErrorEvent,
     onGuildCreateEvent,
+    onGuildMemberAdd,
     onInteractionEvent,
+    onMessageDeleteEvent,
     onMessageEvent,
     onReadyEvent,
-    onVoiceStateEvent,
     onThreadArchiveEvent,
-    onChannelDeleteEvent,
-    onMessageDeleteEvent,
-    onGuildMemberAdd
+    onVoiceStateEvent
 } from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";

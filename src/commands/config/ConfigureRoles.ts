@@ -1,8 +1,10 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
-    ConfigType, DB_CONFIG_ACTION_ROW,
+    ConfigType,
     DATABASE_CONFIG_DESCRIPTION,
-    entryFunction, getInstructions,
+    DB_CONFIG_ACTION_ROW,
+    entryFunction,
+    getInstructions,
     IBaseDatabaseEntryInfo,
     IConfigCommand
 } from "./common/ConfigCommon";
@@ -10,17 +12,17 @@ import {IGuildInfo, ISectionInfo} from "../../definitions";
 import {Guild, Message, MessageButton, MessageEmbed, Role, TextChannel} from "discord.js";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import getCachedRole = GuildFgrUtilities.getCachedRole;
 import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {Filter} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
-import hasCachedRole = GuildFgrUtilities.hasCachedRole;
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import getCachedRole = GuildFgrUtilities.getCachedRole;
+import hasCachedRole = GuildFgrUtilities.hasCachedRole;
 
 enum DisplayFilter {
     Moderation = (1 << 0),
@@ -286,7 +288,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-        
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });

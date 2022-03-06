@@ -3,7 +3,8 @@ import {
     Message,
     MessageButton,
     MessageComponentInteraction,
-    MessageEmbed, MessageSelectMenu,
+    MessageEmbed,
+    MessageSelectMenu,
     MessageSelectOptionData,
     Role,
     TextChannel
@@ -123,7 +124,7 @@ export class ConfigureSections extends BaseCommand {
     ];
 
     public static readonly MAXIMUM_SECTIONS_ALLOWED: number = 10;
-    
+
     public constructor() {
         super({
             cmdCode: "CONFIGURE_SECTION_COMMAND",
@@ -145,7 +146,7 @@ export class ConfigureSections extends BaseCommand {
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-        
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -274,14 +275,14 @@ export class ConfigureSections extends BaseCommand {
                     value: x.uniqueIdentifier
                 };
             });
-        
+
         await botMsg.edit({
             embeds: [
                 new MessageEmbed()
                     .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
                     .setTitle("Select Section")
                     .setDescription(
-                        "Please select a section that you want to manage. If you want to go back, press the **Back**" 
+                        "Please select a section that you want to manage. If you want to go back, press the **Back**"
                         + " button. If you want to cancel this process completely, press the **Cancel** button."
                     )
             ],

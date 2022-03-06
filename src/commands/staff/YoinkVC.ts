@@ -4,6 +4,7 @@ import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUti
 import {Logger} from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
+
 export class YoinkVC extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
@@ -79,7 +80,7 @@ export class YoinkVC extends BaseCommand {
                 });
             })
         );
-        
+
         LOGGER.info(`${ctx.member?.displayName} used YoinkVC to move ${ct} users from ${channel} to ${ctx.member!.voice.channel!}`);
         await ctx.interaction.editReply({
             content: `Moved ${ct} members from ${channel} to ${ctx.member!.voice.channel!}.`

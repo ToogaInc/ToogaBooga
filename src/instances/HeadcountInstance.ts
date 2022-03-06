@@ -2,15 +2,21 @@ import {
     Collection,
     EmojiIdentifierResolvable,
     Guild,
-    GuildMember, InteractionCollector, Message, MessageActionRow,
-    MessageButton, MessageComponentInteraction, MessageEmbed,
+    GuildMember,
+    InteractionCollector,
+    Message,
+    MessageActionRow,
+    MessageButton,
+    MessageComponentInteraction,
+    MessageEmbed,
     TextChannel
 } from "discord.js";
 import {
     ICustomDungeonInfo,
     IDungeonInfo,
     IDungeonModifier,
-    IGuildInfo, IHeadcountInfo,
+    IGuildInfo,
+    IHeadcountInfo,
     ISectionInfo
 } from "../definitions";
 import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/DungeonModifiers";

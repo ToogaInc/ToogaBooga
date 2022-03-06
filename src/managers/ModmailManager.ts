@@ -276,7 +276,7 @@ export namespace ModmailManager {
 
         const thread = await origMsg.thread!.fetch();
         if (!guildDoc.properties.modmailThreads.some(x => x.threadId === thread.id
-                && x.baseMsg === origMsg.id)) {
+            && x.baseMsg === origMsg.id)) {
             return false;
         }
 

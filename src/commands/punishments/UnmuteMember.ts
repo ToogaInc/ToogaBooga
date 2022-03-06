@@ -4,8 +4,8 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {MuteManager} from "../../managers/PunishmentManager";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
-import generateRandomString = StringUtil.generateRandomString;
 import {preCheckPunishment} from "./common/PunishmentCommon";
+import generateRandomString = StringUtil.generateRandomString;
 
 export class UnmuteMember extends BaseCommand {
     public static readonly ERROR_NO_UNMUTE_STR: string = new StringBuilder()

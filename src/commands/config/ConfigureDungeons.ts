@@ -4,7 +4,9 @@ import {
     MessageButton,
     MessageComponentInteraction,
     MessageEmbed,
-    MessageSelectMenu, MessageSelectOptionData, Role,
+    MessageSelectMenu,
+    MessageSelectOptionData,
+    Role,
     TextChannel
 } from "discord.js";
 import {StringBuilder} from "../../utilities/StringBuilder";
@@ -15,8 +17,10 @@ import {
     IAfkCheckReaction,
     ICustomDungeonInfo,
     IDungeonInfo,
-    IDungeonOverrideInfo, IGuildInfo,
-    ImageInfo, ISectionInfo
+    IDungeonOverrideInfo,
+    IGuildInfo,
+    ImageInfo,
+    ISectionInfo
 } from "../../definitions";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";

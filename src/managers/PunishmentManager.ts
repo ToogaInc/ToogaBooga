@@ -210,7 +210,7 @@ export namespace PunishmentManager {
         punishmentType: AllModLogType,
         details: IPunishmentDetails
     ): Promise<string | null> {
-        
+
         LOGGER.info(`Logging punishment for ${"name" in member ? member.name : member.displayName}, type: ${punishmentType}`);
 
         let logChannel: TextChannel | null;
@@ -704,7 +704,7 @@ export namespace SuspensionManager {
     const _queuedDelSectionIds = new Queue<{ guildId: string; sectionId: string; }>();
 
     // Time between each checker
-    const timeToUpdate: number = 60*1000;
+    const timeToUpdate: number = 60 * 1000;
 
     let _isRunning = false;
 
@@ -1259,7 +1259,7 @@ export namespace MuteManager {
     const _queuedDelMutedUsers = new Queue<IMutedUser & { guildId: string; }>();
 
     // Time between each checker
-    const timeToUpdate: number = 60*1000;
+    const timeToUpdate: number = 60 * 1000;
 
     let _isRunning = false;
 

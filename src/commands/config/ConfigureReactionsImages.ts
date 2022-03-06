@@ -95,7 +95,7 @@ export class ConfigureReactionsImages extends BaseCommand {
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-        
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -230,7 +230,7 @@ export class ConfigureReactionsImages extends BaseCommand {
             downButton,
             addButton,
             removeButton,
-            changeButton ,
+            changeButton,
             ButtonConstants.SAVE_BUTTON,
             ButtonConstants.QUIT_BUTTON
         ];

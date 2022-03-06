@@ -2,8 +2,9 @@ import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseC
 import {VoiceChannel} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {Logger} from "../../utilities/Logger";
-import {DungeonUtilities} from "../../utilities/DungeonUtilities";
+
 const LOGGER: Logger = new Logger(__filename, false);
+
 export class CleanVC extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
@@ -48,20 +49,20 @@ export class CleanVC extends BaseCommand {
         const channel = ctx.interaction.options.getChannel("vc", true);
         const member = ctx.member;
 
-        if(!member) {
+        if (!member) {
             await ctx.interaction.reply({
                 content: "An unknown error occurred.",
                 ephemeral: true
             });
-            return -1;   
+            return -1;
         }
 
-        if(!guildDoc) {
+        if (!guildDoc) {
             await ctx.interaction.reply({
                 content: "An unknown error occurred.",
                 ephemeral: true
             });
-            return -1;   
+            return -1;
         }
 
         if (!(channel instanceof VoiceChannel)) {
@@ -71,7 +72,7 @@ export class CleanVC extends BaseCommand {
             });
             return -1;
         }
-                
+
         LOGGER.info(`${member.displayName} used CleanVC on ${channel}`);
         await ctx.interaction.deferReply();
 
@@ -90,7 +91,7 @@ export class CleanVC extends BaseCommand {
                 });
             })
         );
-        
+
         LOGGER.info(`${ctx.member?.displayName} used CleanVC to remove ${ct} users from ${channel}`);
         await ctx.interaction.editReply({
             content: `Disconnected ${ct} members from ${channel}.`

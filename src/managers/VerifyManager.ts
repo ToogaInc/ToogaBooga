@@ -1,5 +1,7 @@
 import {
-    ButtonInteraction, Collection, CommandInteraction,
+    ButtonInteraction,
+    Collection,
+    CommandInteraction,
     EmbedFieldData,
     GuildMember,
     Interaction,
@@ -17,7 +19,9 @@ import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
 import {PrivateApiDefinitions as PAD} from "../private-api/PrivateApiDefinitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {
-    IGuildInfo, IIdNameInfo, IManualVerificationEntry,
+    IGuildInfo,
+    IIdNameInfo,
+    IManualVerificationEntry,
     IPropertyKeyValuePair,
     ISectionInfo,
     IVerificationProperties

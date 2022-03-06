@@ -6,7 +6,8 @@ import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {
     IBotInfo,
     IGuildInfo,
-    IIdNameInfo, IOtherMajorConfig,
+    IIdNameInfo,
+    IOtherMajorConfig,
     IPermAllowDeny,
     IPropertyKeyValuePair,
     IPunishmentHistoryEntry,

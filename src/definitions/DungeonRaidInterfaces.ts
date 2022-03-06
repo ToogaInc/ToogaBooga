@@ -541,19 +541,19 @@ export interface IRaidInfo {
      */
     memberInit: string;
 
-     /**
+    /**
      * The time the raid was started.
      *
      * @type {number}
      */
-      startTime: number;
+    startTime: number;
 
-      /**
-       * The time the raid should expire.
-       *
-       * @type {number}
-       */
-      expirationTime: number;
+    /**
+     * The time the raid should expire.
+     *
+     * @type {number}
+     */
+    expirationTime: number;
 
     /**
      * The raid channels. We use this in case the channels were changed.

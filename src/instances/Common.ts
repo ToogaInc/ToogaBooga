@@ -1,10 +1,14 @@
 import {
     BaseMessageComponent,
-    Collection, CollectorFilter,
-    EmojiIdentifierResolvable, Guild, GuildMember,
+    Collection,
+    CollectorFilter,
+    EmojiIdentifierResolvable,
+    Guild,
+    GuildMember,
     MessageButton,
     MessageComponentInteraction,
-    MessageSelectMenu, Role,
+    MessageSelectMenu,
+    Role,
     TextChannel
 } from "discord.js";
 import {
@@ -13,7 +17,8 @@ import {
     IDungeonModifier,
     IGuildInfo,
     IMappedAfkCheckReactions,
-    IReactionInfo, ISectionInfo
+    IReactionInfo,
+    ISectionInfo
 } from "../definitions";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
@@ -675,16 +680,16 @@ export function hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMemb
  * @param {number} duration number of ms to delay for
  * @returns {Promise<void>} a promise
  */
-export async function sendTemporaryAlert(channel: TextChannel | null, message: string, duration: number){
-    if(!channel) return;
+export async function sendTemporaryAlert(channel: TextChannel | null, message: string, duration: number) {
+    if (!channel) return;
 
     const tempMsg = await channel.send({
         content: message,
     });
-    
+
     await Promise.all([tempMsg, delay(duration)]);
     tempMsg.delete().catch();
-    
+
     return;
 }
 
@@ -693,6 +698,6 @@ export async function sendTemporaryAlert(channel: TextChannel | null, message: s
  * @param {number} ms number of ms to delay for
  * @returns {Promise<void>} a promise
  */
-export async function delay(ms: number){
+export async function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -41,7 +41,8 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {UserManager} from "../managers/UserManager";
 import {
     ICustomDungeonInfo,
-    IDungeonInfo, IDungeonModifier,
+    IDungeonInfo,
+    IDungeonModifier,
     IGuildInfo,
     IRaidInfo,
     IRaidOptions,
@@ -49,22 +50,22 @@ import {
 } from "../definitions";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {LoggerManager} from "../managers/LoggerManager";
-import getFormattedTime = TimeUtilities.getFormattedTime;
-import RunResult = LoggerManager.RunResult;
 import {QuotaManager} from "../managers/QuotaManager";
 import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/DungeonModifiers";
 import {
     confirmReaction,
     controlPanelCollectorFilter,
+    delay,
     getItemDisplay,
     getReactions,
     ReactionInfoMore,
     sendTemporaryAlert,
-    delay,
 } from "./Common";
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {PermsConstants} from "../constants/PermsConstants";
 import {StringUtil} from "../utilities/StringUtilities";
+import getFormattedTime = TimeUtilities.getFormattedTime;
+import RunResult = LoggerManager.RunResult;
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"

@@ -885,7 +885,7 @@ export class ConfigureQuotas extends BaseCommand {
                             }
                         }
 
-                        // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
+                            // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
                         // types w/ said specific dungeon
                         else {
                             for (let i = ptsToUse.length - 1; i >= 0; i--) {

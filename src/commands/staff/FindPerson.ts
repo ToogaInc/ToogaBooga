@@ -1,10 +1,5 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {
-    BaseMessageComponent,
-    ColorResolvable,
-    GuildMember,
-    MessageEmbed
-} from "discord.js";
+import {BaseMessageComponent, ColorResolvable, GuildMember, MessageEmbed} from "discord.js";
 import {UserManager} from "../../managers/UserManager";
 import {MongoManager} from "../../managers/MongoManager";
 import {IIdNameInfo} from "../../definitions";
@@ -13,12 +8,12 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {Bot} from "../../Bot";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
-import getDateTime = TimeUtilities.getDateTime;
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import getDateTime = TimeUtilities.getDateTime;
 
 export class FindPerson extends BaseCommand {
     public constructor() {

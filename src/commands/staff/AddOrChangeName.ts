@@ -253,7 +253,7 @@ export class AddOrChangeName extends BaseCommand {
             .setMaxValues(1)
             .setPlaceholder("Possible Names to Replace")
             .setOptions(names.map(x => {
-                return {value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database"}
+                return {value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database"};
             }));
 
         await ctx.interaction.editReply({

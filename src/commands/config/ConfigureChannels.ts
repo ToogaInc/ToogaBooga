@@ -1,7 +1,8 @@
 import {
     ConfigType,
+    DATABASE_CONFIG_DESCRIPTION,
     DB_CONFIG_ACTION_ROW,
-    DATABASE_CONFIG_DESCRIPTION, entryFunction,
+    entryFunction,
     getInstructions,
     IBaseDatabaseEntryInfo,
     IConfigCommand
@@ -16,10 +17,10 @@ import {Filter} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {IGuildInfo, ISectionInfo} from "../../definitions";
 import {EmojiConstants} from "../../constants/EmojiConstants";
-import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 import {MainLogType, SectionLogType} from "../../definitions/Types";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 
 enum ChannelCategoryType {
     Raiding,

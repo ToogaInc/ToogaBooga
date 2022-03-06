@@ -87,7 +87,7 @@ export class Purge extends BaseCommand {
             numDeleted += groupMsgs.size;
 
             if (num <= 0) {
-                 break;
+                break;
             }
 
             await MiscUtilities.stopFor(3000);

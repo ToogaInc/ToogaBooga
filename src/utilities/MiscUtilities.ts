@@ -1,12 +1,12 @@
 import {
+    Guild,
     GuildMember,
     Message,
     MessageOptions,
     MessageSelectMenu,
     MessageSelectOptionData,
     Snowflake,
-    TextChannel,
-    Guild
+    TextChannel
 } from "discord.js";
 import {CommonRegex} from "../constants/CommonRegex";
 import {DefinedRole} from "../definitions/Types";
@@ -221,17 +221,17 @@ export namespace MiscUtilities {
         return allSections.find(x => x.uniqueIdentifier === result.values[0])!;
     }
 
-        /**
+    /**
      * Returns role name when provided with guild and roleId.
      * @param {string} roleId The role ID.
      * @param {Guild} guild The guild.
      * @returns {string} the name of the role or NOT_FOUND
      */
-        export function getRoleName(roleId: string, guild: Guild): string {
-            LOGGER.debug(`Obtaining role name from ${roleId}`);
-            const role = guild.roles.cache.find(r => r.id === roleId);
-            if(!role) return "";
-            return role.name;
-    }    
+    export function getRoleName(roleId: string, guild: Guild): string {
+        LOGGER.debug(`Obtaining role name from ${roleId}`);
+        const role = guild.roles.cache.find(r => r.id === roleId);
+        if (!role) return "";
+        return role.name;
+    }
 
 }

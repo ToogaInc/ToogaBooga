@@ -31,8 +31,8 @@ import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
 import {VerifyManager} from "../../managers/VerifyManager";
 import {ButtonConstants} from "../../constants/ButtonConstants";
-import SHORT_STAT_TO_LONG = VerifyManager.SHORT_STAT_TO_LONG;
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import SHORT_STAT_TO_LONG = VerifyManager.SHORT_STAT_TO_LONG;
 
 export class ConfigureVerification extends BaseCommand {
     public static GUILD_RANKS: string[] = [

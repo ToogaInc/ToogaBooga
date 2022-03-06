@@ -1,9 +1,4 @@
-import {
-    Channel,
-    Guild, GuildBasedChannel,
-    GuildMember,
-    Message, Role, Snowflake, TextBasedChannel,
-} from "discord.js";
+import {Channel, Guild, GuildBasedChannel, GuildMember, Message, Role, Snowflake, TextBasedChannel,} from "discord.js";
 import {MiscUtilities} from "../MiscUtilities";
 import {DefinedRole} from "../../definitions/Types";
 import {IGuildInfo} from "../../definitions";
