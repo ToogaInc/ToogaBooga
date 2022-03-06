@@ -48,7 +48,6 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         "VerifySuccess",
         "VerifyStep",
         "VerifyStart",
-        "SectionSuspend",
         "ManualVerifyAccepted",
         "ManualVerifyDenied",
         "ManualVerifyRequest"
@@ -447,6 +446,9 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             const query: Filter<IGuildInfo> = section.isMainSection
                 ? {guildId: ctx.guild!.id}
                 : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
+            const keySetter = section.isMainSection
+                ? "channels.loggingChannels"
+                : "guildSections.$.channels.loggingChannels";
             const newArr = section.isMainSection
                 ? ctx.guildDoc!.channels.loggingChannels
                 : section.channels.loggingChannels;
@@ -463,11 +465,11 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     newArr[arrIdx].value = result.id;
                 }
 
-                ctx.guildDoc = (await MongoManager.getGuildCollection().findOneAndUpdate(query, {
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(query, {
                     $set: {
-                        "channels.loggingChannels": newArr
+                        [keySetter]: newArr
                     }
-                }, {returnDocument: "after"})).value!;
+                });
                 section = MongoManager.getAllSections(ctx.guildDoc!)
                     .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                 continue;
