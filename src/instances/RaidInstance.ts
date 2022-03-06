@@ -1431,7 +1431,7 @@ export class RaidInstance {
             return true;
         // Otherwise, update location.
         await this.updateLocation(res);
-        await this.sendMsgToEarlyLocationPeople({
+        this.sendMsgToEarlyLocationPeople({
             content: new StringBuilder(`Your raid leader for the ${this._dungeon.dungeonName} raid has changed `)
                 .append(`the raid location. Your new location is: **${this._location}**.`)
                 .toString()
@@ -1894,7 +1894,9 @@ export class RaidInstance {
         const time = getFormattedTime();
 
         if (logToChannel && this._logChan) {
-            this._logChan.send(`**\`[${time}]\`** ${event}`).catch();
+            await GlobalFgrUtilities.sendMsg(this._logChan, {
+                content: `**\`[${time}]\`** ${event}`
+            });
         }
 
         this._raidLogs.push(`[${time}] ${event}`);

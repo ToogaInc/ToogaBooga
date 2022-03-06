@@ -69,6 +69,9 @@ export class CleanVC extends BaseCommand {
             return -1;
         }
 
+        // Enforce that this is a VC (for type checking purposes) and in case
+        // discord.js decides to change the constant value of the GuildVoice
+        // channel. 
         if (!(channel instanceof VoiceChannel)) {
             await ctx.interaction.reply({
                 content: "You must select a voice channel for this to work.",
