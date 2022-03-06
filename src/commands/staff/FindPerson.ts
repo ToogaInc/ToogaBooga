@@ -19,6 +19,7 @@ import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 
 export class FindPerson extends BaseCommand {
     public constructor() {
@@ -131,7 +132,7 @@ export class FindPerson extends BaseCommand {
                 const dbRes = await MongoManager.findNameInIdNameCollection(ignQuery);
                 if (dbRes.length > 0) {
                     nameIdRes = dbRes[0];
-                    const member = await ctx.guild!.members.fetch(dbRes[0].currentDiscordId);
+                    const member = await GuildFgrUtilities.fetchGuildMember(ctx.guild!, dbRes[0].currentDiscordId);
                     if (member)
                         targetMember = member;
                 }
@@ -147,7 +148,7 @@ export class FindPerson extends BaseCommand {
                 const dbRes = await MongoManager.findIdInIdNameCollection(idQuery!);
                 if (dbRes.length > 0) {
                     nameIdRes = dbRes[0];
-                    const member = await ctx.guild!.members.fetch(dbRes[0].currentDiscordId);
+                    const member = await GuildFgrUtilities.fetchGuildMember(ctx.guild!, dbRes[0].currentDiscordId);
                     if (member)
                         targetMember = member;
                 }

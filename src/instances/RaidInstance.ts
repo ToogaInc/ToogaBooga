@@ -64,6 +64,7 @@ import {
 } from "./Common";
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {PermsConstants} from "../constants/PermsConstants";
+import {StringUtil} from "../utilities/StringUtilities";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
@@ -1452,6 +1453,9 @@ export class RaidInstance {
                     .appendLine()
                     .append(`- ${parseSummary.inVcButNotInRaid.length} player(s) are in the raid voice  `)
                     .append("channel but not in the /who screenshot.")
+                    .appendLine(2)
+                    .append("`/who` Results:")
+                    .append(StringUtil.codifyString(parseSummary.whoRes.join(", ")))
                     .toString()
             );
         }
@@ -1479,7 +1483,7 @@ export class RaidInstance {
      * @return {Promise<IParseResponse>} An object containing the parse results.
      */
     public static async parseScreenshot(url: string, vc: VoiceChannel | null): Promise<IParseResponse | null> {
-        const toReturn: IParseResponse = {inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false};
+        const toReturn: IParseResponse = {inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false, whoRes: []};
         // No raid VC = no parse.
         if (!vc) return toReturn;
         // Make sure the image exists.
@@ -1502,6 +1506,7 @@ export class RaidInstance {
             return null;
 
         const parsedNames = data.names;
+        toReturn.whoRes = parsedNames;
         if (parsedNames.length === 0) return toReturn;
         // Parse results means the picture must be valid.
         toReturn.isValid = true;
@@ -3207,4 +3212,5 @@ interface IParseResponse {
     inVcButNotInRaid: string[];
     inRaidButNotInVC: string[];
     isValid: boolean;
+    whoRes: string[];
 }
