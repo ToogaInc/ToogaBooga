@@ -29,6 +29,10 @@ export class CleanVC extends BaseCommand {
                     argName: "vc",
                     desc: "The voice channel that should be cleaned.",
                     type: ArgumentType.Channel,
+                    restrictions: {
+                        // 2 is the constant value for GuildVoice
+                        channelModifier: o => o.addChannelType(2)
+                    },
                     prettyType: "Voice Channel",
                     required: true,
                     example: ["Raid 1"]

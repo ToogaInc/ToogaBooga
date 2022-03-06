@@ -29,8 +29,12 @@ export class Purge extends BaseCommand {
                     displayName: "Amount",
                     argName: "amt",
                     desc: "The number of messages to delete. Must be a positive number at most 1000.",
-                    type: ArgumentType.Number,
-                    prettyType: "Number",
+                    type: ArgumentType.Integer,
+                    restrictions: {
+                        integerMin: 0,
+                        integerMax: 1000
+                    },
+                    prettyType: "Integer",
                     required: true,
                     example: ["10"]
                 }

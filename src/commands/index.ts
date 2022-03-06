@@ -42,6 +42,7 @@ export * from "./logging/LogParse";
 export * from "./logging/GivePoints";
 
 export * from "./owner/SendAnnouncement";
+export * from "./owner/SetStatus";
 
 export * from "./raid-leaders/StartAfkCheck";
 export * from "./raid-leaders/StartHeadcount";

@@ -13,7 +13,7 @@ import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilitie
 import {IGuildInfo} from "../definitions";
 import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {SlashCommandBuilder, SlashCommandChannelOption} from "@discordjs/builders";
 import {MongoManager} from "../managers/MongoManager";
 import {PermsConstants} from "../constants/PermsConstants";
 
@@ -82,8 +82,8 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
     const desc = argInfo.shortDesc ?? argInfo.desc.length > 100
         ? argInfo.desc.substring(0, 95) + "..."
         : argInfo.desc;
-    // Discord.js really decided to make the arguments I needed to make this more concise
-    // private, so I couldn't use it...
+
+    const restrictions = argInfo.restrictions;
     switch (argInfo.type) {
         case ArgumentType.Boolean: {
             scb.addBooleanOption(o => o.setName(argInfo.argName)
@@ -92,9 +92,14 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
             break;
         }
         case ArgumentType.Channel: {
-            scb.addChannelOption(o => o.setName(argInfo.argName)
-                .setRequired(argInfo.required)
-                .setDescription(desc));
+            scb.addChannelOption(o => {
+                o.setName(argInfo.argName)
+                    .setRequired(argInfo.required)
+                    .setDescription(desc);
+
+                restrictions && restrictions.channelModifier && restrictions.channelModifier(o);
+                return o;
+            });
             break;
         }
         case ArgumentType.Role: {
@@ -110,9 +115,21 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
             break;
         }
         case ArgumentType.Integer: {
-            scb.addIntegerOption(o => o.setName(argInfo.argName)
-                .setRequired(argInfo.required)
-                .setDescription(desc));
+            scb.addIntegerOption(o => {
+                o.setName(argInfo.argName)
+                    .setRequired(argInfo.required)
+                    .setDescription(desc);
+
+                if (typeof restrictions?.integerMin !== "undefined") {
+                    o.setMinValue(Math.round(restrictions.integerMin));
+                }
+
+                if (typeof restrictions?.integerMax !== "undefined") {
+                    o.setMaxValue(Math.round(restrictions.integerMax));
+                }
+
+                return o;
+            });
             break;
         }
         case ArgumentType.Mention: {
@@ -128,9 +145,17 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
             break;
         }
         case ArgumentType.String: {
-            scb.addStringOption(o => o.setName(argInfo.argName)
-                .setRequired(argInfo.required)
-                .setDescription(desc));
+            scb.addStringOption(o => {
+                o.setName(argInfo.argName)
+                    .setRequired(argInfo.required)
+                    .setDescription(desc);
+
+                restrictions?.stringChoices
+                    && restrictions.stringChoices.length > 0
+                    && o.addChoices(restrictions.stringChoices);
+
+                return o;
+            });
             break;
         }
         default: {
@@ -599,6 +624,41 @@ interface IArgumentInfo {
      * @type {string}
      */
     type: ArgumentType;
+
+    /**
+     * Any restrictions. This depends on the `type`.
+     * @type {object}
+     */
+    restrictions?: {
+        /**
+         * What choices should be available if the type is String. This is a tuple where:
+         * - the first value is the displayed value.
+         * - the second value is the actual value.
+         *
+         * @type {[string, string][]}
+         */
+        stringChoices?: [string, string][];
+
+        /**
+         * A function to modify the slash channel options; a common use would be to specify the types of channels that
+         * this command can run under. Note that because this library sucks, I have to do this.
+         * @param {SlashCommandChannelOption} o The slash command channel options.
+         * @returns {SlashCommandChannelOption} The slash command channel options.
+         */
+        channelModifier?: (o: SlashCommandChannelOption) => SlashCommandChannelOption;
+
+        /**
+         * The minimum number, if the type is Integer.
+         * @type {number}
+         */
+        integerMin?: number;
+
+        /**
+         * The maximum number, if the type is Integer.
+         * @type {number}
+         */
+        integerMax?: number;
+    };
 
     /**
      * The argument type, formatted as a string which will then be displayed to the end user.

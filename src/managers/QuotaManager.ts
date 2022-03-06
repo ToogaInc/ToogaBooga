@@ -757,12 +757,12 @@ export namespace QuotaService {
     let _isRunning = false;
 
     /**
-     * Checks what quotas need to be reset.
+     * Resets the given quotas.
      * @param {IGuildInfo[]} docs The documents.
      * @returns {number} The number of quotas that were reset.
      * @private
      */
-    async function checkQuotasToReset(docs: IGuildInfo[]): Promise<number> {
+    async function resetGivenQuotas(docs: IGuildInfo[]): Promise<number> {
         const allQuotasToReset: Promise<boolean>[] = [];
         for (const doc of docs) {
             const guild = await GlobalFgrUtilities.fetchGuild(doc.guildId);
@@ -796,7 +796,7 @@ export namespace QuotaService {
         LOGGER.info("Starting Quota Service");
         const docs = await MongoManager.getGuildCollection().find().toArray();
         if (docs.length > 0) {
-            await checkQuotasToReset(docs);
+            await resetGivenQuotas(docs);
         }
 
         _isRunning = true;
@@ -819,7 +819,7 @@ export namespace QuotaService {
     async function run(): Promise<void> {
         LOGGER.info("Running quota service to update quotas.");
         let allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
-        if (await checkQuotasToReset(allGuildDocs) > 0) {
+        if (await resetGivenQuotas(allGuildDocs) > 0) {
             allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
         }
 

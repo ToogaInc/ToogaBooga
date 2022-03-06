@@ -29,7 +29,7 @@ import {
 } from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
-import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
+import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v10";
 import {Logger} from "./utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
@@ -176,7 +176,8 @@ export class Bot {
         ]);
 
         Bot.Commands.set("Bot Owner", [
-            new Cmds.SendAnnouncement()
+            new Cmds.SendAnnouncement(),
+            new Cmds.SetStatus()
         ]);
 
         Bot.Commands.set("Raid Leaders", [
