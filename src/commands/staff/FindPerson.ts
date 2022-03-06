@@ -19,7 +19,6 @@ import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {ButtonConstants} from "../../constants/ButtonConstants";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 
 export class FindPerson extends BaseCommand {
     public constructor() {
@@ -41,22 +40,13 @@ export class FindPerson extends BaseCommand {
             ],
             argumentInfo: [
                 {
-                    displayName: "In-Game Name",
-                    argName: "with_ign",
-                    desc: "The member to look up by IGN.",
+                    displayName: "Member",
+                    argName: "member",
+                    desc: "The member to find.",
                     type: ArgumentType.String,
-                    prettyType: "String",
-                    required: false,
-                    example: ["Darkmattr", "Opre"]
-                },
-                {
-                    displayName: "Discord ID",
-                    argName: "with_id",
-                    desc: "The member to look up by ID.",
-                    type: ArgumentType.String,
-                    prettyType: "String",
-                    required: false,
-                    example: ["613793967871492131"]
+                    prettyType: "Member Resolvable (ID, Mention, IGN)",
+                    required: true,
+                    example: ["@Console#8939", "123313141413155", "Darkmattr"]
                 },
                 {
                     displayName: "Extra Details",
@@ -83,89 +73,24 @@ export class FindPerson extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const showExtraDetails = ctx.interaction.options.getBoolean("extra_details", false) ?? false;
-        const ignQuery = ctx.interaction.options.getString("with_ign", false);
-        const idQuery = ctx.interaction.options.getString("with_id", false);
-        if (!ignQuery && !idQuery) {
-            await ctx.interaction.reply({
-                content: "You must specify either an IGN or ID.",
-                ephemeral: true
-            });
-
-            return -1;
-        }
+        const memberStr = ctx.interaction.options.getString("member", true);
+        const resMember = await UserManager.resolveMember(ctx.guild!, memberStr);
 
         await ctx.interaction.deferReply();
-        let targetMember: GuildMember | null = null;
-        let nameIdRes: IIdNameInfo | null = null;
-
-        if (ignQuery) {
-            // Does the cache have this person?
-            const cachedResult = ctx.guild!.members.cache.find(x => {
-                return UserManager.getAllNames(x.displayName, true).includes(ignQuery.toLowerCase());
-            });
-
-            if (cachedResult)
-                targetMember = cachedResult;
-
-            // If it doesn't, try searching for this member
-            if (!targetMember) {
-                const results = await ctx.guild!.members.search({
-                    query: ignQuery,
-                    // Bigger limit because this checks both usernames and nicknames, when all we want to check is
-                    // nicknames
-                    limit: 10
-                });
-
-                if (results.size > 0) {
-                    for (const [id, member] of results) {
-                        const splitName = UserManager.getAllNames(member.displayName);
-                        if (splitName.some(x => x.toLowerCase() === ignQuery.toLowerCase())) {
-                            targetMember = member;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // If this doesn't work, try searching in the database
-            if (!targetMember) {
-                const dbRes = await MongoManager.findNameInIdNameCollection(ignQuery);
-                if (dbRes.length > 0) {
-                    nameIdRes = dbRes[0];
-                    const member = await GuildFgrUtilities.fetchGuildMember(ctx.guild!, dbRes[0].currentDiscordId);
-                    if (member)
-                        targetMember = member;
-                }
-            }
-        }
-        else {
-            const cachedResult = ctx.guild!.members.cache.get(idQuery!);
-            if (cachedResult) {
-                targetMember = cachedResult;
-            }
-
-            if (!targetMember) {
-                const dbRes = await MongoManager.findIdInIdNameCollection(idQuery!);
-                if (dbRes.length > 0) {
-                    nameIdRes = dbRes[0];
-                    const member = await GuildFgrUtilities.fetchGuildMember(ctx.guild!, dbRes[0].currentDiscordId);
-                    if (member)
-                        targetMember = member;
-                }
-            }
-        }
+        let targetMember: GuildMember | null = resMember?.member ?? null;
+        let nameIdRes: IIdNameInfo | null = resMember?.idNameDoc ?? null;
 
         // Final result
         if (!targetMember) {
             const failEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-                .setTitle(`Find Query Failed: **${ignQuery ?? idQuery}**`)
+                .setTitle(`Find Query Failed: **${memberStr}**`)
                 .setTimestamp();
             if (nameIdRes) {
                 const guilds = Bot.BotInstance.client.guilds.cache
                     .filter(x => x.members.cache.has(nameIdRes!.currentDiscordId));
 
                 failEmbed.setDescription(
-                    `**\`${ignQuery ?? idQuery}\`** could not be found in this server, but has verified with this bot.`
+                    `**\`${memberStr}\`** could not be found in this server, but has verified with this bot.`
                 );
 
                 if (nameIdRes.rotmgNames.length > 0) {
@@ -184,7 +109,7 @@ export class FindPerson extends BaseCommand {
                 );
             }
             else {
-                failEmbed.setDescription(`**\`${ignQuery ?? idQuery}\`** was not found in this server.`);
+                failEmbed.setDescription(`**\`${memberStr}\`** was not found in this server.`);
             }
 
             await ctx.interaction.editReply({
@@ -209,7 +134,7 @@ export class FindPerson extends BaseCommand {
                 : ""
             : "";
         const successEmbed = MessageUtilities.generateBlankEmbed(targetMember, "GREEN")
-            .setTitle(`Find Query Success: **${ignQuery ?? idQuery}**`)
+            .setTitle(`Find Query Success: **${memberStr}**`)
             .setTimestamp()
             .setThumbnail(targetMember.user.displayAvatarURL())
             .setDescription(

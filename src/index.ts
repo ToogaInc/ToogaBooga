@@ -35,6 +35,7 @@ process.on("unhandledRejection", e => {
     );
 });
 
+// TODO remove this whenever possible
 process.on("uncaughtException", e => {
     console.error(
         new StringBuilder()
