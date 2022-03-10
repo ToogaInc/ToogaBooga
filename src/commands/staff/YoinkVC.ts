@@ -28,6 +28,10 @@ export class YoinkVC extends BaseCommand {
                     displayName: "VC to Steal Members from",
                     argName: "vc",
                     desc: "The voice channel where the bot should move the members out of.",
+                    restrictions: {
+                        // 2 is the constant value for GuildVoice
+                        channelModifier: o => o.addChannelType(2)
+                    },
                     type: ArgumentType.Channel,
                     prettyType: "Voice Channel",
                     required: true,
