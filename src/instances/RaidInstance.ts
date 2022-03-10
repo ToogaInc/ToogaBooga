@@ -95,6 +95,10 @@ export class RaidInstance {
     private static readonly LOCK_VC_ID: string = "lock_vc";
     private static readonly UNLOCK_VC_ID: string = "unlock_vc";
     private static readonly PARSE_VC_ID: string = "parse_vc";
+    // 1 hour in milliseconds
+    private static readonly DEFAULT_RAID_DURATION: number = 60 * 60 * 1000;
+    // default to white
+    private static readonly DEFAULT_EMBED_COLOR: number = 16777215;
 
     private static readonly CP_PRE_AFK_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
@@ -159,9 +163,7 @@ export class RaidInstance {
             .setCustomId(RaidInstance.PARSE_VC_ID)
             .setStyle("PRIMARY")
     ]);
-    // The afk embed color.
-    private static readonly DEFAULT_EMBED_COLOR: number = 16777215; //default to white
-    private static readonly DEFAULT_RAID_DURATION: number = 60 * 60 * 1000; //1 hour in milliseconds
+
     // The guild that this AFK check is in.
     private readonly _guild: Guild;
     // The dungeon.
@@ -174,31 +176,44 @@ export class RaidInstance {
     private readonly _raidSection: ISectionInfo;
     // Number of people that can get early location through Nitro.
     private readonly _numNitroEarlyLoc: number;
-    // All essential options (options that give early location). Equivalent to _afkCheckButtons but as raw data
+
     // Nonessential reactions. These are reactions that don't give any perks. More can be added at any point.
     private readonly _nonEssentialReactions: EmojiIdentifierResolvable[];
-    // A collection that contains the IAfkCheckReaction.mapKey as the key and the members with the corresponding
+
     // Buttons to display on the AFK check. These should only contain essential buttons.
     private readonly _afkCheckButtons: MessageButton[];
-    // A collection that deals with *general* (Nitro, Patreon, etc.) early location. The key is the mapKey and the
+    // All essential options (options that give early location). Equivalent to _afkCheckButtons but as raw data
     // instead of buttons. The key is the mapping key.
     private readonly _allEssentialOptions: Collection<string, ReactionInfoMore>;
+    // A collection that contains the IAfkCheckReaction.mapKey as the key and the members with the corresponding
     // item as the value.
     private readonly _pplWithEarlyLoc: Collection<string, { member: GuildMember, modifiers: string[] }[]>;
+    // A collection that deals with *general* (Nitro, Patreon, etc.) early location. The key is the mapKey and the
     // value is an object containing the roles needed.
     private readonly _earlyLocToRole: Collection<string, Role[]>;
+
     // The guild doc.
     private _guildDoc: IGuildInfo;
     // The location.
     private _location: string;
     // Current raid status.
     private _raidStatus: RaidStatus;
+
+    // The raid VC.
+    private _raidVc: VoiceChannel | null;
+    // The AFK check message.
+    private _afkCheckMsg: Message | null;
+    // The control panel message.
+    private _controlPanelMsg: Message | null;
+
     // Whether intervals are running.
     private _intervalsAreRunning: boolean = false;
+
     // The collector waiting for interactions from users.
     private _afkCheckButtonCollector: InteractionCollector<MessageComponentInteraction> | null;
     // The collector waiting for interactions from staff.
     private _controlPanelReactionCollector: InteractionCollector<MessageComponentInteraction> | null;
+
     // The VC limit.
     private readonly _vcLimit: number;
     // The member that initiated this.
@@ -207,37 +222,48 @@ export class RaidInstance {
     private readonly _leaderName: string;
     // The cost, in points, for early location.
     private readonly _earlyLocPointCost: number;
+
     // The members that are joining this raid.
     private _membersThatJoined: GuildMember[] = [];
     private readonly _raidLogs: string[] = [];
-    // created)
-    private readonly _feedbackBaseChannel: TextChannel | null;
 
     // Base feedback channel; for initial use only (this channel's parent is where other feedback channels should be
+    // created)
+    private readonly _feedbackBaseChannel: TextChannel | null;
     private readonly _raidStorageChan: TextChannel | null;
+
     // Channels created specifically for this raid; these will be deleted once the raid is over
     private _thisFeedbackChan: TextChannel | null;
     private _logChan: TextChannel | null;
+
     // Whether this has already been added to the database
     private _addedToDb: boolean = false;
+
     // Anyone that is a priority react that may need to be dragged in.
     private _peopleToAddToVc: Set<string> = new Set();
+
+    // Anyone that is currently confirming their reaction with the bot.
     // This is so we don't have double reactions
     private _pplConfirmingReaction: Set<string> = new Set();
 
-    // Anyone that is currently confirming their reaction with the bot.
     // All modifiers that we should be referring to.
     private readonly _modifiersToUse: readonly IDungeonModifier[];
+
+    // The afk embed color.
     private _embedColor: number;
+
     // The raid instance start time and expiration time
     private _startTime: number;
     private _expTime: number;
+
     // Instance information for logging
     private readonly _instanceInfo: string;
+
     // Time between panel updates in ms
     private readonly _intervalDelay: number = 5000;
-    // Temporary Alert Duration
-    private readonly _tempAlertDelay: number = 10 * 60 * 1000; //Ten minutes
+
+    // Temporary alert duration, 10 min
+    private readonly _tempAlertDelay: number = 10 * 60 * 1000;
 
     /**
      * Creates a new `RaidInstance` object.
@@ -462,9 +488,6 @@ export class RaidInstance {
         }
     }
 
-    // The raid VC.
-    private _raidVc: VoiceChannel | null;
-
     /**
      * Gets the raid voice channel, if any.
      * @returns {VoiceChannel | null} The raid voice channel.
@@ -473,15 +496,9 @@ export class RaidInstance {
         return this._raidVc;
     }
 
-    // The AFK check message.
-    private _afkCheckMsg: Message | null;
-
     public get afkCheckMsg(): Message | null {
         return this._afkCheckMsg;
     }
-
-    // The control panel message.
-    private _controlPanelMsg: Message | null;
 
     public get controlPanelMsg(): Message | null {
         return this._controlPanelMsg;
@@ -728,7 +745,10 @@ export class RaidInstance {
 
         const parsedNames = data.names;
         toReturn.whoRes = parsedNames;
-        if (parsedNames.length === 0) return toReturn;
+        if (parsedNames.length === 0) {
+            return toReturn;
+        }
+
         // Parse results means the picture must be valid.
         toReturn.isValid = true;
         // Begin parsing.

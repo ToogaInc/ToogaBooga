@@ -51,6 +51,10 @@ export class HeadcountInstance {
     private static readonly ABORT_HEADCOUNT_ID: string = "abort_headcount";
     private static readonly CONVERT_TO_AFK_CHECK_ID: string = "convert_afk_check";
     private static readonly DELETE_HEADCOUNT_ID: string = "delete_headcount_id";
+    // 1 hour in milliseconds
+    private static readonly DEFAULT_HEADCOUNT_DURATION: number = 60 * 60 * 1000;
+    // default to white
+    private static readonly DEFAULT_EMBED_COLOR: number = 16777215;
 
     private static readonly HEADCOUNT_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
@@ -77,9 +81,7 @@ export class HeadcountInstance {
             .setCustomId(HeadcountInstance.DELETE_HEADCOUNT_ID)
             .setStyle("DANGER")
     ]);
-    // The headcount embed color.
-    private static readonly DEFAULT_EMBED_COLOR: number = 16777215; //default to white
-    private static readonly DEFAULT_HEADCOUNT_DURATION: number = 60 * 60 * 1000; //1 hour in milliseconds
+
     // The guild that this AFK check is in.
     private readonly _guild: Guild;
     // The dungeon.
@@ -90,46 +92,56 @@ export class HeadcountInstance {
     private readonly _controlPanelChannel: TextChannel;
     // The section.
     private readonly _raidSection: ISectionInfo;
-    // All essential options (options that give early location). Equivalent to _afkCheckButtons but as raw data
     // Nonessential reactions. These are reactions that don't give any perks. More can be added at any point.
     private readonly _nonEssentialReactions: EmojiIdentifierResolvable[];
-    // A collection that contains the IAfkCheckReaction.mapKey as the key and the members with the corresponding
     // Buttons to display on the AFK check. These should only contain essential buttons.
     private readonly _afkCheckButtons: MessageButton[];
+    // All essential options (options that give early location). Equivalent to _afkCheckButtons but as raw data
     // instead of buttons. The key is the mapping key.
     private readonly _allEssentialOptions: Collection<string, ReactionInfoMore>;
+    // A collection that contains the IAfkCheckReaction.mapKey as the key and the members with the corresponding
     // item as the value.
     private readonly _pplWithEarlyLoc: Collection<string, { member: GuildMember, modifiers: string[] }[]>;
+
     // The guild doc.
     private _guildDoc: IGuildInfo;
     // Current raid status.
     private _headcountStatus: HeadcountStatus;
+
     // The headcount message.
     private _headcountMsg: Message | null;
     // The control panel message.
     private _controlPanelMsg: Message | null;
+
     // Whether these intervals are running.
     private _intervalsAreRunning: boolean = false;
+
     // The collector waiting for interactions from users.
     private _headcountButtonCollector: InteractionCollector<MessageComponentInteraction> | null;
     // The collector waiting for interactions from staff.
     private _controlPanelReactionCollector: InteractionCollector<MessageComponentInteraction> | null;
+
     // The member that initiated this.
     private readonly _memberInit: GuildMember;
-
-    // Anyone that is currently confirming their reaction with the bot.
     // The leader's name (as a string).
     private readonly _leaderName: string;
     // Whether this has already been added to the database
     private _addedToDb: boolean = false;
+
+    // Anyone that is currently confirming their reaction with the bot.
     // This is so we don't have double reactions
     private _pplConfirmingReaction: Set<string> = new Set();
+
     // All modifiers that we should be referring to.
     private readonly _modifiersToUse: readonly IDungeonModifier[];
+
+    // The headcount embed color.
     private _embedColor: number;
+
     // The headcount start time and expiration time
     private _startTime: number;
     private _expTime: number;
+
     // Instance information for logging
     private _instanceInfo: string;
 
