@@ -273,6 +273,8 @@ export class RaidInstance {
 
     // Temporary alert duration, 10 min
     private readonly _tempAlertDelay: number = 10 * 60 * 1000;
+    // Whether this raid instance is valid.
+    private _isValid: boolean;
 
     /**
      * Creates a new `RaidInstance` object.
@@ -300,6 +302,7 @@ export class RaidInstance {
             this._oldVcPerms = null;
         }
 
+        this._isValid = true;
         this._afkCheckMsg = null;
         this._controlPanelMsg = null;
         this._guildDoc = guildDoc;
@@ -1304,6 +1307,7 @@ export class RaidInstance {
      * @param {boolean} keepVc Whether to keep the VC. Note that this will be ignored if `force` is `true`.
      */
     public async cleanUpRaid(force: boolean, keepVc: boolean = false): Promise<void> {
+        this._isValid = false;
         LOGGER.info(`${this._instanceInfo} Cleaning up raid`);
         await this.stopAllIntervalsAndCollectors();
         // Step 1: Remove from ActiveRaids collection
@@ -1443,7 +1447,7 @@ export class RaidInstance {
      */
     public async getNewLocation(requestedAuthor: User): Promise<boolean> {
         LOGGER.info(`${this._instanceInfo} Requesting new location`);
-        if (!this._raidVc)
+        if (!this._raidVc || !this._isValid)
             return false;
         const descSb = new StringBuilder()
             .append(`Please type the **new location** for the raid with VC: ${this._raidVc.name}. `)
@@ -1501,7 +1505,7 @@ export class RaidInstance {
      */
     public getAfkCheckEmbed(): MessageEmbed | null {
         LOGGER.debug(`${this._instanceInfo} Getting raid AFK check embed`);
-        if (!this._raidVc) return null;
+        if (!this._raidVc || !this._isValid) return null;
         if (this._raidStatus === RaidStatus.NOTHING || this._raidStatus === RaidStatus.IN_RUN) return null;
 
         const descSb = new StringBuilder();
@@ -1618,7 +1622,7 @@ export class RaidInstance {
      */
     public getControlPanelEmbed(): MessageEmbed | null {
         LOGGER.debug(`${this._instanceInfo} Getting raid control panel embed`);
-        if (!this._raidVc) return null;
+        if (!this._raidVc || !this._isValid) return null;
         if (this._raidStatus === RaidStatus.NOTHING) return null;
 
         const descSb = new StringBuilder();
@@ -1765,7 +1769,7 @@ export class RaidInstance {
      * @private
      */
     public async voiceStateUpdateEventFunction(oldState: VoiceState, newState: VoiceState): Promise<void> {
-        if (!this._raidVc)
+        if (!this._raidVc || !this._isValid)
             return;
 
         // Event must be regarding this raid VC.
@@ -2030,7 +2034,7 @@ export class RaidInstance {
      * @private
      */
     private async setThisFeedbackChannel(channel: TextChannel): Promise<boolean> {
-        if (!this._addedToDb || !this._raidVc) return false;
+        if (!this._addedToDb || !this._raidVc || !this._isValid) return false;
 
         this._thisFeedbackChan = channel;
         // @ts-ignore
@@ -2070,7 +2074,7 @@ export class RaidInstance {
             return false;
         prop.push({member: member, modifiers: modifiers});
 
-        if (!addToDb || !this._raidVc || !this._addedToDb)
+        if (!addToDb || !this._raidVc || !this._addedToDb || !this._isValid)
             return true;
 
         const res = await MongoManager.updateAndFetchGuildDoc({
@@ -2098,7 +2102,7 @@ export class RaidInstance {
      */
     private async updateLocation(newLoc: string): Promise<boolean> {
         LOGGER.info(`${this._instanceInfo} Updating location of raid to ${newLoc}}`);
-        if (!this._raidVc || !this._addedToDb)
+        if (!this._raidVc || !this._addedToDb || !this._isValid)
             return false;
 
         this._location = newLoc;
@@ -2126,7 +2130,7 @@ export class RaidInstance {
      * @private
      */
     private async updateMembersArr(): Promise<boolean> {
-        if (!this._raidVc || !this._addedToDb)
+        if (!this._raidVc || !this._addedToDb || !this._isValid)
             return false;
 
         this._membersThatJoined = Array.from(this._raidVc.members.values());
@@ -2176,7 +2180,7 @@ export class RaidInstance {
      * @private
      */
     private async removeRaidFromDatabase(): Promise<boolean> {
-        if (!this._raidVc || !this._addedToDb)
+        if (!this._raidVc || !this._addedToDb || !this._isValid)
             return false;
 
         const res = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
@@ -2198,7 +2202,7 @@ export class RaidInstance {
      * @private
      */
     private async setRaidStatus(status: RaidStatus): Promise<boolean> {
-        if (!this._raidVc || !this._addedToDb)
+        if (!this._raidVc || !this._addedToDb || !this._isValid)
             return false;
 
         this._raidStatus = status;
@@ -2276,23 +2280,21 @@ export class RaidInstance {
      */
     private async updateControlPanel() {
         LOGGER.debug(`${this._instanceInfo} Control Panel Interval`);
-        /**
-         * If control panel does not exist,
-         * Stop intervals and return*/
-        if (!this._controlPanelMsg || !this._raidVc) {
+
+         // If control panel does not exist,
+         // Stop intervals and return
+        if (!this._controlPanelMsg || !this._raidVc || !this._isValid) {
             await this.stopAllIntervalsAndCollectors("Control panel or raid vc does not exist");
             return;
         }
-        /**If intervals have stopped,
-         * Return
-         */
+        // If intervals have stopped,
+        // Return
         if (!this._intervalsAreRunning) {
             return;
         }
-        /**
-         * If headcount times out.
-         * stop intervals and return
-         */
+
+         // If headcount times out.
+         // stop intervals and return
         if (Date.now() > this._expTime) {
             LOGGER.info(`${this._instanceInfo} Raid expired, aborting`);
             this.cleanUpRaid(true).then();
@@ -2383,7 +2385,7 @@ export class RaidInstance {
             }
 
             // Does the VC even exist?
-            if (!this._raidVc || !GuildFgrUtilities.hasCachedChannel(this._guild, this._raidVc.id)) {
+            if (!this._raidVc || !this._isValid || !GuildFgrUtilities.hasCachedChannel(this._guild, this._raidVc.id)) {
                 await this.cleanUpRaid(true);
                 return;
             }
@@ -2433,7 +2435,7 @@ export class RaidInstance {
                 this._earlyLocPointCost
             );
 
-            if (!this._raidVc) {
+            if (!this._raidVc || !this._isValid) {
                 LOGGER.info(`${this._instanceInfo} Raid closed during reaction`);
                 if (res.success || res.errorReply.alreadyReplied) {
                     await i.editReply({
@@ -2759,7 +2761,7 @@ export class RaidInstance {
 
                 if (!res) return;
                 const parseSummary = await RaidInstance.parseScreenshot(res.url, this._raidVc);
-                if (!this._raidVc) return;
+                if (!this._raidVc || !this._isValid) return;
 
                 this.logEvent(
                     `Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``,

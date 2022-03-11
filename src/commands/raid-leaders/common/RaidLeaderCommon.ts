@@ -31,7 +31,6 @@ export type DungeonSelectionType = {
  */
 export async function getAvailableSections(ctx: ICommandContext, allRolePerms: Collection<DefinedRole, string[]>,
                                            allSections: ISectionInfo[]): Promise<DungeonSelectionType[]> {
-
     const availableSections: DungeonSelectionType[] = [];
     for (const section of allSections) {
         if (!canManageRaidsIn(section, ctx.member!, ctx.guildDoc!))
@@ -104,8 +103,11 @@ export async function getAvailableSections(ctx: ICommandContext, allRolePerms: C
  * @param {DungeonSelectionType[]} availableSections The available sections.
  * @return {Promise<DungeonSelectionType | null>} A section or null.
  */
-export async function getSelectedSection(ctx: ICommandContext, availableSections: DungeonSelectionType[]): Promise<DungeonSelectionType | null> {
-    const sectionToUse: DungeonSelectionType | null = await new Promise(async (resolve) => {
+export async function getSelectedSection(
+    ctx: ICommandContext,
+    availableSections: DungeonSelectionType[]
+): Promise<DungeonSelectionType | null> {
+    return await new Promise(async (resolve) => {
         if (availableSections.length === 1)
             return resolve(availableSections[0]);
 
@@ -154,7 +156,6 @@ export async function getSelectedSection(ctx: ICommandContext, availableSections
         await res.deferUpdate();
         return resolve(availableSections.find(x => x.section.uniqueIdentifier === res.values[0])!);
     });
-    return sectionToUse;
 }
 
 /**
