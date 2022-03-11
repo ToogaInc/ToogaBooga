@@ -1,4 +1,5 @@
 import {IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
+import {OverwriteResolvable, VoiceChannel} from "discord.js";
 
 export type DungeonType = "Uncategorized"
     | "Basic Dungeons"
@@ -612,6 +613,15 @@ export interface IRaidInfo {
     vcId: string;
 
     /**
+     * The old VC permissions. If this VC is being used once (i.e. it will be deleted after this raid), then this
+     * should be `null`. Otherwise, this should be the permissions of the VC *before* any modifications were done to
+     * it.
+     *
+     * @type {OverwriteResolvable[] | null}
+     */
+    oldVcPerms: OverwriteResolvable[] | null;
+
+    /**
      * The raid location.
      *
      * @type {string}
@@ -787,5 +797,27 @@ export interface IRaidOptions {
      *
      * @type {string}
      */
-    location: string;
+    location?: string;
+
+    /**
+     * Options to use a pre-existing voice channel.
+     *
+     * @type {object}
+     */
+    existingVc?: {
+        /**
+         * The voice channel to use.
+         *
+         * @type {VoiceChannel}
+         */
+        vc: VoiceChannel;
+
+        /**
+         * The permissions to save for this channel. This should
+         * be `null` if the given `vc` is temporary.
+         *
+         * @type {OverwriteResolvable[] | null}
+         */
+        oldPerms: OverwriteResolvable[] | null;
+    }
 }

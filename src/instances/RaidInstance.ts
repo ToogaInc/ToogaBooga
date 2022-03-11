@@ -95,6 +95,8 @@ export class RaidInstance {
     private static readonly LOCK_VC_ID: string = "lock_vc";
     private static readonly UNLOCK_VC_ID: string = "unlock_vc";
     private static readonly PARSE_VC_ID: string = "parse_vc";
+    private static readonly RESTART_RAID: string = "restart_raid";
+
     // 1 hour in milliseconds
     private static readonly DEFAULT_RAID_DURATION: number = 60 * 60 * 1000;
     // default to white
@@ -161,6 +163,11 @@ export class RaidInstance {
             .setLabel("Parse Raid VC")
             .setEmoji(EmojiConstants.PRINTER_EMOJI)
             .setCustomId(RaidInstance.PARSE_VC_ID)
+            .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("Start New AFK Check")
+            .setEmoji(EmojiConstants.REDIRECT_EMOJI)
+            .setCustomId(RaidInstance.RESTART_RAID)
             .setStyle("PRIMARY")
     ]);
 
@@ -201,6 +208,8 @@ export class RaidInstance {
 
     // The raid VC.
     private _raidVc: VoiceChannel | null;
+    // The old VC perms.
+    private _oldVcPerms: OverwriteResolvable[] | null;
     // The AFK check message.
     private _afkCheckMsg: Message | null;
     // The control panel message.
@@ -281,7 +290,16 @@ export class RaidInstance {
         this._dungeon = dungeon;
         this._location = raidOptions?.location ?? "";
         this._raidStatus = RaidStatus.NOTHING;
-        this._raidVc = null;
+
+        if (raidOptions?.existingVc) {
+            this._raidVc = raidOptions.existingVc.vc;
+            this._oldVcPerms = raidOptions.existingVc.oldPerms;
+        }
+        else {
+            this._raidVc = null;
+            this._oldVcPerms = null;
+        }
+
         this._afkCheckMsg = null;
         this._controlPanelMsg = null;
         this._guildDoc = guildDoc;
@@ -608,6 +626,7 @@ export class RaidInstance {
         LOGGER.info(`${rm._instanceInfo} RaidInstance created`);
 
         rm._raidVc = raidVc;
+        rm._oldVcPerms = raidInfo.oldVcPerms;
         rm._afkCheckMsg = afkCheckMsg;
         rm._controlPanelMsg = controlPanelMsg;
         rm._raidStatus = raidInfo.status;
@@ -621,7 +640,6 @@ export class RaidInstance {
             rm.cleanUpRaid(true).then();
             return null;
         }
-
 
         rm._thisFeedbackChan = GuildFgrUtilities.getCachedChannel<TextChannel>(
             guild,
@@ -791,12 +809,20 @@ export class RaidInstance {
 
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
         const [vc, logChannel] = await Promise.all([
-            this._guild.channels.create(`${EmojiConstants.LOCK_EMOJI} ${this._leaderName}'s Raid`, {
-                type: "GUILD_VOICE",
-                userLimit: this._vcLimit,
-                permissionOverwrites: this.getPermissionsForRaidVc(false),
-                parent: this._afkCheckChannel!.parent!
-            }),
+            (async () => {
+                if (this._raidVc) {
+                    return this._raidVc;
+                }
+
+                const v = await this._guild.channels.create(`${this._leaderName}'s Raid`, {
+                    type: "GUILD_VOICE",
+                    userLimit: this._vcLimit,
+                    permissionOverwrites: this.getPermissionsForRaidVc(false),
+                    parent: this._afkCheckChannel!.parent!
+                });
+
+                return v as VoiceChannel;
+            })(),
             new Promise<TextChannel | null>(async (resolve) => {
                 if (!this._raidSection.otherMajorConfig.afkCheckProperties.createLogChannel)
                     return resolve(null);
@@ -892,9 +918,6 @@ export class RaidInstance {
 
         // However, we forcefully edit the embeds.
         await Promise.all([
-            this._raidVc.edit({
-                name: `${EmojiConstants.GREEN_CHECK_EMOJI} ${this._leaderName}'s Raid`
-            }),
             this._afkCheckMsg.edit({
                 content: "@here An AFK Check is currently ongoing.",
                 embeds: [this.getAfkCheckEmbed()!],
@@ -947,7 +970,6 @@ export class RaidInstance {
                 "CONNECT": false
             }).catch(),
             this._raidVc.edit({
-                name: `${EmojiConstants.SWORD_EMOJI} ${this._leaderName}'s Raid`,
                 position: this._raidVc.parent?.children.filter(x => x.type === "GUILD_VOICE")
                     .map(x => x.position).sort((a, b) => b - a)[0] ?? 0,
                 permissionOverwrites: this.getPermissionsForRaidVc(false)
@@ -1103,8 +1125,9 @@ export class RaidInstance {
     /**
      * Ends the raid.
      * @param {GuildMember | User | null} memberEnded The member that ended the raid or aborted the AFK check.
+     * @param {boolean} keepVc Whether to keep the VC.
      */
-    public async endRaid(memberEnded: GuildMember | User | null): Promise<void> {
+    public async endRaid(memberEnded: GuildMember | User | null, keepVc: boolean = false): Promise<void> {
         // No raid VC means we haven't started AFK check.
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg)
             return;
@@ -1128,7 +1151,7 @@ export class RaidInstance {
         const leaderName = name.length === 0 ? memberThatEnded.displayName : name[0];
         // Stop the collector.
         // We don't care about the result of this function, just that it should run.
-        this.cleanUpRaid(false).then();
+        this.cleanUpRaid(false, keepVc).then();
 
         // Give point refunds if applicable
         const earlyLocPts = this._pplWithEarlyLoc.get("EARLY_LOC_POINTS");
@@ -1242,6 +1265,7 @@ export class RaidInstance {
             raidChannels: this._raidSection.channels.raids,
             afkCheckMessageId: this._afkCheckMsg.id,
             controlPanelMessageId: this._controlPanelMsg.id,
+            oldVcPerms: this._oldVcPerms,
             status: this._raidStatus,
             vcId: this._raidVc.id,
             location: this._location,
@@ -1277,8 +1301,9 @@ export class RaidInstance {
      *
      * @param {boolean} force Whether this should delete all channels related to this raid. Useful if one component
      * of the raid is deleted.
+     * @param {boolean} keepVc Whether to keep the VC. Note that this will be ignored if `force` is `true`.
      */
-    public async cleanUpRaid(force: boolean): Promise<void> {
+    public async cleanUpRaid(force: boolean, keepVc: boolean = false): Promise<void> {
         LOGGER.info(`${this._instanceInfo} Cleaning up raid`);
         await this.stopAllIntervalsAndCollectors();
         // Step 1: Remove from ActiveRaids collection
@@ -1296,7 +1321,17 @@ export class RaidInstance {
             MessageUtilities.tryDelete(this._afkCheckMsg),
             // Step 5: Delete the raid VC
             GlobalFgrUtilities.tryExecuteAsync(async () => {
+                if (keepVc && !force) {
+                    return;
+                }
+
+                if (this._oldVcPerms) {
+                    await this._raidVc?.permissionOverwrites.set(this._oldVcPerms);
+                    return;
+                }
+
                 await this._raidVc?.delete();
+                this._raidVc = null;
             }),
             // Step 6: Delete the logging channel
             GlobalFgrUtilities.tryExecuteAsync(async () => {
@@ -1305,7 +1340,6 @@ export class RaidInstance {
             })
         ]);
 
-        this._raidVc = null;
         if (force) {
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await this._thisFeedbackChan?.delete();
@@ -2627,6 +2661,25 @@ export class RaidInstance {
             if (i.customId === RaidInstance.END_RAID_ID) {
                 LOGGER.info(`${this._instanceInfo} ${member?.displayName} chose to end raid`);
                 this.endRaid(i.user).then();
+                return;
+            }
+
+            if (i.customId === RaidInstance.RESTART_RAID) {
+                LOGGER.info(`${this._instanceInfo} ${member?.displayName} chose to restart AFK check.`);
+                await this.endRaid(i.user, true);
+                const rm = new RaidInstance(
+                    member!,
+                    await MongoManager.getOrCreateGuildDoc(this._guild.id, true),
+                    this._raidSection,
+                    this._dungeon,
+                    {
+                        existingVc: {
+                            vc: this._raidVc!,
+                            oldPerms: this._oldVcPerms
+                        }
+                    }
+                );
+                rm.startPreAfkCheck().then();
                 return;
             }
 
