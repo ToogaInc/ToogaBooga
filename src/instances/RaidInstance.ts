@@ -64,9 +64,9 @@ import {
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {PermsConstants} from "../constants/PermsConstants";
 import {StringUtil} from "../utilities/StringUtilities";
+import {DjsToProjUtilities} from "../utilities/DJsToProjUtilities";
 import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
-import { DjsToProjUtilities } from "../utilities/DJsToProjUtilities";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
@@ -630,7 +630,20 @@ export class RaidInstance {
         LOGGER.info(`${rm._instanceInfo} RaidInstance created`);
 
         rm._raidVc = raidVc;
-        rm._oldVcPerms = raidInfo.oldVcPerms;
+        if (raidInfo.oldVcPerms) {
+            rm._oldVcPerms = raidInfo.oldVcPerms.map(x => {
+                return {
+                    allow: BigInt(x.allow),
+                    deny: BigInt(x.deny),
+                    id: x.id,
+                    type: x.type
+                };
+            });
+        }
+        else {
+            rm._oldVcPerms = null;
+        }
+
         rm._afkCheckMsg = afkCheckMsg;
         rm._controlPanelMsg = controlPanelMsg;
         rm._raidStatus = raidInfo.status;
@@ -815,6 +828,11 @@ export class RaidInstance {
         const [vc, logChannel] = await Promise.all([
             (async () => {
                 if (this._raidVc) {
+                    await this._raidVc.edit({
+                        userLimit: this._vcLimit,
+                        permissionOverwrites: this.getPermissionsForRaidVc(false)
+                    });
+
                     return this._raidVc;
                 }
 
@@ -855,7 +873,11 @@ export class RaidInstance {
         ]);
 
         if (!vc) return;
-        vc.setPosition(0).then();
+
+        if (!this._oldVcPerms) {
+            vc.setPosition(0).then();
+        }
+
         this._raidVc = vc as VoiceChannel;
         this._logChan = logChannel;
 
@@ -970,14 +992,19 @@ export class RaidInstance {
         // Lock the VC as well.
         LOGGER.info(`${this._instanceInfo} Locking VC`);
         await Promise.all([
-            this._raidVc.permissionOverwrites.edit(this._guild.roles.everyone.id, {
-                "CONNECT": false
-            }).catch(),
             this._raidVc.edit({
-                position: this._raidVc.parent?.children.filter(x => x.type === "GUILD_VOICE")
-                    .map(x => x.position).sort((a, b) => b - a)[0] ?? 0,
                 permissionOverwrites: this.getPermissionsForRaidVc(false)
-            })
+            }),
+            (async () => {
+                if (this._oldVcPerms) {
+                    return;
+                }
+
+                await this._raidVc?.edit({
+                    position: this._raidVc?.parent?.children.filter(x => x.type === "GUILD_VOICE")
+                        .map(x => x.position).sort((a, b) => b - a)[0] ?? 0
+                });
+            })()
         ]);
 
         // Add all members that were in the VC at the time.
@@ -1269,7 +1296,7 @@ export class RaidInstance {
             raidChannels: this._raidSection.channels.raids,
             afkCheckMessageId: this._afkCheckMsg.id,
             controlPanelMessageId: this._controlPanelMsg.id,
-            oldVcPerms: this._oldVcPerms 
+            oldVcPerms: this._oldVcPerms
                 ? DjsToProjUtilities.toBasicOverwriteDataArr(this._oldVcPerms)
                 : null,
             status: this._raidStatus,
@@ -2187,7 +2214,7 @@ export class RaidInstance {
      * @private
      */
     private async removeRaidFromDatabase(): Promise<boolean> {
-        if (!this._raidVc || !this._addedToDb || !this._isValid)
+        if (!this._raidVc || !this._addedToDb)
             return false;
 
         const res = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
@@ -2288,8 +2315,8 @@ export class RaidInstance {
     private async updateControlPanel() {
         LOGGER.debug(`${this._instanceInfo} Control Panel Interval`);
 
-         // If control panel does not exist,
-         // Stop intervals and return
+        // If control panel does not exist,
+        // Stop intervals and return
         if (!this._controlPanelMsg || !this._raidVc || !this._isValid) {
             await this.stopAllIntervalsAndCollectors("Control panel or raid vc does not exist");
             return;
@@ -2300,8 +2327,8 @@ export class RaidInstance {
             return;
         }
 
-         // If headcount times out.
-         // stop intervals and return
+        // If headcount times out.
+        // stop intervals and return
         if (Date.now() > this._expTime) {
             LOGGER.info(`${this._instanceInfo} Raid expired, aborting`);
             this.cleanUpRaid(true).then();

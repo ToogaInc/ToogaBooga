@@ -59,8 +59,8 @@ export class Purge extends BaseCommand {
             return -1;
         }
 
-        const maxNumToDelete = Math.min(ctx.interaction.options.getNumber("amt", true), 1000);
-        let num = Math.min(ctx.interaction.options.getNumber("amt", true), 1000);
+        const maxNumToDelete = Math.min(ctx.interaction.options.getInteger("amt", true), 1000);
+        let num = Math.min(ctx.interaction.options.getInteger("amt", true), 1000);
         await ctx.interaction.reply({
             content: `Attempting to clear ${num} messages. Please wait.`,
             ephemeral: true

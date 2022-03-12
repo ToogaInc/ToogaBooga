@@ -7,8 +7,9 @@ import {
     DungeonSelectionType,
     getAvailableSections,
     getSelectedDungeon,
-    getSelectedSection
+    getSelectedSection, selectVc
 } from "./common/RaidLeaderCommon";
+import {IRaidOptions} from "../../definitions";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
@@ -86,7 +87,20 @@ export class StartAfkCheck extends BaseCommand {
             return 0;
         }
 
-        // Step 3: Ask for the appropriate dungeon
+        // Step 3: Get the VC
+        const vcToUse = await selectVc(ctx.interaction, ctx.guildDoc!, sectionToUse.cpChan!, ctx.member!);
+        const raidOptions: IRaidOptions = {
+            location: location ?? ""
+        };
+
+        if (vcToUse) {
+            raidOptions.existingVc = {
+                vc: vcToUse,
+                oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
+            };
+        }
+
+        // Step 4: Ask for the appropriate dungeon
         const selectedDgn = await getSelectedDungeon(ctx, sectionToUse);
 
         if (!selectedDgn) {
@@ -99,11 +113,8 @@ export class StartAfkCheck extends BaseCommand {
         }
         const dungeonToUse = sectionToUse.dungeons.find(x => x.codeName === selectedDgn.values[0])!;
 
-
-        // Step 4: Start it
-        const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, {
-            location: location ?? ""
-        });
+        // Step 5: Start it
+        const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, raidOptions);
 
         if (!rm) {
             await ctx.interaction.editReply({

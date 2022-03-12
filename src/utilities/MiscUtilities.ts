@@ -18,7 +18,7 @@ import {StringBuilder} from "./StringBuilder";
 import {AdvancedCollector} from "./collectors/AdvancedCollector";
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {PermsConstants} from "../constants/PermsConstants";
-import {Logger} from "../utilities/Logger";
+import {Logger} from "./Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 

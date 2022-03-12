@@ -11,9 +11,10 @@ export interface IPropertyKeyValuePair<K, V> {
 }
 
 export interface IBasicOverwriteData {
-    allow: PermissionString[];
-    deny: PermissionString[];
+    allow: string;
+    deny: string;
     id: string;
+    type?: "member" | "role";
 }
 
 /**
