@@ -208,6 +208,7 @@ export namespace QuotaManager {
                     }
 
                     sb.append(`\t\t- ${quotaType}: ${pts} PTS (${qty})`)
+                        .appendLine()
                         .append(breakdown.join("\n"))
                         .appendLine();
                 }
