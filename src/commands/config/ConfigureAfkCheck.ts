@@ -7,7 +7,7 @@ import {
     MessageComponentInteraction,
     MessageEmbed,
     MessageSelectMenu,
-    PermissionResolvable,
+    PermissionString,
     Role,
     TextChannel
 } from "discord.js";
@@ -30,7 +30,7 @@ import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 export class ConfigureAfkCheck extends BaseCommand {
     public static readonly MAX_PERMS_SET: number = 15;
-    private static readonly VC_PERMISSIONS: [string, PermissionResolvable][] = [
+    private static readonly VC_PERMISSIONS: [string, PermissionString][] = [
         ["View Channel", "VIEW_CHANNEL"],
         ["Connect", "CONNECT"],
         ["Speak", "SPEAK"],

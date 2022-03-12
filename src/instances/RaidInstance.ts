@@ -66,6 +66,7 @@ import {PermsConstants} from "../constants/PermsConstants";
 import {StringUtil} from "../utilities/StringUtilities";
 import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
+import { DjsToProjUtilities } from "../utilities/DJsToProjUtilities";
 
 const FOOTER_INFO_MSG: string = "If you don't want to log this run, press the \"Cancel Logging\" button. Note that"
     + " all runs should be logged for accuracy. This collector will automatically expire after 5 minutes of no"
@@ -1268,7 +1269,9 @@ export class RaidInstance {
             raidChannels: this._raidSection.channels.raids,
             afkCheckMessageId: this._afkCheckMsg.id,
             controlPanelMessageId: this._controlPanelMsg.id,
-            oldVcPerms: this._oldVcPerms,
+            oldVcPerms: this._oldVcPerms 
+                ? DjsToProjUtilities.toBasicOverwriteDataArr(this._oldVcPerms)
+                : null,
             status: this._raidStatus,
             vcId: this._raidVc.id,
             location: this._location,
@@ -1712,9 +1715,13 @@ export class RaidInstance {
                 .appendLine()
                 .append("⇨ **Press** the **`Unlock Raid VC`** button if you want to unlock the raid voice channel.")
                 .appendLine()
-                .append("⇨ **Press** to the **`Parse Raid VC`** button if you want to parse a /who screenshot for ")
+                .append("⇨ **Press** the **`Parse Raid VC`** button if you want to parse a /who screenshot for ")
                 .append("this run. You will be asked to provide a /who screenshot; please provide a cropped ")
-                .append("screenshot so only the /who results are shown.");
+                .append("screenshot so only the /who results are shown.")
+                .appendLine()
+                .append("⇨ **Press** the **`Restart Raid`** button if you want to create a new AFK check in the same")
+                .append(" raid VC. This will reset all priorities and clear the log channel, but the VC and its")
+                .append(" members will remain.");
         }
 
         controlPanelEmbed.setDescription(descSb.toString());

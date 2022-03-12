@@ -1,5 +1,5 @@
-import {IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
-import {OverwriteResolvable, VoiceChannel} from "discord.js";
+import {IBasicOverwriteData, IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
+import {OverwriteData, VoiceChannel} from "discord.js";
 
 export type DungeonType = "Uncategorized"
     | "Basic Dungeons"
@@ -617,9 +617,9 @@ export interface IRaidInfo {
      * should be `null`. Otherwise, this should be the permissions of the VC *before* any modifications were done to
      * it.
      *
-     * @type {OverwriteResolvable[] | null}
+     * @type {IBasicOverwriteData[] | null}
      */
-    oldVcPerms: OverwriteResolvable[] | null;
+    oldVcPerms: IBasicOverwriteData[] | null;
 
     /**
      * The raid location.
@@ -816,8 +816,8 @@ export interface IRaidOptions {
          * The permissions to save for this channel. This should
          * be `null` if the given `vc` is temporary.
          *
-         * @type {OverwriteResolvable[] | null}
+         * @type {OverwriteData[] | null}
          */
-        oldPerms: OverwriteResolvable[] | null;
+        oldPerms: OverwriteData[] | null;
     }
 }
