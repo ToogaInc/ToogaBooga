@@ -143,7 +143,8 @@ export class Bot {
             new Cmds.YoinkVC(),
             new Cmds.CleanVC(),
             new Cmds.Poll(),
-            new Cmds.Purge()
+            new Cmds.Purge(),
+            new Cmds.RemovePunishmentHistory()
         ]);
 
         Bot.Commands.set("Configuration", [

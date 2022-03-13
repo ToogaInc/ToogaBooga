@@ -300,7 +300,10 @@ export class FindPerson extends BaseCommand {
                 return 0;
             }
 
-            const displayModHist: MessageEmbed[] = thisGuildPunishmentHist.map((x, i) => {
+            const displayModHist: {
+                e: MessageEmbed,
+                i: string | null
+            }[] = thisGuildPunishmentHist.map((x, i) => {
                 let colorToUse: ColorResolvable;
                 if (x.moderationType === "Warn") {
                     colorToUse = "YELLOW";
@@ -329,11 +332,15 @@ export class FindPerson extends BaseCommand {
                             : `Expires At: \`${expiresAtDisplay}\``
                     );
 
-                    return MessageUtilities.generateBlankEmbed(targetMember!, colorToUse)
-                        .setTitle(`Log #${i + 1}: ${x.moderationType}`)
-                        .setDescription(desc.toString())
-                        .addField("Reason", x.reason)
-                        .addField("Time", time.toString());
+                    return {
+                        e: MessageUtilities.generateBlankEmbed(targetMember!, colorToUse)
+                            .setTitle(`Log #${i + 1}: ${x.moderationType}`)
+                            .setDescription(desc.toString())
+                            .addField("Reason", x.reason)
+                            .addField("Time", time.toString())
+                            .setFooter({text: `Page ${i + 2}/${thisGuildPunishmentHist.length + 1}`}),
+                        i: `**\`${x.actionId}\`**`
+                    };
                 }
 
                 const embed = MessageUtilities.generateBlankEmbed(targetMember!, colorToUse)
@@ -395,10 +402,13 @@ export class FindPerson extends BaseCommand {
                 embed.setFooter({
                     text: `Page ${i + 2}/${thisGuildPunishmentHist.length + 1}`
                 });
-                return embed;
+                return {e: embed, i: `**\`${x.actionId}\`**`};
             });
 
-            displayModHist.unshift(successEmbed.setFooter({text: `Page 1/${thisGuildPunishmentHist.length + 1}`}));
+            displayModHist.unshift({
+                e: successEmbed.setFooter({text: `Page 1/${thisGuildPunishmentHist.length + 1}`}),
+                i: null
+            });
 
             const uniqueId = StringUtil.generateRandomString(20);
             const nextId = uniqueId + "_next";
@@ -429,19 +439,13 @@ export class FindPerson extends BaseCommand {
 
                 switch (i.customId) {
                     case nextId: {
-                        if (currPage === displayModHist.length - 1) {
-                            break;
-                        }
-
                         currPage++;
+                        currPage %= displayModHist.length;
                         break;
                     }
                     case backId: {
-                        if (currPage === 0) {
-                            break;
-                        }
-
                         currPage--;
+                        currPage = (currPage + displayModHist.length) % displayModHist.length;
                         break;
                     }
                     case stopId: {
@@ -451,7 +455,8 @@ export class FindPerson extends BaseCommand {
                 }
 
                 await ctx.interaction.editReply({
-                    embeds: [displayModHist[currPage]],
+                    embeds: [displayModHist[currPage].e],
+                    content: displayModHist[currPage].i,
                     components: AdvancedCollector.getActionRowsFromComponents(components)
                 });
             });
