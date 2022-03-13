@@ -7,7 +7,7 @@ import {
     GuildChannel,
     GuildMember,
     Interaction,
-    Message,
+    Message, PartialGuildMember,
     PartialMessage,
     ThreadChannel,
     VoiceState
@@ -19,7 +19,7 @@ import {
     onChannelDeleteEvent,
     onErrorEvent,
     onGuildCreateEvent,
-    onGuildMemberAdd,
+    onGuildMemberAdd, onGuildMemberUpdate,
     onInteractionEvent,
     onMessageDeleteEvent,
     onMessageEvent,
@@ -92,7 +92,8 @@ export class Bot {
         this._bot = new Client({
             partials: [
                 "MESSAGE",
-                "CHANNEL"
+                "CHANNEL",
+                "GUILD_MEMBER",
             ],
             intents: [
                 // Need guild information for database, server management.
@@ -273,6 +274,10 @@ export class Bot {
         this._bot.on("channelDelete", async (c: DMChannel | GuildChannel) => onChannelDeleteEvent(c));
         this._bot.on("messageDelete", async (m: Message | PartialMessage) => onMessageDeleteEvent(m));
         this._bot.on("guildMemberAdd", async (m: GuildMember) => onGuildMemberAdd(m));
+        this._bot.on("guildMemberUpdate", async (
+            o: GuildMember | PartialGuildMember,
+            n: GuildMember | PartialGuildMember
+        ) => onGuildMemberUpdate(o, n));
         this._eventsIsStarted = true;
     }
 

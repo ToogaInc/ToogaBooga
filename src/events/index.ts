@@ -8,3 +8,4 @@ export * from "./ThreadUpdateEvent";
 export * from "./ChannelDeleteEvent";
 export * from "./MessageDeleteEvent";
 export * from "./GuildMemberAddEvent";
+export * from "./GuildMemberUpdateEvent";
