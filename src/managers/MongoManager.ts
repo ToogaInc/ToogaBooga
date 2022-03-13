@@ -831,15 +831,11 @@ export namespace MongoManager {
 
     /**
      * Gets all configured role IDs. This returns a collection where the key is the role name and the value is all
-     * roles under that name.
+     * roles under that name. Note that these roles may not necessarily exist (i.e. the role IDs may be dead).
      * @param {IGuildInfo} guildDoc The guild document.
      * @return {DCollection<DefinedRole, string[]>} The collection.
      */
     export function getAllConfiguredRoles(guildDoc: IGuildInfo): DCollection<DefinedRole, string[]> {
-        const allHrl: string[] = [];
-        if (guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId)
-            allHrl.push(guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId);
-
         const allVrl: string[] = [];
         if (guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId)
             allVrl.push(guildDoc.roles.staffRoles.universalLeaderRoleIds.vetLeaderRoleId);
@@ -884,7 +880,12 @@ export namespace MongoManager {
             );
         }
 
-        roleCollection.set(PermsConstants.HEAD_LEADER_ROLE, allHrl);
+        roleCollection.set(PermsConstants.HEAD_LEADER_ROLE, []);
+        if (guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId) {
+            roleCollection.get(PermsConstants.HEAD_LEADER_ROLE)!.push(
+                guildDoc.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId
+            );
+        }
 
         roleCollection.set(PermsConstants.OFFICER_ROLE, []);
         if (guildDoc.roles.staffRoles.moderation.officerRoleId) {
