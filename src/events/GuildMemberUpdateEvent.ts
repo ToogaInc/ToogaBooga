@@ -2,6 +2,7 @@ import {GuildMember, PartialGuildMember} from "discord.js";
 import {MongoManager} from "../managers/MongoManager";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MuteManager, SuspensionManager} from "../managers/PunishmentManager";
+import {UserManager} from "../managers/UserManager";
 
 export async function onGuildMemberUpdate(
     oldMember: GuildMember | PartialGuildMember,
@@ -17,8 +18,12 @@ export async function onGuildMemberUpdate(
     }
 
     // Check if someone took off this person's muted role
-    if (oldMember.roles.cache.has(guildDoc.roles.mutedRoleId)
-        && !member.roles.cache.has(guildDoc.roles.mutedRoleId)) {
+    if (
+        (oldMember.roles.cache.has(guildDoc.roles.mutedRoleId)
+            // Need this in case oldMember is not cached
+            || guildDoc.moderation.mutedUsers.some(x => x.affectedUser.id === member.id))
+        && !member.roles.cache.has(guildDoc.roles.mutedRoleId)
+    ) {
         await MuteManager.removeMute(member, null, {
             evidence: [],
             guildDoc: guildDoc,
@@ -28,8 +33,12 @@ export async function onGuildMemberUpdate(
         return;
     }
 
-    if (oldMember.roles.cache.has(guildDoc.roles.suspendedRoleId)
-        && !member.roles.cache.has(guildDoc.roles.suspendedRoleId)) {
+    if (
+        (oldMember.roles.cache.has(guildDoc.roles.suspendedRoleId)
+            // Need this in case oldMember is not cached
+            || guildDoc.moderation.suspendedUsers.some(x => x.affectedUser.id === member.id))
+        && !member.roles.cache.has(guildDoc.roles.suspendedRoleId)
+    ) {
         await SuspensionManager.removeSuspension(member, null, {
             evidence: [],
             guildDoc: guildDoc,
@@ -38,4 +47,7 @@ export async function onGuildMemberUpdate(
 
         return;
     }
+
+    // Otherwise, update their roles to include or not include the team role
+    UserManager.updateStaffRolesForMember(member, guildDoc);
 }

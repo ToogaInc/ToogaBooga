@@ -21,6 +21,7 @@ import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import {UserManager} from "../../managers/UserManager";
 import getCachedRole = GuildFgrUtilities.getCachedRole;
 import hasCachedRole = GuildFgrUtilities.hasCachedRole;
 
@@ -704,16 +705,21 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                         "roles.staffRoles.otherStaffRoleIds": validStaffRoles[result].id
                     }
                 });
+
+                UserManager.updateStaffRolesForRole(ctx.guildDoc!, validStaffRoles[result], "remove");
                 continue;
             }
 
             // Case 2: Role
             if (result instanceof Role) {
+                const toRemove = validStaffRoles.some(x => x.id === result.id);
                 ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
-                    [validStaffRoles.some(x => x.id === result.id) ? "$pull" : "$push"]: {
+                    [toRemove ? "$pull" : "$push"]: {
                         "roles.staffRoles.otherStaffRoleIds": result.id
                     }
                 });
+
+                UserManager.updateStaffRolesForRole(ctx.guildDoc!, result, toRemove ? "remove" : "add");
                 continue;
             }
 
