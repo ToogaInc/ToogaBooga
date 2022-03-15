@@ -793,13 +793,18 @@ export namespace SuspensionManager {
 
         // Section suspended
         // Go through every guild that we need to process
-        const allGuildsSecSus = await Promise.all(
-            Array.from(SectionSuspendedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
+        const allGuildsSecSus: [string, Guild | null][] = await Promise.all(
+            Array.from(SectionSuspendedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
         );
 
-        for await (const guild of allGuildsSecSus) {
+        const guildsToRemove: Set<string> = new Set<string>();
+
+        for await (const [id, guild] of allGuildsSecSus) {
             // Make sure guild + guild document exists.
-            if (!guild) continue;
+            if (!guild) {
+                guildsToRemove.add(id);
+                continue;
+            }
 
             const guildDoc = MongoManager.CachedGuildCollection.get(guild.id);
             if (!guildDoc) continue;
@@ -851,13 +856,22 @@ export namespace SuspensionManager {
             }
         }
 
+        // Remove guilds that shouldn't be checked
+        for (const id of guildsToRemove) {
+            SectionSuspendedMembers.delete(id);
+        }
+        guildsToRemove.clear();
+
         // Regular suspensions
-        const allGuildsSuspend = await Promise.all(
-            Array.from(SuspendedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
+        const allGuildsSuspend: [string, Guild | null][] = await Promise.all(
+            Array.from(SuspendedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
         );
 
-        for await (const guild of allGuildsSuspend) {
-            if (!guild) continue;
+        for await (const [id, guild] of allGuildsSuspend) {
+            if (!guild) {
+                guildsToRemove.add(id);
+                continue;
+            }
 
             const guildDoc = MongoManager.CachedGuildCollection.get(guild.id);
             if (!guildDoc) continue;
@@ -885,6 +899,11 @@ export namespace SuspensionManager {
                     }
                 ).then();
             }
+        }
+
+        // Remove guilds that shouldn't be checked
+        for (const id of guildsToRemove) {
+            SuspendedMembers.delete(id);
         }
 
         LOGGER.debug("SuspensionManager finished");
@@ -1315,12 +1334,16 @@ export namespace MuteManager {
             );
         }
 
-        const allGuildsSecSus = await Promise.all(
-            Array.from(MutedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
+        const allGuildsSecSus: [string, Guild | null][] = await Promise.all(
+            Array.from(MutedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
         );
 
-        for (const guild of allGuildsSecSus) {
-            if (!guild) continue;
+        const guildsToRemove: Set<string> = new Set<string>();
+        for (const [id, guild] of allGuildsSecSus) {
+            if (!guild) {
+                guildsToRemove.add(id);
+                continue;
+            }
 
             const guildDoc = MongoManager.CachedGuildCollection.get(guild.id);
             if (!guildDoc) continue;
@@ -1348,6 +1371,11 @@ export namespace MuteManager {
                 });
             }
         }
+
+        for (const id of guildsToRemove) {
+            MutedMembers.delete(id);
+        }
+
         LOGGER.debug("MuteManager finished");
         setTimeout(muteChecker, timeToUpdate);
     }
