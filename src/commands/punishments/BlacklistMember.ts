@@ -15,7 +15,7 @@ export class BlacklistMember extends BaseCommand {
             cmdCode: "BLACKLIST_MEMBER",
             formalCommandName: "Blacklist Member",
             botCommandName: "blacklist",
-            description: "Blacklists a user from the server. If the user is in the server, he or she will be banned.",
+            description: "Blacklists a user from the server. If the user is in the server, they will be banned.",
             rolePermissions: ["Officer", "Moderator", "HeadRaidLeader"],
             generalPermissions: [],
             botPermissions: ["BAN_MEMBERS"],

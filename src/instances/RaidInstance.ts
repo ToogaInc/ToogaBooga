@@ -2557,7 +2557,7 @@ export class RaidInstance {
 
             this.logEvent(
                 `${EmojiConstants.KEY_EMOJI} ${memberThatResponded.displayName} (${memberThatResponded.id}) confirmed`
-                + " that he or she has"
+                + " that they have"
                 + ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.react!.modifiers.join(", ")}]\``,
                 true
             ).catch();

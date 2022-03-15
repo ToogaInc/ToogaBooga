@@ -48,8 +48,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
     private static readonly ROLE_MONGO: IRoleMongo[] = [
         {
             name: "Muted Role",
-            description: "When a user has this role, he or she will not be able to talk in voice channels or in the"
-                + " server.",
+            description: "When a user has this role, they will not be able to talk in voice channels or in the server.",
             guildDocPath: "roles.mutedRoleId",
             sectionPath: "",
             roleType: RoleCategoryType.General,
@@ -77,7 +76,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         {
             name: "Suspended Role",
             description: "The role which signifies that the person has been suspended from the server. When a person"
-                + " is suspended, he or she will not be able to see any member-verified channels (including the AFK"
+                + " is suspended, they will not be able to see any member-verified channels (including the AFK"
                 + " check channel).",
             guildDocPath: "roles.suspendedRoleId",
             sectionPath: "",

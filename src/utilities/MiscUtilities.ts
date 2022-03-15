@@ -98,7 +98,7 @@ export namespace MiscUtilities {
     }
 
     /**
-     * Asks a user for the section that he/she wants to perform an action on. This will send a message and then
+     * Asks a user for the section that they want to perform an action on. This will send a message and then
      * either deletes the message once the question is asked or returns the message for later use.
      * @param {IGuildInfo} guildDb The guild document.
      * @param {GuildMember} member The member asking.
@@ -159,7 +159,7 @@ export namespace MiscUtilities {
     }
 
     /**
-     * Asks a user for the section that he/she wants to perform an action on. If no `msgOptions` is specified, then
+     * Asks a user for the section that they want to perform an action on. If no `msgOptions` is specified, then
      * this will keep the original message content.
      * @param {IGuildInfo} guildDb The guild document.
      * @param {GuildMember} member The member asking.

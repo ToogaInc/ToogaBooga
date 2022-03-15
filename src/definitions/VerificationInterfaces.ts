@@ -31,7 +31,7 @@ export interface IVerificationProperties {
     additionalVerificationInfo: string;
 
     /**
-     * The message to send to the user when he or she successfully verifies.
+     * The message to send to the user when they successfully verify.
      *
      * @type {string}
      */

@@ -446,8 +446,8 @@ export interface IAfkCheckProperties {
         postAfkCheckInfo: string;
 
         /**
-         * The message that will be displayed to the raider when he or she confirms that he or she is bringing an
-         * essential reaction that gives early location. Generally speaking, this should contain information on things
+         * The message that will be displayed to the raider when they confirm that they are bringing an essential
+         * reaction that gives early location. Generally speaking, this should contain information on things
          * like confirming reactions or some other information.
          *
          * @type {string}

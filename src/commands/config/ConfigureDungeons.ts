@@ -1399,7 +1399,7 @@ export class ConfigureDungeons extends BaseCommand {
     }
 
     /**
-     * Allows the user to specify what dungeon he or she wants to work with.
+     * Allows the user to specify what dungeon they want to work with.
      * @param {ICommandContext} ctx The command context.
      * @param {Message} botMsg The bot message.
      * @param {(IDungeonInfo | ICustomDungeonInfo)[]} dungeons The possible dungeons to list.

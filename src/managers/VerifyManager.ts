@@ -424,7 +424,7 @@ export namespace VerifyManager {
                 content: "Your profile is currently under manual verification. Please try again later."
             });
             verifKit.verifyFail?.send({
-                content: `[${section.sectionName}] ${member} tried to verify but he or she is currently under manual `
+                content: `[${section.sectionName}] ${member} tried to verify but they are currently under manual `
                     + "verification."
             }).catch();
             return;
@@ -497,7 +497,7 @@ export namespace VerifyManager {
             if (!selectedOption) {
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} was asked to select a name previously associated with the Discord `
-                        + "account, but he or she did not select a name within the specified time."
+                        + "account, but they did not select a name within the specified time."
                 });
 
                 verifKit.msg.delete().catch();
@@ -881,7 +881,7 @@ export namespace VerifyManager {
                     });
 
                     verifKit.verifyFail?.send({
-                        content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but he or she is `
+                        content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but they are `
                             + `blacklisted from this server under the name: \`${nameEntry}\`. The corresponding `
                             + `Moderation ID is: \`${blacklistEntry.actionId}\`.`
                     });
@@ -1179,10 +1179,10 @@ export namespace VerifyManager {
         verifKit.verifyStep?.send({
             content: section.isMainSection
                 ? `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but there were several `
-                + "minor issues with the person's profile. The user is currently being asked if he or she wants"
+                + "minor issues with the person's profile. The user is currently being asked if they want"
                 + " to get manually verified. The outstanding issues are listed below:\n" + logStr
                 : `[${section.sectionName}] ${member} tried to verify, but there were several minor issues with the`
-                + " person's profile. The user is currently being asked if he or she wants to get manually"
+                + " person's profile. The user is currently being asked if they want to get manually"
                 + " verified. The outstanding issues are listed below:\n" + logStr
         });
 
@@ -1295,9 +1295,9 @@ export namespace VerifyManager {
         verifKit.verifyFail?.send({
             content: section.isMainSection
                 ? `[Main] ${member} tried to verify as **\`${checkRes.name}\`**, but did not meet the`
-                + " requirements. He or she has opted for manual verification."
-                : `[${section.sectionName}] ${member} tried to verify, but did not meet the requirements. He or she`
-                + " has opted for manual verification."
+                + " requirements. They have opted for manual verification."
+                : `[${section.sectionName}] ${member} tried to verify, but did not meet the requirements. They have`
+                + " opted for manual verification."
         });
 
         await m.edit({

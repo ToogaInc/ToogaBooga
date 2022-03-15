@@ -100,7 +100,7 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
         });
     }
 
-    // Don't let the user run the command again if he or she is already running it
+    // Don't let the user run the command again if they are already running it
     if (!foundCommand.allowsMultipleExecutionsByUser() && foundCommand.hasActiveUser(ctx.user.id, ctx.guild?.id)) {
         const alreadyRunningCmdEmbed = MessageUtilities.generateBlankEmbed(ctx.user, "RED")
             .setTitle("Already Using Command.")
