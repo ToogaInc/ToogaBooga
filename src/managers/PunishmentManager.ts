@@ -893,7 +893,7 @@ export namespace SuspensionManager {
                     null,
                     {
                         guildDoc: guildDoc,
-                        reason: "The user has served the entirety of his or her time.",
+                        reason: "The user has served the entirety of their time.",
                         actionId: details.actionId,
                         evidence: []
                     }
@@ -1364,7 +1364,7 @@ export namespace MuteManager {
                 // Handle unmuting.
                 await removeMute(mutedMember, null, {
                     guildDoc: guildDoc,
-                    reason: "The user has served the entirety of his or her time.",
+                    reason: "The user has served the entirety of their time.",
                     actionId: mutedInfo.actionId,
                     evidence: []
                 });

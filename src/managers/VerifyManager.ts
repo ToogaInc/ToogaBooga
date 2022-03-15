@@ -728,7 +728,7 @@ export namespace VerifyManager {
 
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but an unknown error `
-                        + "occurred when trying to reach his or her RealmEye profile's basic data"
+                        + "occurred when trying to reach their RealmEye profile's basic data"
                         + ` (https://www.realmeye.com/player/${nameToVerify!}). Is the profile`
                         + " private?"
                 });
@@ -773,7 +773,7 @@ export namespace VerifyManager {
                 });
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but the verification code,`
-                        + `\`${code}\`, was not found in his or her description.`
+                        + `\`${code}\`, was not found in their description.`
                 });
 
                 if (!r) {
@@ -825,7 +825,7 @@ export namespace VerifyManager {
 
                 verifKit.verifyFail?.send({
                     content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but an unknown error `
-                        + "occurred when trying to reach his or her profile's **name history**."
+                        + "occurred when trying to reach their profile's **name history**."
                 });
 
                 if (!r) {
@@ -1091,7 +1091,7 @@ export namespace VerifyManager {
 
             verifKit.verifyFail?.send({
                 content: `[${section.sectionName}] ${member} tried to verify as **\`${nameToUse}\`**, but an unknown`
-                    + " error occurred when trying to reach his or her RealmEye profile's basic data"
+                    + " error occurred when trying to reach their RealmEye profile's basic data"
                     + ` (https://www.realmeye.com/player/${nameToUse}). Is the profile private?`
             });
             return;
@@ -1508,8 +1508,8 @@ export namespace VerifyManager {
                     GlobalFgrUtilities.sendMsg(member, {embeds: [finishedEmbed]}),
                     section.isMainSection
                         ? verifyFailChannel?.send({
-                            content: `[Main] ${member} has tried to verify as **\`${manualVerifyRes.ign}\`**, but his`
-                                + ` or her manual verification request was __denied__ by ${moderator}.`
+                            content: `[Main] ${member} has tried to verify as **\`${manualVerifyRes.ign}\`**, but`
+                                + ` their manual verification request was __denied__ by ${moderator}.`
                         })
                         : verifyFailChannel?.send({
                             content: `[${section.sectionName}] ${member} has tried to get manually verified, but`
