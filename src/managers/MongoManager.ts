@@ -683,16 +683,13 @@ export namespace MongoManager {
      * Equivalent to `findOneAndUpdate`, but this provides a cleaner way to get the guild document. This
      * will automatically set `returnDocument` to `true`. Additionally, this updates the cached guild document.
      *
-     * Note: We use the `any` types for the parameters since there were constantly errors regarding infinite type
-     * instantiation.
-     *
      * @param {Filter<IGuildInfo>} filter The filter query.
      * @param {UpdateFilter<IGuildInfo>} update The update query.
      * @return {Promise<IGuildInfo | null>} The new guild document, if any.
      */
     export async function updateAndFetchGuildDoc(
-        filter: Filter<IGuildInfo> | any,
-        update: UpdateFilter<IGuildInfo> | any
+        filter: Filter<IGuildInfo>,
+        update: UpdateFilter<IGuildInfo>
     ): Promise<IGuildInfo | null> {
         const res = await getGuildCollection().findOneAndUpdate(filter, update, {
             returnDocument: "after"

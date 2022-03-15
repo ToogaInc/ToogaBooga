@@ -925,7 +925,6 @@ export namespace SuspensionManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
     ): Promise<IPunishmentCommandResult> {
-
         LOGGER.info(`${mod?.displayName} is suspending ${member.displayName}`);
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (GuildFgrUtilities.memberHasCachedRole(member, info.guildDoc.roles.suspendedRoleId)
