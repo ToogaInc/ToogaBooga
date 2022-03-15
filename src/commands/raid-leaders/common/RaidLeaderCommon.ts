@@ -1,7 +1,7 @@
 import {
     BaseCommandInteraction,
     Collection, GuildMember,
-    MessageActionRow, MessageButton,
+    MessageActionRow, MessageButton, MessageComponentInteraction,
     MessageSelectMenu,
     Role,
     SelectMenuInteraction,
@@ -285,8 +285,8 @@ export async function getSelectedDungeon(
  * @returns {Promise<VoiceChannel | null>} The voice channel if one is selected, or `null` otherwise if one should be
  * created for temporary purposes.
  */
-export async function selectVc<T extends BaseCommandInteraction>(
-    interaction: BaseCommandInteraction,
+export async function selectVc<T extends BaseCommandInteraction | MessageComponentInteraction>(
+    interaction: T,
     guildDoc: IGuildInfo,
     controlPanelChannel: TextChannel,
     from: GuildMember

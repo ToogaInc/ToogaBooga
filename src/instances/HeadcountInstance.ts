@@ -9,7 +9,7 @@ import {
     MessageButton,
     MessageComponentInteraction,
     MessageEmbed,
-    TextChannel
+    TextChannel, VoiceChannel
 } from "discord.js";
 import {
     ICustomDungeonInfo,
@@ -35,6 +35,7 @@ import {RaidInstance} from "./RaidInstance";
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {Logger} from "../utilities/Logger";
 import {TimeUtilities} from "../utilities/TimeUtilities";
+import {selectVc} from "../commands/raid-leaders/common/RaidLeaderCommon";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -568,9 +569,11 @@ export class HeadcountInstance {
     }
 
     /**
-     * Converts a headcount
+     * Converts a headcount.
+     * @param {GuildMember} member The person that converted this.
+     * @param {VoiceChannel | null} vcToUse The voice channel to use, if any.
      */
-    public async convertHeadcount(): Promise<void> {
+    public async convertHeadcount(member: GuildMember, vcToUse: VoiceChannel | null): Promise<void> {
         LOGGER.info(`${this._instanceInfo} Converting headcount`);
         if (!this._headcountMsg || !this._controlPanelMsg)
             return;
@@ -605,6 +608,21 @@ export class HeadcountInstance {
 
         await this._headcountMsg.reactions.removeAll().catch();
         LOGGER.info(`${this._instanceInfo} Headcount converted`);
+
+        const rm = await RaidInstance.new(
+            member,
+            this._guildDoc,
+            this._raidSection,
+            this._dungeon,
+            {
+                existingVc: vcToUse ? {
+                    vc: vcToUse,
+                    oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
+                } : undefined
+            }
+        );
+
+        await rm?.startPreAfkCheck();
     }
 
     /**
@@ -890,12 +908,17 @@ export class HeadcountInstance {
             await i.deferUpdate();
             switch (i.customId) {
                 case HeadcountInstance.CONVERT_TO_AFK_CHECK_ID: {
-                    LOGGER.info(`${this._leaderName} converted ${this._dungeon.dungeonName} headcount to afk check.`);
-                    this.convertHeadcount().then();
-                    // TODO make sure this doesn't bypass the max number of raids
-                    const rm = await RaidInstance.new(i.member! as GuildMember, this._guildDoc, this._raidSection,
-                        this._dungeon);
-                    await rm?.startPreAfkCheck();
+                    // Prematurely ending this collector since this interferes with the collector used in the
+                    // selectVc function. The other collectors will be ended in the convertHeadcount method.
+                    this._controlPanelReactionCollector?.stop("No longer needed");
+                    // Ask for VC
+                    const newGuildDoc = await MongoManager.getOrCreateGuildDoc(this._guild.id, true);
+                    const vcToUse = await selectVc(i, newGuildDoc, this._controlPanelChannel, i.member! as GuildMember);
+                    LOGGER.info(
+                        `${this._leaderName} converted ${this._dungeon.dungeonName} headcount to AFKCheck.`
+                    );
+
+                    this.convertHeadcount(i.member as GuildMember, vcToUse).then();
                     return;
                 }
                 case HeadcountInstance.ABORT_HEADCOUNT_ID: {
