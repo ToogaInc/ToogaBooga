@@ -362,11 +362,11 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
             new MessageButton()
                 .setLabel("Temporary VC")
                 .setCustomId(uIdentifier)
-                .setStyle("SECONDARY"),
+                .setStyle("PRIMARY"),
             new MessageButton()
                 .setLabel("First Available VC")
                 .setCustomId(`${uIdentifier}_first`)
-                .setStyle("SECONDARY"),
+                .setStyle("PRIMARY"),
             ...selectMenus
         ])
     });

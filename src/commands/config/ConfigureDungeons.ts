@@ -673,7 +673,8 @@ export class ConfigureDungeons extends BaseCommand {
                 .setTitle(`Overriding Dungeon: ${dgnToOverrideInfo?.dungeonName ?? "N/A"}`)
                 .setDescription(
                     "Here, you can __override__ an existing dungeon. Once you are done, press the **Submit** button."
-                    + " If you decide that you don't want to override a dungeon at this time, press the **Back** button."
+                    + " If you decide that you don't want to override a dungeon at this time, press the **Back**"
+                    + " button."
                 );
 
             buttons.push(reactionsButton);

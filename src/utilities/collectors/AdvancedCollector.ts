@@ -177,7 +177,7 @@ export namespace AdvancedCollector {
         try {
             returnInteraction = await options.targetChannel.awaitMessageComponent({
                 filter: i => i.user.id === options.targetAuthor.id
-                    && i.customId.startsWith(uniqueIdentifier),
+                        && i.customId.startsWith(uniqueIdentifier),
                 time: options.duration
             });
 

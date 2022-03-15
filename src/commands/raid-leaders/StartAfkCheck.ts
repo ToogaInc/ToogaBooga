@@ -10,6 +10,7 @@ import {
     getSelectedSection, selectVc
 } from "./common/RaidLeaderCommon";
 import {IRaidOptions} from "../../definitions";
+import {TextChannel} from "discord.js";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
@@ -88,7 +89,7 @@ export class StartAfkCheck extends BaseCommand {
         }
 
         // Step 3: Get the VC
-        const vcToUse = await selectVc(ctx.interaction, ctx.guildDoc!, sectionToUse.cpChan!, ctx.member!);
+        const vcToUse = await selectVc(ctx.interaction, ctx.guildDoc!, ctx.channel as TextChannel, ctx.member!);
         const raidOptions: IRaidOptions = {
             location: location ?? ""
         };
