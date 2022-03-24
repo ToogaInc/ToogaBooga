@@ -14,7 +14,7 @@ import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
 
 /**
- * A namespace containing a series of useful functions for dungeons.
+ * A namespace containing a series of useful functions for dungeons, raids, and so on.
  */
 export namespace DungeonUtilities {
     /**
@@ -33,7 +33,8 @@ export namespace DungeonUtilities {
         function checkReactions(obj: { keyReactions: IAfkCheckReaction[], otherReactions: IAfkCheckReaction[] }): void {
             // Check key reactions first
             for (let i = obj.keyReactions.length - 1; i >= 0; i--) {
-                if (getReaction(guildDoc, obj.keyReactions[i].mapKey))
+                const r = getReaction(guildDoc, obj.keyReactions[i].mapKey);
+                if (r && GlobalFgrUtilities.getNormalOrCustomEmoji(r))
                     continue;
                 obj.keyReactions.splice(i, 1);
                 changed = true;
@@ -41,7 +42,8 @@ export namespace DungeonUtilities {
 
             // Check any other non-key reactions
             for (let i = obj.otherReactions.length - 1; i >= 0; i--) {
-                if (getReaction(guildDoc, obj.otherReactions[i].mapKey))
+                const r = getReaction(guildDoc, obj.otherReactions[i].mapKey);
+                if (r && GlobalFgrUtilities.getNormalOrCustomEmoji(r))
                     continue;
                 obj.otherReactions.splice(i, 1);
                 changed = true;
@@ -134,6 +136,35 @@ export namespace DungeonUtilities {
                 "quotas.quotaInfo": guildDoc.quotas.quotaInfo
             }
         }) : guildDoc;
+    }
+
+    /**
+     * Fixes early location roles, removing them from the database if it doesn't contain a valid custom emoji, or it
+     * doesn't contain a valid role.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {Guild} guild The guild.
+     * @returns {Promise<IGuildInfo | null>} The new document.
+     */
+    export async function fixEarlyLocRoles(guildDoc: IGuildInfo, guild: Guild): Promise<IGuildInfo | null> {
+        const temp = guildDoc.properties.genEarlyLocReactions!
+            .filter(x => {
+                if (!GuildFgrUtilities.hasCachedRole(guild, x.roleId)) {
+                    return false;
+                }
+
+                const r = getReaction(guildDoc, x.mappingKey);
+                return r && GlobalFgrUtilities.getNormalOrCustomEmoji(r);
+            });
+
+        if (temp.length === guildDoc.properties.genEarlyLocReactions.length) {
+            return guildDoc;
+        }
+
+        return await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+            $set: {
+                "properties.genEarlyLocReactions": temp
+            }
+        });
     }
 
     /**

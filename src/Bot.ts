@@ -156,7 +156,8 @@ export class Bot {
             new Cmds.ConfigureReactionsImages(),
             new Cmds.ConfigureQuotas(),
             new Cmds.ConfigureVerification(),
-            new Cmds.ConfigureAfkCheck()
+            new Cmds.ConfigureAfkCheck(),
+            new Cmds.ConfigureEarlyLocRoles()
         ]);
 
         Bot.Commands.set("Punishments", [
@@ -168,7 +169,9 @@ export class Bot {
             new Cmds.UnmuteMember(),
             new Cmds.UnblacklistMember(),
             new Cmds.UnsuspendMember(),
-            new Cmds.UnsuspendFromSection()
+            new Cmds.UnsuspendFromSection(),
+            new Cmds.ModmailBlacklist(),
+            new Cmds.ModmailUnblacklist()
         ]);
 
         Bot.Commands.set("Bot Owner", [

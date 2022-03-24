@@ -629,13 +629,16 @@ export class ConfigureReactionsImages extends BaseCommand {
             const fields = ArrayUtilities.arrayToStringFields(
                 currentReactions,
                 (i, elem) => {
+                    const cType = ConfigureReactionsImages.ALL_REACTION_TYPES.find(x => x.type === elem.value.type);
                     const sb = new StringBuilder();
                     if (i === selectedIdx)
                         sb.append(EmojiConstants.RIGHT_TRIANGLE_EMOJI).append(" ");
-                    sb.append(elem.value.name)
+                    sb.append(`**\`${elem.value.name}\`**`)
                         .append(" ")
-                        .append(GlobalFgrUtilities.getNormalOrCustomEmoji(elem.value) ?? "(No Emoji)")
-                        .appendLine();
+                        .append(GlobalFgrUtilities.getNormalOrCustomEmoji(elem.value))
+                        .appendLine()
+                        .append(`- Type: **\`${cType?.name ?? "N/A"}\`**`)
+                        .appendLine(2);
 
                     return sb.toString();
                 }

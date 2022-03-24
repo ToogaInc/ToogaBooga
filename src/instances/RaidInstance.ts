@@ -450,17 +450,16 @@ export class RaidInstance {
                 return;
             }
 
-            const rolesForEarlyLoc = (this._guildDoc.properties.genEarlyLocReactions
-                .find(kv => kv.key === mapKey)?.value
-                .filter(role => GuildFgrUtilities.hasCachedRole(this._guild, role))
-                .map(role => GuildFgrUtilities.getCachedRole(this._guild, role)) ?? []) as Role[];
+            const rolesForEarlyLoc = this._guildDoc.properties.genEarlyLocReactions
+                .find(kv => kv.mappingKey === mapKey)?.roleId ?? "";
+            const resolvedRole = GuildFgrUtilities.getCachedRole(this._guild, rolesForEarlyLoc);
 
-            if (rolesForEarlyLoc.length === 0 || info.earlyLocAmt === 0) {
+            if (!resolvedRole || info.earlyLocAmt === 0) {
                 reactions.delete(mapKey);
                 return;
             }
 
-            this._earlyLocToRole.set(mapKey, rolesForEarlyLoc);
+            this._earlyLocToRole.set(mapKey, [resolvedRole]);
         });
 
         // Populate the collections

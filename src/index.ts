@@ -24,7 +24,7 @@ import {MAPPED_AFK_CHECK_REACTIONS} from "./constants/dungeons/MappedAfkCheckRea
     await bot.login();
     bot.initServices();
 })();
-
+/*
 process.on("unhandledRejection", e => {
     console.error(
         new StringBuilder()
@@ -33,7 +33,7 @@ process.on("unhandledRejection", e => {
             .append("=====================================")
             .toString()
     );
-});
+});*/
 
 // TODO remove this whenever possible
 process.on("uncaughtException", e => {

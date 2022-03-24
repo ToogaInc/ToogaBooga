@@ -338,8 +338,8 @@ export interface IGuildInfo {
         /**
          * Any reactions that give early location.
          *
-         * The key is the emoji mapping key and the value is the list of roles which qualify for early location from
-         * that emoji.
+         * Here, the `roleId` is the role ID and the `mappingKey` is the ID corresponding to the emoji in which you
+         * can react to get early location.
          *
          * In terms of how this works:
          * - For each dungeon, the user can specify the whether this reaction will show up.
@@ -347,9 +347,9 @@ export interface IGuildInfo {
          *
          * Nitro is automatically included.
          *
-         * @type {IPropertyKeyValuePair<string, string[]>[]}
+         * @type {IPropertyKeyValuePair<string, string>[]}
          */
-        genEarlyLocReactions: IPropertyKeyValuePair<string, string[]>[];
+        genEarlyLocReactions: {roleId: string; mappingKey: string;}[];
 
         /**
          * An array that represents the number of points you can get for reacting to certain things. This is

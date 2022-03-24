@@ -12,6 +12,7 @@ export * from "./config/ConfigureReactionsImages";
 export * from "./config/ConfigureQuotas";
 export * from "./config/ConfigureVerification";
 export * from "./config/ConfigureAfkCheck";
+export * from "./config/ConfigureEarlyLocRoles";
 
 export * from "./staff/FindPunishment";
 export * from "./staff/CheckBlacklist";
@@ -36,6 +37,8 @@ export * from "./punishments/UnmuteMember";
 export * from "./punishments/UnblacklistMember";
 export * from "./punishments/UnsuspendMember";
 export * from "./punishments/UnsuspendFromSection";
+export * from "./punishments/ModmailBlacklist";
+export * from "./punishments/ModmailUnblacklist";
 
 export * from "./logging/LogLedRun";
 export * from "./logging/LogKeyPop";

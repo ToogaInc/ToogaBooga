@@ -88,9 +88,9 @@ export namespace GlobalFgrUtilities {
      * @return {string | GuildEmoji | null} The emoji.
      */
     export function getNormalOrCustomEmoji(reactionInfo: IReactionInfo): string | GuildEmoji | null {
-        return reactionInfo.emojiInfo.isCustom
-            ? getCachedEmoji(reactionInfo.emojiInfo.identifier)
-            : reactionInfo.emojiInfo.identifier;
+        return (reactionInfo.emojiInfo.isCustom
+            ? getCachedEmoji(reactionInfo.emojiInfo.identifier)?.toString() ?? null
+            : reactionInfo.emojiInfo.identifier);
     }
 
     /**
