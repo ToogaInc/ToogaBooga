@@ -9,7 +9,8 @@ import {
     MessageButton,
     MessageComponentInteraction,
     MessageEmbed,
-    TextChannel, VoiceChannel
+    TextChannel,
+    VoiceChannel
 } from "discord.js";
 import {
     ICustomDungeonInfo,
@@ -913,7 +914,12 @@ export class HeadcountInstance {
                     this._controlPanelReactionCollector?.stop("No longer needed");
                     // Ask for VC
                     const newGuildDoc = await MongoManager.getOrCreateGuildDoc(this._guild.id, true);
-                    const vcToUse = await selectVc(i, newGuildDoc, this._controlPanelChannel, i.member! as GuildMember);
+                    let vcToUse: VoiceChannel | null = null;
+
+                    if (this._raidSection.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs) {
+                        vcToUse = await selectVc(i, newGuildDoc, this._controlPanelChannel, i.member! as GuildMember);
+                    }
+
                     LOGGER.info(
                         `${this._leaderName} converted ${this._dungeon.dungeonName} headcount to AFKCheck.`
                     );

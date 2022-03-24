@@ -398,6 +398,13 @@ export interface IAfkCheckProperties {
     vcLimit: number;
 
     /**
+     * Whether to allow the use of existing voice channels for AFK checks.
+     *
+     * @type {boolean}
+     */
+    allowUsingExistingVcs: boolean;
+
+    /**
      * The default number of people that can get early location by reacting to the Nitro button.
      *
      * Use `-1` to default to 8% of the VC limit.

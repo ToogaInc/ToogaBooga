@@ -10,7 +10,7 @@ import {
     getSelectedSection, selectVc
 } from "./common/RaidLeaderCommon";
 import {IRaidOptions} from "../../definitions";
-import {TextChannel} from "discord.js";
+import {TextChannel, VoiceChannel} from "discord.js";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
@@ -89,16 +89,19 @@ export class StartAfkCheck extends BaseCommand {
         }
 
         // Step 3: Get the VC
-        const vcToUse = await selectVc(ctx.interaction, ctx.guildDoc!, ctx.channel as TextChannel, ctx.member!);
+        let vcToUse: VoiceChannel | null = null;
         const raidOptions: IRaidOptions = {
             location: location ?? ""
         };
 
-        if (vcToUse) {
-            raidOptions.existingVc = {
-                vc: vcToUse,
-                oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
-            };
+        if (sectionToUse.section.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs) {
+            vcToUse = await selectVc(ctx.interaction, ctx.guildDoc!, ctx.channel as TextChannel, ctx.member!);
+            if (vcToUse) {
+                raidOptions.existingVc = {
+                    vc: vcToUse,
+                    oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
+                };
+            }
         }
 
         // Step 4: Ask for the appropriate dungeon

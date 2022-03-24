@@ -474,6 +474,7 @@ export namespace MongoManager {
             afkCheckProperties: {
                 createLogChannel: true,
                 pointUserLimit: 5,
+                allowUsingExistingVcs: false,
                 vcLimit: 60,
                 nitroEarlyLocationLimit: 5,
                 customMsg: {

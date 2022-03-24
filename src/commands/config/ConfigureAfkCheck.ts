@@ -136,6 +136,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                 .map(x => {
                     return {...x};
                 }),
+            allowUsingExistingVcs: section.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs,
             afkCheckTimeout: section.otherMajorConfig.afkCheckProperties.afkCheckTimeout,
             allowedDungeons: section.otherMajorConfig.afkCheckProperties.allowedDungeons.slice(),
             createLogChannel: section.otherMajorConfig.afkCheckProperties.createLogChannel,
@@ -151,6 +152,10 @@ export class ConfigureAfkCheck extends BaseCommand {
 
         const logChannelButton = new MessageButton()
             .setCustomId("create_log_chan")
+            .setStyle("PRIMARY");
+
+        const existingVcButton = new MessageButton()
+            .setCustomId("existing_vc")
             .setStyle("PRIMARY");
 
         const buttons: MessageButton[] = [
@@ -180,6 +185,7 @@ export class ConfigureAfkCheck extends BaseCommand {
                 .setCustomId("set_early_loc")
                 .setStyle("PRIMARY"),
             logChannelButton,
+            existingVcButton,
             new MessageButton()
                 .setLabel("Set AFK Check Expiration Time")
                 .setCustomId("afk_check_expiration")
@@ -222,6 +228,8 @@ export class ConfigureAfkCheck extends BaseCommand {
                     .append(" checks, press the corresponding permissions button.").appendLine()
                     .append("- To enable or disable the creation of a logging channel, press the **Enable/Disable Log")
                     .append(" Channel Creation** button.").appendLine()
+                    .append("- To allow or disallow the ability to select an existing raid VC, press the **Allow/")
+                    .append("Disallow VC Selection** button.").appendLine()
                     .append("- To save your changes, press **Save**. Otherwise, press **Quit** to quit this process")
                     .append(" and **Go Back** to go back (both without saving your changes).").toString()
             );
@@ -231,6 +239,12 @@ export class ConfigureAfkCheck extends BaseCommand {
                 newAfkCheckProps.createLogChannel
                     ? "Disable Log Channel Creation"
                     : "Enable Log Channel Creation"
+            );
+
+            existingVcButton.setLabel(
+                newAfkCheckProps.allowUsingExistingVcs
+                    ? "Disallow VC Selection"
+                    : "Enable VC Selection"
             );
 
             embed.fields = [];
@@ -244,6 +258,11 @@ export class ConfigureAfkCheck extends BaseCommand {
                 .addField(
                     "Creating Log Channel?",
                     StringUtil.codifyString(newAfkCheckProps.createLogChannel ? "Yes" : "No"),
+                    true
+                )
+                .addField(
+                    "Allow VC Selection?",
+                    StringUtil.codifyString(newAfkCheckProps.allowUsingExistingVcs ? "Yes" : "No"),
                     true
                 )
                 .addField(
@@ -611,6 +630,10 @@ export class ConfigureAfkCheck extends BaseCommand {
                 }
                 case "create_log_chan": {
                     newAfkCheckProps.createLogChannel = !newAfkCheckProps.createLogChannel;
+                    break;
+                }
+                case "existing_vc": {
+                    newAfkCheckProps.allowUsingExistingVcs = !newAfkCheckProps.allowUsingExistingVcs;
                     break;
                 }
             }
