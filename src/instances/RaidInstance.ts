@@ -1542,8 +1542,9 @@ export class RaidInstance {
             descSb.append(`To participate in this raid, join ${this._raidVc.toString()} channel.`);
         }
         else {
-            descSb.append("Only priority reactions can join the raid VC at this time. You will be able to join the ")
-                .append("raid VC once all players with priority reactions have been confirmed.");
+            descSb.append(`Only priority reactions can join the raid VC, ${this._raidVc.toString()}, at this time.`)
+                .append(" You will be able to join the raid VC once all players with priority reactions have been")
+                .append(" confirmed.");
         }
 
         const prioritySb = new StringBuilder();
@@ -1664,6 +1665,8 @@ export class RaidInstance {
 
         const generalStatus = new StringBuilder()
             .append(`⇨ AFK Check Started At: ${TimeUtilities.getDateTime(this._raidVc.createdTimestamp)} GMT`)
+            .appendLine()
+            .append(`⇨ Voice Channel: ${this._raidVc.toString()}`)
             .appendLine()
             .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
             .appendLine()
