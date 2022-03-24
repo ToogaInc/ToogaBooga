@@ -145,7 +145,7 @@ export class Bot {
             new Cmds.CleanVC(),
             new Cmds.Poll(),
             new Cmds.Purge(),
-            new Cmds.RemovePunishmentHistory()
+            new Cmds.RemovePunishment()
         ]);
 
         Bot.Commands.set("Configuration", [

@@ -26,7 +26,7 @@ export * from "./staff/YoinkVC";
 export * from "./staff/CleanVC";
 export * from "./staff/Poll";
 export * from "./staff/Purge";
-export * from "./staff/RemovePunishmentHistory";
+export * from "./staff/RemovePunishment";
 
 export * from "./punishments/SuspendMember";
 export * from "./punishments/SectionSuspendMember";

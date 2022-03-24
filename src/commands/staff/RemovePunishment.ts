@@ -1,13 +1,13 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {MongoManager} from "../../managers/MongoManager";
 
-export class RemovePunishmentHistory extends BaseCommand {
+export class RemovePunishment extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "REMOVE_PUNISHMENT_HISTORU",
-            formalCommandName: "Remove Punishment History",
-            botCommandName: "removepunishhist",
-            description: "Removes the punishment entry from the user's profile. Note that this completely removes the"
+            cmdCode: "REMOVE_PUNISHMENT",
+            formalCommandName: "Remove Punishment",
+            botCommandName: "removepunishment",
+            description: "Removes a punishment entry from the user's profile. Note that this completely removes the"
                 + " punishment history from the database.",
             rolePermissions: [
                 "Officer",
