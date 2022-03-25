@@ -281,6 +281,7 @@ export async function getSelectedDungeon(
  * @param {BaseCommandInteraction} interaction The interaction.
  * @param {IGuildInfo} guildDoc The guild document.
  * @param {TextChannel} controlPanelChannel The control panel channel.
+ * @param {TextChannel} targetChannel The channel where the selection of the VC should be asked in.
  * @param {GuildMember} from The member that initiated this.
  * @returns {Promise<VoiceChannel | null>} The voice channel if one is selected, or `null` otherwise if one should be
  * created for temporary purposes.
@@ -289,6 +290,7 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
     interaction: T,
     guildDoc: IGuildInfo,
     controlPanelChannel: TextChannel,
+    targetChannel: TextChannel,
     from: GuildMember
 ): Promise<VoiceChannel | null> {
     // All valid VCs must start with some word and end with a number
@@ -374,7 +376,7 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
     const selected = await AdvancedCollector.startInteractionEphemeralCollector({
         targetAuthor: from.user,
         acknowledgeImmediately: true,
-        targetChannel: controlPanelChannel,
+        targetChannel: targetChannel,
         duration: 30 * 1000
     }, uIdentifier);
 

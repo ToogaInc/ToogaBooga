@@ -507,7 +507,7 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo): Colle
 
             for (const reaction of overrideInfo.keyReactions
                 .concat(overrideInfo.otherReactions)
-                .concat(guildDoc.properties.universalEarlyLocReactions)) {
+                .concat(guildDoc.properties.universalEarlyLocReactions ?? [])) {
                 findAndAddReaction(reaction);
             }
 
@@ -526,7 +526,7 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo): Colle
         }
 
         // Add any universal early location reactions
-        for (const reaction of guildDoc.properties.universalEarlyLocReactions) {
+        for (const reaction of guildDoc.properties.universalEarlyLocReactions ?? []) {
             findAndAddReaction(reaction);
         }
 
@@ -537,7 +537,7 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo): Colle
     // process that.
     for (const r of dungeon.keyReactions
         .concat(dungeon.otherReactions)
-        .concat(guildDoc.properties.universalEarlyLocReactions)) {
+        .concat(guildDoc.properties.universalEarlyLocReactions ?? [])) {
         findAndAddReaction(r);
     }
 
