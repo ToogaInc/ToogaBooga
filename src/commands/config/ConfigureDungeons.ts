@@ -20,6 +20,8 @@ import {
     IDungeonOverrideInfo,
     IGuildInfo,
     ImageInfo,
+    IPropertyKeyValuePair,
+    IReactionInfo,
     ISectionInfo
 } from "../../definitions";
 import {StringUtil} from "../../utilities/StringUtilities";
@@ -77,8 +79,9 @@ type LinkConfigOptions = {
 };
 
 export class ConfigureDungeons extends BaseCommand {
-    public static readonly MAXIMUM_PRIORITY_REACTS: number = 15;
+    public static readonly MAXIMUM_PRIORITY_REACTS: number = 12;
     public static readonly MAXIMUM_NORMAL_REACTS: number = 20;
+    public static readonly MAXIMUM_UNIVERSAL_PRIORITY: number = 4;
     public static readonly MAXIMUM_CUSTOM_DUNGEONS: number = 20;
 
     public constructor() {
@@ -250,6 +253,12 @@ export class ConfigureDungeons extends BaseCommand {
                 + " per-section basis."
             )
             .addField(
+                "Set Universal Early Location Reactions",
+                "Click on the `Set Universal Early Location Reactions` button if you want to add, remove, or edit"
+                + " what custom early location reactions (excluding Nitro & Points) should appear on **every**"
+                + " dungeon's AFK check."
+            )
+            .addField(
                 "Override Base Dungeon",
                 "Click on the `Override Base Dungeon` button if you want to override some properties of a built-in"
                 + " dungeon."
@@ -262,6 +271,11 @@ export class ConfigureDungeons extends BaseCommand {
                 .setStyle("PRIMARY")
                 .setCustomId("allow_deny_dungeon")
                 .setEmoji(EmojiConstants.PENCIL_EMOJI),
+            new MessageButton()
+                .setLabel("Set Universal Early Location Reactions")
+                .setStyle("PRIMARY")
+                .setCustomId("set_universal_early")
+                .setEmoji(EmojiConstants.MAP_EMOJI),
             new MessageButton()
                 .setLabel("Override Base Dungeon")
                 .setStyle("PRIMARY")
@@ -448,6 +462,31 @@ export class ConfigureDungeons extends BaseCommand {
                 }
 
                 await this.createOrModifyCustomDungeon(ctx, botMsg, res);
+                return;
+            }
+            case "set_universal_early": {
+                const res = await this.configReactions(
+                    ctx,
+                    botMsg,
+                    ctx.guildDoc!.properties.universalEarlyLocReactions ?? [],
+                    ctx.guildDoc!.properties.customReactions.filter(x => x.value.type === "EARLY_LOCATION"),
+                    false,
+                    ConfigureDungeons.MAXIMUM_UNIVERSAL_PRIORITY,
+                    0
+                );
+
+                if (!res) {
+                    await this.dispose(ctx, botMsg);
+                    return;
+                }
+
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                    $set: {
+                        "properties.universalEarlyLocReactions": res
+                    }
+                });
+
+                await this.mainMenu(ctx, botMsg);
                 return;
             }
         }
@@ -957,7 +996,9 @@ export class ConfigureDungeons extends BaseCommand {
                     const newReactions = await this.configReactions(
                         ctx,
                         botMsg,
-                        cDungeon.keyReactions.concat(cDungeon.otherReactions)
+                        cDungeon.keyReactions.concat(cDungeon.otherReactions),
+                        ctx.guildDoc!.properties.customReactions,
+                        true
                     );
 
                     if (!newReactions) {
@@ -1831,11 +1872,24 @@ export class ConfigureDungeons extends BaseCommand {
      * @param {ICommandContext} ctx The command context.
      * @param {Message} botMsg The bot message,
      * @param {IAfkCheckReaction[]} cReactions The current reactions set.
+     * @param {IPropertyKeyValuePair<string, IReactionInfo>[]} allReactions All reactions that can be used. This
+     * should be a subset of the customReactions array in the guild document.
+     * @param {boolean} allowDefaults Whether to allow default reactions. If this is `false`, it is assumed that
+     * this is for universal reactions only.
+     * @param {number} [priorityLimit] The maximum number of (priority) reactions allowed.
+     * @param {number} [generalLimit] The maximum number of (regular) reactions allowed.
      * @returns {Promise<IAfkCheckReaction[] | null>} The new reactions, or `null` if this was canceled.
      * @private
      */
-    private async configReactions(ctx: ICommandContext, botMsg: Message,
-                                  cReactions: IAfkCheckReaction[]): Promise<IAfkCheckReaction[] | null> {
+    private async configReactions(
+        ctx: ICommandContext,
+        botMsg: Message,
+        cReactions: IAfkCheckReaction[],
+        allReactions: IPropertyKeyValuePair<string, IReactionInfo>[],
+        allowDefaults: boolean,
+        priorityLimit: number = ConfigureDungeons.MAXIMUM_PRIORITY_REACTS,
+        generalLimit: number = ConfigureDungeons.MAXIMUM_NORMAL_REACTS
+    ): Promise<IAfkCheckReaction[] | null> {
         const currentReactions = cReactions.slice().filter(x => {
             return !!DungeonUtilities.getReaction(ctx.guildDoc!, x.mapKey)!;
         }).filter(y => {
@@ -1860,41 +1914,52 @@ export class ConfigureDungeons extends BaseCommand {
             saveButton
         ];
 
+        const desc = new StringBuilder();
+        if (allowDefaults) {
+            desc.append("Here, you will be able to add, remove, or manage reactions for this dungeon. Please read")
+                .append(" the directions carefully.");
+        }
+        else {
+            desc.append("Here, you will be able to add, remove, or manage early location reactions for **every**")
+                .append(" dungeon. These early location reactions will appear on **every** dungeon, regardless of")
+                .append(" whether it is custom, overridden, or just the default. In order to override universal")
+                .append(" early location reactions on a per-dungeon basis, you will need to manually select the")
+                .append(" early location reaction that you want to override for each dungeon and set a new value.")
+                .append(" Also, __make sure__ you assign these early location reactions to a role (via the")
+                .append(" `/configearlylocroles` command).")
+        }
+
+        desc.appendLine(2)
+            .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the current reaction (if any).`)
+            .appendLine()
+            .append("- To move up or down the list of current reactions, press the Up/Down buttons. If there")
+            .append(" are too many reactions, you can also use the jump (`j`) command. For example, to move")
+            .append(" the arrow down 2, send `j 2`. To move the arrow up 4, send `j -4`.")
+            .appendLine()
+            .append("- Once you have selected the appropriate reaction, you can choose to do a few things.")
+            .appendLine()
+            .append("`  -` To edit how many people can get priority access and early location from this")
+            .append(" reaction, simply send a __non-negative__ number.")
+            .appendLine()
+            .append("`  -` To edit the emoji used for this reaction, you will need to run the configure emoji")
+            .append(" command. Note that reactions *without* valid emojis will __not__ be displayed on AFK")
+            .append(" checks.")
+            .appendLine()
+            .append("`  -` To delete this reaction (so it doesn't show up on the AFK check), press the")
+            .append(" **Remove** button.")
+            .appendLine()
+            .append("- If you want to *add* a reaction, press the **Add** button.")
+            .appendLine()
+            .append("- Once you're done, press the **Save** button to save your changes.")
+            .appendLine()
+            .append("- Alternatively, you can either press **Back** if you want to go back to the previous")
+            .append(" option or press the **Quit** button to quit this entire process. In either case, your")
+            .append(" changes will definitely not be saved.");
+
         const embed = new MessageEmbed()
             .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
-            .setTitle("Dungeon Reaction Manager")
-            .setDescription(
-                new StringBuilder()
-                    .append("Here, you will be able to add, remove, or manage reactions for this dungeon. Please read")
-                    .append(" the directions carefully.")
-                    .appendLine(2)
-                    .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the current reaction (if any).`)
-                    .appendLine()
-                    .append("- To move up or down the list of current reactions, press the Up/Down buttons. If there")
-                    .append(" are too many reactions, you can also use the jump (`j`) command. For example, to move")
-                    .append(" the arrow down 2, send `j 2`. To move the arrow up 4, send `j -4`.")
-                    .appendLine()
-                    .append("- Once you have selected the appropriate reaction, you can choose to do a few things.")
-                    .appendLine()
-                    .append("`  -` To edit how many people can get priority access and early location from this")
-                    .append(" reaction, simply send a __non-negative__ number.")
-                    .appendLine()
-                    .append("`  -` To edit the emoji used for this reaction, you will need to run the configure emoji")
-                    .append(" command. Note that reactions *without* valid emojis will __not__ be displayed on AFK")
-                    .append(" checks.")
-                    .appendLine()
-                    .append("`  -` To delete this reaction (so it doesn't show up on the AFK check), press the")
-                    .append(" **Remove** button.")
-                    .appendLine()
-                    .append("- If you want to *add* a reaction, press the **Add** button.")
-                    .appendLine()
-                    .append("- Once you're done, press the **Save** button to save your changes.")
-                    .appendLine()
-                    .append("- Alternatively, you can either press **Back** if you want to go back to the previous")
-                    .append(" option or press the **Quit** button to quit this entire process. In either case, your")
-                    .append(" changes will definitely not be saved.")
-                    .toString()
-            );
+            .setTitle(allowDefaults ? "Dungeon Reaction Manager" : "Universal Early Location Reaction Manager")
+            .setDescription(desc.toString());
 
         let numEarlyLocs = 0;
         let normalReacts = 0;
@@ -1915,9 +1980,7 @@ export class ConfigureDungeons extends BaseCommand {
             const rawFields: string[] = [];
             for (let i = 0; i < currentReactions.length; i++) {
                 const reactionInfo = DungeonUtilities.getReaction(ctx.guildDoc!, currentReactions[i].mapKey)!;
-                const emoji = reactionInfo.emojiInfo.isCustom
-                    ? GlobalFgrUtilities.getCachedEmoji(reactionInfo.emojiInfo.identifier)
-                    : reactionInfo.emojiInfo.identifier;
+                const emoji = GlobalFgrUtilities.getNormalOrCustomEmoji(reactionInfo);
 
                 rawFields.push(
                     new StringBuilder()
@@ -1939,8 +2002,8 @@ export class ConfigureDungeons extends BaseCommand {
 
             embed.setFooter(
                 {
-                    text: `${numEarlyLocs}/${ConfigureDungeons.MAXIMUM_PRIORITY_REACTS} Priority Reactions & `
-                        + `${normalReacts}/${ConfigureDungeons.MAXIMUM_NORMAL_REACTS} Normal Reactions`
+                    text: `${numEarlyLocs}/${priorityLimit} Priority Reactions & `
+                        + `${normalReacts}/${generalLimit} Normal Reactions`
                 }
             );
 
@@ -1980,17 +2043,23 @@ export class ConfigureDungeons extends BaseCommand {
                     if (Number.isNaN(num) || num < 0 || num === currentReactions[currentIdx].maxEarlyLocation)
                         continue;
 
+                    const oldVal = currentReactions[currentIdx].maxEarlyLocation;
                     if (num > 0) {
-                        if (numEarlyLocs + 1 > ConfigureDungeons.MAXIMUM_PRIORITY_REACTS)
+                        if (numEarlyLocs + 1 > priorityLimit)
                             continue;
-                        numEarlyLocs++;
-                        normalReacts--;
+                        if (oldVal === 0) {
+                            numEarlyLocs++;
+                            normalReacts--;
+                        }
                     }
                     else {
-                        if (normalReacts + 1 > ConfigureDungeons.MAXIMUM_NORMAL_REACTS)
+                        if (normalReacts + 1 > generalLimit)
                             continue;
-                        normalReacts++;
-                        numEarlyLocs--;
+
+                        if (oldVal > 0) {
+                            normalReacts++;
+                            numEarlyLocs--;
+                        }
                     }
 
 
@@ -2006,11 +2075,11 @@ export class ConfigureDungeons extends BaseCommand {
                 }
                 case addButton.customId!: {
                     // only need to add reaction and that's literally it
-                    const possibleReactionsToUse = ctx.guildDoc!.properties.customReactions.map(x => {
+                    const possibleReactionsToUse = allReactions.map(x => {
                         return {mapKey: x.key, ...x.value};
-                    }).concat(Object.entries(MAPPED_AFK_CHECK_REACTIONS).map(x => {
+                    }).concat(allowDefaults ? Object.entries(MAPPED_AFK_CHECK_REACTIONS).map(x => {
                         return {mapKey: x[0], ...x[1]};
-                    })).filter(y => {
+                    }) : []).filter(y => {
                         // Don't include nitro
                         if (y.mapKey === "NITRO")
                             return false;
@@ -2093,12 +2162,24 @@ export class ConfigureDungeons extends BaseCommand {
                         return null;
 
                     if (res.isSelectMenu()) {
+                        let newMaxEarlyLocCt;
+                        if (normalReacts + 1 <= generalLimit) {
+                            normalReacts++;
+                            newMaxEarlyLocCt = 0;
+                        }
+                        else if (numEarlyLocs + 1 <= priorityLimit) {
+                            numEarlyLocs++;
+                            newMaxEarlyLocCt = 1;
+                        }
+                        // Can't add it
+                        else {
+                            break;
+                        }
+
                         currentReactions.push({
                             mapKey: res.values[0],
-                            maxEarlyLocation: 0
+                            maxEarlyLocation: newMaxEarlyLocCt
                         });
-
-                        normalReacts++;
                     }
 
                     break;
