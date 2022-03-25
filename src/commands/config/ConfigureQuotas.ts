@@ -430,6 +430,17 @@ export class ConfigureQuotas extends BaseCommand {
     }
 
     /**
+     * Disposes this instance. Use this function to clean up any messages that were used.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     */
+    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
+        }
+    }
+
+    /**
      * Adds or edits a quota.
      * @param {ICommandContext} ctx The command context.
      * @param {Message} botMsg The bot message.
@@ -885,7 +896,7 @@ export class ConfigureQuotas extends BaseCommand {
                             }
                         }
 
-                        // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
+                            // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
                         // types w/ said specific dungeon
                         else {
                             for (let i = ptsToUse.length - 1; i >= 0; i--) {
@@ -1156,16 +1167,5 @@ export class ConfigureQuotas extends BaseCommand {
                 points: resPts
             }
         };
-    }
-
-    /**
-     * Disposes this instance. Use this function to clean up any messages that were used.
-     * @param {ICommandContext} ctx The command context.
-     * @param {Message} botMsg The bot message.
-     */
-    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg) {
-            await MessageUtilities.tryDelete(botMsg);
-        }
     }
 }

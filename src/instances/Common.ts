@@ -1,10 +1,14 @@
 import {
     BaseMessageComponent,
-    Collection, CollectorFilter,
-    EmojiIdentifierResolvable, Guild, GuildMember,
+    Collection,
+    CollectorFilter,
+    EmojiIdentifierResolvable,
+    Guild,
+    GuildMember,
     MessageButton,
     MessageComponentInteraction,
-    MessageSelectMenu, Role,
+    MessageSelectMenu,
+    Role,
     TextChannel
 } from "discord.js";
 import {
@@ -13,7 +17,8 @@ import {
     IDungeonModifier,
     IGuildInfo,
     IMappedAfkCheckReactions,
-    IReactionInfo, ISectionInfo
+    IReactionInfo,
+    ISectionInfo
 } from "../definitions";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
@@ -455,6 +460,11 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo): Colle
 
     // Define a local function that will check both MappedAfkCheckReactions & customReactions for reactions.
     function findAndAddReaction(reaction: IAfkCheckReaction): void {
+        // If it already exists, then don't replace it
+        if (reactions.has(reaction.mapKey)) {
+            return;
+        }
+
         // Is the reaction key in MappedAfkCheckReactions? If so, it's as simple as grabbing that data.
         if (reaction.mapKey in MAPPED_AFK_CHECK_REACTIONS) {
             const obj = MAPPED_AFK_CHECK_REACTIONS[reaction.mapKey];
@@ -473,8 +483,7 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo): Colle
         // Is the reaction key associated with a custom emoji? If so, grab that as well.
         const customEmoji = guildDoc.properties.customReactions.find(x => x.key === reaction.mapKey);
         if (customEmoji) {
-            if (customEmoji.value.emojiInfo.isCustom
-                && !GlobalFgrUtilities.hasCachedEmoji(customEmoji.value.emojiInfo.identifier)) {
+            if (!GlobalFgrUtilities.getNormalOrCustomEmoji(customEmoji.value)) {
                 return;
             }
 
@@ -496,7 +505,9 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo): Colle
             // info and add them to the collection of reactions.
             const overrideInfo = guildDoc.properties.dungeonOverride[overrideIdx];
 
-            for (const reaction of overrideInfo.keyReactions.concat(overrideInfo.otherReactions)) {
+            for (const reaction of overrideInfo.keyReactions
+                .concat(overrideInfo.otherReactions)
+                .concat(guildDoc.properties.universalEarlyLocReactions)) {
                 findAndAddReaction(reaction);
             }
 
@@ -514,12 +525,19 @@ export function getReactions(dungeon: IDungeonInfo, guildDoc: IGuildInfo): Colle
             });
         }
 
+        // Add any universal early location reactions
+        for (const reaction of guildDoc.properties.universalEarlyLocReactions) {
+            findAndAddReaction(reaction);
+        }
+
         return reactions;
     }
 
     // Otherwise, this is a fully custom dungeon, so we can simply just combine all reactions into one array and
     // process that.
-    for (const r of dungeon.keyReactions.concat(dungeon.otherReactions)) {
+    for (const r of dungeon.keyReactions
+        .concat(dungeon.otherReactions)
+        .concat(guildDoc.properties.universalEarlyLocReactions)) {
         findAndAddReaction(r);
     }
 
@@ -675,16 +693,16 @@ export function hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMemb
  * @param {number} duration number of ms to delay for
  * @returns {Promise<void>} a promise
  */
-export async function sendTemporaryAlert(channel: TextChannel | null, message: string, duration: number){
-    if(!channel) return;
+export async function sendTemporaryAlert(channel: TextChannel | null, message: string, duration: number) {
+    if (!channel) return;
 
     const tempMsg = await channel.send({
         content: message,
     });
-    
+
     await Promise.all([tempMsg, delay(duration)]);
     tempMsg.delete().catch();
-    
+
     return;
 }
 
@@ -693,6 +711,6 @@ export async function sendTemporaryAlert(channel: TextChannel | null, message: s
  * @param {number} ms number of ms to delay for
  * @returns {Promise<void>} a promise
  */
-export async function delay(ms: number){
+export async function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -55,7 +55,7 @@ export namespace ArrayUtilities {
      * @returns {number} The last index, if any. -1 otherwise.
      */
     export function findLastIndex<T>(array: T[], predicate: (value: T, index: number,
-                                                                  obj: T[]) => boolean): number {
+                                                             obj: T[]) => boolean): number {
         let l: number = array.length;
         while (l >= 0) {
             if (predicate(array[l], l, array))

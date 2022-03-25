@@ -7,7 +7,8 @@ import {
     Guild,
     GuildMember,
     Message,
-    MessageAttachment, MessageEmbed,
+    MessageAttachment,
+    MessageEmbed,
     MessageSelectMenu,
     TextChannel
 } from "discord.js";
@@ -19,7 +20,7 @@ import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilit
 import {MessageUtilities} from "../utilities/MessageUtilities";
 import {ArrayUtilities} from "../utilities/ArrayUtilities";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {IGuildInfo, IQuotaInfo, ISectionInfo} from "../definitions";
+import {IGuildInfo, IQuotaInfo} from "../definitions";
 import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
 import {TimeUtilities} from "../utilities/TimeUtilities";
 import {StringUtil} from "../utilities/StringUtilities";
@@ -207,6 +208,7 @@ export namespace QuotaManager {
                     }
 
                     sb.append(`\t\t- ${quotaType}: ${pts} PTS (${qty})`)
+                        .appendLine()
                         .append(breakdown.join("\n"))
                         .appendLine();
                 }
@@ -369,7 +371,7 @@ export namespace QuotaManager {
                 && (x.pointValues.find(y => y.key === resolvedLogType || y.key === logType)?.value ?? 0) > 0;
         });
 
-        if (availableQuotas.length === 0){
+        if (availableQuotas.length === 0) {
             LOGGER.info(`No available quotas for ${member.displayName} to add ${resolvedLogType}.`);
             return null;
         }
@@ -389,31 +391,31 @@ export namespace QuotaManager {
                 const leaderId = section.roles.leaders.sectionLeaderRoleId;
                 const almostLeaderId = section.roles.leaders.sectionAlmostLeaderRoleId;
 
-                switch(quota.roleId){
+                switch (quota.roleId) {
                     case vetLeaderId: //If vet, override any other id
                         bestQuotaInSection = quota;
                         break;
                     case leaderId: //If leader, override if not vet
-                        if(!bestQuotaInSection || (bestQuotaInSection.roleId !== vetLeaderId)){
+                        if (!bestQuotaInSection || (bestQuotaInSection.roleId !== vetLeaderId)) {
                             bestQuotaInSection = quota;
                         }
                         break;
                     case almostLeaderId: //If almost, do not override
-                        if(!bestQuotaInSection){
+                        if (!bestQuotaInSection) {
                             bestQuotaInSection = quota;
                         }
                         break;
                 }
                 return;
-            })
-            
-            if(bestQuotaInSection) {
+            });
+
+            if (bestQuotaInSection) {
                 bestQuotas.push(bestQuotaInSection);
             }
-        })
+        });
 
         //If no best quotas were found, just use the available quotas
-        if(!bestQuotas.length){
+        if (!bestQuotas.length) {
             bestQuotas = availableQuotas;
         }
 
@@ -756,12 +758,12 @@ export namespace QuotaService {
     let _isRunning = false;
 
     /**
-     * Checks what quotas need to be reset.
+     * Resets the given quotas.
      * @param {IGuildInfo[]} docs The documents.
      * @returns {number} The number of quotas that were reset.
      * @private
      */
-    async function checkQuotasToReset(docs: IGuildInfo[]): Promise<number> {
+    async function resetGivenQuotas(docs: IGuildInfo[]): Promise<number> {
         const allQuotasToReset: Promise<boolean>[] = [];
         for (const doc of docs) {
             const guild = await GlobalFgrUtilities.fetchGuild(doc.guildId);
@@ -795,7 +797,7 @@ export namespace QuotaService {
         LOGGER.info("Starting Quota Service");
         const docs = await MongoManager.getGuildCollection().find().toArray();
         if (docs.length > 0) {
-            await checkQuotasToReset(docs);
+            await resetGivenQuotas(docs);
         }
 
         _isRunning = true;
@@ -818,7 +820,7 @@ export namespace QuotaService {
     async function run(): Promise<void> {
         LOGGER.info("Running quota service to update quotas.");
         let allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
-        if (await checkQuotasToReset(allGuildDocs) > 0) {
+        if (await resetGivenQuotas(allGuildDocs) > 0) {
             allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
         }
 

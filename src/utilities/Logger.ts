@@ -1,4 +1,4 @@
-import { TimeUtilities } from "./TimeUtilities";
+import {TimeUtilities} from "./TimeUtilities";
 
 /**
  * Custom Logger class
@@ -39,8 +39,8 @@ export class Logger {
      * Logs debug information to the console with the time and file information.
      * @param {*} args the message to log to the console.
      */
-     public debug(...args: any[]): void {
-        if(!this.outputDebug) return;
+    public debug(...args: any[]): void {
+        if (!this.outputDebug) return;
         console.debug("[DEBUG]", Logger.getCurrentTime(), this.formattedPath, ...args);
     }
 
@@ -64,7 +64,7 @@ export class Logger {
      * Decides if logger should output DEBUG messages or not
      * @param {*} bool true if DEBUG output desired, false otherwise
      */
-    public setDebugOutput(bool: boolean){
+    public setDebugOutput(bool: boolean) {
         this.outputDebug = bool;
     }
 }

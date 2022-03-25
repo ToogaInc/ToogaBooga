@@ -3,7 +3,14 @@ import {MongoManager} from "../../managers/MongoManager";
 import {RaidInstance} from "../../instances/RaidInstance";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
-import {getAvailableSections, DungeonSelectionType, getSelectedSection, getSelectedDungeon} from "./common/RaidLeaderCommon";
+import {
+    DungeonSelectionType,
+    getAvailableSections,
+    getSelectedDungeon,
+    getSelectedSection, selectVc
+} from "./common/RaidLeaderCommon";
+import {IRaidOptions} from "../../definitions";
+import {TextChannel, VoiceChannel} from "discord.js";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
@@ -72,7 +79,7 @@ export class StartAfkCheck extends BaseCommand {
 
         // Step 2: Ask for the appropriate section.
         const sectionToUse: DungeonSelectionType | null = await getSelectedSection(ctx, availableSections);
-        
+
         if (!sectionToUse) {
             await ctx.interaction.editReply({
                 content: "This process has been canceled.",
@@ -81,10 +88,26 @@ export class StartAfkCheck extends BaseCommand {
             return 0;
         }
 
-        // Step 3: Ask for the appropriate dungeon
+        // Step 3: Get the VC
+        let vcToUse: VoiceChannel | null = null;
+        const raidOptions: IRaidOptions = {
+            location: location ?? ""
+        };
+
+        if (sectionToUse.section.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs) {
+            vcToUse = await selectVc(ctx.interaction, ctx.guildDoc!, ctx.channel as TextChannel, ctx.member!);
+            if (vcToUse) {
+                raidOptions.existingVc = {
+                    vc: vcToUse,
+                    oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
+                };
+            }
+        }
+
+        // Step 4: Ask for the appropriate dungeon
         const selectedDgn = await getSelectedDungeon(ctx, sectionToUse);
 
-        if(!selectedDgn){
+        if (!selectedDgn) {
             await ctx.interaction.editReply({
                 components: [],
                 content: "You either did not select a dungeon in time or canceled this process.",
@@ -94,11 +117,8 @@ export class StartAfkCheck extends BaseCommand {
         }
         const dungeonToUse = sectionToUse.dungeons.find(x => x.codeName === selectedDgn.values[0])!;
 
-
-        // Step 4: Start it
-        const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, {
-            location: location ?? ""
-        });
+        // Step 5: Start it
+        const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, raidOptions);
 
         if (!rm) {
             await ctx.interaction.editReply({

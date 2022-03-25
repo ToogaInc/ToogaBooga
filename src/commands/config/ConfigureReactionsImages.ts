@@ -95,7 +95,7 @@ export class ConfigureReactionsImages extends BaseCommand {
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-        
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -176,6 +176,17 @@ export class ConfigureReactionsImages extends BaseCommand {
     }
 
     /**
+     * Disposes this instance. Use this function to clean up any messages that were used.
+     * @param {ICommandContext} ctx The command context.
+     * @param {Message} botMsg The bot message.
+     */
+    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
+        }
+    }
+
+    /**
      * Manages images for this guild.
      * @param {ICommandContext} ctx The command context.
      * @param {Message} botMsg The bot message.
@@ -230,7 +241,7 @@ export class ConfigureReactionsImages extends BaseCommand {
             downButton,
             addButton,
             removeButton,
-            changeButton ,
+            changeButton,
             ButtonConstants.SAVE_BUTTON,
             ButtonConstants.QUIT_BUTTON
         ];
@@ -618,13 +629,16 @@ export class ConfigureReactionsImages extends BaseCommand {
             const fields = ArrayUtilities.arrayToStringFields(
                 currentReactions,
                 (i, elem) => {
+                    const cType = ConfigureReactionsImages.ALL_REACTION_TYPES.find(x => x.type === elem.value.type);
                     const sb = new StringBuilder();
                     if (i === selectedIdx)
                         sb.append(EmojiConstants.RIGHT_TRIANGLE_EMOJI).append(" ");
-                    sb.append(elem.value.name)
+                    sb.append(`**\`${elem.value.name}\`**`)
                         .append(" ")
-                        .append(GlobalFgrUtilities.getNormalOrCustomEmoji(elem.value) ?? "(No Emoji)")
-                        .appendLine();
+                        .append(GlobalFgrUtilities.getNormalOrCustomEmoji(elem.value))
+                        .appendLine()
+                        .append(`- Type: **\`${cType?.name ?? "N/A"}\`**`)
+                        .appendLine(2);
 
                     return sb.toString();
                 }
@@ -789,17 +803,6 @@ export class ConfigureReactionsImages extends BaseCommand {
                     break;
                 }
             }
-        }
-    }
-
-    /**
-     * Disposes this instance. Use this function to clean up any messages that were used.
-     * @param {ICommandContext} ctx The command context.
-     * @param {Message} botMsg The bot message.
-     */
-    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        if (botMsg) {
-            await MessageUtilities.tryDelete(botMsg);
         }
     }
 }

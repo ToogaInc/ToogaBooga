@@ -157,8 +157,8 @@ export namespace RealmSharperWrapper {
         const config = Bot.BotInstance.config;
         const url = config.realmEyeApiLinks.baseApi
             + "/" + config.realmEyeApiLinks.raidUtilEndpoints.parseOnlyEndpoint;
-        const resp = await Bot.AxiosClient.post<PAD.IParseWhoResult>(url, { url: link }, {
-            data: { url: link }
+        const resp = await Bot.AxiosClient.post<PAD.IParseWhoResult>(url, {url: link}, {
+            data: {url: link}
         });
         return resp.data;
     }
@@ -173,7 +173,7 @@ export namespace RealmSharperWrapper {
         const url = config.realmEyeApiLinks.baseApi
             + "/" + config.realmEyeApiLinks.raidUtilEndpoints.parseAndRealmEyeEndpoint;
         const resp = await Bot.AxiosClient.post<PAD.IParseJob>(url, {
-            data: { url: link }
+            data: {url: link}
         });
         return resp.data;
     }

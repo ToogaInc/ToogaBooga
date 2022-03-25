@@ -17,7 +17,7 @@ export namespace ButtonConstants {
         .setEmoji(EmojiConstants.X_EMOJI)
         .setStyle("DANGER");
 
-    
+
     export const CANCEL_ID: string = "cancel";
     export const CANCEL_BUTTON: Readonly<MessageButton> = new MessageButton()
         .setLabel("Cancel")

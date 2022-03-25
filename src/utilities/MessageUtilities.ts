@@ -1,12 +1,17 @@
 // noinspection JSUnusedGlobalSymbols
 
 import {
-    ColorResolvable, EmojiIdentifierResolvable,
+    ColorResolvable,
+    EmojiIdentifierResolvable,
     Guild,
-    GuildMember, Message, MessageActionRow,
+    GuildMember,
+    Message,
+    MessageActionRow,
     MessageEmbed,
     MessageOptions,
-    PartialTextBasedChannelFields, TextBasedChannel, User
+    PartialTextBasedChannelFields,
+    TextBasedChannel,
+    User
 } from "discord.js";
 import {MiscUtilities} from "./MiscUtilities";
 import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
@@ -89,7 +94,7 @@ export namespace MessageUtilities {
      * @param {PartialTextBasedChannelFields} channel The channel to send this message.
      * @param {number} timeout The delay between sending and deleting this message.
      */
-    export function sendThenDelete(info: MessageOptions & {split?: false | undefined},
+    export function sendThenDelete(info: MessageOptions & { split?: false | undefined },
                                    channel: PartialTextBasedChannelFields,
                                    timeout: number = 5000): void {
         channel.send(info).then(async x => {
@@ -131,8 +136,8 @@ export namespace MessageUtilities {
     export function getMessageOptionsFromMessage(
         msg: Message,
         components?: MessageActionRow[]
-    ): MessageOptions & {split?: false | undefined} {
-        const obj: MessageOptions & {split?: false | undefined} = {
+    ): MessageOptions & { split?: false | undefined } {
+        const obj: MessageOptions & { split?: false | undefined } = {
             components: []
         };
         if (msg.content)

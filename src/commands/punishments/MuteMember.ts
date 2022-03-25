@@ -5,11 +5,12 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {MuteManager} from "../../managers/PunishmentManager";
 import {TimeUtilities} from "../../utilities/TimeUtilities";
 import {StringBuilder} from "../../utilities/StringBuilder";
-import generateRandomString = StringUtil.generateRandomString;
 import {preCheckPunishment} from "./common/PunishmentCommon";
-import {Logger} from "../../utilities/Logger"
+import {Logger} from "../../utilities/Logger";
+import generateRandomString = StringUtil.generateRandomString;
 
 const LOGGER: Logger = new Logger(__filename, false);
+
 export class MuteMember extends BaseCommand {
     public static readonly ERROR_NO_MUTE_STR: string = new StringBuilder()
         .append("Something went wrong when trying to mute this person.").appendLine()
@@ -88,8 +89,8 @@ export class MuteMember extends BaseCommand {
         const muteId = `Mute_${Date.now()}_${generateRandomString(15)}`;
 
         let durationStr = ctx.interaction.options.getString("duration", false);
-        if(durationStr === "-1") durationStr = null;
-        
+        if (durationStr === "-1") durationStr = null;
+
         LOGGER.info(`Issuing mute for ${resMember?.member.displayName} of duration ${durationStr}`);
 
         const parsedDuration = durationStr ? TimeUtilities.parseTimeUnit(durationStr) : null;

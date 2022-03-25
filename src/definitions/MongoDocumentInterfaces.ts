@@ -1,7 +1,12 @@
 import {
-    IAfkCheckProperties,
+    IAfkCheckProperties, IAfkCheckReaction,
+    ICustomDungeonInfo,
+    IDungeonOverrideInfo,
+    IHeadcountInfo,
+    ImageInfo,
     IRaidChannels,
-    IRaidInfo, IReactionInfo, ICustomDungeonInfo, ImageInfo, IDungeonOverrideInfo, IHeadcountInfo
+    IRaidInfo,
+    IReactionInfo
 } from "./DungeonRaidInterfaces";
 import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
 import {IModmailThread} from "./ModmailInterfaces";
@@ -299,6 +304,14 @@ export interface IGuildInfo {
         customDungeons: ICustomDungeonInfo[];
 
         /**
+         * Early location reactions which will apply to **all** dungeons. This can be overridden on a per-dungeon
+         * basis by selecting the reaction and setting the early location count to `0`.
+         *
+         * @type {IAfkCheckReaction[]}
+         */
+        universalEarlyLocReactions: IAfkCheckReaction[];
+
+        /**
          * Any dungeon overrides. This will be made available to all sections. Guilds can use this to edit existing
          * dungeons only.
          *
@@ -331,20 +344,22 @@ export interface IGuildInfo {
         approvedCustomImages: ImageInfo[];
 
         /**
-         * Any reactions that give early location.
+         * Any reactions which can give early location and priority queuing upon having the appropriate role.
          *
-         * The key is the emoji mapping key and the value is the list of roles which qualify for early location from
-         * that emoji.
+         * Here, the `roleId` is the role ID and the `mappingKey` is the ID corresponding to the emoji in which you
+         * can react to get early location.
          *
          * In terms of how this works:
-         * - For each dungeon, the user can specify the whether this reaction will show up.
-         * - If so, then the user can specify how many of this reaction can show up.
+         * - For each dungeon, the user can specify whether this reaction will show up.
+         * - If so, then the user can specify how many times this reaction can be used (i.e. number of priorities).
          *
          * Nitro is automatically included.
          *
-         * @type {IPropertyKeyValuePair<string, string[]>[]}
+         * Admittedly, this property is poorly named.
+         *
+         * @type {IPropertyKeyValuePair<string, string>[]}
          */
-        genEarlyLocReactions: IPropertyKeyValuePair<string, string[]>[];
+        genEarlyLocReactions: {roleId: string; mappingKey: string;}[];
 
         /**
          * An array that represents the number of points you can get for reacting to certain things. This is

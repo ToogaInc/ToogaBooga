@@ -276,7 +276,7 @@ export namespace ModmailManager {
 
         const thread = await origMsg.thread!.fetch();
         if (!guildDoc.properties.modmailThreads.some(x => x.threadId === thread.id
-                && x.baseMsg === origMsg.id)) {
+            && x.baseMsg === origMsg.id)) {
             return false;
         }
 
@@ -317,6 +317,10 @@ export namespace ModmailManager {
                 continue;
             }
 
+            if (gObj.moderation.blacklistedModmailUsers.some(x => x.affectedUser.id === user.id)) {
+                continue;
+            }
+
             guildsToChoose.push(guild);
         }
 
@@ -346,7 +350,7 @@ export namespace ModmailManager {
                     MessageUtilities.generateBlankEmbed(user)
                         .setTitle("Select Server")
                         .setDescription("The message above will be sent to a designated server of your choice."
-                            + " Please select the server by using the select menu below. If you don't want to seelct"
+                            + " Please select the server by using the select menu below. If you don't want to select"
                             + " a server, press the **Cancel** button.")
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([

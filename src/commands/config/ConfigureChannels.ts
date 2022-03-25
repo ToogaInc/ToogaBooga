@@ -1,7 +1,8 @@
 import {
     ConfigType,
+    DATABASE_CONFIG_DESCRIPTION,
     DB_CONFIG_ACTION_ROW,
-    DATABASE_CONFIG_DESCRIPTION, entryFunction,
+    entryFunction,
     getInstructions,
     IBaseDatabaseEntryInfo,
     IConfigCommand
@@ -16,10 +17,10 @@ import {Filter} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {IGuildInfo, ISectionInfo} from "../../definitions";
 import {EmojiConstants} from "../../constants/EmojiConstants";
-import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 import {MainLogType, SectionLogType} from "../../definitions/Types";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 
 enum ChannelCategoryType {
     Raiding,
@@ -47,7 +48,6 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         "VerifySuccess",
         "VerifyStep",
         "VerifyStart",
-        "SectionSuspend",
         "ManualVerifyAccepted",
         "ManualVerifyDenied",
         "ManualVerifyRequest"
@@ -237,6 +237,26 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         });
     }
 
+    /**
+     * A function that can be used for the collector.
+     * @param {Message} msg The message.
+     * @returns {number | TextChannel | undefined} Either an index difference, channel to use, or nothing.
+     * @private
+     */
+    private static msgOrNumberCollectorFunc(msg: Message): number | TextChannel | undefined {
+        // Parse for channel first.
+        const channel = ParseUtilities.parseChannel<TextChannel>(msg);
+        // noinspection DuplicatedCode
+        if (channel) return channel;
+        // Parse for number.
+        const contentArr = msg.content.split(" ");
+        if (contentArr.length <= 1) return;
+        if (contentArr[0].toLowerCase() !== "j") return;
+        const num = Number.parseInt(contentArr[1], 10);
+        if (Number.isNaN(num) || num === 0) return;
+        return num;
+    }
+
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
@@ -374,6 +394,77 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         }
     }
 
+    /** @inheritDoc */
+    public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
+        if (botMsg) {
+            await MessageUtilities.tryDelete(botMsg);
+        }
+    }
+
+    /** @inheritDoc */
+    public getCurrentConfiguration(guild: Guild, guildDoc: IGuildInfo, section: ISectionInfo,
+                                   displayFilter: number): string {
+        const currentConfiguration = new StringBuilder();
+        if (displayFilter & DisplayFilter.Raids) {
+            const raidChannelObj = section.channels.raids;
+            const afkCheckChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.afkCheckChannelId);
+            const contPanelChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.controlPanelChannelId);
+
+            currentConfiguration.append("__**Raid Channels**__").appendLine()
+                .append(`⇒ AFK Check Channel: ${afkCheckChannel ?? ConfigureChannels.NA}`).appendLine()
+                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigureChannels.NA}`).appendLine();
+
+            if (section.isMainSection) {
+                const rateLeaderChannel = getCachedChannel<TextChannel>(
+                    guild,
+                    guildDoc.channels.raids.leaderFeedbackChannelId
+                );
+
+                const raidStorageChannel = getCachedChannel<TextChannel>(
+                    guild,
+                    guildDoc.channels.raids.raidHistChannelId
+                );
+
+
+                currentConfiguration
+                    .append(`⇒ Base Rate Leader Channel: ${rateLeaderChannel ?? ConfigureChannels.NA}`).appendLine()
+                    .append(`⇒ Raid Storage Channel: ${raidStorageChannel ?? ConfigureChannels.NA}`).appendLine();
+            }
+
+            currentConfiguration.appendLine();
+        }
+
+        if (displayFilter & DisplayFilter.Verification) {
+            const verifChannelObj = section.channels.verification;
+            const verifChannel = getCachedChannel<TextChannel>(guild, verifChannelObj.verificationChannelId);
+            const manVerifChannel = getCachedChannel<TextChannel>(guild, verifChannelObj.manualVerificationChannelId);
+
+            currentConfiguration.append("__**Verification Channels**__").appendLine()
+                .append(`⇒ Verification Channel: ${verifChannel ?? ConfigureChannels.NA}`).appendLine()
+                .append(`⇒ Manual Verification Channel: ${manVerifChannel ?? ConfigureChannels.NA}`).appendLine()
+                .appendLine();
+        }
+
+
+        if (section.isMainSection) {
+            if (displayFilter & DisplayFilter.Modmail) {
+                const mmChannel = getCachedChannel<TextChannel>(guild, guildDoc.channels.modmailChannelId);
+
+                currentConfiguration.append("__**Modmail Channels**__").appendLine()
+                    .append(`⇒ Modmail Channel: ${mmChannel ?? ConfigureChannels.NA}`).appendLine()
+                    .appendLine();
+            }
+
+            if (displayFilter & DisplayFilter.Other) {
+                const botUpdatesChan = getCachedChannel<TextChannel>(guild, guildDoc.channels.botUpdatesChannelId);
+                currentConfiguration.append("__**Other Channels**__").appendLine()
+                    .append(`⇒ Bot Updates Channel: ${botUpdatesChan ?? ConfigureChannels.NA}`).appendLine();
+            }
+        }
+
+        return currentConfiguration.toString().trim();
+    }
+
     /**
      * A function that lets the user choose to configure the various logging channels.
      * @param {ICommandContext} ctx The command context.
@@ -446,6 +537,9 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             const query: Filter<IGuildInfo> = section.isMainSection
                 ? {guildId: ctx.guild!.id}
                 : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
+            const keySetter = section.isMainSection
+                ? "channels.loggingChannels"
+                : "guildSections.$.channels.loggingChannels";
             const newArr = section.isMainSection
                 ? ctx.guildDoc!.channels.loggingChannels
                 : section.channels.loggingChannels;
@@ -462,11 +556,11 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     newArr[arrIdx].value = result.id;
                 }
 
-                ctx.guildDoc = (await MongoManager.getGuildCollection().findOneAndUpdate(query, {
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(query, {
                     $set: {
-                        "channels.loggingChannels": newArr
+                        [keySetter]: newArr
                     }
-                }, {returnDocument: "after"})).value!;
+                });
                 section = MongoManager.getAllSections(ctx.guildDoc!)
                     .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
                 continue;
@@ -655,13 +749,6 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
         }
     }
 
-    /** @inheritDoc */
-    public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
-        if (botMsg) {
-            await MessageUtilities.tryDelete(botMsg);
-        }
-    }
-
     /**
      * Edits the database entries. This is the function that is responsible for editing the database.
      * @param {ICommandContext} ctx The command context.
@@ -776,89 +863,5 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 }
             }
         }
-    }
-
-    /**
-     * A function that can be used for the collector.
-     * @param {Message} msg The message.
-     * @returns {number | TextChannel | undefined} Either an index difference, channel to use, or nothing.
-     * @private
-     */
-    private static msgOrNumberCollectorFunc(msg: Message): number | TextChannel | undefined {
-        // Parse for channel first.
-        const channel = ParseUtilities.parseChannel<TextChannel>(msg);
-        // noinspection DuplicatedCode
-        if (channel) return channel;
-        // Parse for number.
-        const contentArr = msg.content.split(" ");
-        if (contentArr.length <= 1) return;
-        if (contentArr[0].toLowerCase() !== "j") return;
-        const num = Number.parseInt(contentArr[1], 10);
-        if (Number.isNaN(num) || num === 0) return;
-        return num;
-    }
-
-    /** @inheritDoc */
-    public getCurrentConfiguration(guild: Guild, guildDoc: IGuildInfo, section: ISectionInfo,
-                                   displayFilter: number): string {
-        const currentConfiguration = new StringBuilder();
-        if (displayFilter & DisplayFilter.Raids) {
-            const raidChannelObj = section.channels.raids;
-            const afkCheckChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.afkCheckChannelId);
-            const contPanelChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.controlPanelChannelId);
-
-            currentConfiguration.append("__**Raid Channels**__").appendLine()
-                .append(`⇒ AFK Check Channel: ${afkCheckChannel ?? ConfigureChannels.NA}`).appendLine()
-                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigureChannels.NA}`).appendLine();
-
-            if (section.isMainSection) {
-                const rateLeaderChannel = getCachedChannel<TextChannel>(
-                    guild,
-                    guildDoc.channels.raids.leaderFeedbackChannelId
-                );
-
-                const raidStorageChannel = getCachedChannel<TextChannel>(
-                    guild,
-                    guildDoc.channels.raids.raidHistChannelId
-                );
-
-
-                currentConfiguration
-                    .append(`⇒ Base Rate Leader Channel: ${rateLeaderChannel ?? ConfigureChannels.NA}`).appendLine()
-                    .append(`⇒ Raid Storage Channel: ${raidStorageChannel ?? ConfigureChannels.NA}`).appendLine();
-            }
-
-            currentConfiguration.appendLine();
-        }
-
-        if (displayFilter & DisplayFilter.Verification) {
-            const verifChannelObj = section.channels.verification;
-            const verifChannel = getCachedChannel<TextChannel>(guild, verifChannelObj.verificationChannelId);
-            const manVerifChannel = getCachedChannel<TextChannel>(guild, verifChannelObj.manualVerificationChannelId);
-
-            currentConfiguration.append("__**Verification Channels**__").appendLine()
-                .append(`⇒ Verification Channel: ${verifChannel ?? ConfigureChannels.NA}`).appendLine()
-                .append(`⇒ Manual Verification Channel: ${manVerifChannel ?? ConfigureChannels.NA}`).appendLine()
-                .appendLine();
-        }
-
-
-        if (section.isMainSection) {
-            if (displayFilter & DisplayFilter.Modmail) {
-                const mmChannel = getCachedChannel<TextChannel>(guild, guildDoc.channels.modmailChannelId);
-
-                currentConfiguration.append("__**Modmail Channels**__").appendLine()
-                    .append(`⇒ Modmail Channel: ${mmChannel ?? ConfigureChannels.NA}`).appendLine()
-                    .appendLine();
-            }
-
-            if (displayFilter & DisplayFilter.Other) {
-                const botUpdatesChan = getCachedChannel<TextChannel>(guild, guildDoc.channels.botUpdatesChannelId);
-                currentConfiguration.append("__**Other Channels**__").appendLine()
-                    .append(`⇒ Bot Updates Channel: ${botUpdatesChan ?? ConfigureChannels.NA}`).appendLine();
-            }
-        }
-
-        return currentConfiguration.toString().trim();
     }
 }

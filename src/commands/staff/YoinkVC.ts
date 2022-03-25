@@ -4,6 +4,7 @@ import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUti
 import {Logger} from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
+
 export class YoinkVC extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
@@ -27,6 +28,10 @@ export class YoinkVC extends BaseCommand {
                     displayName: "VC to Steal Members from",
                     argName: "vc",
                     desc: "The voice channel where the bot should move the members out of.",
+                    restrictions: {
+                        // 2 is the constant value for GuildVoice
+                        channelModifier: o => o.addChannelType(2)
+                    },
                     type: ArgumentType.Channel,
                     prettyType: "Voice Channel",
                     required: true,
@@ -79,7 +84,7 @@ export class YoinkVC extends BaseCommand {
                 });
             })
         );
-        
+
         LOGGER.info(`${ctx.member?.displayName} used YoinkVC to move ${ct} users from ${channel} to ${ctx.member!.voice.channel!}`);
         await ctx.interaction.editReply({
             content: `Moved ${ct} members from ${channel} to ${ctx.member!.voice.channel!}.`

@@ -5,7 +5,6 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {MongoManager} from "../../managers/MongoManager";
 import {PunishmentManager} from "../../managers/PunishmentManager";
 import generateRandomString = StringUtil.generateRandomString;
-import {preCheckPunishment} from "./common/PunishmentCommon";
 
 export class WarnMember extends BaseCommand {
     public constructor() {
@@ -64,7 +63,7 @@ export class WarnMember extends BaseCommand {
         if (!resMember) {
             await ctx.interaction.editReply({
                 content: "This member could not be resolved. Please try again.",
-            });    
+            });
             return -1;
         }
 

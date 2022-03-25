@@ -100,7 +100,7 @@ export interface IConfiguration {
             guildCollection: string;
 
             /**
-             * The ID/Name collection. This is where a person's ID will be linked to his or her name. Anytime a
+             * The ID/Name collection. This is where a person's ID will be linked to their name. Anytime a
              * person verifies through this bot (not through manual verification), an entry will be added to this
              * collection.
              *

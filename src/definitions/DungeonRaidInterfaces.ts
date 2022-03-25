@@ -1,4 +1,5 @@
-import {IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
+import {IBasicOverwriteData, IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
+import {OverwriteData, VoiceChannel} from "discord.js";
 
 export type DungeonType = "Uncategorized"
     | "Basic Dungeons"
@@ -397,6 +398,13 @@ export interface IAfkCheckProperties {
     vcLimit: number;
 
     /**
+     * Whether to allow the use of existing voice channels for AFK checks.
+     *
+     * @type {boolean}
+     */
+    allowUsingExistingVcs: boolean;
+
+    /**
      * The default number of people that can get early location by reacting to the Nitro button.
      *
      * Use `-1` to default to 8% of the VC limit.
@@ -445,8 +453,8 @@ export interface IAfkCheckProperties {
         postAfkCheckInfo: string;
 
         /**
-         * The message that will be displayed to the raider when he or she confirms that he or she is bringing an
-         * essential reaction that gives early location. Generally speaking, this should contain information on things
+         * The message that will be displayed to the raider when they confirm that they are bringing an essential
+         * reaction that gives early location. Generally speaking, this should contain information on things
          * like confirming reactions or some other information.
          *
          * @type {string}
@@ -541,19 +549,19 @@ export interface IRaidInfo {
      */
     memberInit: string;
 
-     /**
+    /**
      * The time the raid was started.
      *
      * @type {number}
      */
-      startTime: number;
+    startTime: number;
 
-      /**
-       * The time the raid should expire.
-       *
-       * @type {number}
-       */
-      expirationTime: number;
+    /**
+     * The time the raid should expire.
+     *
+     * @type {number}
+     */
+    expirationTime: number;
 
     /**
      * The raid channels. We use this in case the channels were changed.
@@ -610,6 +618,15 @@ export interface IRaidInfo {
      * @type {string}
      */
     vcId: string;
+
+    /**
+     * The old VC permissions. If this VC is being used once (i.e. it will be deleted after this raid), then this
+     * should be `null`. Otherwise, this should be the permissions of the VC *before* any modifications were done to
+     * it.
+     *
+     * @type {IBasicOverwriteData[] | null}
+     */
+    oldVcPerms: IBasicOverwriteData[] | null;
 
     /**
      * The raid location.
@@ -787,5 +804,27 @@ export interface IRaidOptions {
      *
      * @type {string}
      */
-    location: string;
+    location?: string;
+
+    /**
+     * Options to use a pre-existing voice channel.
+     *
+     * @type {object}
+     */
+    existingVc?: {
+        /**
+         * The voice channel to use.
+         *
+         * @type {VoiceChannel}
+         */
+        vc: VoiceChannel;
+
+        /**
+         * The permissions to save for this channel. This should
+         * be `null` if the given `vc` is temporary.
+         *
+         * @type {OverwriteData[] | null}
+         */
+        oldPerms: OverwriteData[] | null;
+    }
 }

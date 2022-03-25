@@ -1,12 +1,12 @@
 import {
+    Guild,
     GuildMember,
     Message,
     MessageOptions,
     MessageSelectMenu,
     MessageSelectOptionData,
     Snowflake,
-    TextChannel,
-    Guild
+    TextChannel
 } from "discord.js";
 import {CommonRegex} from "../constants/CommonRegex";
 import {DefinedRole} from "../definitions/Types";
@@ -18,7 +18,7 @@ import {StringBuilder} from "./StringBuilder";
 import {AdvancedCollector} from "./collectors/AdvancedCollector";
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {PermsConstants} from "../constants/PermsConstants";
-import {Logger} from "../utilities/Logger";
+import {Logger} from "./Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -98,7 +98,7 @@ export namespace MiscUtilities {
     }
 
     /**
-     * Asks a user for the section that he/she wants to perform an action on. This will send a message and then
+     * Asks a user for the section that they want to perform an action on. This will send a message and then
      * either deletes the message once the question is asked or returns the message for later use.
      * @param {IGuildInfo} guildDb The guild document.
      * @param {GuildMember} member The member asking.
@@ -159,7 +159,7 @@ export namespace MiscUtilities {
     }
 
     /**
-     * Asks a user for the section that he/she wants to perform an action on. If no `msgOptions` is specified, then
+     * Asks a user for the section that they want to perform an action on. If no `msgOptions` is specified, then
      * this will keep the original message content.
      * @param {IGuildInfo} guildDb The guild document.
      * @param {GuildMember} member The member asking.
@@ -221,17 +221,17 @@ export namespace MiscUtilities {
         return allSections.find(x => x.uniqueIdentifier === result.values[0])!;
     }
 
-        /**
+    /**
      * Returns role name when provided with guild and roleId.
      * @param {string} roleId The role ID.
      * @param {Guild} guild The guild.
      * @returns {string} the name of the role or NOT_FOUND
      */
-        export function getRoleName(roleId: string, guild: Guild): string {
-            LOGGER.debug(`Obtaining role name from ${roleId}`);
-            const role = guild.roles.cache.find(r => r.id === roleId);
-            if(!role) return "";
-            return role.name;
-    }    
+    export function getRoleName(roleId: string, guild: Guild): string {
+        LOGGER.debug(`Obtaining role name from ${roleId}`);
+        const role = guild.roles.cache.find(r => r.id === roleId);
+        if (!role) return "";
+        return role.name;
+    }
 
 }

@@ -1,27 +1,26 @@
 import {
-    Collection,
-    TextChannel,
+    BaseCommandInteraction,
+    Collection, GuildMember,
+    MessageActionRow, MessageButton, MessageComponentInteraction,
+    MessageSelectMenu,
     Role,
-    MessageSelectMenu, MessageActionRow, SelectMenuInteraction,
-} from "discord.js"
-import {
-    ISectionInfo,
-    IDungeonInfo,
-} from "../../../definitions"
-import { DefinedRole } from "../../../definitions/Types";
-import {
-    canManageRaidsIn,
-    hasPermsToRaid,
-} from "../../../instances/Common";
-import { ICommandContext } from "../../../commands";
-import { DUNGEON_DATA } from "../../../constants/dungeons/DungeonData";
-import { DungeonUtilities } from "../../../utilities/DungeonUtilities";
-import { ArrayUtilities } from "../../../utilities/ArrayUtilities";
-import { MessageUtilities } from "../../../utilities/MessageUtilities";
-import { ButtonConstants } from "../../../constants/ButtonConstants";
-import { GuildFgrUtilities } from "../../../utilities/fetch-get-request/GuildFgrUtilities";
-import { StringUtil } from "../../../utilities/StringUtilities";
-import { AdvancedCollector } from "../../../utilities/collectors/AdvancedCollector";
+    SelectMenuInteraction,
+    TextChannel,
+    VoiceChannel,
+} from "discord.js";
+import {IDungeonInfo, IGuildInfo, ISectionInfo,} from "../../../definitions";
+import {DefinedRole} from "../../../definitions/Types";
+import {canManageRaidsIn, hasPermsToRaid,} from "../../../instances/Common";
+import {ICommandContext} from "../../../commands";
+import {DUNGEON_DATA} from "../../../constants/dungeons/DungeonData";
+import {DungeonUtilities} from "../../../utilities/DungeonUtilities";
+import {ArrayUtilities} from "../../../utilities/ArrayUtilities";
+import {MessageUtilities} from "../../../utilities/MessageUtilities";
+import {ButtonConstants} from "../../../constants/ButtonConstants";
+import {GuildFgrUtilities} from "../../../utilities/fetch-get-request/GuildFgrUtilities";
+import {StringUtil} from "../../../utilities/StringUtilities";
+import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
+import {StringBuilder} from "../../../utilities/StringBuilder";
 
 
 export type DungeonSelectionType = {
@@ -40,9 +39,8 @@ export type DungeonSelectionType = {
  * @param {ISectionInfo[]>} allSections All Guild Sections.
  * @return {Promise<DungeonSelectionType[]>} All sections the leader can lead in.
  */
- export async function getAvailableSections(ctx: ICommandContext, allRolePerms: Collection<DefinedRole, string[]>,
-    allSections: ISectionInfo[]): Promise<DungeonSelectionType[]> {
-    
+export async function getAvailableSections(ctx: ICommandContext, allRolePerms: Collection<DefinedRole, string[]>,
+                                           allSections: ISectionInfo[]): Promise<DungeonSelectionType[]> {
     const availableSections: DungeonSelectionType[] = [];
     for (const section of allSections) {
         if (!canManageRaidsIn(section, ctx.member!, ctx.guildDoc!))
@@ -115,8 +113,11 @@ export type DungeonSelectionType = {
  * @param {DungeonSelectionType[]} availableSections The available sections.
  * @return {Promise<DungeonSelectionType | null>} A section or null.
  */
-export async function getSelectedSection(ctx: ICommandContext, availableSections: DungeonSelectionType[]): Promise<DungeonSelectionType | null> {
-    const sectionToUse: DungeonSelectionType | null = await new Promise(async (resolve) => {
+export async function getSelectedSection(
+    ctx: ICommandContext,
+    availableSections: DungeonSelectionType[]
+): Promise<DungeonSelectionType | null> {
+    return await new Promise(async (resolve) => {
         if (availableSections.length === 1)
             return resolve(availableSections[0]);
 
@@ -165,7 +166,6 @@ export async function getSelectedSection(ctx: ICommandContext, availableSections
         await res.deferUpdate();
         return resolve(availableSections.find(x => x.section.uniqueIdentifier === res.values[0])!);
     });
-    return sectionToUse;
 }
 
 /**
@@ -174,18 +174,21 @@ export async function getSelectedSection(ctx: ICommandContext, availableSections
  * @param {DungeonSelectionType[]} sectionToUse The section to use.
  * @return {Promise<SelectMenuInteraction | null>} A dungeon selection or null.
  */
-export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: DungeonSelectionType): Promise<SelectMenuInteraction | null> {
+export async function getSelectedDungeon(
+    ctx: ICommandContext,
+    sectionToUse: DungeonSelectionType
+): Promise<SelectMenuInteraction | null> {
     const uIdentifier = StringUtil.generateRandomString(20);
     const selectMenus: MessageSelectMenu[] = [];
 
     let exaltDungeons = [];
-    for(let i = 0; i < sectionToUse.dungeons.length; i++){
-        if(sectionToUse.dungeons[i].dungeonCategory === "Exaltation Dungeons"){
+    for (let i = 0; i < sectionToUse.dungeons.length; i++) {
+        if (sectionToUse.dungeons[i].dungeonCategory === "Exaltation Dungeons") {
             exaltDungeons.push(sectionToUse.dungeons[i]);
         }
     }
 
-    if(exaltDungeons.length > 0){
+    if (exaltDungeons.length > 0) {
         selectMenus.push(
             new MessageSelectMenu()
                 .setCustomId(`${uIdentifier}_${5}`)
@@ -201,9 +204,9 @@ export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: Dun
                 }))
         );
     }
-    
+
     const dungeonSubset = ArrayUtilities.breakArrayIntoSubsets(
-        sectionToUse.dungeons.filter(x => x.dungeonCategory !== "Exaltation Dungeons"), 
+        sectionToUse.dungeons.filter(x => x.dungeonCategory !== "Exaltation Dungeons"),
         25
     );
     for (let i = 0; i < Math.min(4, dungeonSubset.length); i++) {
@@ -212,7 +215,7 @@ export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: Dun
                 .setCustomId(`${uIdentifier}_${i}`)
                 .setMinValues(1)
                 .setMaxValues(1)
-                .setPlaceholder("All Dungeons " + (i+1))
+                .setPlaceholder("All Dungeons " + (i + 1))
                 .addOptions(dungeonSubset[i].map(x => {
                     return {
                         label: x.dungeonName,
@@ -271,4 +274,122 @@ export async function getSelectedDungeon(ctx: ICommandContext, sectionToUse: Dun
     }
 
     return selectedDgn;
+}
+
+/**
+ * Gives the user the ability to select a voice channel for their raid, assuming the VC is valid.
+ * @param {BaseCommandInteraction} interaction The interaction.
+ * @param {IGuildInfo} guildDoc The guild document.
+ * @param {TextChannel} controlPanelChannel The control panel channel.
+ * @param {GuildMember} from The member that initiated this.
+ * @returns {Promise<VoiceChannel | null>} The voice channel if one is selected, or `null` otherwise if one should be
+ * created for temporary purposes.
+ */
+export async function selectVc<T extends BaseCommandInteraction | MessageComponentInteraction>(
+    interaction: T,
+    guildDoc: IGuildInfo,
+    controlPanelChannel: TextChannel,
+    from: GuildMember
+): Promise<VoiceChannel | null> {
+    // All valid VCs must start with some word and end with a number
+    // For example, "Raid 1" is a valid name but "Staff Lounge" is not
+    // A valid VC must also not be used
+    const usedVcs = new Set(guildDoc.activeRaids.map(x => x.vcId));
+    const validVcs = controlPanelChannel.parent!.children
+        .filter(x => {
+            if (!(x instanceof VoiceChannel)) {
+                return false;
+            }
+
+            const names = x.name.split(/[- ]/g).filter(z => z.length > 0);
+            if (names.length === 0) {
+                return false;
+            }
+
+            if (Number.isNaN(Number.parseInt(names.at(-1)!, 10))) {
+                return false;
+            }
+
+            return !usedVcs.has(x.id);
+        });
+
+    if (validVcs.size === 0) {
+        return null;
+    }
+
+    validVcs.sort((a, b) => a.position - b.position);
+
+    const uIdentifier = StringUtil.generateRandomString(10);
+    const selectMenus: MessageSelectMenu[] = [];
+    const subsets = ArrayUtilities.breakArrayIntoSubsets(Array.from(validVcs.values()), 10);
+    const endLen = Math.min(subsets.length, 4);
+    for (let i = 0; i < endLen; i++) {
+        selectMenus.push(
+            new MessageSelectMenu()
+                .setCustomId(`${uIdentifier}_${i}`)
+                .setOptions(...subsets[i].map(x => {
+                    return {
+                        label: x.name.substring(0, 30),
+                        value: x.id
+                    }
+                }))
+                .setMaxValues(1)
+                .setMinValues(1)
+                .setPlaceholder("Select an Existing VC")
+        );
+    }
+
+    const askDgnEmbed = MessageUtilities.generateBlankEmbed(from, "GOLD")
+        .setTitle("Select Voice Channel for Raid")
+        .setDescription(
+            new StringBuilder()
+                .append("Please select a voice channel where you want to host your raid.")
+                .appendLine()
+                .append("- If you want the bot to create a temporary raiding VC, press the **Temporary VC** button.")
+                .appendLine()
+                .append("- If you want the bot to select the first available raiding VC, press the **First Available")
+                .append(" VC** button.")
+                .appendLine()
+                .append("Otherwise, select a VC from the dropdown menu.")
+                .toString()
+        )
+        .setFooter({text: "You have 1 minute and 30 seconds to select a dungeon."})
+        .setTimestamp();
+
+    await interaction.editReply({
+        embeds: [askDgnEmbed],
+        components: AdvancedCollector.getActionRowsFromComponents([
+            new MessageButton()
+                .setLabel("Temporary VC")
+                .setCustomId(uIdentifier)
+                .setStyle("PRIMARY"),
+            new MessageButton()
+                .setLabel("First Available VC")
+                .setCustomId(`${uIdentifier}_first`)
+                .setStyle("PRIMARY"),
+            ...selectMenus
+        ])
+    });
+
+    const selected = await AdvancedCollector.startInteractionEphemeralCollector({
+        targetAuthor: from.user,
+        acknowledgeImmediately: true,
+        targetChannel: controlPanelChannel,
+        duration: 30 * 1000
+    }, uIdentifier);
+
+    if (!selected) {
+        return null;
+    }
+
+    if (selected.isSelectMenu()) {
+        return validVcs.get(selected.values[0])! as VoiceChannel;
+    }
+
+    if (selected.customId.endsWith("first")) {
+        return validVcs.first() as VoiceChannel;
+    }
+
+    // Default value
+    return null;
 }

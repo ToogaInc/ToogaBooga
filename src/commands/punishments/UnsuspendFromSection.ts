@@ -151,7 +151,7 @@ export class UnsuspendFromSection extends BaseCommand {
             finalEmbed.addField(
                 "Warning",
                 "Something went wrong when trying to save this into the user's punishment history. The user is"
-                + " still unmuted, though."
+                + " still section unsuspended, though."
             );
         }
 

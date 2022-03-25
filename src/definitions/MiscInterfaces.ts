@@ -1,13 +1,20 @@
-import {PermissionResolvable, PermissionString} from "discord.js";
+import { PermissionString } from "discord.js";
 
 export interface IPermAllowDeny {
-    allow: PermissionResolvable[];
-    deny: PermissionResolvable[];
+    allow: PermissionString[];
+    deny: PermissionString[];
 }
 
 export interface IPropertyKeyValuePair<K, V> {
     key: K;
     value: V;
+}
+
+export interface IBasicOverwriteData {
+    allow: string;
+    deny: string;
+    id: string;
+    type?: "member" | "role";
 }
 
 /**

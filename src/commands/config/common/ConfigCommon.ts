@@ -2,7 +2,8 @@ import {
     Guild,
     Message,
     MessageActionRow,
-    MessageButton, MessageComponentInteraction,
+    MessageButton,
+    MessageComponentInteraction,
     MessageOptions,
     TextBasedChannel,
     TextChannel

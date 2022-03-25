@@ -210,7 +210,7 @@ export namespace PunishmentManager {
         punishmentType: AllModLogType,
         details: IPunishmentDetails
     ): Promise<string | null> {
-        
+
         LOGGER.info(`Logging punishment for ${"name" in member ? member.name : member.displayName}, type: ${punishmentType}`);
 
         let logChannel: TextChannel | null;
@@ -704,7 +704,7 @@ export namespace SuspensionManager {
     const _queuedDelSectionIds = new Queue<{ guildId: string; sectionId: string; }>();
 
     // Time between each checker
-    const timeToUpdate: number = 60*1000;
+    const timeToUpdate: number = 60 * 1000;
 
     let _isRunning = false;
 
@@ -793,13 +793,18 @@ export namespace SuspensionManager {
 
         // Section suspended
         // Go through every guild that we need to process
-        const allGuildsSecSus = await Promise.all(
-            Array.from(SectionSuspendedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
+        const allGuildsSecSus: [string, Guild | null][] = await Promise.all(
+            Array.from(SectionSuspendedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
         );
 
-        for await (const guild of allGuildsSecSus) {
+        const guildsToRemove: Set<string> = new Set<string>();
+
+        for await (const [id, guild] of allGuildsSecSus) {
             // Make sure guild + guild document exists.
-            if (!guild) continue;
+            if (!guild) {
+                guildsToRemove.add(id);
+                continue;
+            }
 
             const guildDoc = MongoManager.CachedGuildCollection.get(guild.id);
             if (!guildDoc) continue;
@@ -851,13 +856,22 @@ export namespace SuspensionManager {
             }
         }
 
+        // Remove guilds that shouldn't be checked
+        for (const id of guildsToRemove) {
+            SectionSuspendedMembers.delete(id);
+        }
+        guildsToRemove.clear();
+
         // Regular suspensions
-        const allGuildsSuspend = await Promise.all(
-            Array.from(SuspendedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
+        const allGuildsSuspend: [string, Guild | null][] = await Promise.all(
+            Array.from(SuspendedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
         );
 
-        for await (const guild of allGuildsSuspend) {
-            if (!guild) continue;
+        for await (const [id, guild] of allGuildsSuspend) {
+            if (!guild) {
+                guildsToRemove.add(id);
+                continue;
+            }
 
             const guildDoc = MongoManager.CachedGuildCollection.get(guild.id);
             if (!guildDoc) continue;
@@ -879,12 +893,17 @@ export namespace SuspensionManager {
                     null,
                     {
                         guildDoc: guildDoc,
-                        reason: "The user has served the entirety of his or her time.",
+                        reason: "The user has served the entirety of their time.",
                         actionId: details.actionId,
                         evidence: []
                     }
                 ).then();
             }
+        }
+
+        // Remove guilds that shouldn't be checked
+        for (const id of guildsToRemove) {
+            SuspendedMembers.delete(id);
         }
 
         LOGGER.debug("SuspensionManager finished");
@@ -906,7 +925,6 @@ export namespace SuspensionManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
     ): Promise<IPunishmentCommandResult> {
-
         LOGGER.info(`${mod?.displayName} is suspending ${member.displayName}`);
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (GuildFgrUtilities.memberHasCachedRole(member, info.guildDoc.roles.suspendedRoleId)
@@ -1259,7 +1277,7 @@ export namespace MuteManager {
     const _queuedDelMutedUsers = new Queue<IMutedUser & { guildId: string; }>();
 
     // Time between each checker
-    const timeToUpdate: number = 60*1000;
+    const timeToUpdate: number = 60 * 1000;
 
     let _isRunning = false;
 
@@ -1315,12 +1333,16 @@ export namespace MuteManager {
             );
         }
 
-        const allGuildsSecSus = await Promise.all(
-            Array.from(MutedMembers.keys()).map(async x => await GlobalFgrUtilities.fetchGuild(x))
+        const allGuildsSecSus: [string, Guild | null][] = await Promise.all(
+            Array.from(MutedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
         );
 
-        for (const guild of allGuildsSecSus) {
-            if (!guild) continue;
+        const guildsToRemove: Set<string> = new Set<string>();
+        for (const [id, guild] of allGuildsSecSus) {
+            if (!guild) {
+                guildsToRemove.add(id);
+                continue;
+            }
 
             const guildDoc = MongoManager.CachedGuildCollection.get(guild.id);
             if (!guildDoc) continue;
@@ -1342,12 +1364,17 @@ export namespace MuteManager {
                 // Handle unmuting.
                 await removeMute(mutedMember, null, {
                     guildDoc: guildDoc,
-                    reason: "The user has served the entirety of his or her time.",
+                    reason: "The user has served the entirety of their time.",
                     actionId: mutedInfo.actionId,
                     evidence: []
                 });
             }
         }
+
+        for (const id of guildsToRemove) {
+            MutedMembers.delete(id);
+        }
+
         LOGGER.debug("MuteManager finished");
         setTimeout(muteChecker, timeToUpdate);
     }

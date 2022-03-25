@@ -10,7 +10,8 @@ import {ButtonConstants} from "../../constants/ButtonConstants";
 import {Logger} from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
-export class LogParse extends BaseCommand{
+
+export class LogParse extends BaseCommand {
 
     public constructor() {
         const cmi: ICommandInfo = {
@@ -49,14 +50,14 @@ export class LogParse extends BaseCommand{
             guildOnly: true,
             botOwnerOnly: false
         };
-        super(cmi);        
+        super(cmi);
     }
 
     /**
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
-        
+
         const mStr = ctx.interaction.options.getString("member", false);
 
         let memberToLogAs = ctx.member!;
@@ -121,7 +122,7 @@ export class LogParse extends BaseCommand{
             duration: 1.5 * 60 * 1000
         }, uniqueId);
 
-        if (!selection || selection.customId === uniqueId+ButtonConstants.CANCEL_ID){
+        if (!selection || selection.customId === uniqueId + ButtonConstants.CANCEL_ID) {
             LOGGER.info("Logparse cancelled for " + memberToLogAs.displayName);
             await ctx.interaction.editReply({
                 components: [],
@@ -129,8 +130,8 @@ export class LogParse extends BaseCommand{
                 embeds: []
             });
             return 0;
-        }   
-        
+        }
+
         const roleId = QuotaManager.findBestQuotaToAdd(memberToLogAs, ctx.guildDoc!, "Parse");
         if (roleId) {
             await QuotaManager.logQuota(memberToLogAs!, roleId, "Parse", cInt);

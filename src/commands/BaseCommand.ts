@@ -13,7 +13,7 @@ import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilitie
 import {IGuildInfo} from "../definitions";
 import {DefinedRole} from "../definitions/Types";
 import {MiscUtilities} from "../utilities/MiscUtilities";
-import {SlashCommandBuilder} from "@discordjs/builders";
+import {SlashCommandBuilder, SlashCommandChannelOption} from "@discordjs/builders";
 import {MongoManager} from "../managers/MongoManager";
 import {PermsConstants} from "../constants/PermsConstants";
 
@@ -82,8 +82,8 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
     const desc = argInfo.shortDesc ?? argInfo.desc.length > 100
         ? argInfo.desc.substring(0, 95) + "..."
         : argInfo.desc;
-    // Discord.js really decided to make the arguments I needed to make this more concise
-    // private, so I couldn't use it...
+
+    const restrictions = argInfo.restrictions;
     switch (argInfo.type) {
         case ArgumentType.Boolean: {
             scb.addBooleanOption(o => o.setName(argInfo.argName)
@@ -92,9 +92,14 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
             break;
         }
         case ArgumentType.Channel: {
-            scb.addChannelOption(o => o.setName(argInfo.argName)
-                .setRequired(argInfo.required)
-                .setDescription(desc));
+            scb.addChannelOption(o => {
+                o.setName(argInfo.argName)
+                    .setRequired(argInfo.required)
+                    .setDescription(desc);
+
+                restrictions && restrictions.channelModifier && restrictions.channelModifier(o);
+                return o;
+            });
             break;
         }
         case ArgumentType.Role: {
@@ -110,9 +115,21 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
             break;
         }
         case ArgumentType.Integer: {
-            scb.addIntegerOption(o => o.setName(argInfo.argName)
-                .setRequired(argInfo.required)
-                .setDescription(desc));
+            scb.addIntegerOption(o => {
+                o.setName(argInfo.argName)
+                    .setRequired(argInfo.required)
+                    .setDescription(desc);
+
+                if (typeof restrictions?.integerMin !== "undefined") {
+                    o.setMinValue(Math.round(restrictions.integerMin));
+                }
+
+                if (typeof restrictions?.integerMax !== "undefined") {
+                    o.setMaxValue(Math.round(restrictions.integerMax));
+                }
+
+                return o;
+            });
             break;
         }
         case ArgumentType.Mention: {
@@ -128,9 +145,17 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
             break;
         }
         case ArgumentType.String: {
-            scb.addStringOption(o => o.setName(argInfo.argName)
-                .setRequired(argInfo.required)
-                .setDescription(desc));
+            scb.addStringOption(o => {
+                o.setName(argInfo.argName)
+                    .setRequired(argInfo.required)
+                    .setDescription(desc);
+
+                restrictions?.stringChoices
+                && restrictions.stringChoices.length > 0
+                && o.addChoices(restrictions.stringChoices);
+
+                return o;
+            });
             break;
         }
         default: {
@@ -140,27 +165,24 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
 }
 
 export abstract class BaseCommand {
-    private readonly activeGuildUsers: Collection<string, Set<string>>;
-    private readonly activeDMUsers: Set<string>;
-
     /**
      * The command info object.
      * @type {ICommandInfo}
      */
     public readonly commandInfo: ICommandInfo;
-
     /**
      * The slash command object. Used for slash commands.
      * @type {SlashCommandBuilder}
      */
     public readonly data: SlashCommandBuilder;
-
     /**
      * A collection of people that are in cooldown for this command. The K represents the ID; the V represents the
      * the time when the cooldown expires.
      * @type {Collection<string, number>}
      */
     protected readonly onCooldown: Collection<string, number>;
+    private readonly activeGuildUsers: Collection<string, Set<string>>;
+    private readonly activeDMUsers: Set<string>;
 
     /**
      * Creates a new `BaseCommand` object.
@@ -213,6 +235,30 @@ export abstract class BaseCommand {
         this.onCooldown = new Collection<string, number>();
         this.activeGuildUsers = new Collection<string, Set<string>>();
         this.activeDMUsers = new Set<string>();
+    }
+
+    /**
+     * Gets all roles that are needed in order to run this command.
+     * @param {string[]} rolePerms The role permissions.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @return {string[]} All role IDs that can be used to satisfy the requirement.
+     * @private
+     */
+    public static getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo): string[] {
+        const roleCollection = MongoManager.getAllConfiguredRoles(guildDoc);
+
+        // Here, we need to assume that there are both role IDs along with concrete role names.
+        // Best way to handle this is to simply delete any entries in roleCollection that isn't allowed
+        // And then add the IDs later.
+        // Begin by getting rid of any roles from the collection that aren't needed at all.
+        for (const r of PermsConstants.ROLE_ORDER) {
+            if (rolePerms.includes(r)) continue;
+            roleCollection.delete(r);
+        }
+
+        // Get all values from roleCollection, flatten that collection so we have an array of role IDs, and append
+        // the remaining role IDs.
+        return Array.from(roleCollection.values()).flat().concat(rolePerms.filter(x => MiscUtilities.isSnowflake(x)));
     }
 
     /**
@@ -379,31 +425,6 @@ export abstract class BaseCommand {
         results.canRun &&= results.missingBotPerms.length === 0;
         return results;
     }
-
-    /**
-     * Gets all roles that are needed in order to run this command.
-     * @param {string[]} rolePerms The role permissions.
-     * @param {IGuildInfo} guildDoc The guild document.
-     * @return {string[]} All role IDs that can be used to satisfy the requirement.
-     * @private
-     */
-    public static getNeededPermissionsBase(rolePerms: string[], guildDoc: IGuildInfo): string[] {
-        const roleCollection = MongoManager.getAllConfiguredRoles(guildDoc);
-
-        // Here, we need to assume that there are both role IDs along with concrete role names.
-        // Best way to handle this is to simply delete any entries in roleCollection that isn't allowed
-        // And then add the IDs later.
-        // Begin by getting rid of any roles from the collection that aren't needed at all.
-        for (const r of PermsConstants.ROLE_ORDER) {
-            if (rolePerms.includes(r)) continue;
-            roleCollection.delete(r);
-        }
-
-        // Get all values from roleCollection, flatten that collection so we have an array of role IDs, and append
-        // the remaining role IDs.
-        return Array.from(roleCollection.values()).flat().concat(rolePerms.filter(x => MiscUtilities.isSnowflake(x)));
-    }
-
 
     /**
      * This should be called when someone is in the process of running a command. This is only important if a
@@ -599,6 +620,41 @@ interface IArgumentInfo {
      * @type {string}
      */
     type: ArgumentType;
+
+    /**
+     * Any restrictions. This depends on the `type`.
+     * @type {object}
+     */
+    restrictions?: {
+        /**
+         * What choices should be available if the type is String. This is a tuple where:
+         * - the first value is the displayed value.
+         * - the second value is the actual value.
+         *
+         * @type {[string, string][]}
+         */
+        stringChoices?: [string, string][];
+
+        /**
+         * A function to modify the slash channel options; a common use would be to specify the types of channels that
+         * this command can run under. Note that because this library sucks, I have to do this.
+         * @param {SlashCommandChannelOption} o The slash command channel options.
+         * @returns {SlashCommandChannelOption} The slash command channel options.
+         */
+        channelModifier?: (o: SlashCommandChannelOption) => SlashCommandChannelOption;
+
+        /**
+         * The minimum number, if the type is Integer.
+         * @type {number}
+         */
+        integerMin?: number;
+
+        /**
+         * The maximum number, if the type is Integer.
+         * @type {number}
+         */
+        integerMax?: number;
+    };
 
     /**
      * The argument type, formatted as a string which will then be displayed to the end user.

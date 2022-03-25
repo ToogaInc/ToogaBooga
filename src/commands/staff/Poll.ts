@@ -70,12 +70,13 @@ export class Poll extends BaseCommand {
         const question = ctx.interaction.options.getString("question", true);
         const desc = new StringBuilder();
 
-        if(options.length === 0){
+        if (options.length === 0) {
             desc.append(`${EmojiConstants.NUMERICAL_EMOJIS[0]} Yes\n`);
             desc.append(`${EmojiConstants.NUMERICAL_EMOJIS[1]} No\n`);
             reactions.push(EmojiConstants.NUMERICAL_EMOJIS[0]);
             reactions.push(EmojiConstants.NUMERICAL_EMOJIS[1]);
-        } else {
+        }
+        else {
             let i = 0;
             for (const option of options) {
                 desc.append(`${EmojiConstants.NUMERICAL_EMOJIS[i]} ${option}\n`);
@@ -90,7 +91,7 @@ export class Poll extends BaseCommand {
             })
             .setTitle(`${EmojiConstants.BAR_GRAPH_EMOJI} Poll: ${question}`)
             .setTimestamp(null)
-            .setDescription(desc.toString());  
+            .setDescription(desc.toString());
 
         const m = await GlobalFgrUtilities.sendMsg(ctx.channel, {embeds: [embed]});
         if (!m) {

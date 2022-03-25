@@ -29,8 +29,12 @@ export class Purge extends BaseCommand {
                     displayName: "Amount",
                     argName: "amt",
                     desc: "The number of messages to delete. Must be a positive number at most 1000.",
-                    type: ArgumentType.Number,
-                    prettyType: "Number",
+                    type: ArgumentType.Integer,
+                    restrictions: {
+                        integerMin: 0,
+                        integerMax: 1000
+                    },
+                    prettyType: "Integer",
                     required: true,
                     example: ["10"]
                 }
@@ -55,8 +59,8 @@ export class Purge extends BaseCommand {
             return -1;
         }
 
-        const maxNumToDelete = Math.min(ctx.interaction.options.getNumber("amt", true), 1000);
-        let num = Math.min(ctx.interaction.options.getNumber("amt", true), 1000);
+        const maxNumToDelete = Math.min(ctx.interaction.options.getInteger("amt", true), 1000);
+        let num = Math.min(ctx.interaction.options.getInteger("amt", true), 1000);
         await ctx.interaction.reply({
             content: `Attempting to clear ${num} messages. Please wait.`,
             ephemeral: true
@@ -87,7 +91,7 @@ export class Purge extends BaseCommand {
             numDeleted += groupMsgs.size;
 
             if (num <= 0) {
-                 break;
+                break;
             }
 
             await MiscUtilities.stopFor(3000);

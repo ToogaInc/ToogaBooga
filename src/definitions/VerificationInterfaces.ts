@@ -31,7 +31,7 @@ export interface IVerificationProperties {
     additionalVerificationInfo: string;
 
     /**
-     * The message to send to the user when he or she successfully verifies.
+     * The message to send to the user when they successfully verify.
      *
      * @type {string}
      */
@@ -313,63 +313,56 @@ export interface IExaltationReq {
  * An interface for representing all exaltations and the number needed for it.
  */
 export interface IExaltationCounterInterface {
-    [stat: string]: number;
-
     /**
      * Health exaltations (0 <= x <= 5).
      *
      * @type {number}
      */
     hp: number;
-
     /**
      * Magic exaltations (0 <= x <= 5).
      *
      * @type {number}
      */
     mp: number;
-
     /**
      * Defense exaltations (0 <= x <= 5).
      *
      * @type {number}
      */
     def: number;
-
     /**
      * Attack exaltations (0 <= x <= 5).
      *
      * @type {number}
      */
     att: number;
-
     /**
      * Dexterity exaltations (0 <= x <= 5).
      *
      * @type {number}
      */
     dex: number;
-
     /**
      * Speed exaltations (0 <= x <= 5).
      *
      * @type {number}
      */
     spd: number;
-
     /**
      * Vitality exaltations (0 <= x <= 5).
      *
      * @type {number}
      */
     vit: number;
-
     /**
      * Wisdom exaltations (0 <= x <= 5).
      *
      * @type {number}
      */
     wis: number;
+
+    [stat: string]: number;
 }
 
 /**

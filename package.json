@@ -1,6 +1,6 @@
 {
   "name": "tooga-booga",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A simple Discord bot for Realm of the Mad God servers, designed for verification and raid management. ",
   "main": "index.js",
   "scripts": {
@@ -11,11 +11,15 @@
   "author": "Edward Wang",
   "license": "MIT",
   "dependencies": {
-    "@discordjs/builders": "^0.9.0",
-    "@discordjs/rest": "^0.2.0-canary.0",
-    "axios": "^0.24.0",
-    "discord-api-types": "^0.25.2",
+    "@discordjs/builders": "^0.12.0",
+    "@discordjs/rest": "^0.3.0",
+    "axios": "^0.26.0",
+    "discord-api-types": "^0.29.0",
     "discord.js": "^13.3.1",
-    "mongodb": "^4.2.2"
+    "mongodb": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.21",
+    "typescript": "^4.6.2"
   }
 }

@@ -1,15 +1,21 @@
 import {
     BaseMessageComponent,
     ButtonInteraction,
-    DMChannel, EmojiIdentifierResolvable,
+    DMChannel,
+    EmojiIdentifierResolvable,
     Guild,
     GuildMember,
-    Message, MessageActionRow, MessageButton,
-    MessageCollector, MessageComponentInteraction,
-    MessageOptions, MessageSelectMenu,
+    Message,
+    MessageActionRow,
+    MessageButton,
+    MessageCollector,
+    MessageComponentInteraction,
+    MessageOptions,
+    MessageSelectMenu,
     PartialTextBasedChannelFields,
     PermissionResolvable,
-    Role, TextBasedChannel,
+    Role,
+    TextBasedChannel,
     TextChannel,
     User
 } from "discord.js";
@@ -171,7 +177,7 @@ export namespace AdvancedCollector {
         try {
             returnInteraction = await options.targetChannel.awaitMessageComponent({
                 filter: i => i.user.id === options.targetAuthor.id
-                    && i.customId.startsWith(uniqueIdentifier),
+                        && i.customId.startsWith(uniqueIdentifier),
                 time: options.duration
             });
 

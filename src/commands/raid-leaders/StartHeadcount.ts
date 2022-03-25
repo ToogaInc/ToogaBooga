@@ -1,7 +1,12 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {MongoManager} from "../../managers/MongoManager";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
-import {getAvailableSections, DungeonSelectionType, getSelectedSection, getSelectedDungeon} from "./common/RaidLeaderCommon";
+import {
+    DungeonSelectionType,
+    getAvailableSections,
+    getSelectedDungeon,
+    getSelectedSection
+} from "./common/RaidLeaderCommon";
 import {HeadcountInstance} from "../../instances/HeadcountInstance";
 
 export class StartHeadcount extends BaseCommand {
@@ -49,7 +54,7 @@ export class StartHeadcount extends BaseCommand {
 
         // Step 2: Ask for the appropriate section.
         const sectionToUse: DungeonSelectionType | null = await getSelectedSection(ctx, availableSections);
-        
+
         if (!sectionToUse) {
             await ctx.interaction.editReply({
                 content: "This process has been canceled.",
@@ -61,7 +66,7 @@ export class StartHeadcount extends BaseCommand {
         // Step 3: Ask for the appropriate dungeon
         const selectedDgn = await getSelectedDungeon(ctx, sectionToUse);
 
-        if(!selectedDgn){
+        if (!selectedDgn) {
             await ctx.interaction.editReply({
                 components: [],
                 content: "You either did not select a dungeon in time or canceled this process.",

@@ -1,57 +1,56 @@
 import {IConfiguration} from "./definitions";
 import {
     Client,
-    Collection, DMChannel, Guild, GuildChannel, GuildMember,
-    Interaction, Message, PartialMessage, ThreadChannel,
+    Collection,
+    DMChannel,
+    Guild,
+    GuildChannel,
+    GuildMember,
+    Interaction,
+    Message, PartialGuildMember,
+    PartialMessage,
+    ThreadChannel,
     VoiceState
 } from "discord.js";
 import {MongoManager} from "./managers/MongoManager";
 import axios, {AxiosInstance} from "axios";
 import * as Cmds from "./commands";
 import {
+    onChannelDeleteEvent,
     onErrorEvent,
     onGuildCreateEvent,
+    onGuildMemberAdd, onGuildMemberUpdate,
     onInteractionEvent,
+    onMessageDeleteEvent,
     onMessageEvent,
     onReadyEvent,
-    onVoiceStateEvent,
     onThreadArchiveEvent,
-    onChannelDeleteEvent,
-    onMessageDeleteEvent,
-    onGuildMemberAdd
+    onVoiceStateEvent
 } from "./events";
 import {QuotaService} from "./managers/QuotaManager";
 import {REST} from "@discordjs/rest";
-import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v9";
+import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v10";
 import {Logger} from "./utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
 export class Bot {
 
-    private readonly _config: IConfiguration;
-    private readonly _bot: Client;
-    private _eventsIsStarted: boolean = false;
-    private readonly _instanceStarted: Date;
-
     /**
      * The bot instance.
      * @type {Bot}
      */
     public static BotInstance: Bot;
-
     /**
      * The HTTP client used to make web requests.
      * @type {AxiosInstance}
      */
     public static AxiosClient: AxiosInstance = axios.create();
-
     /**
      * All commands. The key is the category name and the value is the array of commands.
      * @type {Collection<string, BaseCommand[]>}
      */
     public static Commands: Collection<string, Cmds.BaseCommand[]>;
-
     /**
      * All commands. The key is the name of the command (essentially, the slash command name) and the value is the
      * command object.
@@ -61,7 +60,6 @@ export class Bot {
      * @type {Collection<string, BaseCommand>}
      */
     public static NameCommands: Collection<string, Cmds.BaseCommand>;
-
     /**
      * All commands. This is sent to Discord for the purpose of slash commands.
      *
@@ -70,8 +68,11 @@ export class Bot {
      * @type {object[]}
      */
     public static JsonCommands: RESTPostAPIApplicationCommandsJSONBody[];
-
     public static Rest: REST;
+    private readonly _config: IConfiguration;
+    private readonly _bot: Client;
+    private _eventsIsStarted: boolean = false;
+    private readonly _instanceStarted: Date;
 
     /**
      * Constructs a new Discord bot.
@@ -91,7 +92,8 @@ export class Bot {
         this._bot = new Client({
             partials: [
                 "MESSAGE",
-                "CHANNEL"
+                "CHANNEL",
+                "GUILD_MEMBER",
             ],
             intents: [
                 // Need guild information for database, server management.
@@ -142,7 +144,8 @@ export class Bot {
             new Cmds.YoinkVC(),
             new Cmds.CleanVC(),
             new Cmds.Poll(),
-            new Cmds.Purge()
+            new Cmds.Purge(),
+            new Cmds.RemovePunishment()
         ]);
 
         Bot.Commands.set("Configuration", [
@@ -153,7 +156,8 @@ export class Bot {
             new Cmds.ConfigureReactionsImages(),
             new Cmds.ConfigureQuotas(),
             new Cmds.ConfigureVerification(),
-            new Cmds.ConfigureAfkCheck()
+            new Cmds.ConfigureAfkCheck(),
+            new Cmds.ConfigureEarlyLocRoles()
         ]);
 
         Bot.Commands.set("Punishments", [
@@ -165,11 +169,14 @@ export class Bot {
             new Cmds.UnmuteMember(),
             new Cmds.UnblacklistMember(),
             new Cmds.UnsuspendMember(),
-            new Cmds.UnsuspendFromSection()
+            new Cmds.UnsuspendFromSection(),
+            new Cmds.ModmailBlacklist(),
+            new Cmds.ModmailUnblacklist()
         ]);
 
         Bot.Commands.set("Bot Owner", [
-            new Cmds.SendAnnouncement()
+            new Cmds.SendAnnouncement(),
+            new Cmds.SetStatus()
         ]);
 
         Bot.Commands.set("Raid Leaders", [
@@ -226,6 +233,32 @@ export class Bot {
     }
 
     /**
+     * Returns the Discord client.
+     *
+     * @returns {Client} The client.
+     */
+    public get client(): Client {
+        return this._bot;
+    }
+
+    /**
+     * Returns the Configuration object.
+     *
+     * @returns {IConfiguration} The configuration object.
+     */
+    public get config(): IConfiguration {
+        return this._config;
+    }
+
+    /**
+     * Returns the date and time for which this instance was started.
+     * @return {Date} The date.
+     */
+    public get instanceStarted(): Date {
+        return this._instanceStarted;
+    }
+
+    /**
      * Defines all necessary events for the bot to work.
      */
     public startAllEvents(): void {
@@ -244,6 +277,10 @@ export class Bot {
         this._bot.on("channelDelete", async (c: DMChannel | GuildChannel) => onChannelDeleteEvent(c));
         this._bot.on("messageDelete", async (m: Message | PartialMessage) => onMessageDeleteEvent(m));
         this._bot.on("guildMemberAdd", async (m: GuildMember) => onGuildMemberAdd(m));
+        this._bot.on("guildMemberUpdate", async (
+            o: GuildMember | PartialGuildMember,
+            n: GuildMember | PartialGuildMember
+        ) => onGuildMemberUpdate(o, n));
         this._eventsIsStarted = true;
     }
 
@@ -281,31 +318,5 @@ export class Bot {
         LOGGER.info("Starting Quota Service");
         QuotaService.startService().then();
         return true;
-    }
-
-    /**
-     * Returns the Discord client.
-     *
-     * @returns {Client} The client.
-     */
-    public get client(): Client {
-        return this._bot;
-    }
-
-    /**
-     * Returns the Configuration object.
-     *
-     * @returns {IConfiguration} The configuration object.
-     */
-    public get config(): IConfiguration {
-        return this._config;
-    }
-
-    /**
-     * Returns the date and time for which this instance was started.
-     * @return {Date} The date.
-     */
-    public get instanceStarted(): Date {
-        return this._instanceStarted;
     }
 }

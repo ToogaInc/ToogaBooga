@@ -207,7 +207,6 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
     },
 
 
-
     T2_ORB: {
         type: "ITEM",
         emojiInfo: {
@@ -264,7 +263,6 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         },
         name: "Quiver of Thunder"
     },
-
 
 
     // Keys

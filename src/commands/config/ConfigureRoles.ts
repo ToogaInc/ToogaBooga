@@ -1,8 +1,10 @@
 import {BaseCommand, ICommandContext} from "../BaseCommand";
 import {
-    ConfigType, DB_CONFIG_ACTION_ROW,
+    ConfigType,
     DATABASE_CONFIG_DESCRIPTION,
-    entryFunction, getInstructions,
+    DB_CONFIG_ACTION_ROW,
+    entryFunction,
+    getInstructions,
     IBaseDatabaseEntryInfo,
     IConfigCommand
 } from "./common/ConfigCommon";
@@ -10,17 +12,18 @@ import {IGuildInfo, ISectionInfo} from "../../definitions";
 import {Guild, Message, MessageButton, MessageEmbed, Role, TextChannel} from "discord.js";
 import {StringBuilder} from "../../utilities/StringBuilder";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import getCachedRole = GuildFgrUtilities.getCachedRole;
 import {EmojiConstants} from "../../constants/EmojiConstants";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {Filter} from "mongodb";
 import {MongoManager} from "../../managers/MongoManager";
 import {ParseUtilities} from "../../utilities/ParseUtilities";
-import hasCachedRole = GuildFgrUtilities.hasCachedRole;
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {GeneralConstants} from "../../constants/GeneralConstants";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import {UserManager} from "../../managers/UserManager";
+import getCachedRole = GuildFgrUtilities.getCachedRole;
+import hasCachedRole = GuildFgrUtilities.hasCachedRole;
 
 enum DisplayFilter {
     Moderation = (1 << 0),
@@ -45,8 +48,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
     private static readonly ROLE_MONGO: IRoleMongo[] = [
         {
             name: "Muted Role",
-            description: "When a user has this role, he or she will not be able to talk in voice channels or in the"
-                + " server.",
+            description: "When a user has this role, they will not be able to talk in voice channels or in the server.",
             guildDocPath: "roles.mutedRoleId",
             sectionPath: "",
             roleType: RoleCategoryType.General,
@@ -74,7 +76,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
         {
             name: "Suspended Role",
             description: "The role which signifies that the person has been suspended from the server. When a person"
-                + " is suspended, he or she will not be able to see any member-verified channels (including the AFK"
+                + " is suspended, they will not be able to see any member-verified channels (including the AFK"
                 + " check channel).",
             guildDocPath: "roles.suspendedRoleId",
             sectionPath: "",
@@ -286,7 +288,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
         if (!(ctx.channel instanceof TextChannel)) return -1;
-        
+
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -702,16 +704,21 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                         "roles.staffRoles.otherStaffRoleIds": validStaffRoles[result].id
                     }
                 });
+
+                UserManager.updateStaffRolesForRole(ctx.guildDoc!, validStaffRoles[result], "remove");
                 continue;
             }
 
             // Case 2: Role
             if (result instanceof Role) {
+                const toRemove = validStaffRoles.some(x => x.id === result.id);
                 ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
-                    [validStaffRoles.some(x => x.id === result.id) ? "$pull" : "$push"]: {
+                    [toRemove ? "$pull" : "$push"]: {
                         "roles.staffRoles.otherStaffRoleIds": result.id
                     }
                 });
+
+                UserManager.updateStaffRolesForRole(ctx.guildDoc!, result, toRemove ? "remove" : "add");
                 continue;
             }
 

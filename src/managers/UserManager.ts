@@ -1,9 +1,11 @@
 import {CommonRegex} from "../constants/CommonRegex";
-import {Guild, GuildMember, User} from "discord.js";
+import {Collection, Guild, GuildMember, Role, User} from "discord.js";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "./MongoManager";
-import {IIdNameInfo, IUserInfo} from "../definitions";
+import {IGuildInfo, IIdNameInfo, IUserInfo} from "../definitions";
 import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import {PermsConstants} from "../constants/PermsConstants";
+import {DefinedRole} from "../definitions/Types";
 
 export interface IResolvedMember {
     member: GuildMember;
@@ -237,5 +239,129 @@ export namespace UserManager {
 
         // only letters
         return CommonRegex.ONLY_LETTERS.test(name);
+    }
+
+    /**
+     * For each member with the specified role, adds or removes the Team role from their profile.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @param {Role} role The role.
+     * @param {"add" | "remove"} addType Whether the role was added to, or removed from, the list of all custom staff
+     * roles.
+     */
+    export function updateStaffRolesForRole(guildDoc: IGuildInfo, role: Role, addType: "add" | "remove"): void {
+        const teamRole = GuildFgrUtilities.getCachedRole(role.guild, guildDoc.roles.staffRoles.teamRoleId);
+        if (!teamRole) {
+            return;
+        }
+
+        // Add case is very simple
+        if (addType === "add") {
+            for (const [, member] of role.members) {
+                if (GuildFgrUtilities.memberHasCachedRole(member, teamRole.id)) {
+                    continue;
+                }
+
+                GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await member.roles.add(teamRole, "Member has staff role.");
+                }).then();
+            }
+
+            return;
+        }
+
+        // Remove case is slightly more complicated
+        const genStaffRoles = getAllStaffRoles(guildDoc);
+        const customStaffRoles = guildDoc.roles.staffRoles.otherStaffRoleIds.slice();
+        const idx = customStaffRoles.indexOf(role.id);
+        if (idx !== -1) {
+            customStaffRoles.splice(idx, 1);
+        }
+
+        // Note that role.members is cached
+        main: for (const [, member] of role.members) {
+            for (const [, roles] of genStaffRoles) {
+                // If the member has an existing staff role, then don't need to do any further checks, and can move
+                // to next member
+                if (roles.some(x => GuildFgrUtilities.memberHasCachedRole(member, x))) {
+                    continue main;
+                }
+            }
+
+            // If the member has a some other defined staff role, then again don't need to do any further checks.
+            if (customStaffRoles.some(x => GuildFgrUtilities.memberHasCachedRole(member, x))) {
+                continue;
+            }
+
+            // Otherwise, remove the role
+            if (!GuildFgrUtilities.memberHasCachedRole(member, teamRole.id)) {
+                continue;
+            }
+
+            GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await member.roles.remove(teamRole, "Member no longer has staff role.");
+            }).then();
+        }
+    }
+
+    /**
+     * Gets all staff roles (excluding custom staff roles).
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @returns {Collection<DefinedRole, string[]>} The collection of all staff roles.
+     * @private
+     */
+    function getAllStaffRoles(guildDoc: IGuildInfo): Collection<DefinedRole, string[]> {
+        const allRoles = MongoManager.getAllConfiguredRoles(guildDoc);
+        allRoles.delete(PermsConstants.EVERYONE_ROLE);
+        allRoles.delete(PermsConstants.SUSPENDED_ROLE);
+        allRoles.delete(PermsConstants.MEMBER_ROLE);
+        allRoles.delete(PermsConstants.TEAM_ROLE);
+        return allRoles;
+    }
+
+    /**
+     * Either adds the Team role to the member, or removes the Team role from the member, depending on what role was
+     * added.
+     * @param {GuildMember} member The member.
+     * @param {IGuildInfo} guildDoc The guild document.
+     */
+    export function updateStaffRolesForMember(member: GuildMember, guildDoc: IGuildInfo): void {
+        const teamRole = GuildFgrUtilities.getCachedRole(member.guild, guildDoc.roles.staffRoles.teamRoleId);
+        if (!teamRole) {
+            return;
+        }
+
+        const genStaffRoles = getAllStaffRoles(guildDoc);
+        const tryAddRole = (roleId: string): boolean => {
+            if (!GuildFgrUtilities.memberHasCachedRole(member, roleId)) {
+                return false;
+            }
+
+            if (!GuildFgrUtilities.memberHasCachedRole(member, teamRole.id)) {
+                GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await member.roles.add(teamRole, "Member has staff role.");
+                }).then();
+            }
+
+            return true;
+        };
+
+        for (const [, roles] of genStaffRoles) {
+            if (roles.some(x => tryAddRole(x))) {
+                return;
+            }
+        }
+
+        if (guildDoc.roles.staffRoles.otherStaffRoleIds.some(x => tryAddRole(x))) {
+            return;
+        }
+
+        // At this point, they don't have any staff roles
+        if (!GuildFgrUtilities.memberHasCachedRole(member, teamRole.id)) {
+            return;
+        }
+
+        GlobalFgrUtilities.tryExecuteAsync(async () => {
+            await member.roles.remove(teamRole, "Member no longer has staff role.");
+        }).then();
     }
 }
