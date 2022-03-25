@@ -376,56 +376,69 @@ export namespace QuotaManager {
             return null;
         }
 
+        //bestQuotes stores the best quota from each section, including moderation
         let bestQuotas: IQuotaInfo[] = [];
-        const sections = MongoManager.getAllSections(guildDoc);
 
-        /* For each section, check if an available quota is in that section
+        /* 
+         * For each section, check if the leader's available quotas include leading roles from that section.
          * If so, only choose the quota for the highest role available for that section
          */
+        const sections = MongoManager.getAllSections(guildDoc);
         sections.forEach(section => {
 
-            let bestQuotaInSection: IQuotaInfo | undefined;
+            let bestQuotaInSection: {quota : IQuotaInfo, rank : number} | undefined;
+            const roleArr: {id: string, rank: number}[] = [];
+            roleArr.push({id: section.roles.leaders.sectionVetLeaderRoleId, rank: 3});
+            roleArr.push({id: section.roles.leaders.sectionLeaderRoleId, rank: 2});
+            roleArr.push({id: section.roles.leaders.sectionAlmostLeaderRoleId, rank: 1});
 
-            availableQuotas.forEach(quota => {
-                const vetLeaderId = section.roles.leaders.sectionVetLeaderRoleId;
-                const leaderId = section.roles.leaders.sectionLeaderRoleId;
-                const almostLeaderId = section.roles.leaders.sectionAlmostLeaderRoleId;
-
-                switch (quota.roleId) {
-                    case vetLeaderId: //If vet, override any other id
-                        bestQuotaInSection = quota;
-                        break;
-                    case leaderId: //If leader, override if not vet
-                        if (!bestQuotaInSection || (bestQuotaInSection.roleId !== vetLeaderId)) {
-                            bestQuotaInSection = quota;
-                        }
-                        break;
-                    case almostLeaderId: //If almost, do not override
-                        if (!bestQuotaInSection) {
-                            bestQuotaInSection = quota;
-                        }
-                        break;
+            for(const leaderRole of roleArr){
+                const quota = availableQuotas.find(userRole => userRole.roleId === leaderRole.id);
+                if(quota){
+                    if(!bestQuotaInSection || leaderRole.rank > bestQuotaInSection.rank){
+                        bestQuotaInSection = { quota, rank: leaderRole.rank };
+                    }
                 }
-                return;
-            });
-
+            }
             if (bestQuotaInSection) {
-                bestQuotas.push(bestQuotaInSection);
+                bestQuotas.push(bestQuotaInSection.quota);
             }
         });
+
+        //Run a pass for moderation quota
+        const roleArr: {id: string, rank: number}[] = [];
+        roleArr.push({id: guildDoc.roles.staffRoles.moderation.moderatorRoleId, rank: 4});
+        roleArr.push({id: guildDoc.roles.staffRoles.moderation.officerRoleId, rank: 3});
+        roleArr.push({id: guildDoc.roles.staffRoles.moderation.securityRoleId, rank: 2});
+        roleArr.push({id: guildDoc.roles.staffRoles.moderation.helperRoleId, rank: 1});
+
+        let bestQuotaInModeration: {quota : IQuotaInfo, rank : number} | undefined;
+
+        for(const moderationRole of roleArr){
+            const quota = availableQuotas.find(userRole => userRole.roleId === moderationRole.id);
+            if(quota){
+                if(!bestQuotaInModeration || moderationRole.rank > bestQuotaInModeration.rank){
+                    bestQuotaInModeration = { quota, rank: moderationRole.rank };
+                }
+            }
+        }
+        if (bestQuotaInModeration) {
+            bestQuotas.push(bestQuotaInModeration.quota);
+        }
 
         //If no best quotas were found, just use the available quotas
         if (!bestQuotas.length) {
             bestQuotas = availableQuotas;
         }
 
-        const quotaData: QuotaMemberInfo[] = bestQuotas.map(x => {
-            const curPts = calcTotalQuotaPtsForMember(member.id, x.roleId, guildDoc);
+        //Of the best available quotas per section, pick the quota that is closest to completion
+        const quotaData: QuotaMemberInfo[] = bestQuotas.map(quota => {
+            const curPts = calcTotalQuotaPtsForMember(member.id, quota.roleId, guildDoc);
             return {
-                roleId: x.roleId,
+                roleId: quota.roleId,
                 currentPoints: curPts,
-                pointsNeeded: x.pointsNeeded,
-                percentComplete: curPts / x.pointsNeeded
+                pointsNeeded: quota.pointsNeeded,
+                percentComplete: curPts / quota.pointsNeeded
             };
         });
 
