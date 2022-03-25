@@ -19,7 +19,8 @@ import {
     onChannelDeleteEvent,
     onErrorEvent,
     onGuildCreateEvent,
-    onGuildMemberAdd, onGuildMemberUpdate,
+    onGuildMemberAdd, 
+    onGuildMemberUpdate,
     onInteractionEvent,
     onMessageDeleteEvent,
     onMessageEvent,
@@ -136,6 +137,7 @@ export class Bot {
             new Cmds.FindPunishment(),
             new Cmds.CheckBlacklist(),
             new Cmds.FindPerson(),
+            new Cmds.ListAll(),
             new Cmds.ManualVerifyMain(),
             new Cmds.ManualVerifySection(),
             new Cmds.AddOrChangeName(),
@@ -317,6 +319,12 @@ export class Bot {
         // MuteManager + SuspensionManager started in ready event.
         LOGGER.info("Starting Quota Service");
         QuotaService.startService().then();
+
+        LOGGER.info("Caching Members of Each Guild");
+        const guilds = this.client.guilds;
+        guilds.cache.forEach(guild => { 
+            guild.members.fetch();
+        })
         return true;
     }
 }

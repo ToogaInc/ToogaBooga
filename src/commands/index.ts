@@ -17,6 +17,7 @@ export * from "./config/ConfigureEarlyLocRoles";
 export * from "./staff/FindPunishment";
 export * from "./staff/CheckBlacklist";
 export * from "./staff/FindPerson";
+export * from "./staff/ListAll";
 export * from "./staff/ManualVerifyMain";
 export * from "./staff/ManualVerifySection";
 export * from "./staff/AddOrChangeName";

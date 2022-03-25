@@ -30,7 +30,7 @@ import {MiscUtilities} from "../utilities/MiscUtilities";
 import {EmojiConstants} from "../constants/EmojiConstants";
 import {Logger} from "../utilities/Logger";
 
-const LOGGER: Logger = new Logger(__filename, false);
+const LOGGER: Logger = new Logger(__filename, true);
 export namespace QuotaManager {
     export const ALL_QUOTAS_KV: { [key: string]: string } = {
         "Parse": "Parse",
@@ -818,7 +818,9 @@ export namespace QuotaService {
      * @private
      */
     async function run(): Promise<void> {
+        if(!_isRunning) return;
         LOGGER.info("Running quota service to update quotas.");
+
         let allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
         if (await resetGivenQuotas(allGuildDocs) > 0) {
             allGuildDocs = await MongoManager.getGuildCollection().find().toArray();
@@ -831,14 +833,16 @@ export namespace QuotaService {
             const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
             if (!guild)
                 continue;
-
-            for (const quotaInfo of guildDoc.quotas.quotaInfo) {
+            
+            LOGGER.debug(`Updating quota for guild: ${guild.name}`);
+            for await (const quotaInfo of guildDoc.quotas.quotaInfo) {
                 const quotaChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(guild, quotaInfo.channel);
                 const role = await GuildFgrUtilities.fetchRole(guild, quotaInfo.roleId);
 
                 if (!role || !quotaChannel)
                     continue;
 
+                LOGGER.debug(`Updating quota for role: ${role.name}`);
                 const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, quotaInfo.messageId);
                 if (!quotaMsg) {
                     const newMsg: Message = await quotaChannel.send({
@@ -857,7 +861,7 @@ export namespace QuotaService {
                             "quotas.quotaInfo.$.messageId": newMsg.id
                         }
                     });
-
+                    LOGGER.debug(`Finished updating quota for role: ${role.name}`);
                     continue;
                 }
 
@@ -866,10 +870,12 @@ export namespace QuotaService {
                         (await QuotaManager.getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo))!
                     ]
                 });
+                LOGGER.debug(`Finished updating quota for role: ${role.name}`);
             }
+            LOGGER.debug(`Finished updating quota for guild: ${guild.name}`);
         }
 
-        LOGGER.debug("Quota service finished.");
+        LOGGER.info("Quota service finished.");
         setTimeout(run, TIME_TO_UPDATE);
     }
 }
