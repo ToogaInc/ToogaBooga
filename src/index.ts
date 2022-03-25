@@ -17,7 +17,7 @@ import {MAPPED_AFK_CHECK_REACTIONS} from "./constants/dungeons/MappedAfkCheckRea
         console.error(`[!] ${mapKey} not valid`);
     }
 
-    const content = fs.readFileSync(path.join(__dirname, "..", "config.json"));
+    const content = fs.readFileSync(path.join(__dirname, "..", "config.production.json"));
     const config: IConfiguration = JSON.parse(content.toString());
     const bot = new Bot(config);
     bot.startAllEvents();
@@ -26,6 +26,22 @@ import {MAPPED_AFK_CHECK_REACTIONS} from "./constants/dungeons/MappedAfkCheckRea
 })();
 
 process.on("unhandledRejection", e => {
+    if (e instanceof Error) {
+        console.error(
+            new StringBuilder()
+                .append(`[UR2] [${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}] ${e.name}`)
+                .appendLine()
+                .append(e.message)
+                .appendLine(2)
+                .append(e.stack)
+                .appendLine()
+                .append("=====================================")
+                .toString()
+        );
+
+        return;
+    }
+
     console.error(
         new StringBuilder()
             .append(`[UR] [${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}] ${e}`)

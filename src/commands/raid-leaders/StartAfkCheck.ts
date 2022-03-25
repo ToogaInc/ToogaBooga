@@ -95,7 +95,14 @@ export class StartAfkCheck extends BaseCommand {
         };
 
         if (sectionToUse.section.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs) {
-            vcToUse = await selectVc(ctx.interaction, ctx.guildDoc!, ctx.channel as TextChannel, ctx.member!);
+            vcToUse = await selectVc(
+                ctx.interaction,
+                ctx.guildDoc!,
+                sectionToUse.cpChan,
+                ctx.channel as TextChannel,
+                ctx.member!
+            );
+
             if (vcToUse) {
                 raidOptions.existingVc = {
                     vc: vcToUse,

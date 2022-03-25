@@ -917,7 +917,13 @@ export class HeadcountInstance {
                     let vcToUse: VoiceChannel | null = null;
 
                     if (this._raidSection.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs) {
-                        vcToUse = await selectVc(i, newGuildDoc, this._controlPanelChannel, i.member! as GuildMember);
+                        vcToUse = await selectVc(
+                            i,
+                            newGuildDoc,
+                            this._controlPanelChannel,
+                            this._controlPanelChannel,
+                            i.member! as GuildMember
+                        );
                     }
 
                     LOGGER.info(
