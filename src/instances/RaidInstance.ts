@@ -1778,12 +1778,16 @@ export class RaidInstance {
                 );
                 continue;
             }
-
+            const earlyReacts = peopleThatReacted.map(user => {
+                const ret = new StringBuilder().append(`${user.member}`);
+                if(user.modifiers.length > 0) ret.append(`: \`[${user.modifiers.join(", ")}]\``);
+                return ret.toString();
+            });
             cpFields.push(
                 new StringBuilder()
                     .append(`⇨ ${emoji} ${mappedAfkCheckOption.name}: \`${peopleThatReacted.length} / ${maximum}\``)
                     .appendLine()
-                    .append(peopleThatReacted.map(x => `${x.member}: \`[${x.modifiers.join(", ")}]\``).join("\n"))
+                    .append(earlyReacts.join("\n"))
                     .appendLine()
                     .toString()
             );

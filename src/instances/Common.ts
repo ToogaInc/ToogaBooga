@@ -265,11 +265,13 @@ export async function confirmReaction(
                 continue;
             }
 
-            const buttonsToUse: MessageButton[] = [cancelButton, accidentButton];
+            const buttonsToUse: MessageButton[] = [];
             for (let i = 0; i < modifier.maxLevel; i++) {
                 buttonsToUse.push(numButtons[i]);
             }
-
+            buttonsToUse.push(accidentButton);
+            buttonsToUse.push(cancelButton);
+            
             await interaction.editReply({
                 content: `What **level** is the **${modifier.modifierName}** modifier? If you want to cancel this,`
                     + " press the **Cancel** button. If you mistakenly selected this modifier, press the"
