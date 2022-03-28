@@ -196,6 +196,13 @@ export interface IGuildInfo {
         raids: IRaidChannels;
 
         /**
+         * The elite location channel channel ID (main section).
+         *
+         * @type {object}
+         */
+        eliteLocChannelId: string;
+
+        /**
          * The modmail channel ID.
          *
          * @type {object}
@@ -633,6 +640,13 @@ export interface ISectionInfo {
          * @type {IRaidChannels}
          */
         raids: Omit<IRaidChannels, "leaderFeedbackChannelId" | "raidHistChannelId">;
+
+        /**
+         * The elite location channel ID.  Locations will be sent here if not null for the section
+         *
+         * @type {string}
+         */
+        eliteLocChannelId: string;
 
         /**
          * Any applicable logging channels. The key is the logging type (for example, suspensions, blacklists, mutes,

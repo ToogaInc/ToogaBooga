@@ -23,7 +23,7 @@ import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 // Type that defines the values for the new section
-type SectionCreateType = [string | null, Role | null, TextChannel | null, TextChannel | null, TextChannel | null];
+type SectionCreateType = [string | null, Role | null, TextChannel | null, TextChannel | null, TextChannel | null, TextChannel | null];
 
 // Interface that represents the values to put into the above type.
 interface ISectionCreateChoice {
@@ -130,6 +130,18 @@ export class ConfigureSections extends BaseCommand {
         },
         {
             name: "Section Control Panel Channel",
+            instructions: "Either mention the channel or provide a valid channel ID.",
+            collector: (ctx, botMsg) => {
+                return AdvancedCollector.startDoubleCollector<TextChannel>({
+                    targetChannel: botMsg.channel as TextChannel,
+                    targetAuthor: ctx.user,
+                    oldMsg: botMsg,
+                    ...ConfigureSections.COLLECTOR_BASE_OPTIONS
+                }, ConfigureSections.CHANNEL_COLLECTOR_FUNC);
+            }
+        },
+        {
+            name: "Section Elite Location Channel",
             instructions: "Either mention the channel or provide a valid channel ID.",
             collector: (ctx, botMsg) => {
                 return AdvancedCollector.startDoubleCollector<TextChannel>({
@@ -563,7 +575,7 @@ export class ConfigureSections extends BaseCommand {
             saveButton
         ];
 
-        const newSectionInfo: SectionCreateType = [null, null, null, null, null];
+        const newSectionInfo: SectionCreateType = [null, null, null, null, null, null];
         let selectedIdx = 0;
 
         mainLoop: while (true) {
@@ -653,7 +665,7 @@ export class ConfigureSections extends BaseCommand {
             return;
         }
 
-        const [name, role, verify, afk, control] = newSectionInfo;
+        const [name, role, verify, afk, control, eliteLoc] = newSectionInfo;
         if (!name || !role) {
             await botMsg.edit({
                 embeds: [],
@@ -668,6 +680,7 @@ export class ConfigureSections extends BaseCommand {
         sectionObj.channels.raids.afkCheckChannelId = afk?.id ?? "";
         sectionObj.channels.raids.controlPanelChannelId = control?.id ?? "";
         sectionObj.channels.verification.verificationChannelId = verify?.id ?? "";
+        sectionObj.channels.eliteLocChannelId = eliteLoc?.id ?? "";
 
         ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
             $push: {

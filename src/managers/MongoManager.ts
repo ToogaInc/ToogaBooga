@@ -506,6 +506,7 @@ export namespace MongoManager {
                 storageChannelId: "",
                 botUpdatesChannelId: "",
                 modmailChannelId: "",
+                eliteLocChannelId: "",
                 raids: {
                     afkCheckChannelId: "",
                     controlPanelChannelId: "",
@@ -605,6 +606,7 @@ export namespace MongoManager {
         return {
             channels: {
                 loggingChannels: [],
+                eliteLocChannelId: "",
                 raids: {
                     afkCheckChannelId: "",
                     controlPanelChannelId: ""
@@ -735,6 +737,7 @@ export namespace MongoManager {
             channels: {
                 // Note that we aren't going to show logging channels since this is irrelevant for our use case.
                 loggingChannels: [],
+                eliteLocChannelId: guildDoc.channels.eliteLocChannelId,
                 raids: guildDoc.channels.raids,
                 verification: guildDoc.channels.verification
             },

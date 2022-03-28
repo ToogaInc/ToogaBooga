@@ -180,6 +180,8 @@ export class RaidInstance {
     private readonly _afkCheckChannel: TextChannel;
     // The control panel channel.
     private readonly _controlPanelChannel: TextChannel;
+    // The elite location channel.
+    private _eliteLocChannel: TextChannel | null;
     // The section.
     private readonly _raidSection: ISectionInfo;
     // Number of people that can get early location through Nitro.
@@ -337,6 +339,11 @@ export class RaidInstance {
         this._controlPanelChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             memberInit.guild,
             section.channels.raids.controlPanelChannelId
+        )!;
+
+        this._eliteLocChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            memberInit.guild,
+            section.channels.eliteLocChannelId
         )!;
 
         this._feedbackBaseChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
@@ -930,6 +937,7 @@ export class RaidInstance {
         // We are officially in AFK check mode.
         // We do NOT start the intervals OR collector since pre-AFK and AFK have the exact same collectors/intervals.
         await this.setRaidStatus(RaidStatus.AFK_CHECK);
+        this.sendLocToElite();
         // Only happens if someone deleted the raid vc
         if (!this.raidVc) {
             return;
@@ -1523,6 +1531,7 @@ export class RaidInstance {
                 .append(`the raid location. Your new location is: **${this._location}**.`)
                 .toString()
         });
+        this.sendLocToElite();
         LOGGER.info(`${this._instanceInfo} Location change successful`);
         return true;
     }
@@ -1665,6 +1674,8 @@ export class RaidInstance {
 
         const generalStatus = new StringBuilder()
             .append(`⇨ AFK Check Started At: ${TimeUtilities.getDateTime(this._raidVc.createdTimestamp)} GMT`)
+            .appendLine()
+            .append(`⇨ Elite Location Channel: ${this._eliteLocChannel ? this._eliteLocChannel : "**\`Not Set.\`**"}`)
             .appendLine()
             .append(`⇨ Voice Channel: ${this._raidVc.toString()}`)
             .appendLine()
@@ -2161,6 +2172,27 @@ export class RaidInstance {
         if (!res)
             return false;
         this._guildDoc = res;
+        return true;
+    }
+
+    /**
+     * Sends location to elite location channel, if exists for section
+     * Only sends loc during AFK/IN_RAID phases
+     * @returns {Promise<boolean>} Whether a message was sent.
+     * @private
+     */
+    private async sendLocToElite(): Promise<boolean> {
+        if(!this._eliteLocChannel){
+            return false;
+        }
+        if(this._raidStatus === RaidStatus.NOTHING || this._raidStatus === RaidStatus.PRE_AFK_CHECK){
+            return false;
+        }
+
+        const tempMsg = await this._eliteLocChannel.send({
+            content: `Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${this._location}\``
+        });
+        sendTemporaryAlert(this._controlPanelChannel, `Location sent to ${this._eliteLocChannel.name}`, 5*1000);
         return true;
     }
 

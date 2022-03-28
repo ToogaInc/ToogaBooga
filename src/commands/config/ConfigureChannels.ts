@@ -135,6 +135,22 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             }
         },
         {
+            name: "Elite Location Channel",
+            description: "This is the channel where the bot will send locations of raids once the VC is opened."
+                + " Locations will only send for sections that have populated this channel. Simply leave empty to"
+                + " prevent locations being sent.  Locations will be sent at the AFK-check phase, not the "
+                + " PRE-AFK check phase.",
+            guildDocPath: "channels.eliteLocChannelId",
+            sectionPath: "guildSections.$.channels.eliteLocChannelId",
+            channelType: ChannelCategoryType.Raiding,
+            configTypeOrInstructions: ConfigType.Channel,
+            getCurrentValue: (guildDoc, section) => {
+                return section.isMainSection
+                    ? guildDoc.channels.eliteLocChannelId
+                    : section.channels.eliteLocChannelId;
+            }
+        },
+        {
             name: "Leader Feedback Channel",
             description: "This is the *base* channel where raiders can rate a leader's performance. When a new AFK"
                 + " check starts, the bot will create a new feedback channel (in the same category as this"
@@ -409,10 +425,12 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             const raidChannelObj = section.channels.raids;
             const afkCheckChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.afkCheckChannelId);
             const contPanelChannel = getCachedChannel<TextChannel>(guild, raidChannelObj.controlPanelChannelId);
+            const eliteLocChannel = getCachedChannel<TextChannel>(guild, section.channels.eliteLocChannelId);
 
             currentConfiguration.append("__**Raid Channels**__").appendLine()
                 .append(`⇒ AFK Check Channel: ${afkCheckChannel ?? ConfigureChannels.NA}`).appendLine()
-                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigureChannels.NA}`).appendLine();
+                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigureChannels.NA}`).appendLine()
+                .append(`⇒ Elite Location Channel: ${eliteLocChannel ?? ConfigureChannels.NA}`).appendLine();
 
             if (section.isMainSection) {
                 const rateLeaderChannel = getCachedChannel<TextChannel>(
