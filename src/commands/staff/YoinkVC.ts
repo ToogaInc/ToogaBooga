@@ -16,6 +16,7 @@ export class YoinkVC extends BaseCommand {
                 "Security",
                 "Officer",
                 "Moderator",
+                "AlmostRaidLeader",
                 "RaidLeader",
                 "HeadRaidLeader",
                 "VeteranRaidLeader"
