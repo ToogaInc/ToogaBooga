@@ -1407,6 +1407,11 @@ export class RaidInstance {
                 deny: permsToEvaluate.find(x => x.key === PermsConstants.MEMBER_ROLE)?.value.deny
             },
             {
+                id: this._guildDoc.roles.staffRoles.moderation.helperRoleId as Snowflake,
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.HELPER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.HELPER_ROLE)?.value.deny
+            },
+            {
                 id: this._guildDoc.roles.staffRoles.moderation.securityRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === PermsConstants.SECURITY_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === PermsConstants.SECURITY_ROLE)?.value.deny
