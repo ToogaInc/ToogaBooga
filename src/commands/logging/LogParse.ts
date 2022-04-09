@@ -44,6 +44,7 @@ export class LogParse extends BaseCommand {
             botPermissions: [],
             rolePermissions: [
                 "Helper",
+                "Security",
                 "Officer",
                 "Moderator"
             ],
