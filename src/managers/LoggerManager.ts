@@ -101,6 +101,22 @@ export namespace LoggerManager {
                 }
             };
         }
+
+        // If not already present, add user to guild list of users with logs
+        let usersAdded = false;
+        const guildDoc = await MongoManager.getOrCreateGuildDoc(member.guild.id, true);
+        const usersWithLogs = guildDoc.properties.usersWithLogs ?? [];
+        if(!usersWithLogs.find(user => user.discordId===userDocToUse.discordId)){
+            usersWithLogs.push(userDocToUse);
+            usersAdded = true;
+        }
+        if(usersAdded){
+            await MongoManager.updateAndFetchGuildDoc({guildId: guildDoc.guildId}, {
+                $set: {
+                    "properties.usersWithLogs": usersWithLogs
+                }
+            });
+        }
         await MongoManager.getUserCollection().updateOne(filterQuery, updateQuery);
     }
 
@@ -211,12 +227,20 @@ export namespace LoggerManager {
 
     /**
      * Gets this person's stats.
-     * @param {GuildMember} user The user.
+     * @param {GuildMember | null} user The user. If not provided, should provide userId
      * @param {string} [guildId] The guild ID. If specified, this will only grab the stats associated with this guild.
+     * @param {string} [userId] The user ID. If specified, a user should be provided.
      * @returns {Promise<LoggerManager.IUserStats | null>} The result, if any.
      */
-    export async function getStats(user: User, guildId?: string): Promise<IUserStats | null> {
-        const userDoc = await MongoManager.getUserCollection().findOne({discordId: user.id});
+    export async function getStats(user: User | null, guildId?: string, userId?: string): Promise<IUserStats | null> {
+        let dId = userId;
+        if(user){
+            dId = user.id;
+        }
+        if(!dId){
+            return null;
+        }
+        const userDoc = await MongoManager.getUserCollection().findOne({discordId: dId});
         if (!userDoc) {
             return null;
         }

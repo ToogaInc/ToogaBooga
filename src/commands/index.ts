@@ -17,6 +17,7 @@ export * from "./config/ConfigureEarlyLocRoles";
 export * from "./staff/FindPunishment";
 export * from "./staff/CheckBlacklist";
 export * from "./staff/FindPerson";
+export * from "./staff/Leaderboard";
 export * from "./staff/ListAll";
 export * from "./staff/ManualVerifyMain";
 export * from "./staff/ManualVerifySection";
@@ -58,3 +59,4 @@ export * from "./modmail/ReplyToThread";
 export * from "./modmail/ArchiveThread";
 
 export * from "./moderator/ForceSync";
+export * from "./moderator/LoggingSync";

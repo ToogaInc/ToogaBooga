@@ -524,6 +524,7 @@ export namespace MongoManager {
             moderation: {blacklistedUsers: [], suspendedUsers: [], blacklistedModmailUsers: [], mutedUsers: []},
             otherMajorConfig: getOtherMajorConfigObj(),
             properties: {
+                usersWithLogs: [],
                 blockedCommands: [],
                 modmailThreads: [],
                 customCmdPermissions: [],

@@ -130,13 +130,15 @@ export class Bot {
         ]);
 
         Bot.Commands.set("Moderator", [
-            new Cmds.ForceSync()
+            new Cmds.ForceSync(),
+            new Cmds.LoggingSync()
         ]);
 
         Bot.Commands.set("Staff", [
             new Cmds.FindPunishment(),
             new Cmds.CheckBlacklist(),
             new Cmds.FindPerson(),
+            new Cmds.Leaderboard(),
             new Cmds.ListAll(),
             new Cmds.ManualVerifyMain(),
             new Cmds.ManualVerifySection(),

@@ -8,10 +8,19 @@ import {
 } from "../definitions";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
 import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
-import {Guild} from "discord.js";
+import {
+    Guild,
+    MessageSelectMenu
+} from "discord.js";
 import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
 import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
+import {ArrayUtilities} from "./ArrayUtilities";
+import {MessageUtilities} from "./MessageUtilities";
+import {AdvancedCollector} from "./collectors/AdvancedCollector";
+import {ButtonConstants} from "../constants/ButtonConstants";
+import {StringUtil} from "./StringUtilities";
+import {ICommandContext} from "../commands/BaseCommand";
 
 /**
  * A namespace containing a series of useful functions for dungeons, raids, and so on.
@@ -200,5 +209,101 @@ export namespace DungeonUtilities {
         return mapKey in MAPPED_AFK_CHECK_REACTIONS
             ? MAPPED_AFK_CHECK_REACTIONS[mapKey]
             : guildDoc.properties.customReactions.find(x => x.key === mapKey)?.value ?? null;
+    }
+
+    export async function selectDungeon(ctx: ICommandContext, dungeons: IDungeonInfo[]): Promise<IDungeonInfo | null>{
+        const selectMenus: MessageSelectMenu[] = [];
+        const uIdentifier = StringUtil.generateRandomString(20);
+        
+        let exaltDungeons:IDungeonInfo[] = [];
+        for(const dungeon of dungeons){
+            if(dungeon.dungeonCategory === "Exaltation Dungeons"){
+                exaltDungeons.push(dungeon);
+            }
+        }
+        if(exaltDungeons.length > 0){
+            selectMenus.push(
+                new MessageSelectMenu()
+                    .setCustomId(`${uIdentifier}_${5}`)
+                    .setMinValues(1)
+                    .setMaxValues(1)
+                    .setPlaceholder("Exaltation Dungeons")
+                    .addOptions(exaltDungeons.map(x => {
+                        return {
+                            label: x.dungeonName,
+                            value: x.codeName,
+                            emoji: x.portalEmojiId
+                        };
+                    }))
+            );
+        }
+        const dungeonSubset = ArrayUtilities.breakArrayIntoSubsets(
+            dungeons.filter(x => x.dungeonCategory !== "Exaltation Dungeons"),
+            25
+        );
+        for (let i = 0; i < Math.min(4, dungeonSubset.length); i++) {
+            selectMenus.push(
+                new MessageSelectMenu()
+                    .setCustomId(`${uIdentifier}_${i}`)
+                    .setMinValues(1)
+                    .setMaxValues(1)
+                    .setPlaceholder("All Dungeons " + (i + 1))
+                    .addOptions(dungeonSubset[i].map(x => {
+                        return {
+                            label: x.dungeonName,
+                            value: x.codeName,
+                            emoji: x.portalEmojiId
+                        };
+                    }))
+            );
+        }
+        const askDgnEmbed = MessageUtilities.generateBlankEmbed(ctx.member!, "GOLD")
+        .setTitle(`Select Dungeon`)
+        .setDescription("Please select a dungeon from the dropdown menu(s) below. If you want to cancel this,"
+            + " press the **Cancel** button.")
+        .setFooter({text: "You have 1 minute and 30 seconds to select a dungeon."})
+        .setTimestamp();
+
+        if (dungeonSubset.length > 4) {
+            askDgnEmbed.addField(
+                "Warning",
+                "Some dungeons have been excluded from the dropdown. This is due to a Discord limitation. To fix "
+                + "this issue, please ask a higher-up to exclude some irrelevant dungeons from this list."
+            );
+        }
+
+        if(!ctx.interaction.replied){
+            await ctx.interaction.reply({
+                content: `Creating dungeon selection panel`,
+            })
+        }
+
+        await ctx.interaction.editReply({
+            content: ` `,
+            embeds: [askDgnEmbed],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                ...selectMenus,
+                AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
+                    .setCustomId(`${uIdentifier}_cancel`)
+            ])
+        });
+
+        const selectedDgn = await AdvancedCollector.startInteractionEphemeralCollector({
+            targetAuthor: ctx.user,
+            acknowledgeImmediately: true,
+            targetChannel: ctx.channel,
+            duration: 1.5 * 60 * 1000
+        }, uIdentifier);
+
+        if (!selectedDgn || !selectedDgn.isSelectMenu()) {
+            await ctx.interaction.editReply({
+                components: [],
+                content: "You either did not select a dungeon in time or canceled this process.",
+                embeds: []
+            });
+            return null;
+        }
+    
+        return dungeons.find(x => x.codeName === selectedDgn.values[0]!) ?? null;
     }
 }
