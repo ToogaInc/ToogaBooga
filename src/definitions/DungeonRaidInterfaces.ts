@@ -381,6 +381,12 @@ export interface IReactionInfo {
      * @type {string}
      */
     name: string;
+
+    /**
+     * Whether this is an exalt dungeon key or rune
+     * @type {boolean}
+     */
+    isExaltKey: boolean;
 }
 
 /**

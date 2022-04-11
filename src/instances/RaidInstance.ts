@@ -437,6 +437,7 @@ export class RaidInstance {
                 },
                 name: "Points",
                 type: "EARLY_LOCATION",
+                isExaltKey: false,
                 builtInEmoji: EmojiConstants.TICKET_EMOJI
             });
         }

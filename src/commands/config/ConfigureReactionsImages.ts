@@ -743,7 +743,8 @@ export class ConfigureReactionsImages extends BaseCommand {
                         value: {
                             type: reactionType.values[0] as ReactionType,
                             name: newName.value!,
-                            emojiInfo: newEmoji.value!
+                            emojiInfo: newEmoji.value!,
+                            isExaltKey: false
                         }
                     });
                     break;

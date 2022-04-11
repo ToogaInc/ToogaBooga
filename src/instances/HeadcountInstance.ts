@@ -286,7 +286,8 @@ export class HeadcountInstance {
             emojiInfo: {identifier: EmojiConstants.GREEN_CHECK_EMOJI, isCustom: false},
             isCustomReaction: false,
             name: "Interested",
-            type: "UTILITY"
+            type: "UTILITY",
+            isExaltKey: false
         });
 
         this._pplWithEarlyLoc.set("interested", []);
