@@ -4,7 +4,6 @@ import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {
     DungeonSelectionType,
     getAvailableSections,
-    getSelectedDungeon,
     getSelectedSection
 } from "./common/RaidLeaderCommon";
 import {HeadcountInstance} from "../../instances/HeadcountInstance";
@@ -62,11 +61,10 @@ export class StartHeadcount extends BaseCommand {
             });
             return 0;
         }
+        // Step 4: Ask for the appropriate dungeon
 
-        // Step 3: Ask for the appropriate dungeon
-        const selectedDgn = await getSelectedDungeon(ctx, sectionToUse);
-
-        if (!selectedDgn) {
+        const dungeonToUse = await DungeonUtilities.selectDungeon(ctx, sectionToUse.dungeons);
+        if (!dungeonToUse) {
             await ctx.interaction.editReply({
                 components: [],
                 content: "You either did not select a dungeon in time or canceled this process.",
@@ -74,7 +72,6 @@ export class StartHeadcount extends BaseCommand {
             });
             return 0;
         }
-        const dungeonToUse = sectionToUse.dungeons.find(x => x.codeName === selectedDgn.values[0])!;
 
 
         // Step 4: Start it
