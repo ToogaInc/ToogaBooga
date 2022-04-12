@@ -131,7 +131,7 @@ export class Bot {
 
         Bot.Commands.set("Moderator", [
             new Cmds.ForceSync(),
-            new Cmds.LoggingSync()
+            new Cmds.LeaderboardSync()
         ]);
 
         Bot.Commands.set("Staff", [

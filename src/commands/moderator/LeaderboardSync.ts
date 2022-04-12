@@ -4,15 +4,15 @@ import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {Logger} from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
-export class LoggingSync extends BaseCommand {
+export class LeaderboardSync extends BaseCommand {
     private _isRunning: boolean = false;
 
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "LOGGING_SYNC_COMMAND",
-            formalCommandName: "Logging Sync",
-            botCommandName: "loggingsync",
-            description: "Force syncs all users who have logs with the database.",
+            cmdCode: "LEADERBOARD_SYNC_COMMAND",
+            formalCommandName: "Leaderboard Sync Command",
+            botCommandName: "leaderboardsync",
+            description: "For the purposes of the leaderboard, force syncs all users who have logs with the database.",
             rolePermissions: [
                 "Moderator"
             ],
