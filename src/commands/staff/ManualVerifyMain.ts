@@ -45,7 +45,7 @@ export class ManualVerifyMain extends BaseCommand {
                     desc: "The in-game name to manually verify this person under.",
                     type: ArgumentType.String,
                     prettyType: "String",
-                    required: true,
+                    required: false,
                     example: ["Darkmattr"]
                 }
             ],
@@ -72,7 +72,6 @@ export class ManualVerifyMain extends BaseCommand {
         }
 
         const ign = ctx.interaction.options.getString("ign", false);
-        const promises: (Promise<any> | undefined)[] = [];
 
         // If the member isn't verified at all, don't go further
         if (GuildFgrUtilities.memberHasCachedRole(resMember.member, ctx.guildDoc!.roles.verifiedRoleId)) {
@@ -95,6 +94,7 @@ export class ManualVerifyMain extends BaseCommand {
             return 0;
         }
 
+        await ctx.interaction.deferReply();
         let ignToVerifyWith: string = "";
         let useAlreadyVerifiedIgn = false;
         if (ign) {
@@ -104,19 +104,17 @@ export class ManualVerifyMain extends BaseCommand {
             // If no IGN is provided, see if they have any given IGNs.
             const docs = await MongoManager.findIdInIdNameCollection(resMember.member.id);
             if (docs.length === 0) {
-                await ctx.interaction.reply({
-                    content: "Please provide an in-game name to verify this person as.",
-                    ephemeral: true
+                await ctx.interaction.editReply({
+                    content: "Please provide an in-game name to verify this person as."
                 });
                 return -1;
             }
 
             const ignToUse = await new Promise<IRealmIgn | null>(async r => {
                 if (docs.length === 0 || docs[0].rotmgNames.length === 0) {
-                    await ctx.interaction.reply({
+                    await ctx.interaction.editReply({
                         content: "No IGNs could be found for this person. Please provide an IGN by re-running this"
-                            + " command with the IGN as an argument.",
-                        ephemeral: true
+                            + " command with the IGN as an argument."
                     });
                     return r(null);
                 }
@@ -182,18 +180,17 @@ export class ManualVerifyMain extends BaseCommand {
             ctx.guildDoc!.channels.loggingChannels.find(x => x.key === "VerifySuccess")?.value ?? ""
         );
 
-        promises.push(
-            GlobalFgrUtilities.tryExecuteAsync(async () => {
-                await resMember.member.setNickname(ignToVerifyWith, "Manually verified.");
-            }),
-            verifySuccessChannel?.send({
-                content: `[Main] ${resMember.member} has been manually verified as **\`${ignToVerifyWith}\`** by`
-                    + ` ${ctx.user}.`
-            })
-        );
+        await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            await resMember.member.setNickname(ignToVerifyWith, "Manually verified.");
+        });
+
+        await verifySuccessChannel?.send({
+            content: `[Main] ${resMember.member} has been manually verified as **\`${ignToVerifyWith}\`** by`
+                + ` ${ctx.user}.`
+        });
 
         if (!useAlreadyVerifiedIgn) {
-            promises.push(MongoManager.addIdNameToIdNameCollection(resMember.member));
+            await MongoManager.addIdNameToIdNameCollection(resMember.member);
         }
 
         const finishedEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "GREEN")
@@ -212,25 +209,24 @@ export class ManualVerifyMain extends BaseCommand {
             );
         }
 
-        promises.push(
-            GlobalFgrUtilities.sendMsg(resMember.member, {embeds: [finishedEmbed]}),
-            resMember.member.roles.add(verifiedRole)
-        );
+        await GlobalFgrUtilities.sendMsg(resMember.member, {embeds: [finishedEmbed]});
+
+        await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            return await resMember.member.roles.add(verifiedRole);
+        });
 
         // Finally, remove manual verification entry if it exists
         const mVerifyEntry = ctx.guildDoc!.manualVerificationEntries
             .find(x => x.userId === resMember.member.id && x.sectionId === "MAIN");
         if (mVerifyEntry) {
-            promises.push(
-                MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
-                    $pull: {
-                        manualVerificationEntries: {
-                            sectionId: "MAIN",
-                            userId: resMember.member.id
-                        }
+            await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                $pull: {
+                    manualVerificationEntries: {
+                        sectionId: "MAIN",
+                        userId: resMember.member.id
                     }
-                })
-            );
+                }
+            });
 
             const channel = GuildFgrUtilities.getCachedChannel(ctx.guild!, mVerifyEntry.manualVerifyChannelId);
             if (channel) {
@@ -243,16 +239,7 @@ export class ManualVerifyMain extends BaseCommand {
             }
         }
 
-        // Finally, log it if possible
-        const quotaToLog = QuotaManager.findBestQuotaToAdd(ctx.member!, ctx.guildDoc!, "ManualVerify");
-        if (quotaToLog) {
-            promises.push(
-                QuotaManager.logQuota(ctx.member!, quotaToLog, "ManualVerify", 1)
-            );
-        }
-
-        await Promise.all(promises);
-        await ctx.interaction.reply({
+        await ctx.interaction.editReply({
             content: `${resMember.member} has been manually verified in the Main section.`
         });
 
