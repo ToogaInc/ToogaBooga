@@ -78,7 +78,7 @@ type LinkConfigOptions = {
     max: number;
 };
 
-export class ConfigureDungeons extends BaseCommand {
+export class ConfigDungeons extends BaseCommand {
     public static readonly MAXIMUM_PRIORITY_REACTS: number = 12;
     public static readonly MAXIMUM_NORMAL_REACTS: number = 20;
     public static readonly MAXIMUM_UNIVERSAL_PRIORITY: number = 4;
@@ -86,8 +86,8 @@ export class ConfigureDungeons extends BaseCommand {
 
     public constructor() {
         super({
-            cmdCode: "CONFIGURE_DUNGEONS",
-            formalCommandName: "Configure Dungeons",
+            cmdCode: "CONFIG_DUNGEONS_COMMAND",
+            formalCommandName: "Config Dungeons Command",
             botCommandName: "configdungeons",
             description: "Allows you to configure custom dungeons and what dungeons can be raided in each of the"
                 + " sections.",
@@ -283,7 +283,7 @@ export class ConfigureDungeons extends BaseCommand {
                 .setEmoji(EmojiConstants.PLUS_EMOJI)
         ];
 
-        if (ctx.guildDoc!.properties.customDungeons.length + 1 < ConfigureDungeons.MAXIMUM_CUSTOM_DUNGEONS) {
+        if (ctx.guildDoc!.properties.customDungeons.length + 1 < ConfigDungeons.MAXIMUM_CUSTOM_DUNGEONS) {
             embed.addField(
                 "Create Custom Dungeon",
                 "Click on the `Create Custom Dungeon` button if you want to create your own custom dungeon."
@@ -442,7 +442,7 @@ export class ConfigureDungeons extends BaseCommand {
                     return;
                 }
 
-                await this.createOrModifyCustomDungeon(ctx, botMsg, ConfigureDungeons.cloneDungeonForCustom(res));
+                await this.createOrModifyCustomDungeon(ctx, botMsg, ConfigDungeons.cloneDungeonForCustom(res));
                 return;
             }
             case "modify_custom": {
@@ -471,7 +471,7 @@ export class ConfigureDungeons extends BaseCommand {
                     ctx.guildDoc!.properties.universalEarlyLocReactions ?? [],
                     ctx.guildDoc!.properties.customReactions.filter(x => x.value.type === "EARLY_LOCATION"),
                     false,
-                    ConfigureDungeons.MAXIMUM_UNIVERSAL_PRIORITY,
+                    ConfigDungeons.MAXIMUM_UNIVERSAL_PRIORITY,
                     0
                 );
 
@@ -898,7 +898,7 @@ export class ConfigureDungeons extends BaseCommand {
 
                     if (!isCustomDungeon(cDungeon)
                         && dgnToOverrideInfo
-                        && ConfigureDungeons.isDefaultOverride(cDungeon, dgnToOverrideInfo)) {
+                        && ConfigDungeons.isDefaultOverride(cDungeon, dgnToOverrideInfo)) {
                         await this.mainMenu(ctx, botMsg);
                         return;
                     }
@@ -1887,8 +1887,8 @@ export class ConfigureDungeons extends BaseCommand {
         cReactions: IAfkCheckReaction[],
         allReactions: IPropertyKeyValuePair<string, IReactionInfo>[],
         allowDefaults: boolean,
-        priorityLimit: number = ConfigureDungeons.MAXIMUM_PRIORITY_REACTS,
-        generalLimit: number = ConfigureDungeons.MAXIMUM_NORMAL_REACTS
+        priorityLimit: number = ConfigDungeons.MAXIMUM_PRIORITY_REACTS,
+        generalLimit: number = ConfigDungeons.MAXIMUM_NORMAL_REACTS
     ): Promise<IAfkCheckReaction[] | null> {
         const currentReactions = cReactions.slice().filter(x => {
             return !!DungeonUtilities.getReaction(ctx.guildDoc!, x.mapKey)!;

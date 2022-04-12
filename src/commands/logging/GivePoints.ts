@@ -9,14 +9,14 @@ export class GivePoints extends BaseCommand {
             cmdCode: "GIVE_POINTS_COMMAND",
             formalCommandName: "Give Points Command",
             botCommandName: "givepoints",
-            description: "Gives some number of points to a person.",
+            description: "Gives points to a member, defaulting to yourself.",
             commandCooldown: 0,
             generalPermissions: [],
             argumentInfo: [
                 {
                     displayName: "Member",
                     argName: "member",
-                    desc: "The member to give points to. If no member is specified, this will log for you.",
+                    desc: "The member to give points to. If no member is specified, this will give points to you.",
                     type: ArgumentType.String,
                     prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: false,

@@ -37,7 +37,7 @@ type QuotaName = {
     name: string;
 };
 
-export class ConfigureQuotas extends BaseCommand {
+export class ConfigQuotas extends BaseCommand {
     public static MAX_QUOTAS_ALLOWED: number = 10;
 
     public static DAYS_OF_WEEK: [string, number][] = [
@@ -77,8 +77,8 @@ export class ConfigureQuotas extends BaseCommand {
 
     public constructor() {
         super({
-            cmdCode: "CONFIGURE_QUOTAS",
-            formalCommandName: "Configure Quotas Command",
+            cmdCode: "CONFIG_QUOTAS_COMMAND",
+            formalCommandName: "Config Quotas Command",
             botCommandName: "configquotas",
             description: "Allows you to configure quotas for one or more roles.",
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
@@ -121,7 +121,7 @@ export class ConfigureQuotas extends BaseCommand {
         ];
 
         const resetInfo = ctx.guildDoc!.quotas.resetTime;
-        const dayOfWeek = ConfigureQuotas.DAYS_OF_WEEK[resetInfo.dayOfWeek][0];
+        const dayOfWeek = ConfigQuotas.DAYS_OF_WEEK[resetInfo.dayOfWeek][0];
         const seconds = resetInfo.time % 100;
         const timeReset = `${Math.floor(resetInfo.time / 100)}:${seconds < 10 ? "0" + seconds.toString() : seconds}`;
         const embed: MessageEmbed = new MessageEmbed()
@@ -139,7 +139,7 @@ export class ConfigureQuotas extends BaseCommand {
                 + " time is:" + StringUtil.codifyString(`${dayOfWeek} at ${timeReset}`)
             );
 
-        if (ctx.guildDoc!.quotas.quotaInfo.length + 1 < ConfigureQuotas.MAX_QUOTAS_ALLOWED) {
+        if (ctx.guildDoc!.quotas.quotaInfo.length + 1 < ConfigQuotas.MAX_QUOTAS_ALLOWED) {
             buttons.push(
                 ButtonConstants.ADD_BUTTON
             );
@@ -269,7 +269,7 @@ export class ConfigureQuotas extends BaseCommand {
                             .setMaxValues(1)
                             .setMinValues(1)
                             .setCustomId("day_of_week")
-                            .addOptions(ConfigureQuotas.DAYS_OF_WEEK.map(x => {
+                            .addOptions(ConfigQuotas.DAYS_OF_WEEK.map(x => {
                                 const [dayOfWeekStr, dayOfWeekNum] = x;
                                 return {
                                     label: `${dayOfWeekStr} (${dayOfWeekNum})`,
@@ -789,7 +789,7 @@ export class ConfigureQuotas extends BaseCommand {
         while (true) {
             const allPossChoices = this.getQuotasToAdd(ptsToUse);
             addButton.setDisabled(
-                ptsToUse.length + 1 > ConfigureQuotas.MAX_QUOTAS_ALLOWED || allPossChoices.length === 0
+                ptsToUse.length + 1 > ConfigQuotas.MAX_QUOTAS_ALLOWED || allPossChoices.length === 0
             );
             removeButton.setDisabled(ptsToUse.length === 0);
             upButton.setDisabled(ptsToUse.length <= 1);
@@ -1007,7 +1007,7 @@ export class ConfigureQuotas extends BaseCommand {
             });
         }
 
-        for (const q of ConfigureQuotas.BASE_QUOTA_RECOGNIZED) {
+        for (const q of ConfigQuotas.BASE_QUOTA_RECOGNIZED) {
             if (currentSet.some(x => x.key === q.key))
                 continue;
             res.push(q);

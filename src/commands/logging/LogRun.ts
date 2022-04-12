@@ -15,14 +15,13 @@ import {QuotaLogType} from "../../definitions/Types";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 
-export class LogLedRun extends BaseCommand {
+export class LogRun extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "LOG_LED_RUN_COMMAND",
-            formalCommandName: "Log Led Run(s) Command",
+            cmdCode: "LOG_RUN_COMMAND",
+            formalCommandName: "Log Run Command",
             botCommandName: "logrun",
-            description: "Logs one or more runs that a leader led. You can log completions/fails/assists for"
-                + " yourself or someone else.  Defaults to 1 completed run.",
+            description: "Logs one or more runs led. You can log completions/fails/assists. Defaults to 1 completed run for yourself.",
             commandCooldown: 0,
             generalPermissions: [],
             argumentInfo: [

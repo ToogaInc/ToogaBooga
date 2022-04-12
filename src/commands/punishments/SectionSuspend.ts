@@ -8,14 +8,14 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {MessageSelectMenu, MessageSelectOptionData} from "discord.js";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {SuspendMember} from "./SuspendMember";
+import {Suspend} from "./Suspend";
 import {preCheckPunishment} from "./common/PunishmentCommon";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import {Logger} from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
-export class SectionSuspendMember extends BaseCommand {
+export class SectionSuspend extends BaseCommand {
     private static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
         .append("Something went wrong when trying to suspend this person.").appendLine()
         .append("- The person already has the suspended role. In this case, manually remove the Suspended role and")
@@ -24,10 +24,10 @@ export class SectionSuspendMember extends BaseCommand {
 
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "SECTION_SUSPEND_MEMBER",
-            formalCommandName: "Section Suspend Member",
+            cmdCode: "SECTION_SUSPEND_COMMAND",
+            formalCommandName: "Section Suspend Command",
             botCommandName: "sectionsuspend",
-            description: "Suspends a user from a particular section (not the main section).",
+            description: "Suspends a member from a particular section (not the main section).",
             rolePermissions: ["Security", "Officer", "Moderator", "RaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
             generalPermissions: [],
             botPermissions: ["MANAGE_ROLES"],
@@ -163,7 +163,7 @@ export class SectionSuspendMember extends BaseCommand {
 
         if (!susRes.punishmentResolved) {
             await ctx.interaction.editReply({
-                content: SuspendMember.ERROR_NO_SUSPEND_STR,
+                content: Suspend.ERROR_NO_SUSPEND_STR,
                 components: []
             });
 

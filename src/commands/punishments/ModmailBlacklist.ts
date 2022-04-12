@@ -10,8 +10,8 @@ import generateRandomString = StringUtil.generateRandomString;
 export class ModmailBlacklist extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "MODMAIL_BLACKLIST_MEMBER",
-            formalCommandName: "Modmail Blacklist Member",
+            cmdCode: "MODMAIL_BLACKLIST_COMMAND",
+            formalCommandName: "Modmail Blacklist Command",
             botCommandName: "modmailblacklist",
             description: "Blacklists a user from using modmail.",
             rolePermissions: ["Security", "Officer", "Moderator", "HeadRaidLeader"],

@@ -12,7 +12,7 @@ export class LoggingSync extends BaseCommand {
             cmdCode: "LOGGING_SYNC_COMMAND",
             formalCommandName: "Logging Sync",
             botCommandName: "loggingsync",
-            description: "Updates list of users who have logged items for this guild.",
+            description: "Force syncs all users who have logs with the database.",
             rolePermissions: [
                 "Moderator"
             ],

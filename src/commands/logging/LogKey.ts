@@ -10,11 +10,11 @@ import {LoggerManager} from "../../managers/LoggerManager";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../../constants/dungeons/MappedAfkCheckReactions";
 
-export class LogKeyPop extends BaseCommand {
+export class LogKey extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "LOG_KEY_POP_COMMAND",
-            formalCommandName: "Log Key Pop(s) Command",
+            cmdCode: "LOG_KEY_COMMAND",
+            formalCommandName: "Log Key Command",
             botCommandName: "logkey",
             description: "Logs one or more key pops.",
             commandCooldown: 0,

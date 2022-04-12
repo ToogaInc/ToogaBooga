@@ -10,10 +10,10 @@ import {Bot} from "../../Bot";
 export class FindPunishment extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "FIND_PUNISHMENT",
-            formalCommandName: "Find Punishment",
+            cmdCode: "FIND_PUNISHMENT_COMMAND",
+            formalCommandName: "Find Punishment Command",
             botCommandName: "findpunishment",
-            description: "Finds punishment information given a punishment ID.",
+            description: "Finds punishment information when provided the punishment ID.",
             rolePermissions: [
                 "Helper",
                 "Security",

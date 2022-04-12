@@ -34,7 +34,7 @@ import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import SHORT_STAT_TO_LONG = VerifyManager.SHORT_STAT_TO_LONG;
 
-export class ConfigureVerification extends BaseCommand {
+export class ConfigVerification extends BaseCommand {
     public static GUILD_RANKS: string[] = [
         "Initiate",
         "Member",
@@ -46,8 +46,8 @@ export class ConfigureVerification extends BaseCommand {
 
     public constructor() {
         super({
-            cmdCode: "CONFIG_VERIFICATION",
-            formalCommandName: "Configure Verification",
+            cmdCode: "CONFIG_VERIFICATION_COMMAND",
+            formalCommandName: "Config Verification Command",
             botCommandName: "configverification",
             description: "Allows the user to configure verification requirements for a section.",
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
@@ -649,7 +649,7 @@ export class ConfigureVerification extends BaseCommand {
                                 .setCustomId("guild_rank")
                                 .setMinValues(1)
                                 .setMaxValues(1)
-                                .addOptions(ConfigureVerification.GUILD_RANKS.map(x => {
+                                .addOptions(ConfigVerification.GUILD_RANKS.map(x => {
                                     return {
                                         label: x,
                                         value: x
@@ -900,7 +900,7 @@ export class ConfigureVerification extends BaseCommand {
             .setStyle("PRIMARY")
             .setCustomId("one_char");
 
-        const buttons: MessageButton[] = ConfigureVerification.getButtons(oneCharButton);
+        const buttons: MessageButton[] = ConfigVerification.getButtons(oneCharButton);
         const embed = new MessageEmbed()
             .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configure Exaltation Requirement")
@@ -1041,7 +1041,7 @@ export class ConfigureVerification extends BaseCommand {
             .setStyle("PRIMARY")
             .setCustomId("past_deaths");
 
-        const buttons: MessageButton[] = ConfigureVerification.getButtons(checkPastDeathsButton);
+        const buttons: MessageButton[] = ConfigVerification.getButtons(checkPastDeathsButton);
         const embed = new MessageEmbed()
             .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle("Configure Character Requirement")
@@ -1188,7 +1188,7 @@ export class ConfigureVerification extends BaseCommand {
             useBotCompletions: dungeonReq.useBotCompletions
         };
 
-        const [backBtn, upBtn, downButton, addBtn, removeBtn, saveBtn] = ConfigureVerification.getButtons(
+        const [backBtn, upBtn, downButton, addBtn, removeBtn, saveBtn] = ConfigVerification.getButtons(
             AdvancedCollector.cloneButton(ButtonConstants.ADD_BUTTON),
             AdvancedCollector.cloneButton(ButtonConstants.REMOVE_BUTTON)
         );
@@ -1230,7 +1230,7 @@ export class ConfigureVerification extends BaseCommand {
             upBtn.setDisabled(newDungeonReq.botCompletions.length <= 1);
             downButton.setDisabled(newDungeonReq.botCompletions.length <= 1);
             removeBtn.setDisabled(newDungeonReq.botCompletions.length === 0);
-            addBtn.setDisabled(newDungeonReq.botCompletions.length + 1 > ConfigureVerification.MAX_DUNGEON_REQS);
+            addBtn.setDisabled(newDungeonReq.botCompletions.length + 1 > ConfigVerification.MAX_DUNGEON_REQS);
 
             embed.fields = [];
             const fields = ArrayUtilities.arrayToStringFields(

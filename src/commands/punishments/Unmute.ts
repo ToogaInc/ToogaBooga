@@ -7,7 +7,7 @@ import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {preCheckPunishment} from "./common/PunishmentCommon";
 import generateRandomString = StringUtil.generateRandomString;
 
-export class UnmuteMember extends BaseCommand {
+export class Unmute extends BaseCommand {
     public static readonly ERROR_NO_UNMUTE_STR: string = new StringBuilder()
         .append("Something went wrong when trying to unmute this person.").appendLine()
         .append("- The person doesn't have the Muted role.")
@@ -16,8 +16,8 @@ export class UnmuteMember extends BaseCommand {
 
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "UNMUTE_MEMBER",
-            formalCommandName: "Unmute Member",
+            cmdCode: "UNMUTE_COMMAND",
+            formalCommandName: "Unmute Command",
             botCommandName: "unmute",
             description: "Unmutes a member, allowing the member to send messages and speak in voice channels.",
             rolePermissions: [
@@ -83,7 +83,7 @@ export class UnmuteMember extends BaseCommand {
 
         if (!unmuteRes.punishmentResolved) {
             await ctx.interaction.editReply({
-                content: UnmuteMember.ERROR_NO_UNMUTE_STR,
+                content: Unmute.ERROR_NO_UNMUTE_STR,
             });
 
             return 0;

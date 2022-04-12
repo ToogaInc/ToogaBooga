@@ -10,7 +10,7 @@ export class SendAnnouncement extends BaseCommand {
         const cmi: ICommandInfo = {
             cmdCode: "SEND_ANNOUNCEMENTS_COMMAND",
             formalCommandName: "Send Announcements Command",
-            botCommandName: "sendbotannouncement",
+            botCommandName: "sendannouncement",
             description: "Sends an announcement to every server that has a set bot updates channel.",
             commandCooldown: 0,
             generalPermissions: [],

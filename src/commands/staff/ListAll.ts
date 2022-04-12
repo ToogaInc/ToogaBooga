@@ -7,8 +7,8 @@ import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUti
 export class ListAll extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "LIST_ALL_CMD",
-            formalCommandName: "ListAll",
+            cmdCode: "LIST_ALL_COMMAND",
+            formalCommandName: "ListAll Command",
             botCommandName: "listall",
             description: "Lists all users who have the provided role.",
             rolePermissions: [

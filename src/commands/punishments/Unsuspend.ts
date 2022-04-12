@@ -6,7 +6,7 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 import {preCheckPunishment} from "./common/PunishmentCommon";
 
-export class UnsuspendMember extends BaseCommand {
+export class Unsuspend extends BaseCommand {
     public static readonly ERROR_NO_UNSUSPEND_STR: string = new StringBuilder()
         .append("Something went wrong when trying to unsuspend this person.").appendLine()
         .append("- The person doesn't have the Suspended role.")
@@ -15,8 +15,8 @@ export class UnsuspendMember extends BaseCommand {
 
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "UNSUSPEND_MEMBER",
-            formalCommandName: "Unsuspend Member",
+            cmdCode: "UNSUSPEND_COMMAND",
+            formalCommandName: "Unsuspend Command",
             botCommandName: "unsuspend",
             description: "Unsuspends a member, giving them full access to the server.",
             rolePermissions: ["Security", "Officer", "Moderator", "RaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
@@ -75,7 +75,7 @@ export class UnsuspendMember extends BaseCommand {
 
         if (!unsuspensionRes.punishmentResolved) {
             await ctx.interaction.editReply({
-                content: UnsuspendMember.ERROR_NO_UNSUSPEND_STR,
+                content: Unsuspend.ERROR_NO_UNSUSPEND_STR,
             });
 
             return 0;

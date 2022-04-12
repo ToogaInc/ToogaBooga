@@ -3,11 +3,11 @@ import {ThreadChannel} from "discord.js";
 import {ModmailManager} from "../../managers/ModmailManager";
 import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
 
-export class ArchiveThread extends BaseCommand {
+export class Archive extends BaseCommand {
     public constructor() {
         super({
-            cmdCode: "ARCHIVE_MODMAIL_THREAD",
-            formalCommandName: "Archive Modmail Thread",
+            cmdCode: "ARCHIVE_COMMAND",
+            formalCommandName: "Archive Command",
             botCommandName: "archive",
             description: "Archives a modmail thread. This must be executed in a valid modmail thread.",
             rolePermissions: ["Security", "Officer", "HeadRaidLeader", "Moderator"],

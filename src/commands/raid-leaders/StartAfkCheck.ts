@@ -19,7 +19,7 @@ export class StartAfkCheck extends BaseCommand {
             cmdCode: StartAfkCheck.START_AFK_CMD_CODE,
             formalCommandName: "Start AFK Check Command",
             botCommandName: "afkcheck",
-            description: "Starts a wizard that can be used to start an AFK check.",
+            description: "Starts an AFK check.",
             commandCooldown: 8 * 1000,
             generalPermissions: [],
             botPermissions: [],

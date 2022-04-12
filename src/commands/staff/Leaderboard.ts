@@ -20,7 +20,7 @@ export class Leaderboard extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
             cmdCode: "LEADERBOARD_CMD",
-            formalCommandName: "Leaderboard",
+            formalCommandName: "Leaderboard Command",
             botCommandName: "leaderboard",
             description: "Provides the leaderboard for a given category.",
             rolePermissions: [

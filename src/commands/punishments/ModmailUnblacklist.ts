@@ -8,10 +8,10 @@ import {UserManager} from "../../managers/UserManager";
 export class ModmailUnblacklist extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "MODMAIL_UNBLACKLIST_MEMBER",
-            formalCommandName: "Unblacklist Member from Modmail",
+            cmdCode: "MODMAIL_UNBLACKLIST_COMMAND",
+            formalCommandName: "Modmail Unblacklist Command",
             botCommandName: "modmailunblacklist",
-            description: "Unblacklists a member from modmail.",
+            description: "Unblacklists a member from using modmail.",
             rolePermissions: ["Security", "Officer", "Moderator", "HeadRaidLeader"],
             generalPermissions: [],
             botPermissions: [],

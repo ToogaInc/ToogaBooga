@@ -5,11 +5,11 @@ import {Logger} from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
-export class CleanVC extends BaseCommand {
+export class Clean extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "CLEAN_VC_CMD",
-            formalCommandName: "Clean VC",
+            cmdCode: "CLEAN_COMMAND",
+            formalCommandName: "Clean Command",
             botCommandName: "clean",
             description: "Removes all members from a VC.",
             rolePermissions: [

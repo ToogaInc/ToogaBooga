@@ -41,7 +41,7 @@ interface IChannelMongo extends IBaseDatabaseEntryInfo {
     channelType: ChannelCategoryType;
 }
 
-export class ConfigureChannels extends BaseCommand implements IConfigCommand {
+export class ConfigChannels extends BaseCommand implements IConfigCommand {
     private static readonly SECTION_LOGGING_IDS: SectionLogType[] = [
         "SectionSuspend",
         "VerifyFail",
@@ -237,10 +237,10 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
     public constructor() {
         super({
-            cmdCode: "CONFIGURE_CHANNEL_COMMAND",
-            formalCommandName: "Configure Channel Command",
+            cmdCode: "CONFIG_CHANNELS_COMMAND",
+            formalCommandName: "Config Channels Command",
             botCommandName: "configchannels",
-            description: "Allows the user to configure channels for the entire server or for a specific section",
+            description: "Allows the user to configure channels for the entire server or for a specific section.",
             commandCooldown: 10 * 1000,
             generalPermissions: ["MANAGE_GUILD"],
             argumentInfo: [],
@@ -398,7 +398,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     ctx,
                     section,
                     botMsg,
-                    ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Other),
+                    ConfigChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Other),
                     "Others"
                 );
                 return;
@@ -428,9 +428,9 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             const eliteLocChannel = getCachedChannel<TextChannel>(guild, section.channels.eliteLocChannelId);
 
             currentConfiguration.append("__**Raid Channels**__").appendLine()
-                .append(`⇒ AFK Check Channel: ${afkCheckChannel ?? ConfigureChannels.NA}`).appendLine()
-                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigureChannels.NA}`).appendLine()
-                .append(`⇒ Elite Location Channel: ${eliteLocChannel ?? ConfigureChannels.NA}`).appendLine();
+                .append(`⇒ AFK Check Channel: ${afkCheckChannel ?? ConfigChannels.NA}`).appendLine()
+                .append(`⇒ Control Panel Channel: ${contPanelChannel ?? ConfigChannels.NA}`).appendLine()
+                .append(`⇒ Elite Location Channel: ${eliteLocChannel ?? ConfigChannels.NA}`).appendLine();
 
             if (section.isMainSection) {
                 const rateLeaderChannel = getCachedChannel<TextChannel>(
@@ -445,8 +445,8 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
 
 
                 currentConfiguration
-                    .append(`⇒ Base Rate Leader Channel: ${rateLeaderChannel ?? ConfigureChannels.NA}`).appendLine()
-                    .append(`⇒ Raid Storage Channel: ${raidStorageChannel ?? ConfigureChannels.NA}`).appendLine();
+                    .append(`⇒ Base Rate Leader Channel: ${rateLeaderChannel ?? ConfigChannels.NA}`).appendLine()
+                    .append(`⇒ Raid Storage Channel: ${raidStorageChannel ?? ConfigChannels.NA}`).appendLine();
             }
 
             currentConfiguration.appendLine();
@@ -458,8 +458,8 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
             const manVerifChannel = getCachedChannel<TextChannel>(guild, verifChannelObj.manualVerificationChannelId);
 
             currentConfiguration.append("__**Verification Channels**__").appendLine()
-                .append(`⇒ Verification Channel: ${verifChannel ?? ConfigureChannels.NA}`).appendLine()
-                .append(`⇒ Manual Verification Channel: ${manVerifChannel ?? ConfigureChannels.NA}`).appendLine()
+                .append(`⇒ Verification Channel: ${verifChannel ?? ConfigChannels.NA}`).appendLine()
+                .append(`⇒ Manual Verification Channel: ${manVerifChannel ?? ConfigChannels.NA}`).appendLine()
                 .appendLine();
         }
 
@@ -469,14 +469,14 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 const mmChannel = getCachedChannel<TextChannel>(guild, guildDoc.channels.modmailChannelId);
 
                 currentConfiguration.append("__**Modmail Channels**__").appendLine()
-                    .append(`⇒ Modmail Channel: ${mmChannel ?? ConfigureChannels.NA}`).appendLine()
+                    .append(`⇒ Modmail Channel: ${mmChannel ?? ConfigChannels.NA}`).appendLine()
                     .appendLine();
             }
 
             if (displayFilter & DisplayFilter.Other) {
                 const botUpdatesChan = getCachedChannel<TextChannel>(guild, guildDoc.channels.botUpdatesChannelId);
                 currentConfiguration.append("__**Other Channels**__").appendLine()
-                    .append(`⇒ Bot Updates Channel: ${botUpdatesChan ?? ConfigureChannels.NA}`).appendLine();
+                    .append(`⇒ Bot Updates Channel: ${botUpdatesChan ?? ConfigChannels.NA}`).appendLine();
             }
         }
 
@@ -492,8 +492,8 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
      */
     private async doLoggingChannels(ctx: ICommandContext, section: ISectionInfo, botMsg: Message): Promise<void> {
         const logIds = section.isMainSection
-            ? ConfigureChannels.MAIN_LOGGING_IDS
-            : ConfigureChannels.SECTION_LOGGING_IDS;
+            ? ConfigChannels.MAIN_LOGGING_IDS
+            : ConfigChannels.SECTION_LOGGING_IDS;
 
         let selectedIdx = 0;
         const embedToDisplay = new MessageEmbed()
@@ -536,7 +536,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 oldMsg: botMsg,
                 clearInteractionsAfterComplete: false,
                 cancelFlag: "-cancel"
-            }, ConfigureChannels.msgOrNumberCollectorFunc);
+            }, ConfigChannels.msgOrNumberCollectorFunc);
 
             // Case 0: Nothing
             if (!result) {
@@ -731,7 +731,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     ctx,
                     section,
                     botMsg,
-                    ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Raiding
+                    ConfigChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Raiding
                     && section.isMainSection ? true : !!x.sectionPath),
                     "Raids"
                 );
@@ -742,7 +742,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     ctx,
                     section,
                     botMsg,
-                    ConfigureChannels.CHANNEL_MONGO
+                    ConfigChannels.CHANNEL_MONGO
                         .filter(x => x.channelType === ChannelCategoryType.Verification
                         && section.isMainSection ? true : !!x.sectionPath),
                     "Verification"
@@ -755,7 +755,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                     ctx,
                     section,
                     botMsg,
-                    ConfigureChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Modmail),
+                    ConfigChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Modmail),
                     "Modmail"
                 );
                 break;
@@ -796,7 +796,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 );
                 embedToDisplay.addField(
                     i === selected ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${entries[i].name}` : entries[i].name,
-                    `Current Value: ${currSet ?? ConfigureChannels.NA}`
+                    `Current Value: ${currSet ?? ConfigChannels.NA}`
                 );
             }
 
@@ -815,7 +815,7 @@ export class ConfigureChannels extends BaseCommand implements IConfigCommand {
                 oldMsg: botMsg,
                 clearInteractionsAfterComplete: false,
                 cancelFlag: "-cancel"
-            }, ConfigureChannels.msgOrNumberCollectorFunc);
+            }, ConfigChannels.msgOrNumberCollectorFunc);
 
             // Case 0: Nothing
             // noinspection DuplicatedCode

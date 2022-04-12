@@ -8,8 +8,8 @@ export class Purge extends BaseCommand {
 
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "PURGE_CMD",
-            formalCommandName: "Purge",
+            cmdCode: "PURGE_COMMAND",
+            formalCommandName: "Purge Command",
             botCommandName: "purge",
             description: "Bulk-deletes messages from a channel.",
             rolePermissions: [

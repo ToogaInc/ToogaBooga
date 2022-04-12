@@ -18,7 +18,7 @@ export class LogParse extends BaseCommand {
             cmdCode: "LOG_PARSE_COMMAND",
             formalCommandName: "Log Parse(s) Command",
             botCommandName: "logparse",
-            description: "Logs one or more parses that a staff performed.",
+            description: "Logs one or more parses.",
             commandCooldown: 0,
             generalPermissions: [],
             argumentInfo: [

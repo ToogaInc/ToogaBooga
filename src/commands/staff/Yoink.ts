@@ -5,11 +5,11 @@ import {Logger} from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
-export class YoinkVC extends BaseCommand {
+export class Yoink extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "YOINK_VC_CMD",
-            formalCommandName: "Yoink VC",
+            cmdCode: "YOINK_CMD",
+            formalCommandName: "Yoink Command",
             botCommandName: "yoink",
             description: "Moves all members from a VC to the person's current VC.",
             rolePermissions: [

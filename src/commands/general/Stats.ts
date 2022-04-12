@@ -8,20 +8,20 @@ import {EmojiConstants} from "../../constants/EmojiConstants";
 import DungeonLedType = LoggerManager.DungeonLedType;
 import DungeonRanType = LoggerManager.DungeonRunType;
 
-export class GetStats extends BaseCommand {
+export class Stats extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "GET_STATS_COMMAND",
-            formalCommandName: "Get Stats Command",
-            botCommandName: "getstats",
-            description: "Gets stats for a person or for yourself.",
+            cmdCode: "STATS_COMMAND",
+            formalCommandName: "Stats Command",
+            botCommandName: "stats",
+            description: "Gets stats for a member, defaulting to yourself.",
             commandCooldown: 5 * 1000,
             generalPermissions: [],
             argumentInfo: [
                 {
                     displayName: "Member",
                     argName: "member",
-                    desc: "The member to look up.",
+                    desc: "The member to look up.  If no member is specified, this will get your stats.",
                     type: ArgumentType.String,
                     prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: false,

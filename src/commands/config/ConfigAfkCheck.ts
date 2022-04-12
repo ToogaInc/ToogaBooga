@@ -28,7 +28,7 @@ import {ButtonConstants} from "../../constants/ButtonConstants";
 import {PermsConstants} from "../../constants/PermsConstants";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 
-export class ConfigureAfkCheck extends BaseCommand {
+export class ConfigAfkCheck extends BaseCommand {
     public static readonly MAX_PERMS_SET: number = 15;
     private static readonly VC_PERMISSIONS: [string, PermissionString][] = [
         ["View Channel", "VIEW_CHANNEL"],
@@ -44,8 +44,8 @@ export class ConfigureAfkCheck extends BaseCommand {
 
     public constructor() {
         super({
-            cmdCode: "CONFIG_AFK_CHECK",
-            formalCommandName: "Configure AFK Check",
+            cmdCode: "CONFIG_AFK_CHECK_COMMAND",
+            formalCommandName: "Config AFK Check Command",
             botCommandName: "configafkcheck",
             description: "Allows the user to configure some aspects of the AFK check system.",
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
@@ -742,7 +742,7 @@ export class ConfigureAfkCheck extends BaseCommand {
         let currentPermIdx = 0;
 
         while (true) {
-            addRoleButton.setDisabled(newPerms.length + 1 > ConfigureAfkCheck.MAX_PERMS_SET);
+            addRoleButton.setDisabled(newPerms.length + 1 > ConfigAfkCheck.MAX_PERMS_SET);
 
             // Can't go to next/prev role if only one role
             prevRoleButton.setDisabled(newPerms.length <= 1);
@@ -771,8 +771,8 @@ export class ConfigureAfkCheck extends BaseCommand {
             // Display permissions, if any.
             if (newPerms.length > 0) {
                 const currentPerm = newPerms[currentRoleIdx].value;
-                for (let i = 0; i < ConfigureAfkCheck.VC_PERMISSIONS.length; i++) {
-                    const [prettyName, permStr] = ConfigureAfkCheck.VC_PERMISSIONS[i];
+                for (let i = 0; i < ConfigAfkCheck.VC_PERMISSIONS.length; i++) {
+                    const [prettyName, permStr] = ConfigAfkCheck.VC_PERMISSIONS[i];
 
                     const fieldName = i === currentPermIdx
                         ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${prettyName}`
@@ -906,31 +906,31 @@ export class ConfigureAfkCheck extends BaseCommand {
                 }
                 case ButtonConstants.UP_ID: {
                     currentPermIdx = (currentPermIdx
-                        + ConfigureAfkCheck.VC_PERMISSIONS.length - 1) % ConfigureAfkCheck.VC_PERMISSIONS.length;
+                        + ConfigAfkCheck.VC_PERMISSIONS.length - 1) % ConfigAfkCheck.VC_PERMISSIONS.length;
                     break;
                 }
                 case ButtonConstants.DOWN_ID: {
                     currentPermIdx++;
-                    currentPermIdx %= ConfigureAfkCheck.VC_PERMISSIONS.length;
+                    currentPermIdx %= ConfigAfkCheck.VC_PERMISSIONS.length;
                     break;
                 }
                 case "allow_perm": {
                     const denyIdx = newPerms[currentRoleIdx].value.deny
-                        .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
+                        .findIndex(x => x === ConfigAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                     if (denyIdx !== -1)
                         newPerms[currentRoleIdx].value.deny.splice(denyIdx, 1);
 
-                    newPerms[currentRoleIdx].value.allow.push(ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
+                    newPerms[currentRoleIdx].value.allow.push(ConfigAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                     break;
                 }
                 case "null_perm": {
                     const denyIdx = newPerms[currentRoleIdx].value.deny
-                        .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
+                        .findIndex(x => x === ConfigAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                     if (denyIdx !== -1)
                         newPerms[currentRoleIdx].value.deny.splice(denyIdx, 1);
                     else {
                         const allowIdx = newPerms[currentRoleIdx].value.allow
-                            .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
+                            .findIndex(x => x === ConfigAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                         if (allowIdx !== -1)
                             newPerms[currentRoleIdx].value.allow.splice(allowIdx, 1);
                     }
@@ -938,11 +938,11 @@ export class ConfigureAfkCheck extends BaseCommand {
                 }
                 case "deny_perm": {
                     const allowIdx = newPerms[currentRoleIdx].value.allow
-                        .findIndex(x => x === ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
+                        .findIndex(x => x === ConfigAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                     if (allowIdx !== -1)
                         newPerms[currentRoleIdx].value.allow.splice(allowIdx, 1);
 
-                    newPerms[currentRoleIdx].value.deny.push(ConfigureAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
+                    newPerms[currentRoleIdx].value.deny.push(ConfigAfkCheck.VC_PERMISSIONS[currentPermIdx][1]);
                     break;
                 }
                 case ButtonConstants.BACK_ID: {

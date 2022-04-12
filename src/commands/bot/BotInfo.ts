@@ -9,7 +9,7 @@ import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUti
 export class BotInfo extends BaseCommand {
     public constructor() {
         super({
-            cmdCode: "BOT_INFO",
+            cmdCode: "BOT_INFO_COMMAND",
             formalCommandName: "Bot Information",
             botCommandName: "botinfo",
             description: "Gets information about the bot.",

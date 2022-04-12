@@ -32,7 +32,7 @@ type ReactionDetailedType = {
     desc: string;
 };
 
-export class ConfigureReactionsImages extends BaseCommand {
+export class ConfigReactionsImages extends BaseCommand {
     public static ALL_REACTION_TYPES: ReactionDetailedType[] = [
         {
             type: "KEY",
@@ -76,10 +76,10 @@ export class ConfigureReactionsImages extends BaseCommand {
 
     public constructor() {
         super({
-            cmdCode: "CONFIGURE_REACTIONS_IMAGES",
-            formalCommandName: "Configure Reactions & Images",
+            cmdCode: "CONFIG_REACTIONS_IMAGES_COMMAND",
+            formalCommandName: "Configure Reactions & Images Command",
             botCommandName: "configreactionsimages",
-            description: "Allows you to configure custom reactions and images",
+            description: "Allows you to configure custom reactions and images.",
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
             generalPermissions: [],
             botPermissions: [],
@@ -273,7 +273,7 @@ export class ConfigureReactionsImages extends BaseCommand {
 
         while (true) {
             changeButton.setDisabled(selectedImages.length === 0);
-            addButton.setDisabled(selectedImages.length + 1 > ConfigureReactionsImages.MAX_CUSTOM_IMAGES);
+            addButton.setDisabled(selectedImages.length + 1 > ConfigReactionsImages.MAX_CUSTOM_IMAGES);
             removeButton.setDisabled(selectedImages.length === 0);
             upButton.setDisabled(selectedImages.length <= 1);
             downButton.setDisabled(selectedImages.length <= 1);
@@ -618,7 +618,7 @@ export class ConfigureReactionsImages extends BaseCommand {
 
         let selectedIdx = 0;
         while (true) {
-            addButton.setDisabled(currentReactions.length + 1 > ConfigureReactionsImages.MAX_CUSTOM_REACTIONS);
+            addButton.setDisabled(currentReactions.length + 1 > ConfigReactionsImages.MAX_CUSTOM_REACTIONS);
             removeButton.setDisabled(currentReactions.length === 0);
             upButton.setDisabled(currentReactions.length <= 1);
             downButton.setDisabled(currentReactions.length <= 1);
@@ -629,7 +629,7 @@ export class ConfigureReactionsImages extends BaseCommand {
             const fields = ArrayUtilities.arrayToStringFields(
                 currentReactions,
                 (i, elem) => {
-                    const cType = ConfigureReactionsImages.ALL_REACTION_TYPES.find(x => x.type === elem.value.type);
+                    const cType = ConfigReactionsImages.ALL_REACTION_TYPES.find(x => x.type === elem.value.type);
                     const sb = new StringBuilder();
                     if (i === selectedIdx)
                         sb.append(EmojiConstants.RIGHT_TRIANGLE_EMOJI).append(" ");
@@ -697,7 +697,7 @@ export class ConfigureReactionsImages extends BaseCommand {
                         .setCustomId("select")
                         .setMaxValues(1)
                         .setMaxValues(1)
-                        .addOptions(ConfigureReactionsImages.ALL_REACTION_TYPES.map(x => {
+                        .addOptions(ConfigReactionsImages.ALL_REACTION_TYPES.map(x => {
                             return {
                                 description: x.desc,
                                 label: x.name,

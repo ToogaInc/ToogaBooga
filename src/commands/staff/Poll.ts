@@ -9,8 +9,8 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 export class Poll extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "POLL_CMD",
-            formalCommandName: "Poll",
+            cmdCode: "POLL_COMMAND",
+            formalCommandName: "Poll Command",
             botCommandName: "poll",
             description: "Creates a poll with up to 20 choices.",
             rolePermissions: [
