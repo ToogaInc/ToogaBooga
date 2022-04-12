@@ -938,7 +938,7 @@ export class RaidInstance {
         // We are officially in AFK check mode.
         // We do NOT start the intervals OR collector since pre-AFK and AFK have the exact same collectors/intervals.
         await this.setRaidStatus(RaidStatus.AFK_CHECK);
-        this.sendLocToElite();
+        await this.sendLocToElite();
         // Only happens if someone deleted the raid vc
         if (!this.raidVc) {
             return;
@@ -1533,7 +1533,7 @@ export class RaidInstance {
                 .append(`the raid location. Your new location is: **${this._location}**.`)
                 .toString()
         });
-        this.sendLocToElite();
+        await this.sendLocToElite();
         LOGGER.info(`${this._instanceInfo} Location change successful`);
         return true;
     }

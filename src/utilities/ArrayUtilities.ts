@@ -156,10 +156,6 @@ export namespace ArrayUtilities {
      * @return {T[][]} The array of subsets of array.
      */
     export function breakArrayIntoSubsets<T>(arr: T[], size: number): T[][] {
-        if(!arr){
-            const ret : T[][] = [];
-            return ret;
-        }
         const numSubset = Math.ceil(arr.length / size);
         const subsets: T[][] = [];
 
