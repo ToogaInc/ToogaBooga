@@ -3,11 +3,11 @@ import {ThreadChannel} from "discord.js";
 import {ModmailManager} from "../../managers/ModmailManager";
 import {QuotaManager} from "../../managers/QuotaManager";
 
-export class ReplyToThread extends BaseCommand {
+export class Reply extends BaseCommand {
     public constructor() {
         super({
-            cmdCode: "REPLY_TO_MODMAIL_THREAD",
-            formalCommandName: "Reply to Modmail Thread",
+            cmdCode: "REPLY_COMMAND",
+            formalCommandName: "Reply Command",
             botCommandName: "reply",
             description: "Replies to a modmail thread. This must be executed in a valid modmail thread.",
             rolePermissions: ["Security", "Officer", "HeadRaidLeader", "Moderator"],

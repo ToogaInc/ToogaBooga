@@ -180,6 +180,8 @@ export class RaidInstance {
     private readonly _afkCheckChannel: TextChannel;
     // The control panel channel.
     private readonly _controlPanelChannel: TextChannel;
+    // The elite location channel.
+    private _eliteLocChannel: TextChannel | null;
     // The section.
     private readonly _raidSection: ISectionInfo;
     // Number of people that can get early location through Nitro.
@@ -339,6 +341,11 @@ export class RaidInstance {
             section.channels.raids.controlPanelChannelId
         )!;
 
+        this._eliteLocChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+            memberInit.guild,
+            section.channels.eliteLocChannelId
+        )!;
+
         this._feedbackBaseChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             memberInit.guild,
             guildDoc.channels.raids.leaderFeedbackChannelId
@@ -430,6 +437,7 @@ export class RaidInstance {
                 },
                 name: "Points",
                 type: "EARLY_LOCATION",
+                isExaltKey: false,
                 builtInEmoji: EmojiConstants.TICKET_EMOJI
             });
         }
@@ -653,7 +661,7 @@ export class RaidInstance {
         rm._expTime = raidInfo.expirationTime;
         if (Date.now() > rm._expTime) {
             LOGGER.info(`${rm._instanceInfo} RaidInstance expired, cleaning.`);
-            rm.cleanUpRaid(true).then();
+            rm.cleanUpRaid(false).then();
             return null;
         }
 
@@ -889,7 +897,7 @@ export class RaidInstance {
 
         // Create our initial AFK check message.
         this._afkCheckMsg = await this._afkCheckChannel.send({
-            content: "@here A pre-AFK check is currently ongoing.",
+            content: "@here",
             embeds: [this.getAfkCheckEmbed()!],
             components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
         });
@@ -930,6 +938,7 @@ export class RaidInstance {
         // We are officially in AFK check mode.
         // We do NOT start the intervals OR collector since pre-AFK and AFK have the exact same collectors/intervals.
         await this.setRaidStatus(RaidStatus.AFK_CHECK);
+        await this.sendLocToElite();
         // Only happens if someone deleted the raid vc
         if (!this.raidVc) {
             return;
@@ -944,7 +953,7 @@ export class RaidInstance {
         // However, we forcefully edit the embeds.
         await Promise.all([
             this._afkCheckMsg.edit({
-                content: "@here An AFK Check is currently ongoing.",
+                content: "@here",
                 embeds: [this.getAfkCheckEmbed()!],
                 components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
             }),
@@ -1020,38 +1029,22 @@ export class RaidInstance {
             embeds: [this.getControlPanelEmbed()!],
             components: RaidInstance.CP_RAID_BUTTONS
         }).catch();
+
+        // Edit the afk check panel to include reconnect
+        await this._afkCheckMsg.edit({
+            content: "@here",
+            embeds: [this.getAfkCheckEmbed()!],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                new MessageButton()
+                    .setCustomId(`reconnect_${this._afkCheckMsg.id}`)
+                    .setEmoji(EmojiConstants.INBOX_EMOJI)
+                    .setLabel("Reconnect")
+                    .setStyle("SUCCESS")
+            ])
+        }).catch();
+
         this.startControlPanelCollector();
         this.startIntervals();
-
-        const afkEndedEmbed = new MessageEmbed()
-            .setColor(this._embedColor)
-            .setAuthor({
-                name: `${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
-                iconURL: this._memberInit.user.displayAvatarURL()
-            })
-            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Raid`})
-            .setTimestamp()
-            .setDescription(
-                member
-                    ? `The AFK check has been ended by ${member} and the raid is currently ongoing.`
-                    : `The AFK check has ended automatically. The raid is currently ongoing.`
-            );
-
-        if (this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo) {
-            afkEndedEmbed.addField(
-                "Post-AFK Info",
-                this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo
-            );
-        }
-
-        const rejoinRaidSb = new StringBuilder()
-            .append("If you disconnected from this raid voice channel, you are able to reconnect by pressing the ")
-            .append(`**Reconnect** button.`)
-            .appendLine()
-            .appendLine()
-            .append("If you did not make it into the raid voice channel before the AFK check is over, then pressing ")
-            .append("the button will not do anything.");
-        afkEndedEmbed.addField("Rejoin Raid", rejoinRaidSb.toString());
 
         let feedbackChannel: TextChannel | null = null;
 
@@ -1091,28 +1084,8 @@ export class RaidInstance {
                 });
             });
 
-            if (feedbackChannel) {
-                afkEndedEmbed.addField(
-                    "Feedback Channel",
-                    `You can give ${member?.displayName ?? this._memberInit.displayName} feedback by going to the`
-                    + ` ${feedbackChannel} channel.`
-                );
-            }
+          
         }
-
-        // And edit the AFK check message + start the collector.
-        await this._afkCheckMsg.edit({
-            embeds: [afkEndedEmbed],
-            content: "The AFK check is now over.",
-            components: AdvancedCollector.getActionRowsFromComponents([
-                new MessageButton()
-                    .setCustomId(`reconnect_${this._afkCheckMsg.id}`)
-                    .setEmoji(EmojiConstants.INBOX_EMOJI)
-                    .setLabel("Reconnect")
-                    .setStyle("SUCCESS")
-            ])
-        }).catch();
-
         if (!feedbackChannel)
             return;
 
@@ -1122,7 +1095,7 @@ export class RaidInstance {
                     .setTitle(`Feedback Channel for **${member?.displayName ?? this._memberInit.displayName}**`)
                     .setDescription(
                         new StringBuilder()
-                            .append(`__This is for the ${this.raidVc} raid.__`)
+                            .append(`__This is for the ${this.raidVc} ${this._dungeon.dungeonName} raid.__`)
                             .appendLine()
                             .append(`You can leave feedback for ${member ?? this._memberInit} here by doing the`)
                             .append(" following:").appendLine()
@@ -1162,6 +1135,13 @@ export class RaidInstance {
         if (!this._raidVc || !this._afkCheckMsg || !this._controlPanelMsg)
             return;
         LOGGER.info(`${this._instanceInfo} Ending Raid`);
+
+        if(this._raidStatus === RaidStatus.PRE_AFK_CHECK || this._raidStatus === RaidStatus.AFK_CHECK){
+            this._raidStatus = RaidStatus.ABORTED;
+        } else {
+            this._raidStatus = RaidStatus.RUN_FINISHED;
+        }
+
         if (!memberEnded) {
             memberEnded = this._memberInit;
         }
@@ -1185,13 +1165,13 @@ export class RaidInstance {
 
         // Give point refunds if applicable
         const earlyLocPts = this._pplWithEarlyLoc.get("EARLY_LOC_POINTS");
-        if ((this._raidStatus === RaidStatus.AFK_CHECK || this._raidStatus === RaidStatus.PRE_AFK_CHECK)
+        if (this._raidStatus === RaidStatus.ABORTED
             && earlyLocPts) {
             await Promise.all(earlyLocPts.map(x => LoggerManager.logPoints(x.member, this._earlyLocPointCost)));
         }
 
         // If this method was called during the AFK check, simply abort the AFK check.
-        if (this._raidStatus === RaidStatus.AFK_CHECK) {
+        if (this._raidStatus === RaidStatus.ABORTED) {
             this.logEvent(
                 resolvedMember
                     ? `${resolvedMember.displayName} (${resolvedMember.id}) has aborted the AFK check.`
@@ -1209,7 +1189,7 @@ export class RaidInstance {
             false
         ).catch();
 
-        if (this._raidStatus === RaidStatus.IN_RUN) {
+        if (this._raidStatus === RaidStatus.RUN_FINISHED) {
             this.logRun(memberThatEnded).catch();
         }
 
@@ -1334,6 +1314,7 @@ export class RaidInstance {
      * @param {boolean} force Whether this should delete all channels related to this raid. Useful if one component
      * of the raid is deleted.
      * @param {boolean} keepVc Whether to keep the VC. Note that this will be ignored if `force` is `true`.
+     * @param {boolean} keepEmbeds Whether to keep the embeds. Note that this will be ignored if `force` is `true`.
      */
     public async cleanUpRaid(force: boolean, keepVc: boolean = false): Promise<void> {
         this._isValid = false;
@@ -1349,9 +1330,33 @@ export class RaidInstance {
             // Also stop all collectors.
             this.removeRaidFromDatabase(),
             // Step 3: Remove the control panel message.
-            MessageUtilities.tryDelete(this._controlPanelMsg),
-            // Step 4: Unpin the AFK check message.
-            MessageUtilities.tryDelete(this._afkCheckMsg),
+            GlobalFgrUtilities.tryExecuteAsync(async () => {
+                if(!this._controlPanelMsg) return;
+                if(!force){
+                    await this._controlPanelMsg.edit({
+                        embeds: [this.getControlPanelEmbed()!],
+                        components: []
+                    }).catch();
+                    return;
+                } 
+                await MessageUtilities.tryDelete(this._controlPanelMsg);
+                return;
+            }),
+
+            // Step 4: Remove the AFK check message.
+            GlobalFgrUtilities.tryExecuteAsync(async () => {
+                if(!this._afkCheckMsg) return;
+                if(!force){
+                    await this._afkCheckMsg.edit({
+                        embeds: [this.getAfkCheckEmbed()!],
+                        components: []
+                    }).catch();
+                    await this._afkCheckMsg.reactions.removeAll().catch();
+                    return;
+                }
+                await MessageUtilities.tryDelete(this.afkCheckMsg);
+                return;
+            }),
             // Step 5: Delete the raid VC
             GlobalFgrUtilities.tryExecuteAsync(async () => {
                 if (keepVc && !force) {
@@ -1401,6 +1406,11 @@ export class RaidInstance {
                 id: this._raidSection.roles.verifiedRoleId as Snowflake,
                 allow: permsToEvaluate.find(x => x.key === PermsConstants.MEMBER_ROLE)?.value.allow,
                 deny: permsToEvaluate.find(x => x.key === PermsConstants.MEMBER_ROLE)?.value.deny
+            },
+            {
+                id: this._guildDoc.roles.staffRoles.moderation.helperRoleId as Snowflake,
+                allow: permsToEvaluate.find(x => x.key === PermsConstants.HELPER_ROLE)?.value.allow,
+                deny: permsToEvaluate.find(x => x.key === PermsConstants.HELPER_ROLE)?.value.deny
             },
             {
                 id: this._guildDoc.roles.staffRoles.moderation.securityRoleId as Snowflake,
@@ -1523,6 +1533,7 @@ export class RaidInstance {
                 .append(`the raid location. Your new location is: **${this._location}**.`)
                 .toString()
         });
+        await this.sendLocToElite();
         LOGGER.info(`${this._instanceInfo} Location change successful`);
         return true;
     }
@@ -1534,18 +1545,86 @@ export class RaidInstance {
      */
     public getAfkCheckEmbed(): MessageEmbed | null {
         LOGGER.debug(`${this._instanceInfo} Getting raid AFK check embed`);
-        if (!this._raidVc || !this._isValid) return null;
-        if (this._raidStatus === RaidStatus.NOTHING || this._raidStatus === RaidStatus.IN_RUN) return null;
+        if (!this._raidVc) return null;
+        if (this._raidStatus === RaidStatus.NOTHING) return null;
 
+        const afkCheckEmbed = new MessageEmbed()
+            .setTimestamp()
+            .setColor(this._embedColor);
+        
+
+        if (this._afkCheckMsg && this._afkCheckMsg.embeds[0].thumbnail)
+            afkCheckEmbed.setThumbnail(this._afkCheckMsg.embeds[0].thumbnail.url);
+        else if (this._dungeon.bossLinks.length > 0)
+            afkCheckEmbed.setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url);
+        
         const descSb = new StringBuilder();
-        if (this._raidStatus === RaidStatus.AFK_CHECK) {
-            descSb.append(`To participate in this raid, join ${this._raidVc.toString()} channel.`);
-        }
-        else {
-            descSb.append(`Only priority reactions can join the raid VC, ${this._raidVc.toString()}, at this time.`)
-                .append(" You will be able to join the raid VC once all players with priority reactions have been")
-                .append(" confirmed.");
-        }
+        switch(this._raidStatus){
+            case RaidStatus.PRE_AFK_CHECK:
+                afkCheckEmbed.setAuthor({
+                    name: `${this._leaderName} has started a ${this._dungeon.dungeonName} Pre-AFK check.`,
+                    iconURL: this._memberInit.user.displayAvatarURL()
+                });
+                descSb.append(`Only priority reactions can join the raid VC, ${this._raidVc.toString()}, at this time.`)
+                    .append(" You will be able to join the raid VC once all players with priority reactions have been")
+                    .append(" confirmed.");
+                break;
+            case RaidStatus.AFK_CHECK:
+                afkCheckEmbed.setAuthor({
+                    name: `${this._leaderName} has started a ${this._dungeon.dungeonName} AFK check.`,
+                    iconURL: this._memberInit.user.displayAvatarURL()
+                });
+                descSb.append(`To participate in this raid, join ${this._raidVc.toString()} channel.`);
+                break;
+            case RaidStatus.IN_RUN:
+                afkCheckEmbed.setAuthor({
+                    name: `${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
+                    iconURL: this._memberInit.user.displayAvatarURL()
+                });
+                descSb.append(`This AFK check has been ended, and the raid is currently ongoing.`);
+                if (this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo) {
+                    afkCheckEmbed.addField(
+                        "Post-AFK Info",
+                        this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo
+                    );
+                }
+                const rejoinRaidSb = new StringBuilder()
+                    .append("If you disconnected from this raid voice channel, you are able to reconnect by pressing the ")
+                    .append(`**Reconnect** button.`)
+                    .appendLine()
+                    .appendLine()
+                    .append("If you did not make it into the raid voice channel before the AFK check is over, then pressing ")
+                    .append("the button will not do anything.");
+                afkCheckEmbed.addField("Rejoin Raid", rejoinRaidSb.toString());
+
+                if (this._thisFeedbackChan) {
+                    afkCheckEmbed.addField(
+                        "Feedback Channel",
+                        `You can give ${this._leaderName} feedback by going to the`
+                        + ` ${this._thisFeedbackChan} channel.`
+                    );
+                }
+                afkCheckEmbed.setDescription(descSb.toString())
+                return afkCheckEmbed;
+            case RaidStatus.RUN_FINISHED:
+                afkCheckEmbed.setAuthor({
+                    name: `${this._leaderName}'s ${this._dungeon.dungeonName} raid is finished.`,
+                    iconURL: this._memberInit.user.displayAvatarURL()
+                });
+                descSb.append(`Thanks for participating! Keep an eye out for new headcounts.`)
+                afkCheckEmbed.setDescription(descSb.toString())
+                return afkCheckEmbed;
+            default: //Aborted
+                afkCheckEmbed.setAuthor({
+                    name: `${this._leaderName}'s ${this._dungeon.dungeonName} raid has been aborted.`,
+                    iconURL: this._memberInit.user.displayAvatarURL()
+                });
+                descSb.append(`We apologize for the inconvenience. Keep an eye out for new headcounts.`)
+                afkCheckEmbed.setDescription(descSb.toString())
+                return afkCheckEmbed;
+        };
+
+        afkCheckEmbed.setDescription(descSb.toString())
 
         const prioritySb = new StringBuilder();
         // Account for the general early location roles.
@@ -1577,28 +1656,6 @@ export class RaidInstance {
                 .append(`If you have **\`${this._earlyLocPointCost}\`** points that you would like to redeem for`)
                 .append("  priority, press the **Points** button.");
         }
-
-        const raidStatus = this._raidStatus === RaidStatus.PRE_AFK_CHECK
-            ? "Pre-AFK Check"
-            : this._raidStatus === RaidStatus.AFK_CHECK
-                ? "AFK Check"
-                : "Raid";
-
-        const afkCheckEmbed = new MessageEmbed()
-            .setAuthor({
-                name: `${this._leaderName} has started a ${this._dungeon.dungeonName} AFK check.`,
-                iconURL: this._memberInit.user.displayAvatarURL()
-            })
-            .setDescription(descSb.toString())
-            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: ${raidStatus}.`})
-            .setTimestamp()
-            .setColor(this._embedColor);
-
-        if (this._afkCheckMsg && this._afkCheckMsg.embeds[0].thumbnail)
-            afkCheckEmbed.setThumbnail(this._afkCheckMsg.embeds[0].thumbnail.url);
-        else if (this._dungeon.bossLinks.length > 0)
-            afkCheckEmbed.setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url);
-
 
         if (prioritySb.length() > 0) {
             afkCheckEmbed.addField("Priority Reactions (**Join** VC First)", prioritySb.toString());
@@ -1651,28 +1708,12 @@ export class RaidInstance {
      * @private
      */
     public getControlPanelEmbed(): MessageEmbed | null {
-        LOGGER.debug(`${this._instanceInfo} Getting raid control panel embed`);
-        if (!this._raidVc || !this._isValid) return null;
+        LOGGER.debug(`${this._instanceInfo} Getting raid control panel embed for status ${this._raidStatus}`);
+        if (!this._raidVc) return null;
         if (this._raidStatus === RaidStatus.NOTHING) return null;
 
         const descSb = new StringBuilder();
         const maxVc = `${this._raidVc.userLimit === 0 ? "Unlimited" : this._raidVc.userLimit}`;
-        const raidStatus = this._raidStatus === RaidStatus.PRE_AFK_CHECK
-            ? "Pre-AFK Check"
-            : this._raidStatus === RaidStatus.AFK_CHECK
-                ? "AFK Check"
-                : "Raid";
-
-        const generalStatus = new StringBuilder()
-            .append(`⇨ AFK Check Started At: ${TimeUtilities.getDateTime(this._raidVc.createdTimestamp)} GMT`)
-            .appendLine()
-            .append(`⇨ Voice Channel: ${this._raidVc.toString()}`)
-            .appendLine()
-            .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
-            .appendLine()
-            .append(`⇨ Location: **\`${this._location ? this._location : "Not Set."}\`**`)
-            .appendLine()
-            .append(`⇨ Status: **\`${raidStatus}\`**`);
 
         const controlPanelEmbed = new MessageEmbed()
             .setAuthor({
@@ -1685,16 +1726,32 @@ export class RaidInstance {
                     + `${TimeUtilities.formatDuration(this._expTime - Date.now(), false, false)}.`
             })
             .setTimestamp()
-            .setColor(this._embedColor)
-            .addField("General Status", generalStatus.toString());
+            .setColor(this._embedColor);
+        
+        if(this._raidStatus !== RaidStatus.RUN_FINISHED && this._raidStatus !== RaidStatus.ABORTED){
+            const generalStatus = new StringBuilder()
+            .append(`⇨ AFK Check Started At: ${TimeUtilities.getDateTime(this._raidVc.createdTimestamp)} GMT`)
+            .appendLine()
+            .append(`⇨ Elite Location Channel: ${this._eliteLocChannel ? this._eliteLocChannel : "**\`Not Set.\`**"}`)
+            .appendLine()
+            .append(`⇨ Voice Channel: ${this._raidVc.toString()}`)
+            .appendLine()
+            .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
+            .appendLine()
+            .append(`⇨ Location: **\`${this._location ? this._location : "Not Set."}\`**`)
+            .appendLine()
+            .append(`⇨ Status: **\`${this._raidStatus}\`**`);
+            controlPanelEmbed.addField("General Status", generalStatus.toString());
+        }
 
         if (this._controlPanelMsg && this._controlPanelMsg.embeds[0].thumbnail)
             controlPanelEmbed.setThumbnail(this._controlPanelMsg.embeds[0].thumbnail.url);
         else if (this._dungeon.bossLinks.length > 0)
             controlPanelEmbed.setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url);
 
-        if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
-            descSb
+        switch(this._raidStatus){
+            case RaidStatus.PRE_AFK_CHECK:
+                descSb
                 .append("This instance is currently in **PRE-AFK CHECK** mode. Only priority reactions can join the ")
                 .append("raid VC. Use this opportunity to verify all priority reactions.")
                 .appendLine(2)
@@ -1710,9 +1767,9 @@ export class RaidInstance {
                 .appendLine()
                 .append(`⇨ **Press** the **\`Set Location\`** button if you want to change this raid's location. `)
                 .append("This will message everyone that is participating in this raid that has early location.");
-        }
-        else if (this._raidStatus === RaidStatus.AFK_CHECK) {
-            descSb
+                break;
+            case RaidStatus.AFK_CHECK:
+                descSb
                 .append("This instance is currently in **AFK CHECK** mode. Any raiders can join this VC.")
                 .appendLine(2)
                 .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice `)
@@ -1726,10 +1783,9 @@ export class RaidInstance {
                 .appendLine()
                 .append(`⇨ **Press** the **\`Set Location\`** button if you want to change this raid's location. `)
                 .append("This will message everyone that is participating in this raid that has early location.");
-        }
-        else {
-            // Otherwise, we're in a raid.
-            descSb
+                break;
+            case RaidStatus.IN_RUN:
+                descSb
                 .append("This instance is currently in **RAID** mode. Under normal circumstances, raiders __cannot__ ")
                 .append("join the raid VC.")
                 .appendLine(2)
@@ -1751,6 +1807,19 @@ export class RaidInstance {
                 .append("⇨ **Press** the **`Restart Raid`** button if you want to create a new AFK check in the same")
                 .append(" raid VC. This will reset all priorities and clear the log channel, but the VC and its")
                 .append(" members will remain.");
+                break;
+            case RaidStatus.RUN_FINISHED:
+                descSb
+                    .append("This instance is **FINISHED**.")
+                    .appendLine()
+                    .append("This panel will remain behind.")
+                break;
+            default: //Aborted
+                descSb
+                    .append("This instance has been **ABORTED**.")
+                    .appendLine()
+                    .append("This panel will remain behind.")
+                break;
         }
 
         controlPanelEmbed.setDescription(descSb.toString());
@@ -1778,12 +1847,16 @@ export class RaidInstance {
                 );
                 continue;
             }
-
+            const earlyReacts = peopleThatReacted.map(user => {
+                const ret = new StringBuilder().append(`${user.member}`);
+                if(user.modifiers.length > 0) ret.append(`: \`[${user.modifiers.join(", ")}]\``);
+                return ret.toString();
+            });
             cpFields.push(
                 new StringBuilder()
                     .append(`⇨ ${emoji} ${mappedAfkCheckOption.name}: \`${peopleThatReacted.length} / ${maximum}\``)
                     .appendLine()
-                    .append(peopleThatReacted.map(x => `${x.member}: \`[${x.modifiers.join(", ")}]\``).join("\n"))
+                    .append(earlyReacts.join("\n"))
                     .appendLine()
                     .toString()
             );
@@ -1805,7 +1878,7 @@ export class RaidInstance {
      * @private
      */
     public async voiceStateUpdateEventFunction(oldState: VoiceState, newState: VoiceState): Promise<void> {
-        if (!this._raidVc || !this._isValid)
+        if (!this._raidVc)
             return;
 
         // Event must be regarding this raid VC.
@@ -2157,6 +2230,27 @@ export class RaidInstance {
         if (!res)
             return false;
         this._guildDoc = res;
+        return true;
+    }
+
+    /**
+     * Sends location to elite location channel, if exists for section
+     * Only sends loc during AFK/IN_RAID phases
+     * @returns {Promise<boolean>} Whether a message was sent.
+     * @private
+     */
+    private async sendLocToElite(): Promise<boolean> {
+        if(!this._eliteLocChannel){
+            return false;
+        }
+        if(this._raidStatus === RaidStatus.NOTHING || this._raidStatus === RaidStatus.PRE_AFK_CHECK){
+            return false;
+        }
+
+        const tempMsg = await this._eliteLocChannel.send({
+            content: `Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${this._location ? this._location : `Not Set`}\``
+        });
+        sendTemporaryAlert(this._controlPanelChannel, `Location sent to ${this._eliteLocChannel.name}`, 5*1000);
         return true;
     }
 
@@ -3300,7 +3394,9 @@ enum RaidStatus {
     NOTHING,
     PRE_AFK_CHECK,
     AFK_CHECK,
-    IN_RUN
+    IN_RUN,
+    RUN_FINISHED,
+    ABORTED
 }
 
 interface IParseResponse {

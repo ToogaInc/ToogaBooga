@@ -11,7 +11,7 @@ import {Logger} from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
-export class SuspendMember extends BaseCommand {
+export class Suspend extends BaseCommand {
     public static readonly ERROR_NO_SUSPEND_STR: string = new StringBuilder()
         .append("Something went wrong when trying to suspend this person.").appendLine()
         .append("- The person already has the suspended role. In this case, manually remove the Suspended role and")
@@ -20,10 +20,10 @@ export class SuspendMember extends BaseCommand {
 
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "SUSPEND_MEMBER",
-            formalCommandName: "Suspend Member",
+            cmdCode: "SUSPEND_COMMAND",
+            formalCommandName: "Suspend Command",
             botCommandName: "suspend",
-            description: "Suspends a user from the server.",
+            description: "Suspends a member from the server.",
             rolePermissions: ["Security", "Officer", "Moderator", "RaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
             generalPermissions: [],
             botPermissions: ["MANAGE_ROLES"],
@@ -96,7 +96,7 @@ export class SuspendMember extends BaseCommand {
 
         if (!susRes.punishmentResolved) {
             await ctx.interaction.editReply({
-                content: SuspendMember.ERROR_NO_SUSPEND_STR,
+                content: Suspend.ERROR_NO_SUSPEND_STR,
             });
 
             return 0;

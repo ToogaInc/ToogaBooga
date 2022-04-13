@@ -11,7 +11,7 @@ import generateRandomString = StringUtil.generateRandomString;
 
 const LOGGER: Logger = new Logger(__filename, false);
 
-export class MuteMember extends BaseCommand {
+export class Mute extends BaseCommand {
     public static readonly ERROR_NO_MUTE_STR: string = new StringBuilder()
         .append("Something went wrong when trying to mute this person.").appendLine()
         .append("- The person already has the muted role. In this case, manually remove the Muted role and")
@@ -20,8 +20,8 @@ export class MuteMember extends BaseCommand {
 
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "MUTE_MEMBER",
-            formalCommandName: "Mute Member",
+            cmdCode: "MUTE_COMMAND",
+            formalCommandName: "Mute Command",
             botCommandName: "mute",
             description: "Mutes a member, preventing the member from talking in any channels.",
             rolePermissions: [
@@ -107,7 +107,7 @@ export class MuteMember extends BaseCommand {
 
         if (!muteRes.punishmentResolved) {
             await ctx.interaction.editReply({
-                content: MuteMember.ERROR_NO_MUTE_STR,
+                content: Mute.ERROR_NO_MUTE_STR,
             });
 
             return 0;

@@ -15,13 +15,13 @@ import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUti
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import getDateTime = TimeUtilities.getDateTime;
 
-export class FindPerson extends BaseCommand {
+export class Find extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "FIND_PERSON",
-            formalCommandName: "Find Person/User",
-            botCommandName: "finduser",
-            description: "Finds a person given their IGN.",
+            cmdCode: "FIND_COMMAND",
+            formalCommandName: "Find Command",
+            botCommandName: "find",
+            description: "Finds a member given their IGN, ID, or Mention.",
             rolePermissions: [
                 "Team",
                 "Helper",

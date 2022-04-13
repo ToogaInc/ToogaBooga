@@ -3,8 +3,8 @@ import {BaseCommand, ICommandContext} from "../BaseCommand";
 export class Ping extends BaseCommand {
     public constructor() {
         super({
-            cmdCode: "PING",
-            formalCommandName: "Ping",
+            cmdCode: "PING_COMMAND",
+            formalCommandName: "Ping Command",
             botCommandName: "ping",
             description: "Runs the ping command.",
             rolePermissions: [],

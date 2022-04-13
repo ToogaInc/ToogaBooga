@@ -65,7 +65,7 @@ export namespace GlobalFgrUtilities {
     export async function fetchGuild(guildId: string): Promise<Guild | null> {
         if (!MiscUtilities.isSnowflake(guildId)) return null;
         try {
-            return Bot.BotInstance.client.guilds.fetch(guildId);
+            return await Bot.BotInstance.client.guilds.fetch(guildId);
         } catch (e) {
             return null;
         }

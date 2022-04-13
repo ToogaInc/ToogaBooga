@@ -286,7 +286,8 @@ export class HeadcountInstance {
             emojiInfo: {identifier: EmojiConstants.GREEN_CHECK_EMOJI, isCustom: false},
             isCustomReaction: false,
             name: "Interested",
-            type: "UTILITY"
+            type: "UTILITY",
+            isExaltKey: false
         });
 
         this._pplWithEarlyLoc.set("interested", []);
@@ -464,10 +465,17 @@ export class HeadcountInstance {
         HeadcountInstance.ActiveHeadcounts.set(this._headcountMsg.id, this);
         LOGGER.info(`${this._instanceInfo} Headcount started`);
 
-        const specialID = `271072560135929857`; //234311720041054209   271072560135929857
+        const specialID = `271072560135929857`;
         if (this._memberInit.id === specialID) {
             await this._headcountChannel.send({
                 content: `Oh look, an ${this._memberInit.toString()} run.  Send my regards to his mother.`,
+            });
+        }
+
+        const specialID2 = `213398668433293314`;
+        if (this._memberInit.id === specialID2) {
+            await this._headcountChannel.send({
+                content: `${this._memberInit.toString()}? More like ShadowBadz.`,
             });
         }
     }

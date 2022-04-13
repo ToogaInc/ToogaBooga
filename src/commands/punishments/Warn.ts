@@ -6,11 +6,11 @@ import {MongoManager} from "../../managers/MongoManager";
 import {PunishmentManager} from "../../managers/PunishmentManager";
 import generateRandomString = StringUtil.generateRandomString;
 
-export class WarnMember extends BaseCommand {
+export class Warn extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "WARN_MEMBER",
-            formalCommandName: "Warn Member",
+            cmdCode: "WARN_COMMAND",
+            formalCommandName: "Warn Command",
             botCommandName: "warn",
             description: "Warns a member, logging the warning in a database and messaging said member.",
             rolePermissions: [

@@ -8,12 +8,12 @@ import {MessageSelectMenu, MessageSelectOptionData} from "discord.js";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {preCheckPunishment} from "./common/PunishmentCommon";
 
-export class UnsuspendFromSection extends BaseCommand {
+export class SectionUnsuspend extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "UNSUSPEND_FROM_SECTION",
-            formalCommandName: "Unsuspend from Section",
-            botCommandName: "unsectionsuspend",
+            cmdCode: "SECTION_UNSUSPEND_COMMAND",
+            formalCommandName: "Section Unsuspend Command",
+            botCommandName: "sectionunsuspend",
             description: "Unsuspends a member from a section, allowing them to re-verify in the section.",
             rolePermissions: ["Security", "Officer", "Moderator", "RaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
             generalPermissions: [],

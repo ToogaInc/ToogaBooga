@@ -10,11 +10,11 @@ import {LoggerManager} from "../../managers/LoggerManager";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MAPPED_AFK_CHECK_REACTIONS} from "../../constants/dungeons/MappedAfkCheckReactions";
 
-export class LogKeyPop extends BaseCommand {
+export class LogKey extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "LOG_KEY_POP_COMMAND",
-            formalCommandName: "Log Key Pop(s) Command",
+            cmdCode: "LOG_KEY_COMMAND",
+            formalCommandName: "Log Key Command",
             botCommandName: "logkey",
             description: "Logs one or more key pops.",
             commandCooldown: 0,
@@ -82,23 +82,45 @@ export class LogKeyPop extends BaseCommand {
         await MongoManager.getOrCreateUserDoc(resMember.id);
 
         // Grab all dungeons, ask which one to log
-        const allKeys = Object.keys(MAPPED_AFK_CHECK_REACTIONS)
-            .filter(x => MAPPED_AFK_CHECK_REACTIONS[x].type === "KEY"
-                || MAPPED_AFK_CHECK_REACTIONS[x].type === "NM_KEY")
+        const exaltKeys = Object.keys(MAPPED_AFK_CHECK_REACTIONS)
+        .filter(x => MAPPED_AFK_CHECK_REACTIONS[x].isExaltKey)
+        .map(x => {
+            return {key: x, val: MAPPED_AFK_CHECK_REACTIONS[x]};
+        });
+        
+        const otherKeys = Object.keys(MAPPED_AFK_CHECK_REACTIONS)
+            .filter(x => !MAPPED_AFK_CHECK_REACTIONS[x].isExaltKey && 
+                (MAPPED_AFK_CHECK_REACTIONS[x].type === "KEY" || MAPPED_AFK_CHECK_REACTIONS[x].type === "NM_KEY"))
             .map(x => {
                 return {key: x, val: MAPPED_AFK_CHECK_REACTIONS[x]};
             });
-
-        const subsets = ArrayUtilities.breakArrayIntoSubsets(allKeys, 25);
-
+        
+            
+        const subsets = ArrayUtilities.breakArrayIntoSubsets(otherKeys, 25);
         const selectMenus: MessageSelectMenu[] = [];
         const uniqueId = StringUtil.generateRandomString(20);
+        selectMenus.push(
+            new MessageSelectMenu()
+                .setCustomId(`${uniqueId}_${5}`)
+                .setMaxValues(1)
+                .setMinValues(1)
+                .setPlaceholder(`Exalt Dungeon Keys`)
+                .setOptions(exaltKeys.map(y => {
+                    return {
+                        label: y.val.name,
+                        description: y.val.type,
+                        value: y.key,
+                        emoji: y.val.emojiInfo.identifier
+                    };
+                }))
+        )
         for (let i = 0; i < Math.min(4, subsets.length); i++) {
             selectMenus.push(
                 new MessageSelectMenu()
                     .setCustomId(`${uniqueId}_${i}`)
                     .setMaxValues(1)
                     .setMinValues(1)
+                    .setPlaceholder(`All Dungeon Keys ${i+1}`)
                     .setOptions(subsets[i].map(y => {
                         return {
                             label: y.val.name,

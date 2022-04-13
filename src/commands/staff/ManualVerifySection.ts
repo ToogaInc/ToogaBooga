@@ -62,7 +62,6 @@ export class ManualVerifySection extends BaseCommand {
         }
 
         const ign = ctx.interaction.options.getString("ign", false);
-        const promises: (Promise<any> | undefined)[] = [];
 
         // If the member verified, no need to do it again.
         if (!GuildFgrUtilities.memberHasCachedRole(resMember.member, ctx.guildDoc!.roles.verifiedRoleId)) {
@@ -174,27 +173,27 @@ export class ManualVerifySection extends BaseCommand {
             );
         }
 
-        promises.push(
-            GlobalFgrUtilities.sendMsg(resMember.member, {embeds: [secVerifEmbed]}),
-            resMember.member.roles.add(section.roles.verifiedRoleId).catch(),
-            secVerifSuccessChannel?.send({
-                content: `[${section.sectionName}] ${resMember.member} has been manually verified by ${ctx.user}.`
-            })
-        );
+        await GlobalFgrUtilities.sendMsg(resMember.member, {embeds: [secVerifEmbed]});
+
+        await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            await resMember.member.roles.add(section.roles.verifiedRoleId);
+        });
+
+        await secVerifSuccessChannel?.send({
+            content: `[${section.sectionName}] ${resMember.member} has been manually verified by ${ctx.user}.`
+        });
 
         const sVerifyEntry = ctx.guildDoc!.manualVerificationEntries
             .find(x => x.userId === resMember.member.id && x.sectionId === section.uniqueIdentifier);
         if (sVerifyEntry) {
-            promises.push(
-                MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
-                    $pull: {
-                        manualVerificationEntries: {
-                            sectionId: section.uniqueIdentifier,
-                            userId: resMember.member.id
-                        }
+            await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                $pull: {
+                    manualVerificationEntries: {
+                        sectionId: section.uniqueIdentifier,
+                        userId: resMember.member.id
                     }
-                })
-            );
+                }
+            });
 
             const channel = GuildFgrUtilities.getCachedChannel(ctx.guild!, sVerifyEntry.manualVerifyChannelId);
             if (channel) {
@@ -207,14 +206,6 @@ export class ManualVerifySection extends BaseCommand {
             }
         }
 
-        const sQuotaToLog = QuotaManager.findBestQuotaToAdd(ctx.member!, ctx.guildDoc!, "ManualVerify");
-        if (sQuotaToLog) {
-            promises.push(
-                QuotaManager.logQuota(ctx.member!, sQuotaToLog, "ManualVerify", 1)
-            );
-        }
-
-        await Promise.all(promises);
         await m.edit({
             content: `${resMember.member} has been manually verified in the ${section.sectionName} section.`,
             components: []

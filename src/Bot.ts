@@ -19,7 +19,8 @@ import {
     onChannelDeleteEvent,
     onErrorEvent,
     onGuildCreateEvent,
-    onGuildMemberAdd, onGuildMemberUpdate,
+    onGuildMemberAdd, 
+    onGuildMemberUpdate,
     onInteractionEvent,
     onMessageDeleteEvent,
     onMessageEvent,
@@ -125,51 +126,54 @@ export class Bot {
         ]);
 
         Bot.Commands.set("General", [
-            new Cmds.GetStats()
+            new Cmds.Stats()
         ]);
 
         Bot.Commands.set("Moderator", [
-            new Cmds.ForceSync()
+            new Cmds.ForceSync(),
+            new Cmds.LeaderboardSync()
         ]);
 
         Bot.Commands.set("Staff", [
+            new Cmds.Find(),
             new Cmds.FindPunishment(),
+            new Cmds.Leaderboard(),
+            new Cmds.ListAll(),
+            new Cmds.Yoink(),
+            new Cmds.Clean(),
+            new Cmds.Purge(),
+            new Cmds.Poll(),
+            new Cmds.Parse(),
+            new Cmds.EditName(),
+            new Cmds.RemoveName(),
             new Cmds.CheckBlacklist(),
-            new Cmds.FindPerson(),
             new Cmds.ManualVerifyMain(),
             new Cmds.ManualVerifySection(),
-            new Cmds.AddOrChangeName(),
-            new Cmds.RemoveName(),
-            new Cmds.ParseRaidVc(),
-            new Cmds.YoinkVC(),
-            new Cmds.CleanVC(),
-            new Cmds.Poll(),
-            new Cmds.Purge(),
             new Cmds.RemovePunishment()
         ]);
 
         Bot.Commands.set("Configuration", [
-            new Cmds.ConfigureChannels(),
-            new Cmds.ConfigureRoles(),
-            new Cmds.ConfigureSections(),
-            new Cmds.ConfigureDungeons(),
-            new Cmds.ConfigureReactionsImages(),
-            new Cmds.ConfigureQuotas(),
-            new Cmds.ConfigureVerification(),
-            new Cmds.ConfigureAfkCheck(),
-            new Cmds.ConfigureEarlyLocRoles()
+            new Cmds.ConfigChannels(),
+            new Cmds.ConfigRoles(),
+            new Cmds.ConfigSections(),
+            new Cmds.ConfigDungeons(),
+            new Cmds.ConfigReactionsImages(),
+            new Cmds.ConfigQuotas(),
+            new Cmds.ConfigVerification(),
+            new Cmds.ConfigAfkCheck(),
+            new Cmds.ConfigEarlyLocRoles()
         ]);
 
         Bot.Commands.set("Punishments", [
-            new Cmds.SuspendMember(),
-            new Cmds.SectionSuspendMember(),
-            new Cmds.BlacklistMember(),
-            new Cmds.WarnMember(),
-            new Cmds.MuteMember(),
-            new Cmds.UnmuteMember(),
-            new Cmds.UnblacklistMember(),
-            new Cmds.UnsuspendMember(),
-            new Cmds.UnsuspendFromSection(),
+            new Cmds.Warn(),
+            new Cmds.Suspend(),
+            new Cmds.Unsuspend(),
+            new Cmds.SectionSuspend(),
+            new Cmds.SectionUnsuspend(),
+            new Cmds.Blacklist(),
+            new Cmds.Unblacklist(),
+            new Cmds.Mute(),
+            new Cmds.Unmute(),
             new Cmds.ModmailBlacklist(),
             new Cmds.ModmailUnblacklist()
         ]);
@@ -180,20 +184,20 @@ export class Bot {
         ]);
 
         Bot.Commands.set("Raid Leaders", [
-            new Cmds.StartAfkCheck(),
-            new Cmds.StartHeadcount()
+            new Cmds.StartHeadcount(),
+            new Cmds.StartAfkCheck()
         ]);
 
         Bot.Commands.set("Logging", [
-            new Cmds.LogLedRun(),
-            new Cmds.LogKeyPop(),
+            new Cmds.LogRun(),
+            new Cmds.LogKey(),
             new Cmds.LogParse(),
             new Cmds.GivePoints()
         ]);
 
         Bot.Commands.set("Modmail", [
-            new Cmds.ReplyToThread(),
-            new Cmds.ArchiveThread()
+            new Cmds.Reply(),
+            new Cmds.Archive()
         ]);
 
         Bot.JsonCommands = [];
@@ -317,6 +321,12 @@ export class Bot {
         // MuteManager + SuspensionManager started in ready event.
         LOGGER.info("Starting Quota Service");
         QuotaService.startService().then();
+
+        LOGGER.info("Caching Members of Each Guild");
+        const guilds = this.client.guilds;
+        guilds.cache.forEach(guild => { 
+            guild.members.fetch();
+        })
         return true;
     }
 }

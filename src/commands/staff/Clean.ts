@@ -5,17 +5,18 @@ import {Logger} from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
-export class CleanVC extends BaseCommand {
+export class Clean extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "CLEAN_VC_CMD",
-            formalCommandName: "Clean VC",
+            cmdCode: "CLEAN_COMMAND",
+            formalCommandName: "Clean Command",
             botCommandName: "clean",
             description: "Removes all members from a VC.",
             rolePermissions: [
                 "Security",
                 "Officer",
                 "Moderator",
+                "AlmostRaidLeader",
                 "RaidLeader",
                 "HeadRaidLeader",
                 "VeteranRaidLeader"
@@ -36,6 +37,15 @@ export class CleanVC extends BaseCommand {
                     prettyType: "Voice Channel",
                     required: true,
                     example: ["Raid 1"]
+                },
+                {
+                    displayName: "Whether to Clean Staff",
+                    argName: "staff",
+                    desc: "Whether to remove staff from the vc. Default is false.",
+                    type: ArgumentType.Boolean,
+                    prettyType: "Boolean",
+                    required: false,
+                    example: ["True", "False"]
                 }
             ],
             guildOnly: true,
@@ -52,6 +62,7 @@ export class CleanVC extends BaseCommand {
         const guildDoc = ctx.guildDoc;
         const channel = ctx.interaction.options.getChannel("vc", true);
         const member = ctx.member;
+        const removeStaff = ctx.interaction.options.getBoolean("staff", false) ?? false;
 
         if (!member) {
             await ctx.interaction.reply({
@@ -90,7 +101,7 @@ export class CleanVC extends BaseCommand {
             channel.members.map(async x => {
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
                     // Do not clean staff members
-                    if (x.roles.cache.has(teamRoleId)) {
+                    if (x.roles.cache.has(teamRoleId) && !removeStaff) {
                         return;
                     }
                     await x.voice.disconnect();

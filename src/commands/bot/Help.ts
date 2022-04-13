@@ -10,10 +10,10 @@ import {StringBuilder} from "../../utilities/StringBuilder";
 export class Help extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "HELP",
+            cmdCode: "HELP_COMMAND",
             formalCommandName: "Help",
             botCommandName: "help",
-            description: "Runs the help command. This lists all commands.",
+            description: "Lists all commands.",
             rolePermissions: [],
             generalPermissions: [],
             botPermissions: [],

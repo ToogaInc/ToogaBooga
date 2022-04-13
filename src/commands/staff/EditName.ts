@@ -9,13 +9,13 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {QuotaManager} from "../../managers/QuotaManager";
 import {CommonRegex} from "../../constants/CommonRegex";
 
-export class AddOrChangeName extends BaseCommand {
+export class EditName extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "ADD_CHANGE_NAME_CMD",
-            formalCommandName: "Add or Change Name",
-            botCommandName: "addorchangename",
-            description: "Adds or changes a name.",
+            cmdCode: "EDIT_NAME_COMMAND",
+            formalCommandName: "Edit Name Command",
+            botCommandName: "editname",
+            description: "Use to add or change a name of a member.",
             rolePermissions: [
                 "Helper",
                 "Security",

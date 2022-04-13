@@ -6,7 +6,6 @@ import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {
     DungeonSelectionType,
     getAvailableSections,
-    getSelectedDungeon,
     getSelectedSection, selectVc
 } from "./common/RaidLeaderCommon";
 import {IRaidOptions} from "../../definitions";
@@ -20,7 +19,7 @@ export class StartAfkCheck extends BaseCommand {
             cmdCode: StartAfkCheck.START_AFK_CMD_CODE,
             formalCommandName: "Start AFK Check Command",
             botCommandName: "afkcheck",
-            description: "Starts a wizard that can be used to start an AFK check.",
+            description: "Starts an AFK check.",
             commandCooldown: 8 * 1000,
             generalPermissions: [],
             botPermissions: [],
@@ -112,9 +111,9 @@ export class StartAfkCheck extends BaseCommand {
         }
 
         // Step 4: Ask for the appropriate dungeon
-        const selectedDgn = await getSelectedDungeon(ctx, sectionToUse);
 
-        if (!selectedDgn) {
+        const dungeonToUse = await DungeonUtilities.selectDungeon(ctx, sectionToUse.dungeons);
+        if (!dungeonToUse) {
             await ctx.interaction.editReply({
                 components: [],
                 content: "You either did not select a dungeon in time or canceled this process.",
@@ -122,7 +121,6 @@ export class StartAfkCheck extends BaseCommand {
             });
             return 0;
         }
-        const dungeonToUse = sectionToUse.dungeons.find(x => x.codeName === selectedDgn.values[0])!;
 
         // Step 5: Start it
         const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, raidOptions);

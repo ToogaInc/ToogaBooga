@@ -13,15 +13,15 @@ import {LoggerManager} from "../../managers/LoggerManager";
 import {QuotaManager} from "../../managers/QuotaManager";
 import {QuotaLogType} from "../../definitions/Types";
 import {ButtonConstants} from "../../constants/ButtonConstants";
+import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 
-export class LogLedRun extends BaseCommand {
+export class LogRun extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "LOG_LED_RUN_COMMAND",
-            formalCommandName: "Log Led Run(s) Command",
+            cmdCode: "LOG_RUN_COMMAND",
+            formalCommandName: "Log Run Command",
             botCommandName: "logrun",
-            description: "Logs one or more runs that a leader led. You can log completions/fails/assists for"
-                + " yourself or someone else.  Defaults to 1 completed run.",
+            description: "Logs one or more runs led. You can log completions/fails/assists. Defaults to 1 completed run for yourself.",
             commandCooldown: 0,
             generalPermissions: [],
             argumentInfo: [
@@ -132,33 +132,7 @@ export class LogLedRun extends BaseCommand {
             await MongoManager.addIdNameToIdNameCollection(memberToLogAs);
             await MongoManager.getOrCreateUserDoc(memberToLogAs.id);
         }
-
-        // Grab all dungeons, ask which one to log
-        const allDungeons = DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons);
-        const subsets = ArrayUtilities.breakArrayIntoSubsets(
-            DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons),
-            25
-        );
-
-        const selectMenus: MessageSelectMenu[] = [];
         const uniqueId = StringUtil.generateRandomString(20);
-        for (let i = 0; i < Math.min(4, subsets.length); i++) {
-            selectMenus.push(
-                new MessageSelectMenu()
-                    .setCustomId(`${uniqueId}_${i}`)
-                    .setMaxValues(1)
-                    .setMinValues(1)
-                    .setOptions(subsets[i].map(y => {
-                        return {
-                            label: y.dungeonName,
-                            description: y.isBuiltIn ? "Built-In" : "Custom",
-                            value: y.codeName,
-                            emoji: y.portalEmojiId
-                        };
-                    }))
-            );
-        }
-
         await ctx.interaction.reply({
             embeds: [
                 MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
@@ -175,26 +149,27 @@ export class LogLedRun extends BaseCommand {
                     )
                     .addField(
                         "Confirmation",
-                        "If the above is correct, please select the dungeon from the below list to complete this"
-                        + " logging process. If you made a mistake, press the **Cancel** button and re-run this"
+                        "If the above is correct, press the **Continue** button.\n"
+                        + "If you made a mistake, press the **Cancel** button and re-run this"
                         + " command with the proper values."
                     )
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
-                ...selectMenus,
+                AdvancedCollector.cloneButton(ButtonConstants.CONTINUE_BUTTON)
+                    .setCustomId(`${uniqueId}_${ButtonConstants.CONTINUE_ID}`),
                 AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
-                    .setCustomId(uniqueId + ButtonConstants.CANCEL_ID)
+                    .setCustomId(`${uniqueId}_${ButtonConstants.CANCEL_ID}`),
             ])
         });
 
-        const selectedDgn = await AdvancedCollector.startInteractionEphemeralCollector({
+        const confirmation = await AdvancedCollector.startInteractionEphemeralCollector({
             targetAuthor: ctx.user,
-            acknowledgeImmediately: false,
+            acknowledgeImmediately: true,
             targetChannel: ctx.channel,
             duration: 1.5 * 60 * 1000
         }, uniqueId);
 
-        if (!selectedDgn || !selectedDgn.isSelectMenu()) {
+        if(!confirmation || confirmation.customId !== `${uniqueId}_${ButtonConstants.CONTINUE_ID}`){
             await ctx.interaction.editReply({
                 components: [],
                 content: "You either did not select a dungeon to log or canceled this process.",
@@ -204,7 +179,17 @@ export class LogLedRun extends BaseCommand {
             return 0;
         }
 
-        const dungeonInfo = allDungeons.find(x => x.codeName === selectedDgn.values[0])!;
+        // Grab all dungeons, ask which one to log
+        const dungeonInfo = await DungeonUtilities.selectDungeon(ctx, DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons));
+        if(!dungeonInfo){
+            await ctx.interaction.editReply({
+                components: [],
+                content: "You either did not select a dungeon to log or canceled this process.",
+                embeds: []
+            });
+
+            return 0;
+        }
         const allRunResTypes: [number, LoggerManager.RunResult, QuotaLogType][] = [
             [completedRuns, LoggerManager.RunResult.Complete, "RunComplete"],
             [failedRuns, LoggerManager.RunResult.Failed, "RunFailed"],

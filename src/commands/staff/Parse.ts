@@ -4,12 +4,12 @@ import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {RaidInstance} from "../../instances/RaidInstance";
 import {QuotaManager} from "../../managers/QuotaManager";
 
-export class ParseRaidVc extends BaseCommand {
+export class Parse extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "PARSE_RAID_VC_CMD",
-            formalCommandName: "Parse Raid VC",
-            botCommandName: "parsevc",
+            cmdCode: "PARSE_COMMAND",
+            formalCommandName: "Parse Command",
+            botCommandName: "parse",
             description: "Parses a raid VC.",
             rolePermissions: [
                 "Helper",

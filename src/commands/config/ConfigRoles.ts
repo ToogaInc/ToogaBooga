@@ -43,7 +43,7 @@ interface IRoleMongo extends IBaseDatabaseEntryInfo {
     roleType: RoleCategoryType;
 }
 
-export class ConfigureRoles extends BaseCommand implements IConfigCommand {
+export class ConfigRoles extends BaseCommand implements IConfigCommand {
     private static readonly NA: string = "N/A";
     private static readonly ROLE_MONGO: IRoleMongo[] = [
         {
@@ -269,10 +269,10 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
 
     public constructor() {
         super({
-            cmdCode: "CONFIGURE_ROLE_COMMAND",
-            formalCommandName: "Configure Roles Command",
+            cmdCode: "CONFIG_ROLE_COMMAND",
+            formalCommandName: "Config Roles Command",
             botCommandName: "configroles",
-            description: "Allows the user to configure roles for the entire server or for a specific section",
+            description: "Allows the user to configure roles for the entire server or for a specific section.",
             commandCooldown: 10 * 1000,
             generalPermissions: ["MANAGE_GUILD"],
             argumentInfo: [],
@@ -423,7 +423,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     ctx,
                     section,
                     botMsg,
-                    ConfigureRoles.ROLE_MONGO.filter(x => {
+                    ConfigRoles.ROLE_MONGO.filter(x => {
                         return x.roleType === RoleCategoryType.General
                             && (section.isMainSection ? true : !!x.sectionPath);
                     }),
@@ -436,7 +436,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     ctx,
                     section,
                     botMsg,
-                    ConfigureRoles.ROLE_MONGO.filter(x => x.roleType === RoleCategoryType.SectionLeader),
+                    ConfigRoles.ROLE_MONGO.filter(x => x.roleType === RoleCategoryType.SectionLeader),
                     "Section Leaders"
                 );
                 return;
@@ -446,7 +446,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     ctx,
                     section,
                     botMsg,
-                    ConfigureRoles.ROLE_MONGO.filter(x => x.roleType === RoleCategoryType.UniversalLeader),
+                    ConfigRoles.ROLE_MONGO.filter(x => x.roleType === RoleCategoryType.UniversalLeader),
                     "Universal Leaders"
                 );
                 return;
@@ -456,7 +456,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     ctx,
                     section,
                     botMsg,
-                    ConfigureRoles.ROLE_MONGO.filter(x => x.roleType === RoleCategoryType.Moderation),
+                    ConfigRoles.ROLE_MONGO.filter(x => x.roleType === RoleCategoryType.Moderation),
                     "Moderation"
                 );
                 return;
@@ -484,7 +484,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             );
 
             currentConfiguration.append("__**General Roles**__").appendLine()
-                .append(`⇒ Verified Raider Role: ${raiderRole ?? ConfigureRoles.NA}`).appendLine();
+                .append(`⇒ Verified Raider Role: ${raiderRole ?? ConfigRoles.NA}`).appendLine();
 
             if (section.isMainSection) {
                 const suspendedRole = getCachedRole(
@@ -502,9 +502,9 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                     guildDoc.roles.staffRoles.teamRoleId
                 );
 
-                currentConfiguration.append(`⇒ Suspended Role: ${suspendedRole ?? ConfigureRoles.NA}`).appendLine()
-                    .append(`⇒ Muted Role: ${mutedRole ?? ConfigureRoles.NA}`).appendLine()
-                    .append(`⇒ Team Role: ${teamRole ?? ConfigureRoles.NA}`).appendLine();
+                currentConfiguration.append(`⇒ Suspended Role: ${suspendedRole ?? ConfigRoles.NA}`).appendLine()
+                    .append(`⇒ Muted Role: ${mutedRole ?? ConfigRoles.NA}`).appendLine()
+                    .append(`⇒ Team Role: ${teamRole ?? ConfigRoles.NA}`).appendLine();
             }
         }
 
@@ -525,9 +525,9 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
             );
 
             currentConfiguration.append("__**Section Leader Roles**__").appendLine()
-                .append(`⇒ Section Almost Leader Role: ${secArlRole ?? ConfigureRoles.NA}`).appendLine()
-                .append(`⇒ Section Leader Role: ${secRlRole ?? ConfigureRoles.NA}`).appendLine()
-                .append(`⇒ Section Veteran Leader Role: ${secVrlRole ?? ConfigureRoles.NA}`).appendLine();
+                .append(`⇒ Section Almost Leader Role: ${secArlRole ?? ConfigRoles.NA}`).appendLine()
+                .append(`⇒ Section Leader Role: ${secRlRole ?? ConfigRoles.NA}`).appendLine()
+                .append(`⇒ Section Veteran Leader Role: ${secVrlRole ?? ConfigRoles.NA}`).appendLine();
         }
 
         if (section.isMainSection) {
@@ -553,10 +553,10 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                 );
 
                 currentConfiguration.append("__**Universal Leader Roles**__").appendLine()
-                    .append(`⇒ Universal Almost Leader Role: ${arlRole ?? ConfigureRoles.NA}`).appendLine()
-                    .append(`⇒ Universal Leader Role: ${rlRole ?? ConfigureRoles.NA}`).appendLine()
-                    .append(`⇒ Universal Veteran Leader Role: ${vrlRole ?? ConfigureRoles.NA}`).appendLine()
-                    .append(`⇒ Universal Head Leader Role: ${hrlRole ?? ConfigureRoles.NA}`).appendLine();
+                    .append(`⇒ Universal Almost Leader Role: ${arlRole ?? ConfigRoles.NA}`).appendLine()
+                    .append(`⇒ Universal Leader Role: ${rlRole ?? ConfigRoles.NA}`).appendLine()
+                    .append(`⇒ Universal Veteran Leader Role: ${vrlRole ?? ConfigRoles.NA}`).appendLine()
+                    .append(`⇒ Universal Head Leader Role: ${hrlRole ?? ConfigRoles.NA}`).appendLine();
             }
 
             if (displayFilter & DisplayFilter.Moderation) {
@@ -581,10 +581,10 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                 );
 
                 currentConfiguration.append("__**Moderation Roles**__").appendLine()
-                    .append(`⇒ Helper Role: ${helperRole ?? ConfigureRoles.NA}`).appendLine()
-                    .append(`⇒ Security Role: ${secRole ?? ConfigureRoles.NA}`).appendLine()
-                    .append(`⇒ Officer Role: ${officerRole ?? ConfigureRoles.NA}`).appendLine()
-                    .append(`⇒ Moderator Role: ${modRole ?? ConfigureRoles.NA}`).appendLine();
+                    .append(`⇒ Helper Role: ${helperRole ?? ConfigRoles.NA}`).appendLine()
+                    .append(`⇒ Security Role: ${secRole ?? ConfigRoles.NA}`).appendLine()
+                    .append(`⇒ Officer Role: ${officerRole ?? ConfigRoles.NA}`).appendLine()
+                    .append(`⇒ Moderator Role: ${modRole ?? ConfigRoles.NA}`).appendLine();
             }
         }
 
@@ -764,7 +764,7 @@ export class ConfigureRoles extends BaseCommand implements IConfigCommand {
                 );
                 embedToDisplay.addField(
                     i === selected ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${entries[i].name}` : entries[i].name,
-                    `Current Value: ${currSet ?? ConfigureRoles.NA}`
+                    `Current Value: ${currSet ?? ConfigRoles.NA}`
                 );
             }
 

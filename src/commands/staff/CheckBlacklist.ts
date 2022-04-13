@@ -8,8 +8,8 @@ import {TimeUtilities} from "../../utilities/TimeUtilities";
 export class CheckBlacklist extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "CHECK_BLACKLIST",
-            formalCommandName: "Check Blacklist",
+            cmdCode: "CHECK_BLACKLIST_COMMAND",
+            formalCommandName: "Check Blacklist Command",
             botCommandName: "checkblacklist",
             description: "Checks the blacklist status for a particular name.",
             rolePermissions: [

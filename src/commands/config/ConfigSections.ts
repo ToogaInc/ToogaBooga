@@ -23,7 +23,7 @@ import {ButtonConstants} from "../../constants/ButtonConstants";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
 
 // Type that defines the values for the new section
-type SectionCreateType = [string | null, Role | null, TextChannel | null, TextChannel | null, TextChannel | null];
+type SectionCreateType = [string | null, Role | null, TextChannel | null, TextChannel | null, TextChannel | null, TextChannel | null];
 
 // Interface that represents the values to put into the above type.
 interface ISectionCreateChoice {
@@ -32,7 +32,7 @@ interface ISectionCreateChoice {
     collector: (ctx: ICommandContext, botMsg: Message) => Promise<unknown | MessageComponentInteraction | null>;
 }
 
-export class ConfigureSections extends BaseCommand {
+export class ConfigSections extends BaseCommand {
     public static readonly MAXIMUM_SECTIONS_ALLOWED: number = 10;
     private static readonly COLLECTOR_BASE_OPTIONS = {
         deleteBaseMsgAfterComplete: false,
@@ -52,8 +52,8 @@ export class ConfigureSections extends BaseCommand {
 
     public constructor() {
         super({
-            cmdCode: "CONFIGURE_SECTION_COMMAND",
-            formalCommandName: "Configure Section Command",
+            cmdCode: "CONFIG_SECTIONS_COMMAND",
+            formalCommandName: "Config Sections Command",
             botCommandName: "configsections",
             description: "Allows the user to add or remove sections",
             commandCooldown: 10 * 1000,
@@ -85,7 +85,7 @@ export class ConfigureSections extends BaseCommand {
                     targetChannel: botMsg.channel as TextChannel,
                     targetAuthor: ctx.user,
                     oldMsg: botMsg,
-                    ...ConfigureSections.COLLECTOR_BASE_OPTIONS
+                    ...ConfigSections.COLLECTOR_BASE_OPTIONS
                 }, AdvancedCollector.getStringPrompt(ctx.channel!, {min: 1, max: 30}));
             }
         },
@@ -97,7 +97,7 @@ export class ConfigureSections extends BaseCommand {
                     targetChannel: botMsg.channel as TextChannel,
                     targetAuthor: ctx.user,
                     oldMsg: botMsg,
-                    ...ConfigureSections.COLLECTOR_BASE_OPTIONS
+                    ...ConfigSections.COLLECTOR_BASE_OPTIONS
                 }, async (msg: Message) => {
                     const role = ParseUtilities.parseRole(msg);
                     return role ?? undefined;
@@ -112,8 +112,8 @@ export class ConfigureSections extends BaseCommand {
                     targetChannel: botMsg.channel as TextChannel,
                     targetAuthor: ctx.user,
                     oldMsg: botMsg,
-                    ...ConfigureSections.COLLECTOR_BASE_OPTIONS
-                }, ConfigureSections.CHANNEL_COLLECTOR_FUNC);
+                    ...ConfigSections.COLLECTOR_BASE_OPTIONS
+                }, ConfigSections.CHANNEL_COLLECTOR_FUNC);
             }
         },
         {
@@ -124,8 +124,8 @@ export class ConfigureSections extends BaseCommand {
                     targetChannel: botMsg.channel as TextChannel,
                     targetAuthor: ctx.user,
                     oldMsg: botMsg,
-                    ...ConfigureSections.COLLECTOR_BASE_OPTIONS
-                }, ConfigureSections.CHANNEL_COLLECTOR_FUNC);
+                    ...ConfigSections.COLLECTOR_BASE_OPTIONS
+                }, ConfigSections.CHANNEL_COLLECTOR_FUNC);
             }
         },
         {
@@ -136,8 +136,20 @@ export class ConfigureSections extends BaseCommand {
                     targetChannel: botMsg.channel as TextChannel,
                     targetAuthor: ctx.user,
                     oldMsg: botMsg,
-                    ...ConfigureSections.COLLECTOR_BASE_OPTIONS
-                }, ConfigureSections.CHANNEL_COLLECTOR_FUNC);
+                    ...ConfigSections.COLLECTOR_BASE_OPTIONS
+                }, ConfigSections.CHANNEL_COLLECTOR_FUNC);
+            }
+        },
+        {
+            name: "Section Elite Location Channel",
+            instructions: "Either mention the channel or provide a valid channel ID.",
+            collector: (ctx, botMsg) => {
+                return AdvancedCollector.startDoubleCollector<TextChannel>({
+                    targetChannel: botMsg.channel as TextChannel,
+                    targetAuthor: ctx.user,
+                    oldMsg: botMsg,
+                    ...ConfigSections.COLLECTOR_BASE_OPTIONS
+                }, ConfigSections.CHANNEL_COLLECTOR_FUNC);
             }
         }
     ];
@@ -185,7 +197,7 @@ export class ConfigureSections extends BaseCommand {
 
         const buttons: MessageButton[] = [ButtonConstants.QUIT_BUTTON];
 
-        const remainingSecs = ConfigureSections.MAXIMUM_SECTIONS_ALLOWED - ctx.guildDoc!.guildSections.length;
+        const remainingSecs = ConfigSections.MAXIMUM_SECTIONS_ALLOWED - ctx.guildDoc!.guildSections.length;
         if (remainingSecs > 0) {
             embed.addField(
                 "Add Section",
@@ -435,7 +447,7 @@ export class ConfigureSections extends BaseCommand {
 
         await botMsg.edit({
             embeds: [displayEmbed],
-            components: AdvancedCollector.getActionRowsFromComponents(ConfigureSections.BACK_QUIT_BUTTONS)
+            components: AdvancedCollector.getActionRowsFromComponents(ConfigSections.BACK_QUIT_BUTTONS)
         });
 
         const res = await AdvancedCollector.startDoubleCollector<string>({
@@ -563,7 +575,7 @@ export class ConfigureSections extends BaseCommand {
             saveButton
         ];
 
-        const newSectionInfo: SectionCreateType = [null, null, null, null, null];
+        const newSectionInfo: SectionCreateType = [null, null, null, null, null, null];
         let selectedIdx = 0;
 
         mainLoop: while (true) {
@@ -572,9 +584,9 @@ export class ConfigureSections extends BaseCommand {
             for (let i = 0; i < newSectionInfo.length; i++) {
                 baseEmbed.addField(
                     i === selectedIdx
-                        ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${ConfigureSections.SECTION_CREATE_CHOICES[i].name}`
-                        : ConfigureSections.SECTION_CREATE_CHOICES[i].name,
-                    `Current Value: ${newSectionInfo[i] ?? ConfigureSections.NA}`
+                        ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${ConfigSections.SECTION_CREATE_CHOICES[i].name}`
+                        : ConfigSections.SECTION_CREATE_CHOICES[i].name,
+                    `Current Value: ${newSectionInfo[i] ?? ConfigSections.NA}`
                 );
             }
 
@@ -583,7 +595,7 @@ export class ConfigureSections extends BaseCommand {
                 components: AdvancedCollector.getActionRowsFromComponents(buttons)
             });
 
-            const selected = await ConfigureSections.SECTION_CREATE_CHOICES[selectedIdx].collector(ctx, botMsg);
+            const selected = await ConfigSections.SECTION_CREATE_CHOICES[selectedIdx].collector(ctx, botMsg);
 
             // String = Must be first option
             if (typeof selected === "string" && selectedIdx === 0) {
@@ -642,10 +654,10 @@ export class ConfigureSections extends BaseCommand {
 
         // Make sure we aren't going above limit
         const guildDoc = await MongoManager.getOrCreateGuildDoc(ctx.guild!, true);
-        if (guildDoc.guildSections.length + 1 > ConfigureSections.MAXIMUM_SECTIONS_ALLOWED) {
+        if (guildDoc.guildSections.length + 1 > ConfigSections.MAXIMUM_SECTIONS_ALLOWED) {
             await botMsg.edit({
                 embeds: [],
-                content: `You already have ${ConfigureSections.MAXIMUM_SECTIONS_ALLOWED} or more sections! In order `
+                content: `You already have ${ConfigSections.MAXIMUM_SECTIONS_ALLOWED} or more sections! In order `
                     + "to create a new section, please remove a section."
             });
             await MiscUtilities.stopFor(5 * 1000);
@@ -653,7 +665,7 @@ export class ConfigureSections extends BaseCommand {
             return;
         }
 
-        const [name, role, verify, afk, control] = newSectionInfo;
+        const [name, role, verify, afk, control, eliteLoc] = newSectionInfo;
         if (!name || !role) {
             await botMsg.edit({
                 embeds: [],
@@ -668,6 +680,7 @@ export class ConfigureSections extends BaseCommand {
         sectionObj.channels.raids.afkCheckChannelId = afk?.id ?? "";
         sectionObj.channels.raids.controlPanelChannelId = control?.id ?? "";
         sectionObj.channels.verification.verificationChannelId = verify?.id ?? "";
+        sectionObj.channels.eliteLocChannelId = eliteLoc?.id ?? "";
 
         ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
             $push: {

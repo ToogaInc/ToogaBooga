@@ -12,15 +12,15 @@ import {ButtonConstants} from "../../constants/ButtonConstants";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 
-export class ConfigureEarlyLocRoles extends BaseCommand {
+export class ConfigEarlyLocRoles extends BaseCommand {
     private static readonly MAX_EARLY_LOC_ROLES: number = 3;
 
     public constructor() {
         super({
-            cmdCode: "CONFIGURE_EARLY_LOCATION_ROLES",
-            formalCommandName: "Configure Early Location Roles",
+            cmdCode: "CONFIG_EARLY_LOCATION_ROLES_COMMAND",
+            formalCommandName: "Config Early Location Roles Command",
             botCommandName: "configearlylocroles",
-            description: "Allows you to configure early location roles",
+            description: "Allows you to configure early location roles.",
             rolePermissions: ["Officer", "HeadRaidLeader", "Moderator"],
             generalPermissions: [],
             botPermissions: [],
@@ -84,7 +84,7 @@ export class ConfigureEarlyLocRoles extends BaseCommand {
                 return 0;
             }
 
-            embed.setDescription(`There are ${earlyLocRoles.length}/${ConfigureEarlyLocRoles.MAX_EARLY_LOC_ROLES}`
+            embed.setDescription(`There are ${earlyLocRoles.length}/${ConfigEarlyLocRoles.MAX_EARLY_LOC_ROLES}`
                 + " early location roles set.");
 
             for (const {roleId, mappingKey} of earlyLocRoles) {

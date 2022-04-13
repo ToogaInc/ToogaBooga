@@ -4,8 +4,8 @@ import {MongoManager} from "../../managers/MongoManager";
 export class RemovePunishment extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "REMOVE_PUNISHMENT",
-            formalCommandName: "Remove Punishment",
+            cmdCode: "REMOVE_PUNISHMENT_COMMAND",
+            formalCommandName: "Remove Punishment Command",
             botCommandName: "removepunishment",
             description: "Removes a punishment entry from the user's profile. Note that this completely removes the"
                 + " punishment history from the database.",

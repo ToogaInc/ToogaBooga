@@ -11,10 +11,10 @@ import {QuotaManager} from "../../managers/QuotaManager";
 export class RemoveName extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "REMOVE_NAME_CMD",
-            formalCommandName: "Remove Name",
+            cmdCode: "REMOVE_NAME_COMMAND",
+            formalCommandName: "Remove Name Command",
             botCommandName: "removename",
-            description: "Removes a name.",
+            description: "Removes a name from a member.",
             rolePermissions: [
                 "Helper",
                 "Security",

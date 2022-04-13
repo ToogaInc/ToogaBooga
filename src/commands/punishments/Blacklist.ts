@@ -9,13 +9,13 @@ import {PunishmentManager} from "../../managers/PunishmentManager";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import generateRandomString = StringUtil.generateRandomString;
 
-export class BlacklistMember extends BaseCommand {
+export class Blacklist extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "BLACKLIST_MEMBER",
-            formalCommandName: "Blacklist Member",
+            cmdCode: "BLACKLIST_COMMAND",
+            formalCommandName: "Blacklist Command",
             botCommandName: "blacklist",
-            description: "Blacklists a user from the server. If the user is in the server, they will be banned.",
+            description: "Blacklists a member from the server. If the member is in the server, they will be banned.",
             rolePermissions: ["Officer", "Moderator", "HeadRaidLeader"],
             generalPermissions: [],
             botPermissions: ["BAN_MEMBERS"],

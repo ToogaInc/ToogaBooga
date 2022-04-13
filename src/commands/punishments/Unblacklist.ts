@@ -7,11 +7,11 @@ import {MongoManager} from "../../managers/MongoManager";
 import {PunishmentManager} from "../../managers/PunishmentManager";
 import {User} from "discord.js";
 
-export class UnblacklistMember extends BaseCommand {
+export class Unblacklist extends BaseCommand {
     public constructor() {
         const cmi: ICommandInfo = {
-            cmdCode: "UNBLACKLIST_MEMBER",
-            formalCommandName: "Unblacklist Member",
+            cmdCode: "UNBLACKLIST_COMMAND",
+            formalCommandName: "Unblacklist Command",
             botCommandName: "unblacklist",
             description: "Unblacklists a member. If the member was banned, the member will be unbanned.",
             rolePermissions: ["Officer", "Moderator", "HeadRaidLeader"],
