@@ -71,14 +71,30 @@ export class LeaderboardSync extends BaseCommand {
 
         LOGGER.debug(usersWithLogs.map(user => user.discordId));
 
+        let usersChecked = 0;
         let usersAdded = 0;
         for(const member of allMembers){
+            usersChecked++;
+
+            if(usersChecked % 500 === 0){
+                embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RANDOM")
+                    .setTitle("Syncing.")
+                    .setDescription(`Started with ${startingCount} members with logs.\nCurrent progress: ${usersChecked} / ${allMembers.size} ...`)
+                    .setFooter({text: "This might take a while, please wait."})
+                    .setTimestamp();
+
+                await ctx.interaction.editReply({
+                    embeds: [embed]
+                });
+            }
+
             const resolvedUser = await MongoManager.getOrCreateUserDoc(member[1].id);
             const info = resolvedUser.loggedInfo;
             if(info.length === 0) continue;
             if(usersWithLogs.find(user => user.discordId === resolvedUser.discordId)) continue;
             usersWithLogs.push(resolvedUser);
             usersAdded++;
+
         }
 
         LOGGER.debug(usersWithLogs.map(user => user.discordId));

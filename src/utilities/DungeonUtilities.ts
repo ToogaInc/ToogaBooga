@@ -272,7 +272,7 @@ export namespace DungeonUtilities {
             );
         }
 
-        if(!ctx.interaction.replied){
+        if(!(ctx.interaction.replied || ctx.interaction.deferred)){
             await ctx.interaction.reply({
                 content: `Creating dungeon selection panel`,
             })
