@@ -79,6 +79,14 @@ export class Leaderboard extends BaseCommand {
         }
 
         const leaderboardArr = await this.createLeaderboard(ctx.guildDoc!, lbType, dungeon);
+
+        if(!leaderboardArr){
+            await ctx.interaction.editReply({
+                content:`No users with logs found for this server.  Try running leaderboardsync.`
+            });
+            return 0;
+        }
+
         const lbSubsets = ArrayUtilities.breakArrayIntoSubsets(leaderboardArr, 20);
 
         //If only one page, no need to add buttons to navigate
