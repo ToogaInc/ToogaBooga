@@ -101,22 +101,6 @@ export namespace LoggerManager {
                 }
             };
         }
-
-        // If not already present, add user to guild list of users with logs
-        let usersAdded = false;
-        const guildDoc = await MongoManager.getOrCreateGuildDoc(member.guild.id, true);
-        const usersWithLogs = guildDoc.properties.usersWithLogs ?? [];
-        if(!usersWithLogs.find(user => user.discordId===userDocToUse.discordId)){
-            usersWithLogs.push(userDocToUse);
-            usersAdded = true;
-        }
-        if(usersAdded){
-            await MongoManager.updateAndFetchGuildDoc({guildId: guildDoc.guildId}, {
-                $set: {
-                    "properties.usersWithLogs": usersWithLogs
-                }
-            });
-        }
         await MongoManager.getUserCollection().updateOne(filterQuery, updateQuery);
     }
 
@@ -245,6 +229,22 @@ export namespace LoggerManager {
             return null;
         }
 
+        const guildDoc = guildId
+        ? await MongoManager.getOrCreateGuildDoc(guildId, true)
+        : null;
+
+        const stats = await getStatsWithDoc(userDoc, guildDoc)
+        return stats;
+    }
+
+     /**
+     * Gets this person's stats when the IUserInfo is already available.
+     * @param {IUserInfo} userInfo The user info.
+     * @param {string} guildDoc The guild doc.
+     * @returns {Promise<LoggerManager.IUserStats | null>} The result, if any.
+     */
+      export async function getStatsWithDoc(userInfo: IUserInfo, guildDoc : IGuildInfo | null): Promise<IUserStats | null> {
+
         const stats: IUserStats = {
             keyUse: new Collection<string, Collection<string, number>>(),
             dungeonsLed: new Collection<string, Collection<string, {
@@ -258,16 +258,12 @@ export namespace LoggerManager {
             }>>()
         };
 
-        const guildDoc = guildId
-            ? await MongoManager.getOrCreateGuildDoc(guildId, true)
-            : null;
-        const logInfoToProcess = guildId
-            ? userDoc.loggedInfo.filter(x => x.key.includes(guildId))
-            : userDoc.loggedInfo;
+        const logInfoToProcess = guildDoc 
+            ? userInfo.loggedInfo.filter(x => x.key.includes(guildDoc.guildId))
+            : userInfo.loggedInfo;
 
         for (const {key, value} of logInfoToProcess) {
-            // gId = guild ID
-            // vId = value ID
+
             const [type, gId, vId, ...rest] = key.split(":");
             switch (type) {
                 case "P": {

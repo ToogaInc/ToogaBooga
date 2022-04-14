@@ -9,6 +9,7 @@ import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {LoggerManager} from "../../managers/LoggerManager";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import {MongoManager} from "../../managers/MongoManager";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {ButtonConstants} from "../../constants/ButtonConstants";
@@ -68,7 +69,7 @@ export class Leaderboard extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         await ctx.interaction.reply({
-            content:`Working on it...`
+            content:`Calculating Leaderboard...`
         });
 
         const lbType = ctx.interaction.options.getString("lb_category", true);
@@ -76,10 +77,15 @@ export class Leaderboard extends BaseCommand {
         let dungeon: IDungeonInfo | null = null;
         if(lbType === "RUN_LED"){
             dungeon = await DungeonUtilities.selectDungeon(ctx, DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons));
+            //This will remove the dungeon selection instantly.
+            await ctx.interaction.editReply({
+                content:`Dungeon confirmed.  Calculating Leaderboard...`,
+                components: [],
+                embeds: []
+            });
         }
 
         const leaderboardArr = await this.createLeaderboard(ctx.guildDoc!, lbType, dungeon);
-
         const lbSubsets = ArrayUtilities.breakArrayIntoSubsets(leaderboardArr, 20);
 
         //If only one page, no need to add buttons to navigate
@@ -166,14 +172,15 @@ export class Leaderboard extends BaseCommand {
         if(searchCriteria === "RUN_LED" && !dungeon) return [];
         
         const ret : LeaderboardEntry[] = [];
-        const usersWithLogs = guildDoc.properties.usersWithLogs;
+        let usersWithLogs = await MongoManager.getUserCollection().find().toArray();
+        //usersWithLogs = usersWithLogs.concat(usersWithLogs); Repeat this statement to inflate user count for testing
 
         if(!usersWithLogs) return [];
 
         //For each user with logs, get their stats and find out if they meet the search criteria
         for(const user of usersWithLogs){
-            const userEntry: LeaderboardEntry = {user, count: 0};
-            const userStats = await LoggerManager.getStats(null,guildDoc.guildId, user.discordId);
+            const userEntry: LeaderboardEntry = {user: user, count: 0};
+            const userStats = await LoggerManager.getStatsWithDoc(user,guildDoc);
             if(!userStats) continue;
             switch(searchCriteria){
                 case "RUN_LED":{
