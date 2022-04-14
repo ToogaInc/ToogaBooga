@@ -59,4 +59,3 @@ export * from "./modmail/Reply";
 export * from "./modmail/Archive";
 
 export * from "./moderator/ForceSync";
-export * from "./moderator/LeaderboardSync";

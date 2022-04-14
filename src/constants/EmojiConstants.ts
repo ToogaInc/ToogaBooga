@@ -80,6 +80,8 @@ export namespace EmojiConstants {
     export const CAM_EMOJI: string = "📷";
     export const TV_EMOJI: string = "📺";
     export const BAR_GRAPH_EMOJI: string = "📊";
+    export const SEARCH_GLASS_EMOJI: string = "🔎";
+    export const NUMBER_SIGN_EMOJI: string = "#️⃣";
 
     // specific classes
     export const ROGUE: string = "585616162189082626";

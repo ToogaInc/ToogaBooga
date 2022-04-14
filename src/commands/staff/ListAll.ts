@@ -1,5 +1,6 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import {StringUtil} from "../../utilities/StringUtilities";
 import {Role} from "discord.js";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
@@ -48,7 +49,7 @@ export class ListAll extends BaseCommand {
         const users = role.members;
 
         const limit = 4096;
-        const str = Array.from(users.values()).map(user => user.displayName).join(`, `);
+        const str = StringUtil.codifyString(Array.from(users.values()).map(user => user.displayName).sort().join(`, `));
         if(str.length > limit){
             await ctx.interaction.reply({
                 content: `Too many members for role: ${role.name}.`,

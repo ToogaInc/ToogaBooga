@@ -280,11 +280,6 @@ export interface IGuildInfo {
      * @type {object}
      */
     properties: {
-        /**
-         * All users who have logged a run with this guild
-         * 
-         */
-        usersWithLogs: IUserInfo[];
 
         /**
          * Any blocked commands. Use the command code/identifier.

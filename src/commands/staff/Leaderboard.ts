@@ -8,7 +8,9 @@ import {IDungeonInfo, IGuildInfo, IUserInfo} from "../../definitions";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
 import {ArrayUtilities} from "../../utilities/ArrayUtilities";
 import {LoggerManager} from "../../managers/LoggerManager";
+import {UserManager} from "../../managers/UserManager";
 import {MessageUtilities} from "../../utilities/MessageUtilities";
+import {MongoManager} from "../../managers/MongoManager";
 import {StringUtil} from "../../utilities/StringUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {ButtonConstants} from "../../constants/ButtonConstants";
@@ -68,7 +70,7 @@ export class Leaderboard extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         await ctx.interaction.reply({
-            content:`Working on it...`
+            content:`Calculating Leaderboard...`
         });
 
         const lbType = ctx.interaction.options.getString("lb_category", true);
@@ -76,10 +78,15 @@ export class Leaderboard extends BaseCommand {
         let dungeon: IDungeonInfo | null = null;
         if(lbType === "RUN_LED"){
             dungeon = await DungeonUtilities.selectDungeon(ctx, DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons));
+            //This will remove the dungeon selection instantly.
+            await ctx.interaction.editReply({
+                content:`Dungeon confirmed.  Calculating Leaderboard...`,
+                components: [],
+                embeds: []
+            });
         }
 
         const leaderboardArr = await this.createLeaderboard(ctx.guildDoc!, lbType, dungeon);
-
         const lbSubsets = ArrayUtilities.breakArrayIntoSubsets(leaderboardArr, 20);
 
         //If only one page, no need to add buttons to navigate
@@ -96,13 +103,20 @@ export class Leaderboard extends BaseCommand {
         const nextId = uniqueId + "_next";
         const stopId = uniqueId + "_stop";
         const backId = uniqueId + "_back";
+        const searchId = uniqueId + "_search";
+        const jumpId = uniqueId + "_jump";
         const components: BaseMessageComponent[] = [
             AdvancedCollector.cloneButton(ButtonConstants.PREVIOUS_BUTTON)
                 .setCustomId(backId),
+            AdvancedCollector.cloneButton(ButtonConstants.NEXT_BUTTON)
+                .setCustomId(nextId),
+            AdvancedCollector.cloneButton(ButtonConstants.JUMP_BUTTON)
+                .setCustomId(jumpId),
+            AdvancedCollector.cloneButton(ButtonConstants.SEARCH_BUTTON)
+                .setCustomId(searchId),
             AdvancedCollector.cloneButton(ButtonConstants.STOP_BUTTON)
                 .setCustomId(stopId),
-            AdvancedCollector.cloneButton(ButtonConstants.NEXT_BUTTON)
-                .setCustomId(nextId)
+
         ];
         await ctx.interaction.editReply({
             content: ` `,
@@ -112,9 +126,10 @@ export class Leaderboard extends BaseCommand {
 
         const collector = ctx.channel.createMessageComponentCollector({
             filter: i => i.customId.startsWith(uniqueId) && i.user.id === ctx.user.id,
-            time: 3 * 60 * 1000
+            time: 60 * 1000
         });
         let currPage = 0;
+        let active = true;
         collector.on("collect", async i => {
             await i.deferUpdate();
 
@@ -131,16 +146,73 @@ export class Leaderboard extends BaseCommand {
                 }
                 case stopId: {
                     collector.stop("stopped");
+                    active = false;
                     return;
                 }
+                case jumpId: {
+                    const pageEmbed = new MessageEmbed()
+                        .setTitle(`Enter page number`)
+                        .setColor(`GREY`);
+                    const tempMsg = await ctx.channel.send({
+                        embeds: [pageEmbed]
+                    })
+                    let pageNumber = currPage;
+                    await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ['time'] })
+                    .then(async collected => {
+                        const msg = parseInt(collected.first()?.content ?? "NaN");
+                        pageNumber = isNaN(msg) ? currPage : msg - 1;
+                        await setTimeout(resolve=>resolve, 500)
+                        await collected.first()?.delete();
+                    })
+                    .catch(async collected => {
+                        await setTimeout(resolve=>resolve, 500)
+                        await collected.first()?.delete();
+                    });
+                    await tempMsg.delete();          
+                    currPage = pageNumber;
+                    break;
+                }
+                case searchId: {
+                    const pageEmbed = new MessageEmbed()
+                        .setTitle(`Enter member IGN, ID, or Mention`)
+                        .setColor(`GREY`);
+                    const tempMsg = await ctx.channel.send({
+                        embeds: [pageEmbed]
+                    })
+                    let memberResolvable = "";
+                    await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ['time'] })
+                        .then(async collected => {
+                            memberResolvable = collected.first()?.content ?? "";
+                            await setTimeout(resolve=>resolve, 500)
+                            await collected.first()?.delete();
+                        })
+                        .catch(async collected => {
+                            await setTimeout(resolve=>resolve, 500)
+                            await collected.first()?.delete();
+                        });
+                    await tempMsg.delete();          
+                    const resMember = await UserManager.resolveMember(ctx.guild!, memberResolvable);
+                    if(!resMember){
+                        this.sendTempMessage(`Member not found on the server`, ctx, 5000);
+                        break;
+                    }
+                    const index = leaderboardArr.findIndex(x => x.user.discordId === resMember.member.id)
+                    if(index < 0){
+                        this.sendTempMessage(`Member not found on the leaderboard`, ctx, 5000);
+                    }
+                    currPage = Math.floor((index + 1) / 20);
+                    break;
+                    }
+
             }
 
             await ctx.interaction.editReply({
                 embeds: [this.getLeaderboardEmbed(lbSubsets, currPage, ctx, lbType, dungeon)],
-                components: AdvancedCollector.getActionRowsFromComponents(components)
+                components: active ? AdvancedCollector.getActionRowsFromComponents(components) : []
             });
         });
         collector.on("end", async (_, r) => {
+            active = false;
             // Possible that someone might delete the message before this triggers.
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await ctx.interaction.editReply({
@@ -154,26 +226,41 @@ export class Leaderboard extends BaseCommand {
     }
 
     /**
+     * Sends a temporary message in the channel of the interaction.
+     * @param {string} message The Content of the message
+     * @param {ICommandContex} ctx The interaction
+     * @param {number} duration How long before the message is deleted
+     * @returns {Promise<number>}
+     */
+    public async sendTempMessage(message: string, ctx: ICommandContext, duration: number){
+        const tempMsg = await ctx.channel.send({
+            content: message,
+        });
+        return setTimeout(resolve => tempMsg.delete().catch(), 5000);
+    }
+
+    /**
      * Iterates over guild users who have logged items, picks out users who match the
      * search criteria and sorts them.
      * @param {IGuildInfo} guildDoc the guild
-     * @param {String} searchCriteria the leaderboard category identifier
+     * @param {string} searchCriteria the leaderboard category identifier
      * @param {IDungeonInfo | null} dungeon the dungeon if it pertains to the category 
      * @returns 
      */
-    public async createLeaderboard(guildDoc: IGuildInfo, searchCriteria: String, dungeon: IDungeonInfo | null): Promise<LeaderboardEntry[]>{
+    public async createLeaderboard(guildDoc: IGuildInfo, searchCriteria: string, dungeon: IDungeonInfo | null): Promise<LeaderboardEntry[]>{
         //Dungeon is required for leaderboard of type RUN_LED
         if(searchCriteria === "RUN_LED" && !dungeon) return [];
         
         const ret : LeaderboardEntry[] = [];
-        const usersWithLogs = guildDoc.properties.usersWithLogs;
-
+        let usersWithLogs: IUserInfo[] = await MongoManager.getUserCollection().find().toArray();
+        //usersWithLogs = this.duplicateUsers(usersWithLogs, 4);
+        
         if(!usersWithLogs) return [];
 
         //For each user with logs, get their stats and find out if they meet the search criteria
         for(const user of usersWithLogs){
-            const userEntry: LeaderboardEntry = {user, count: 0};
-            const userStats = await LoggerManager.getStats(null,guildDoc.guildId, user.discordId);
+            const userEntry: LeaderboardEntry = {user: user, count: 0};
+            const userStats = await LoggerManager.getStatsWithDoc(user,guildDoc);
             if(!userStats) continue;
             switch(searchCriteria){
                 case "RUN_LED":{
@@ -225,9 +312,9 @@ export class Leaderboard extends BaseCommand {
      * @param {ICommandContext} ctx The interaction context
      * @param {string} searchCriteria The leaderboard category
      * @param {IDungeonInfo | null} dungeon The dungeon, if applicable to the category
-     * @returns 
+     * @returns {MessageEmbed}
      */
-    public getLeaderboardEmbed(lbSubsets: LeaderboardEntry[][], page: number, ctx:ICommandContext, searchCriteria: String, dungeon: IDungeonInfo | null): MessageEmbed {
+    public getLeaderboardEmbed(lbSubsets: LeaderboardEntry[][], page: number, ctx:ICommandContext, searchCriteria: string, dungeon: IDungeonInfo | null): MessageEmbed {
         //If there are no entries, provide a simple embed
         if(lbSubsets.length === 0){
             const embed = MessageUtilities.generateBlankEmbed(ctx.guild ?? ctx.user, "GREY")
@@ -304,6 +391,21 @@ export class Leaderboard extends BaseCommand {
         }
         embed.addField(lastTenLabel, lastTenValue);
         return embed;
+    }
+
+    /**
+     * A command to expand the pool of users exponentially.  Useful for testing.
+     * @param {IUserInfo[]} arr The array of users to duplicate
+     * @param {number} times The amount of times to double the array 
+     * @returns {IUserInfo[]} The expanded array
+     */
+    public duplicateUsers(arr: IUserInfo[], times: number): IUserInfo[] {
+        if(times === 0) return arr;
+        let ret = arr;
+        for(let i = 0; i < times; i++){
+            ret = ret.concat(ret);
+        }
+        return ret;
     }
 }
 

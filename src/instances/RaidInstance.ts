@@ -798,9 +798,11 @@ export class RaidInstance {
         vc.members.forEach(member => {
             const igns = UserManager.getAllNames(member.displayName)
                 .map(x => x.toLowerCase());
-            const idx = parsedNames.findIndex(name => igns.includes(name.toLowerCase()));
-            if (idx === -1) return;
-            toReturn.inVcButNotInRaid.push(member.displayName);
+            //If vc member's name is not in parsed names, add them to InVcButNotInRaid
+            if(!parsedNames.find(name => igns.includes(name.toLowerCase()))){
+                toReturn.inVcButNotInRaid.push(member.displayName);
+            } 
+            //Otherwise, they are in the VC and the raid.
         });
 
         // Get people in raid but not in the VC. Could be crashers.
