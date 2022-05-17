@@ -1,5 +1,6 @@
 import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
 import {MongoManager} from "../../managers/MongoManager";
+import {HeadcountInstance} from "../../instances/HeadcountInstance";
 import {RaidInstance} from "../../instances/RaidInstance";
 import {SlashCommandBuilder} from "@discordjs/builders";
 import {DungeonUtilities} from "../../utilities/DungeonUtilities";
@@ -121,8 +122,16 @@ export class StartAfkCheck extends BaseCommand {
             });
             return 0;
         }
+        
+        // Step 5: Check if there are any headcounts active and abort them.
+        
+        HeadcountInstance.ActiveHeadcounts.each(async (headcount: HeadcountInstance) => {
+            if (headcount.getHeadcountInfoObject()!.memberInit === ctx.interaction.user.id) {
+                await headcount.abortHeadcount();
+            }
+        });
 
-        // Step 5: Start it
+        // Step 6: Start it
         const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, raidOptions);
 
         if (!rm) {
