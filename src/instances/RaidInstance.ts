@@ -237,6 +237,7 @@ export class RaidInstance {
 
     // The members that are joining this raid.
     private _membersThatJoined: GuildMember[] = [];
+    private _membersThatLeftChannel: GuildMember[] = [];
     private readonly _raidLogs: string[] = [];
 
     // Base feedback channel; for initial use only (this channel's parent is where other feedback channels should be
@@ -1163,6 +1164,7 @@ export class RaidInstance {
         const leaderName = name.length === 0 ? memberThatEnded.displayName : name[0];
         // Stop the collector.
         // We don't care about the result of this function, just that it should run.
+        this._membersThatLeftChannel = this.membersThatJoinedVc.filter(member => ![...this.raidVc!.members.values()].includes(member));
         this.cleanUpRaid(false, keepVc).then();
 
         // Give point refunds if applicable
@@ -3233,8 +3235,9 @@ export class RaidInstance {
                         .setTitle(`Logging Run: ${this._dungeon.dungeonName}`)
                         .setDescription(
                             "Please send a screenshot containing the `/who` results from the completion of the"
-                            + " dungeon. If you don't have a `/who` screenshot, press the `Skip` button. Your"
-                            + " screenshot should be an image, not a link to one."
+                            + " dungeon. If you don't have a `/who` screenshot, press the `Skip` button or the"
+                            + " `Users in VC` button to log for everyone who was still in the voice channel."
+                            + " Your screenshot should be an image, not a link to one."
                         )
                         .addField(
                             "Warning",
@@ -3243,6 +3246,11 @@ export class RaidInstance {
                         .setFooter({text: FOOTER_INFO_MSG})
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([
+                    new MessageButton()
+                        .setLabel("Users in VC")
+                        .setEmoji("🎙️")
+                        .setStyle("PRIMARY")
+                        .setCustomId("parse-vc"),
                     skipButton
                 ])
             });
@@ -3313,6 +3321,18 @@ export class RaidInstance {
 
                     await MiscUtilities.stopFor(5 * 1000);
                 }
+            }
+
+            // Giving completes to those who were in VC instead of asking for a /who
+            if (!(resObj instanceof Message) && resObj.customId) {
+                if (resObj.customId !== "parse-vc") // Else, it is the "skip" button
+                    return; 
+                
+                // Filter against those who originally joined VC to remove those who left.
+                const lastInVC = this._membersThatJoined.filter(member => !this._membersThatLeftChannel.includes(member));
+
+                membersAtEnd.push(...lastInVC.values());
+                membersThatLeft.push(...this._membersThatLeftChannel);
             }
         }
         else {
