@@ -884,7 +884,7 @@ export class RaidInstance {
         if (!vc) return;
 
         if (!this._oldVcPerms) {
-            vc.setPosition(0).then();
+            vc.setPosition(this._raidSection.otherMajorConfig.afkCheckProperties.defaultPosition ?? 0).then();
         }
 
         this._raidVc = vc as VoiceChannel;
