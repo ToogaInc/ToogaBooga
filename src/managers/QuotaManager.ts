@@ -242,7 +242,7 @@ export namespace QuotaManager {
                             `quota_${guild.id}_${roleId}_${Date.now()}.txt`)
                     ]
                 }
-            ).catch();
+            ).catch(LOGGER.error);
 
             if (storageMsg)
                 urlToFile = storageMsg.attachments.first()!.url;
@@ -280,7 +280,7 @@ export namespace QuotaManager {
 
         if (quotaMsg) {
             await quotaMsg.edit({ embeds: [summaryEmbed] });
-            quotaMsg.unpin().catch();
+            quotaMsg.unpin().catch(LOGGER.error);
         }
         else
             await quotaChannel.send({ embeds: [summaryEmbed] });
@@ -296,7 +296,7 @@ export namespace QuotaManager {
                 ]
             });
 
-            newMsg.pin().catch();
+            newMsg.pin().catch(LOGGER.error);
 
             await MongoManager.updateAndFetchGuildDoc({
                 guildId: guild.id,
@@ -857,7 +857,7 @@ export namespace QuotaService {
                         ]
                     });
 
-                    newMsg.pin().catch();
+                    newMsg.pin().catch(LOGGER.error);
 
                     await MongoManager.updateAndFetchGuildDoc({
                         guildId: guild.id,

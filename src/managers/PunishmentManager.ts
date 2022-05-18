@@ -556,12 +556,12 @@ export namespace PunishmentManager {
         async function sendLoggingAndNoticeMsg(): Promise<void> {
             // Do we really need to check if there is a description here specifically?
             if (details.sendLogInfo && logChannel && logToChanEmbed.description) {
-                await logChannel.send({ embeds: [logToChanEmbed] }).catch();
+                await logChannel.send({ embeds: [logToChanEmbed] }).catch(LOGGER.error);
             }
 
             // These must have a description or else the default arm was reached.
             if (details.sendNoticeToAffectedUser && toSendToUserEmbed.description && member instanceof GuildMember) {
-                await GlobalFgrUtilities.sendMsg(member, { embeds: [toSendToUserEmbed] }).catch();
+                await GlobalFgrUtilities.sendMsg(member, { embeds: [toSendToUserEmbed] }).catch(LOGGER.error);
             }
         }
 
@@ -1137,7 +1137,7 @@ export namespace SuspensionManager {
         }
 
         // Remove roles and log it
-        await member.roles.remove(info.section.roles.verifiedRoleId).catch();
+        await member.roles.remove(info.section.roles.verifiedRoleId).catch(LOGGER.error);
         const r = await PunishmentManager.logPunishment(member, "SectionSuspend", {
             reason: info.reason,
             duration: info.duration === -1 ? undefined : info.duration,
@@ -1204,7 +1204,7 @@ export namespace SuspensionManager {
 
         if (info.section.properties.giveVerifiedRoleUponUnsuspend
             && GuildFgrUtilities.hasCachedRole(member.guild, info.section.roles.verifiedRoleId)) {
-            await member.roles.add(info.section.roles.verifiedRoleId).catch();
+            await member.roles.add(info.section.roles.verifiedRoleId).catch(LOGGER.error);
         }
 
         const r = await PunishmentManager.logPunishment(member, "SectionUnsuspend", {
@@ -1462,7 +1462,7 @@ export namespace MuteManager {
             MutedMembers.get(member.guild.id)!.push(mutedUserObj);
         }
 
-        await member.roles.add(mutedRole).catch();
+        await member.roles.add(mutedRole).catch(LOGGER.error);
 
         const r = await PunishmentManager.logPunishment(member, "Mute", {
             reason: info.reason,
@@ -1522,7 +1522,7 @@ export namespace MuteManager {
             _queuedDelMutedUsers.enqueue({ ...data, guildId: member.guild.id });
         }
 
-        await member.roles.remove(info.guildDoc.roles.mutedRoleId).catch();
+        await member.roles.remove(info.guildDoc.roles.mutedRoleId).catch(LOGGER.error);
         const r = await PunishmentManager.logPunishment(member, "Unmute", {
             reason: info.reason,
             issuedTime: Date.now(),

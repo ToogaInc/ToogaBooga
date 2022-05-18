@@ -37,6 +37,9 @@ import { ButtonConstants } from "../constants/ButtonConstants";
 import { InteractivityManager } from "./InteractivityManager";
 import { ModmailManager } from "./ModmailManager";
 import { CommonRegex } from "../constants/CommonRegex";
+import { Logger } from "../utilities/Logger";
+
+const LOGGER: Logger = new Logger(__filename, false);
 
 export namespace VerifyManager {
     export const NUMBER_OF_STATS: number = 8;
@@ -261,7 +264,7 @@ export namespace VerifyManager {
         );
 
         verifyStartChannel?.send(`[${section.sectionName}] ${member} has started the verification process.`)
-            .catch();
+            .catch(LOGGER.error);
 
         // If we can't open a DM, then don't bother.
         let dmMsg: Message | null = null;
@@ -275,7 +278,7 @@ export namespace VerifyManager {
                 });
 
                 verifyFailChannel?.send(`[${section.sectionName}] ${member} could not be directly messaged.`)
-                    .catch();
+                    .catch(LOGGER.error);
                 return;
             }
         }
@@ -306,7 +309,7 @@ export namespace VerifyManager {
             verifyFail: verifyFailChannel,
             verifyChannel: getVerifiedChannel,
             msg: dmMsg
-        }, i).catch();
+        }, i).catch(LOGGER.error);
     }
 
     /**
@@ -340,7 +343,7 @@ export namespace VerifyManager {
         );
 
         verifyStartChannel?.send(`[Main] ${member} has started the verification process.`)
-            .catch();
+            .catch(LOGGER.error);
 
         // If we can't open a DM, then don't bother.
         const dmMsg = await getInitialMessage(member);
@@ -352,7 +355,7 @@ export namespace VerifyManager {
             });
 
             verifyFailChannel?.send(`[Main] ${member} could not be directly messaged.`)
-                .catch();
+                .catch(LOGGER.error);
             return;
         }
 
@@ -381,7 +384,7 @@ export namespace VerifyManager {
             verifyFail: verifyFailChannel,
             verifyChannel: getVerifiedChannel,
             msg: dmMsg
-        }).catch();
+        }).catch(LOGGER.error);
     }
 
     /**
@@ -421,17 +424,17 @@ export namespace VerifyManager {
             verifKit.verifyFail?.send({
                 content: `[${section.sectionName}] ${member} tried to verify but they are currently under manual `
                     + "verification."
-            }).catch();
+            }).catch(LOGGER.error);
             return;
         }
 
         // This has to be a verification channel so we don't need to double check.
         if (section.isMainSection) {
-            verifyMain(member, guildDoc, verifKit).catch();
+            verifyMain(member, guildDoc, verifKit).catch(LOGGER.error);
             return;
         }
 
-        verifySection(member, section, verifKit, interaction!).catch();
+        verifySection(member, section, verifKit, interaction!).catch(LOGGER.error);
     }
 
     /**
@@ -495,7 +498,7 @@ export namespace VerifyManager {
                         + "account, but they did not select a name within the specified time."
                 });
 
-                verifKit.msg.delete().catch();
+                verifKit.msg.delete().catch(LOGGER.error);
                 return;
             }
 
@@ -510,7 +513,7 @@ export namespace VerifyManager {
                         + "asked to either use an existing name or provide a new name."
                 });
 
-                verifKit.msg.delete().catch();
+                verifKit.msg.delete().catch(LOGGER.error);
                 return;
             }
         }
@@ -563,7 +566,7 @@ export namespace VerifyManager {
                         + "asked to provide a name for verification."
                 });
 
-                verifKit.msg.delete().catch();
+                verifKit.msg.delete().catch(LOGGER.error);
                 return;
             }
 
@@ -598,7 +601,7 @@ export namespace VerifyManager {
                                 + " restart the verification process.")
                             .setFooter({ text: "Verification Process Stopped." })
                     ]
-                }).catch();
+                }).catch(LOGGER.error);
 
                 return;
             }
@@ -773,7 +776,7 @@ export namespace VerifyManager {
 
                 if (!r) {
                     collector.stop();
-                    verifKit.msg?.delete().catch();
+                    verifKit.msg?.delete().catch(LOGGER.error);
 
                     verifKit.verifyFail?.send({
                         content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but something went wrong`
@@ -825,7 +828,7 @@ export namespace VerifyManager {
 
                 if (!r) {
                     collector.stop();
-                    verifKit.msg?.delete().catch();
+                    verifKit.msg?.delete().catch(LOGGER.error);
 
                     verifKit.verifyFail?.send({
                         content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but something went wrong`
@@ -964,7 +967,7 @@ export namespace VerifyManager {
 
                 if (!r) {
                     collector.stop();
-                    verifKit.msg?.delete().catch();
+                    verifKit.msg?.delete().catch(LOGGER.error);
 
                     verifKit.verifyFail?.send({
                         content: `[Main] ${member} tried to verify as **\`${nameToVerify}\`**, but something went wrong`
@@ -1011,10 +1014,10 @@ export namespace VerifyManager {
             }
 
             await Promise.all([
-                verifKit.msg!.edit({ embeds: [finishedEmbed] }).catch(),
+                verifKit.msg!.edit({ embeds: [finishedEmbed] }).catch(LOGGER.error),
                 await member.send({
                     content: "Your verification was successful."
-                }).catch(),
+                }).catch(LOGGER.error),
                 verifKit.verifySuccess?.send({
                     content: `[Main] ${member} has successfully verified as **\`${nameToVerify}\`**.`
                 })
@@ -1038,7 +1041,7 @@ export namespace VerifyManager {
 
         if (!section.otherMajorConfig.verificationProperties.checkRequirements) {
             await Promise.all([
-                member.roles.add(verifiedRole).catch(),
+                member.roles.add(verifiedRole).catch(LOGGER.error),
                 interaction.reply({
                     content: "You have successfully been verified.",
                     ephemeral: true
@@ -1145,7 +1148,7 @@ export namespace VerifyManager {
 
         // Passed requirements.
         await Promise.all([
-            member.roles.add(verifiedRole).catch(),
+            member.roles.add(verifiedRole).catch(LOGGER.error),
             interaction.reply({
                 content: "You have successfully been verified.",
                 ephemeral: true
@@ -1300,7 +1303,7 @@ export namespace VerifyManager {
             components: []
         });
 
-        await sendManualVerifyEmbedAndLog(member, checkRes, verifKit, section).catch();
+        await sendManualVerifyEmbedAndLog(member, checkRes, verifKit, section).catch(LOGGER.error);
     }
 
     /**
@@ -1437,7 +1440,7 @@ export namespace VerifyManager {
                             return;
 
                         const relevantMsg = await GuildFgrUtilities.fetchMessage(channel, x.manualVerifyMsgId);
-                        await relevantMsg?.delete().catch();
+                        await relevantMsg?.delete().catch(LOGGER.error);
                     })
             );
 
@@ -1498,7 +1501,7 @@ export namespace VerifyManager {
                     );
 
                 promises.push(
-                    manualVerifMsg?.delete().catch(),
+                    manualVerifMsg?.delete().catch(LOGGER.error),
                     GlobalFgrUtilities.sendMsg(member, { embeds: [finishedEmbed] }),
                     section.isMainSection
                         ? verifyFailChannel?.send({
@@ -1537,7 +1540,7 @@ export namespace VerifyManager {
                 promises.push(
                     manualVerifMsg?.delete().catch(),
                     GlobalFgrUtilities.sendMsg(member, { embeds: [finishedEmbed] }),
-                    member.roles.add(section.roles.verifiedRoleId).catch()
+                    member.roles.add(section.roles.verifiedRoleId).catch(LOGGER.error)
                 );
 
                 if (section.isMainSection) {

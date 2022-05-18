@@ -229,6 +229,7 @@ export namespace GuildFgrUtilities {
         try {
             return await guild.members.fetch(targetId);
         } catch (e) {
+            // Only possible if the ID is incorrect/if they aren't in the guild
             return null;
         }
     }
@@ -250,6 +251,7 @@ export namespace GuildFgrUtilities {
         try {
             return !!(await channel.messages.fetch(msgId));
         } catch (e) {
+            // Only possible if the message doesn't exist in the channel
             return false;
         }
     }
@@ -271,6 +273,7 @@ export namespace GuildFgrUtilities {
         try {
             return await channel.messages.fetch(msgId);
         } catch (e) {
+            // Only possible if the message doesn't exist in the channel
             return null;
         }
     }
@@ -287,6 +290,7 @@ export namespace GuildFgrUtilities {
         try {
             return guild.roles.fetch(roleId as Snowflake);
         } catch (e) {
+            // Only possible if the role doesn't exist/ID is wrong
             return null;
         }
     }
