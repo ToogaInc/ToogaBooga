@@ -83,10 +83,10 @@ export class LogKey extends BaseCommand {
 
         // Grab all dungeons, ask which one to log
         const exaltKeys = Object.keys(MAPPED_AFK_CHECK_REACTIONS)
-        .filter(x => MAPPED_AFK_CHECK_REACTIONS[x].isExaltKey)
-        .map(x => {
-            return {key: x, val: MAPPED_AFK_CHECK_REACTIONS[x]};
-        });
+            .filter(x => MAPPED_AFK_CHECK_REACTIONS[x].isExaltKey)
+            .map(x => {
+                return {key: x, val: MAPPED_AFK_CHECK_REACTIONS[x]};
+            });
         
         const otherKeys = Object.keys(MAPPED_AFK_CHECK_REACTIONS)
             .filter(x => !MAPPED_AFK_CHECK_REACTIONS[x].isExaltKey && 
@@ -104,7 +104,7 @@ export class LogKey extends BaseCommand {
                 .setCustomId(`${uniqueId}_${5}`)
                 .setMaxValues(1)
                 .setMinValues(1)
-                .setPlaceholder(`Exalt Dungeon Keys`)
+                .setPlaceholder("Exalt Dungeon Keys")
                 .setOptions(exaltKeys.map(y => {
                     return {
                         label: y.val.name,
@@ -113,7 +113,7 @@ export class LogKey extends BaseCommand {
                         emoji: y.val.emojiInfo.identifier
                     };
                 }))
-        )
+        );
         for (let i = 0; i < Math.min(4, subsets.length); i++) {
             selectMenus.push(
                 new MessageSelectMenu()

@@ -500,7 +500,7 @@ export class ConfigDungeons extends BaseCommand {
      * @returns {Promise<string[] | null>} The list of dungeons, if any.
      */
     public async allowDenyDungeons(ctx: ICommandContext, botMsg: Message,
-                                   section: ISectionInfo): Promise<string[] | null> {
+        section: ISectionInfo): Promise<string[] | null> {
         const allDungeons = DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons).map(x => {
             return {
                 dgn: x,
@@ -515,7 +515,7 @@ export class ConfigDungeons extends BaseCommand {
                 new StringBuilder()
                     .append("Below are a list of all dungeons that any raid leader in this section can raid. A")
                     .append(` ${EmojiConstants.GREEN_CHECK_EMOJI} next to the dungeon name indicates that raid leaders can`)
-                    .append(` start an AFK check for this particular dungeon in this particular section.`)
+                    .append(" start an AFK check for this particular dungeon in this particular section.")
                     .appendLine(2)
                     .append("- Type either one number (e.g. `5`), a series of numbers separated by a space or comma")
                     .append(" (e.g. `1, 5, 10 12, 19`), or a number range (e.g. 1-10). If the dungeon corresponding to")
@@ -604,7 +604,7 @@ export class ConfigDungeons extends BaseCommand {
      * @param {ICustomDungeonInfo | IDungeonOverrideInfo} [dungeon] The dungeon, if any.
      */
     public async createOrModifyCustomDungeon(ctx: ICommandContext, botMsg: Message,
-                                             dungeon?: ICustomDungeonInfo | IDungeonOverrideInfo): Promise<void> {
+        dungeon?: ICustomDungeonInfo | IDungeonOverrideInfo): Promise<void> {
         const cDungeon: ICustomDungeonInfo | IDungeonOverrideInfo = dungeon ?? {
             bossLinks: [],
             codeName: `[[${Date.now()}_${StringUtil.generateRandomString(10)}]]`,
@@ -1323,7 +1323,7 @@ export class ConfigDungeons extends BaseCommand {
      */
     // TODO generalize this function
     private async configModifiers(ctx: ICommandContext, botMsg: Message, dungeonName: string,
-                                  dgn: ICustomDungeonInfo | IDungeonOverrideInfo): Promise<string[] | null> {
+        dgn: ICustomDungeonInfo | IDungeonOverrideInfo): Promise<string[] | null> {
         const embed = new MessageEmbed()
             .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`**Filter Dungeon Modifiers:** ${dungeonName}`)
@@ -1536,7 +1536,7 @@ export class ConfigDungeons extends BaseCommand {
      * @private
      */
     private async getNewLinks(ctx: ICommandContext, botMsg: Message, currLinks: ImageInfo[],
-                              options: LinkConfigOptions): Promise<ImageInfo[] | null> {
+        options: LinkConfigOptions): Promise<ImageInfo[] | null> {
         const selected = currLinks.slice();
 
         let validBuiltInImageUrls = DUNGEON_DATA.flatMap(x => [x.portalLink, ...x.bossLinks]);
@@ -1575,7 +1575,7 @@ export class ConfigDungeons extends BaseCommand {
                 new StringBuilder()
                     .append("Below are a list of all images that you have registered with the bot via the")
                     .append(` configuration command for reactions and images. A ${EmojiConstants.GREEN_CHECK_EMOJI} next to`)
-                    .append(` the link means that the image has been selected; otherwise, it has not been selected.`)
+                    .append(" the link means that the image has been selected; otherwise, it has not been selected.")
                     .appendLine(2)
                     .append("- Type either one number (e.g. `5`) or a series of numbers separated by a space or comma")
                     .append(" (e.g. `1, 5, 10 12, 19`). If the image corresponding to the number is selected, it will")
@@ -1711,7 +1711,7 @@ export class ConfigDungeons extends BaseCommand {
                     .appendLine(2)
                     .append("__**General Directions**__").appendLine()
                     .append(`Here, you will be able to add a new ${itemName} or remove an already existing ${itemName}`)
-                    .append(` from the list below.`)
+                    .append(" from the list below.")
                     .appendLine(2)
                     .append(`- The ${EmojiConstants.RIGHT_TRIANGLE_EMOJI} emoji will point to the currently selected`)
                     .append(` ${itemName}.`)
@@ -1926,7 +1926,7 @@ export class ConfigDungeons extends BaseCommand {
                 .append(" early location reactions on a per-dungeon basis, you will need to manually select the")
                 .append(" early location reaction that you want to override for each dungeon and set a new value.")
                 .append(" Also, __make sure__ you assign these early location reactions to a role (via the")
-                .append(" `/configearlylocroles` command).")
+                .append(" `/configearlylocroles` command).");
         }
 
         desc.appendLine(2)
@@ -2229,7 +2229,7 @@ export class ConfigDungeons extends BaseCommand {
      * @private
      */
     private async askInput<T>(ctx: ICommandContext, botMsg: Message, validationInfo: ValidationInfo,
-                              validator: ValidationFunction<T>, defaultT: T): Promise<T | ValidatorResult> {
+        validator: ValidationFunction<T>, defaultT: T): Promise<T | ValidatorResult> {
         const embed = new MessageEmbed()
             .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
             .setTitle(`Prompt: **${validationInfo.nameOfPrompt}**`)

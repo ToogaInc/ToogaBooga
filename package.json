@@ -6,7 +6,8 @@
   "scripts": {
     "compile": "tsc -p .",
     "start": "npm run compile && node out/index.js",
-    "lint": "npx eslint src/**/*"
+    "lint": "npx eslint src/**/*",
+    "lint:fix": "npx eslint src/**/* --fix"
   },
   "keywords": [],
   "author": "Edward Wang",

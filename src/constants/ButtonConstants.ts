@@ -143,15 +143,15 @@ export namespace ButtonConstants {
 
     export const SEARCH_ID: string = "search";
     export const SEARCH_BUTTON: Readonly<MessageButton> = new MessageButton()
-            .setEmoji(EmojiConstants.SEARCH_GLASS_EMOJI)
-            .setLabel("Search")
-            .setCustomId(SEARCH_ID)
-            .setStyle("PRIMARY");
+        .setEmoji(EmojiConstants.SEARCH_GLASS_EMOJI)
+        .setLabel("Search")
+        .setCustomId(SEARCH_ID)
+        .setStyle("PRIMARY");
 
     export const JUMP_ID: string = "jump";
     export const JUMP_BUTTON: Readonly<MessageButton> = new MessageButton()
-            .setEmoji(EmojiConstants.NUMBER_SIGN_EMOJI)
-            .setLabel("Jump")
-            .setCustomId(JUMP_ID)
-            .setStyle("PRIMARY");
+        .setEmoji(EmojiConstants.NUMBER_SIGN_EMOJI)
+        .setLabel("Jump")
+        .setCustomId(JUMP_ID)
+        .setStyle("PRIMARY");
 }

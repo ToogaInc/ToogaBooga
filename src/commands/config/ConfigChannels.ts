@@ -419,7 +419,7 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public getCurrentConfiguration(guild: Guild, guildDoc: IGuildInfo, section: ISectionInfo,
-                                   displayFilter: number): string {
+        displayFilter: number): string {
         const currentConfiguration = new StringBuilder();
         if (displayFilter & DisplayFilter.Raids) {
             const raidChannelObj = section.channels.raids;
@@ -777,7 +777,7 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
      * @private
      */
     private async editDatabaseSettings(ctx: ICommandContext, section: ISectionInfo,
-                                       botMsg: Message, entries: IChannelMongo[], group: string): Promise<void> {
+        botMsg: Message, entries: IChannelMongo[], group: string): Promise<void> {
         const guild = ctx.guild!;
 
         let selected = 0;

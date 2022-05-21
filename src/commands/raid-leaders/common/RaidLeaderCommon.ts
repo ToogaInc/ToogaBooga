@@ -225,7 +225,7 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
                     return {
                         label: x.name.substring(0, 30),
                         value: x.id
-                    }
+                    };
                 }))
                 .setMaxValues(1)
                 .setMinValues(1)

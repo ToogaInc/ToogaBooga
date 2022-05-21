@@ -230,20 +230,20 @@ export namespace LoggerManager {
         }
 
         const guildDoc = guildId
-        ? await MongoManager.getOrCreateGuildDoc(guildId, true)
-        : null;
+            ? await MongoManager.getOrCreateGuildDoc(guildId, true)
+            : null;
 
-        const stats = await getStatsWithDoc(userDoc, guildDoc)
+        const stats = await getStatsWithDoc(userDoc, guildDoc);
         return stats;
     }
 
-     /**
+    /**
      * Gets this person's stats when the IUserInfo is already available.
      * @param {IUserInfo} userInfo The user info.
      * @param {string} guildDoc The guild doc.
      * @returns {Promise<LoggerManager.IUserStats | null>} The result, if any.
      */
-      export async function getStatsWithDoc(userInfo: IUserInfo, guildDoc : IGuildInfo | null): Promise<IUserStats | null> {
+    export async function getStatsWithDoc(userInfo: IUserInfo, guildDoc : IGuildInfo | null): Promise<IUserStats | null> {
 
         const stats: IUserStats = {
             keyUse: new Collection<string, Collection<string, number>>(),

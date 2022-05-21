@@ -148,6 +148,5 @@ export interface IBlacklistedUser extends Omit<IBasePunishment, "affectedUser"> 
 /**
  * An interface that represents a blacklisted modmail user. This will be stored in the guild document.
  */
-// tslint:disable-next-line:no-empty-interface
 export interface IBlacklistedModmailUser extends IBasePunishment {
 }

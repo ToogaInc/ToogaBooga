@@ -1,4 +1,5 @@
 import {TimeUtilities} from "./TimeUtilities";
+import path from "path";
 
 /**
  * Custom Logger class
@@ -14,7 +15,7 @@ export class Logger {
      * @param {boolean} debug Whether to output DEBUG messages, default = false
      */
     public constructor(fileName: string, debug = false) {
-        this.path = require("path").basename(fileName);
+        this.path = path.basename(fileName);
         this.formattedPath = `[${this.path}]`;
         this.outputDebug = debug;
     }

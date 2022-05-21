@@ -148,7 +148,7 @@ export class ForceSync extends BaseCommand {
                 .setTimestamp();
         };
 
-        let interval = setInterval(async () => {
+        const interval = setInterval(async () => {
             await ctx.interaction.editReply({
                 embeds: [createEmbed()]
             });
@@ -216,7 +216,7 @@ export class ForceSync extends BaseCommand {
                             .appendLine()
                             .append(StringUtil.getEmojiProgressBar(20, 1))
                             .appendLine()
-                            .append(`Percent Completed: \`100\`%`)
+                            .append("Percent Completed: `100`%")
                             .toString()
                     )
                     .addField("Added to DB", StringUtil.codifyString(added), true)

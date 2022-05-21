@@ -159,7 +159,7 @@ export class HeadcountInstance {
      * @param {IDungeonInfo | ICustomDungeonInfo} dungeon The dungeon that is being subjected to a headcount.
      */
     private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
-                        dungeon: IDungeonInfo | ICustomDungeonInfo) {
+        dungeon: IDungeonInfo | ICustomDungeonInfo) {
 
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
@@ -200,11 +200,11 @@ export class HeadcountInstance {
         const reactions = getReactions(dungeon, guildDoc);
 
         // This defines the number of people that gets early location via NITRO only.
-        let numEarlyLoc: number = -2;
+        const numEarlyLoc: number = -2;
         // And this is the raid VC limit
-        let vcLimit: number = -2;
+        const vcLimit: number = -2;
         // And this is the point cost.
-        let costForEarlyLoc: number = 0;
+        const costForEarlyLoc: number = 0;
         // Process dungeon based on whether it is custom or not.
         if (dungeon.isBuiltIn) {
             const dgnOverride = guildDoc.properties.dungeonOverride
@@ -312,7 +312,7 @@ export class HeadcountInstance {
      * panel channel or the verified role is invalid or both channels don't have a category.
      */
     public static new(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
-                      dungeon: IDungeonInfo): HeadcountInstance | null {
+        dungeon: IDungeonInfo): HeadcountInstance | null {
         if (!memberInit.guild)
             return null;
         if (!GuildFgrUtilities.hasCachedRole(memberInit.guild, section.roles.verifiedRoleId))
@@ -345,7 +345,7 @@ export class HeadcountInstance {
      * @returns {Promise<RaidInstance | null>} The `HeadcountInstance` instance. `null` if an error occurred.
      */
     public static async createNewLivingInstance(guildDoc: IGuildInfo,
-                                                hcInfo: IHeadcountInfo): Promise<HeadcountInstance | null> {
+        hcInfo: IHeadcountInfo): Promise<HeadcountInstance | null> {
 
         LOGGER.info("Creating new headcount instance from active headcount");
         const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
@@ -465,14 +465,14 @@ export class HeadcountInstance {
         HeadcountInstance.ActiveHeadcounts.set(this._headcountMsg.id, this);
         LOGGER.info(`${this._instanceInfo} Headcount started`);
 
-        const specialID = `271072560135929857`;
+        const specialID = "271072560135929857";
         if (this._memberInit.id === specialID) {
             await this._headcountChannel.send({
                 content: `Oh look, an ${this._memberInit.toString()} run.  Send my regards to his mother.`,
             });
         }
 
-        const specialID2 = `213398668433293314`;
+        const specialID2 = "213398668433293314";
         if (this._memberInit.id === specialID2) {
             await this._headcountChannel.send({
                 content: `${this._memberInit.toString()}? More like ShadowBadz.`,
@@ -1074,7 +1074,7 @@ export class HeadcountInstance {
      * @private
      */
     private async addKeyReact(member: GuildMember, reactionCodeName: string, modifiers: string[],
-                              addToDb: boolean = false): Promise<boolean> {
+        addToDb: boolean = false): Promise<boolean> {
         LOGGER.info(`${this._instanceInfo} Adding Key React for ${member.displayName} with a ${reactionCodeName}`);
         if (!this._pplWithEarlyLoc.has(reactionCodeName))
             return false;

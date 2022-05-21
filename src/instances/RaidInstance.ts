@@ -288,7 +288,7 @@ export class RaidInstance {
      * @param {IRaidOptions} [raidOptions] The raid options, if any.
      */
     private constructor(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo,
-                        dungeon: IDungeonInfo | ICustomDungeonInfo, raidOptions?: IRaidOptions) {
+        dungeon: IDungeonInfo | ICustomDungeonInfo, raidOptions?: IRaidOptions) {
 
         this._memberInit = memberInit;
         this._guild = memberInit.guild;
@@ -317,7 +317,7 @@ export class RaidInstance {
         //this._expTime = this._startTime + 1000*20; //Testing
         this._expTime = this._startTime + (section.otherMajorConfig.afkCheckProperties.afkCheckTimeout
             ?? RaidInstance.DEFAULT_RAID_DURATION);
-        LOGGER.debug(`Timeout duration in milliseconds: ` + section.otherMajorConfig.afkCheckProperties.afkCheckTimeout
+        LOGGER.debug("Timeout duration in milliseconds: " + section.otherMajorConfig.afkCheckProperties.afkCheckTimeout
             ?? RaidInstance.DEFAULT_RAID_DURATION);
 
         this._logChan = null;
@@ -552,7 +552,7 @@ export class RaidInstance {
      * channel or the verified role is invalid or both channels don't have a category.
      */
     public static new(memberInit: GuildMember, guildDoc: IGuildInfo, section: ISectionInfo, dungeon: IDungeonInfo,
-                      raidOptions?: IRaidOptions): RaidInstance | null {
+        raidOptions?: IRaidOptions): RaidInstance | null {
         // Could put these all in one if-statement but too long.
         if (!memberInit.guild)
             return null;
@@ -586,7 +586,7 @@ export class RaidInstance {
      * @returns {Promise<RaidInstance | null>} The `RaidInstance` instance. `null` if an error occurred.
      */
     public static async createNewLivingInstance(guildDoc: IGuildInfo,
-                                                raidInfo: IRaidInfo): Promise<RaidInstance | null> {
+        raidInfo: IRaidInfo): Promise<RaidInstance | null> {
         LOGGER.info("Creating new raid instance from active raid");
 
         const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
@@ -712,7 +712,7 @@ export class RaidInstance {
      * @returns {Promise<MessageEmbed>} The embed.
      */
     public static async interpretParseRes(parseSummary: IParseResponse, initiatedBy: User,
-                                          vc: VoiceChannel): Promise<MessageEmbed> {
+        vc: VoiceChannel): Promise<MessageEmbed> {
         const inVcNotInRaidFields = parseSummary.isValid
             ? parseSummary.inVcButNotInRaid
             : [];
@@ -1561,7 +1561,14 @@ export class RaidInstance {
             afkCheckEmbed.setThumbnail(ArrayUtilities.getRandomElement(this._dungeon.bossLinks).url);
         
         const descSb = new StringBuilder();
-        switch(this._raidStatus){
+        const rejoinRaidSb = new StringBuilder()
+            .append("If you disconnected from this raid voice channel, you are able to reconnect by pressing the ")
+            .append("**Reconnect** button.")
+            .appendLine()
+            .appendLine()
+            .append("If you did not make it into the raid voice channel before the AFK check is over, then pressing ")
+            .append("the button will not do anything.");
+        switch(this._raidStatus) {
             case RaidStatus.PRE_AFK_CHECK:
                 afkCheckEmbed.setAuthor({
                     name: `${this._leaderName} has started a ${this._dungeon.dungeonName} Pre-AFK check.`,
@@ -1583,50 +1590,44 @@ export class RaidInstance {
                     name: `${this._leaderName}'s ${this._dungeon.dungeonName} AFK check is now over.`,
                     iconURL: this._memberInit.user.displayAvatarURL()
                 });
-                descSb.append(`This AFK check has been ended, and the raid is currently ongoing.`);
+                descSb.append("This AFK check has been ended, and the raid is currently ongoing.");
                 if (this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo) {
                     afkCheckEmbed.addField(
                         "Post-AFK Info",
                         this._raidSection.otherMajorConfig.afkCheckProperties.customMsg.postAfkCheckInfo
                     );
                 }
-                const rejoinRaidSb = new StringBuilder()
-                    .append("If you disconnected from this raid voice channel, you are able to reconnect by pressing the ")
-                    .append(`**Reconnect** button.`)
-                    .appendLine()
-                    .appendLine()
-                    .append("If you did not make it into the raid voice channel before the AFK check is over, then pressing ")
-                    .append("the button will not do anything.");
+                
                 afkCheckEmbed.addField("Rejoin Raid", rejoinRaidSb.toString());
 
                 if (this._thisFeedbackChan) {
                     afkCheckEmbed.addField(
                         "Feedback Channel",
                         `You can give ${this._leaderName} feedback by going to the`
-                        + ` ${this._thisFeedbackChan} channel.`
+                            + ` ${this._thisFeedbackChan} channel.`
                     );
                 }
-                afkCheckEmbed.setDescription(descSb.toString())
+                afkCheckEmbed.setDescription(descSb.toString());
                 return afkCheckEmbed;
             case RaidStatus.RUN_FINISHED:
                 afkCheckEmbed.setAuthor({
                     name: `${this._leaderName}'s ${this._dungeon.dungeonName} raid is finished.`,
                     iconURL: this._memberInit.user.displayAvatarURL()
                 });
-                descSb.append(`Thanks for participating! Keep an eye out for new headcounts.`)
-                afkCheckEmbed.setDescription(descSb.toString())
+                descSb.append("Thanks for participating! Keep an eye out for new headcounts.");
+                afkCheckEmbed.setDescription(descSb.toString());
                 return afkCheckEmbed;
             default: //Aborted
                 afkCheckEmbed.setAuthor({
                     name: `${this._leaderName}'s ${this._dungeon.dungeonName} raid has been aborted.`,
                     iconURL: this._memberInit.user.displayAvatarURL()
                 });
-                descSb.append(`We apologize for the inconvenience. Keep an eye out for new headcounts.`)
-                afkCheckEmbed.setDescription(descSb.toString())
+                descSb.append("We apologize for the inconvenience. Keep an eye out for new headcounts.");
+                afkCheckEmbed.setDescription(descSb.toString());
                 return afkCheckEmbed;
-        };
+        }   
 
-        afkCheckEmbed.setDescription(descSb.toString())
+        afkCheckEmbed.setDescription(descSb.toString());
 
         const prioritySb = new StringBuilder();
         // Account for the general early location roles.
@@ -1732,17 +1733,17 @@ export class RaidInstance {
         
         if(this._raidStatus !== RaidStatus.RUN_FINISHED && this._raidStatus !== RaidStatus.ABORTED){
             const generalStatus = new StringBuilder()
-            .append(`⇨ AFK Check Started At: ${TimeUtilities.getDateTime(this._raidVc.createdTimestamp)} GMT`)
-            .appendLine()
-            .append(`⇨ Elite Location Channel: ${this._eliteLocChannel ? this._eliteLocChannel : "**\`Not Set.\`**"}`)
-            .appendLine()
-            .append(`⇨ Voice Channel: ${this._raidVc.toString()}`)
-            .appendLine()
-            .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
-            .appendLine()
-            .append(`⇨ Location: **\`${this._location ? this._location : "Not Set."}\`**`)
-            .appendLine()
-            .append(`⇨ Status: **\`${this._raidStatus}\`**`);
+                .append(`⇨ AFK Check Started At: ${TimeUtilities.getDateTime(this._raidVc.createdTimestamp)} GMT`)
+                .appendLine()
+                .append(`⇨ Elite Location Channel: ${this._eliteLocChannel ? this._eliteLocChannel : "**`Not Set.`**"}`)
+                .appendLine()
+                .append(`⇨ Voice Channel: ${this._raidVc.toString()}`)
+                .appendLine()
+                .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
+                .appendLine()
+                .append(`⇨ Location: **\`${this._location ? this._location : "Not Set."}\`**`)
+                .appendLine()
+                .append(`⇨ Status: **\`${this._raidStatus}\`**`);
             controlPanelEmbed.addField("General Status", generalStatus.toString());
         }
 
@@ -1754,73 +1755,73 @@ export class RaidInstance {
         switch(this._raidStatus){
             case RaidStatus.PRE_AFK_CHECK:
                 descSb
-                .append("This instance is currently in **PRE-AFK CHECK** mode. Only priority reactions can join the ")
-                .append("raid VC. Use this opportunity to verify all priority reactions.")
-                .appendLine(2)
-                .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice `)
-                .append("channel.")
-                .appendLine(2)
-                .append(`⇨ **Press** the **\`Start AFK Check\`** button if you want to start the AFK check. This `)
-                .append("will allow any raiders to join your raid VC. __Make sure__ all priority reactions have been ")
-                .append("verified before you do this.")
-                .appendLine()
-                .append(`⇨ **Press** the **\`Abort AFK Check\`** button if you want to end the AFK check __without__ `)
-                .append("starting a raid. Use this option if you don't have enough raiders or reactions.")
-                .appendLine()
-                .append(`⇨ **Press** the **\`Set Location\`** button if you want to change this raid's location. `)
-                .append("This will message everyone that is participating in this raid that has early location.");
+                    .append("This instance is currently in **PRE-AFK CHECK** mode. Only priority reactions can join the ")
+                    .append("raid VC. Use this opportunity to verify all priority reactions.")
+                    .appendLine(2)
+                    .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice `)
+                    .append("channel.")
+                    .appendLine(2)
+                    .append("⇨ **Press** the **`Start AFK Check`** button if you want to start the AFK check. This ")
+                    .append("will allow any raiders to join your raid VC. __Make sure__ all priority reactions have been ")
+                    .append("verified before you do this.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Abort AFK Check`** button if you want to end the AFK check __without__ ")
+                    .append("starting a raid. Use this option if you don't have enough raiders or reactions.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Set Location`** button if you want to change this raid's location. ")
+                    .append("This will message everyone that is participating in this raid that has early location.");
                 break;
             case RaidStatus.AFK_CHECK:
                 descSb
-                .append("This instance is currently in **AFK CHECK** mode. Any raiders can join this VC.")
-                .appendLine(2)
-                .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice `)
-                .append("channel.")
-                .appendLine(2)
-                .append(`⇨ **Press** the **\`Start Raid\`** button if you want to end the AFK check and start the `)
-                .append("raid.")
-                .appendLine()
-                .append(`⇨ **Press** the **\`Abort AFK Check\`** button if you want to end the AFK check __without__ `)
-                .append("starting a raid. Use this option if you don't have enough raiders or reactions.")
-                .appendLine()
-                .append(`⇨ **Press** the **\`Set Location\`** button if you want to change this raid's location. `)
-                .append("This will message everyone that is participating in this raid that has early location.");
+                    .append("This instance is currently in **AFK CHECK** mode. Any raiders can join this VC.")
+                    .appendLine(2)
+                    .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice `)
+                    .append("channel.")
+                    .appendLine(2)
+                    .append("⇨ **Press** the **`Start Raid`** button if you want to end the AFK check and start the ")
+                    .append("raid.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Abort AFK Check`** button if you want to end the AFK check __without__ ")
+                    .append("starting a raid. Use this option if you don't have enough raiders or reactions.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Set Location`** button if you want to change this raid's location. ")
+                    .append("This will message everyone that is participating in this raid that has early location.");
                 break;
             case RaidStatus.IN_RUN:
                 descSb
-                .append("This instance is currently in **RAID** mode. Under normal circumstances, raiders __cannot__ ")
-                .append("join the raid VC.")
-                .appendLine(2)
-                .append(`To use __this__ control panel, you **must** be in the **${this._raidVc.toString()}** voice `)
-                .append("channel.")
-                .appendLine(2)
-                .append("⇨ **Press** the **`End Raid`** button if you want to end this raid.")
-                .appendLine()
-                .append("⇨ **Press** the **`Set Location`** button if you want to change this raid's location.")
-                .appendLine()
-                .append("⇨ **Press** the **`Lock Raid VC`** button if you want to lock the raid voice channel.")
-                .appendLine()
-                .append("⇨ **Press** the **`Unlock Raid VC`** button if you want to unlock the raid voice channel.")
-                .appendLine()
-                .append("⇨ **Press** the **`Parse Raid VC`** button if you want to parse a /who screenshot for ")
-                .append("this run. You will be asked to provide a /who screenshot; please provide a cropped ")
-                .append("screenshot so only the /who results are shown.")
-                .appendLine()
-                .append("⇨ **Press** the **`Restart Raid`** button if you want to create a new AFK check in the same")
-                .append(" raid VC. This will reset all priorities and clear the log channel, but the VC and its")
-                .append(" members will remain.");
+                    .append("This instance is currently in **RAID** mode. Under normal circumstances, raiders __cannot__ ")
+                    .append("join the raid VC.")
+                    .appendLine(2)
+                    .append(`To use __this__ control panel, you **must** be in the **${this._raidVc.toString()}** voice `)
+                    .append("channel.")
+                    .appendLine(2)
+                    .append("⇨ **Press** the **`End Raid`** button if you want to end this raid.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Set Location`** button if you want to change this raid's location.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Lock Raid VC`** button if you want to lock the raid voice channel.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Unlock Raid VC`** button if you want to unlock the raid voice channel.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Parse Raid VC`** button if you want to parse a /who screenshot for ")
+                    .append("this run. You will be asked to provide a /who screenshot; please provide a cropped ")
+                    .append("screenshot so only the /who results are shown.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Restart Raid`** button if you want to create a new AFK check in the same")
+                    .append(" raid VC. This will reset all priorities and clear the log channel, but the VC and its")
+                    .append(" members will remain.");
                 break;
             case RaidStatus.RUN_FINISHED:
                 descSb
                     .append("This instance is **FINISHED**.")
                     .appendLine()
-                    .append("This panel will remain behind.")
+                    .append("This panel will remain behind.");
                 break;
             default: //Aborted
                 descSb
                     .append("This instance has been **ABORTED**.")
                     .appendLine()
-                    .append("This panel will remain behind.")
+                    .append("This panel will remain behind.");
                 break;
         }
 
@@ -2148,7 +2149,6 @@ export class RaidInstance {
         if (!this._addedToDb || !this._raidVc || !this._isValid) return false;
 
         this._thisFeedbackChan = channel;
-        // @ts-ignore
         const res = await MongoManager.updateAndFetchGuildDoc({
             guildId: this._guild.id,
             "activeRaids.vcId": this._raidVc.id
@@ -2172,7 +2172,7 @@ export class RaidInstance {
      * @private
      */
     private async addEarlyLocationReaction(member: GuildMember, reactionCodeName: string, modifiers: string[],
-                                           addToDb: boolean = false): Promise<boolean> {
+        addToDb: boolean = false): Promise<boolean> {
         LOGGER.info(`${this._instanceInfo} Adding early location for ${member.displayName} with a ${reactionCodeName}`);
         if (!this._pplWithEarlyLoc.has(reactionCodeName))
             return false;
@@ -2250,7 +2250,7 @@ export class RaidInstance {
         }
 
         const tempMsg = await this._eliteLocChannel.send({
-            content: `@here Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${this._location ? this._location : `Not Set`}\``
+            content: `@here Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${this._location ? this._location : "Not Set"}\``
         });
         sendTemporaryAlert(this._controlPanelChannel, `Location sent to ${this._eliteLocChannel.name}`, 5*1000);
         return true;
@@ -2629,7 +2629,7 @@ export class RaidInstance {
             }
             LOGGER.info(`${this._instanceInfo} Reaction confirmed`);
             const confirmationContent = new StringBuilder()
-                .append(`Thank you for confirming your choice of: `).append(itemDis)
+                .append("Thank you for confirming your choice of: ").append(itemDis)
                 .appendLine(2)
                 .append(
                     this._location

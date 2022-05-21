@@ -70,7 +70,7 @@ export class Leaderboard extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         await ctx.interaction.reply({
-            content:`Calculating Leaderboard...`
+            content:"Calculating Leaderboard..."
         });
 
         const lbType = ctx.interaction.options.getString("lb_category", true);
@@ -80,7 +80,7 @@ export class Leaderboard extends BaseCommand {
             dungeon = await DungeonUtilities.selectDungeon(ctx, DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons));
             //This will remove the dungeon selection instantly.
             await ctx.interaction.editReply({
-                content:`Dungeon confirmed.  Calculating Leaderboard...`,
+                content:"Dungeon confirmed.  Calculating Leaderboard...",
                 components: [],
                 embeds: []
             });
@@ -92,7 +92,7 @@ export class Leaderboard extends BaseCommand {
         //If only one page, no need to add buttons to navigate
         if(lbSubsets.length < 2){
             await ctx.interaction.editReply({
-                content: ` `,
+                content: " ",
                 components: [],
                 embeds: [this.getLeaderboardEmbed(lbSubsets, 0, ctx, lbType, dungeon)]
             });
@@ -119,7 +119,7 @@ export class Leaderboard extends BaseCommand {
 
         ];
         await ctx.interaction.editReply({
-            content: ` `,
+            content: " ",
             components: AdvancedCollector.getActionRowsFromComponents(components),
             embeds: [this.getLeaderboardEmbed(lbSubsets, 0, ctx, lbType, dungeon)]
         });
@@ -151,58 +151,58 @@ export class Leaderboard extends BaseCommand {
                 }
                 case jumpId: {
                     const pageEmbed = new MessageEmbed()
-                        .setTitle(`Enter page number`)
-                        .setColor(`GREY`);
+                        .setTitle("Enter page number")
+                        .setColor("GREY");
                     const tempMsg = await ctx.channel.send({
                         embeds: [pageEmbed]
-                    })
-                    let pageNumber = currPage;
-                    await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ['time'] })
-                    .then(async collected => {
-                        const msg = parseInt(collected.first()?.content ?? "NaN");
-                        pageNumber = isNaN(msg) ? currPage : msg - 1;
-                        await setTimeout(resolve=>resolve, 500)
-                        await collected.first()?.delete();
-                    })
-                    .catch(async collected => {
-                        await setTimeout(resolve=>resolve, 500)
-                        await collected.first()?.delete();
                     });
+                    let pageNumber = currPage;
+                    await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ["time"] })
+                        .then(async collected => {
+                            const msg = parseInt(collected.first()?.content ?? "NaN");
+                            pageNumber = isNaN(msg) ? currPage : msg - 1;
+                            await setTimeout(resolve=>resolve, 500);
+                            await collected.first()?.delete();
+                        })
+                        .catch(async collected => {
+                            await setTimeout(resolve=>resolve, 500);
+                            await collected.first()?.delete();
+                        });
                     await tempMsg.delete();          
                     currPage = pageNumber;
                     break;
                 }
                 case searchId: {
                     const pageEmbed = new MessageEmbed()
-                        .setTitle(`Enter member IGN, ID, or Mention`)
-                        .setColor(`GREY`);
+                        .setTitle("Enter member IGN, ID, or Mention")
+                        .setColor("GREY");
                     const tempMsg = await ctx.channel.send({
                         embeds: [pageEmbed]
-                    })
+                    });
                     let memberResolvable = "";
-                    await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ['time'] })
+                    await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ["time"] })
                         .then(async collected => {
                             memberResolvable = collected.first()?.content ?? "";
-                            await setTimeout(resolve=>resolve, 500)
+                            await setTimeout(resolve=>resolve, 500);
                             await collected.first()?.delete();
                         })
                         .catch(async collected => {
-                            await setTimeout(resolve=>resolve, 500)
+                            await setTimeout(resolve=>resolve, 500);
                             await collected.first()?.delete();
                         });
                     await tempMsg.delete();          
                     const resMember = await UserManager.resolveMember(ctx.guild!, memberResolvable);
                     if(!resMember){
-                        this.sendTempMessage(`Member not found on the server`, ctx, 5000);
+                        this.sendTempMessage("Member not found on the server", ctx, 5000);
                         break;
                     }
-                    const index = leaderboardArr.findIndex(x => x.user.discordId === resMember.member.id)
+                    const index = leaderboardArr.findIndex(x => x.user.discordId === resMember.member.id);
                     if(index < 0){
-                        this.sendTempMessage(`Member not found on the leaderboard`, ctx, 5000);
+                        this.sendTempMessage("Member not found on the leaderboard", ctx, 5000);
                     }
                     currPage = Math.floor((index + 1) / 20);
                     break;
-                    }
+                }
 
             }
 
@@ -252,7 +252,7 @@ export class Leaderboard extends BaseCommand {
         if(searchCriteria === "RUN_LED" && !dungeon) return [];
         
         const ret : LeaderboardEntry[] = [];
-        let usersWithLogs: IUserInfo[] = await MongoManager.getUserCollection().find().toArray();
+        const usersWithLogs: IUserInfo[] = await MongoManager.getUserCollection().find().toArray();
         //usersWithLogs = this.duplicateUsers(usersWithLogs, 4);
         
         if(!usersWithLogs) return [];
@@ -320,18 +320,18 @@ export class Leaderboard extends BaseCommand {
             const embed = MessageUtilities.generateBlankEmbed(ctx.guild ?? ctx.user, "GREY")
                 .setTimestamp()
                 .setFooter({text: `${ctx.guild?.name}`})
-                .addField(`No Entries Found`,`Try a different leaderboard category`);
+                .addField("No Entries Found","Try a different leaderboard category");
             switch(searchCriteria){
                 case "RUN_LED":{
-                    embed.setTitle(`${dungeon?.dungeonName} Top Leaders (Page 1/1)`)
+                    embed.setTitle(`${dungeon?.dungeonName} Top Leaders (Page 1/1)`);
                     break;
                 }
                 case "KEY_POP":{
-                    embed.setTitle(`Top Key Poppers (Page 1/1)`)
+                    embed.setTitle("Top Key Poppers (Page 1/1)");
                     break;
                 }
                 case "RUNE_POP":{
-                    embed.setTitle(`Top Rune Poppers (Page 1/1)`)
+                    embed.setTitle("Top Rune Poppers (Page 1/1)");
                     break;
                 }
                 default:{
@@ -354,15 +354,15 @@ export class Leaderboard extends BaseCommand {
         
         switch(searchCriteria){
             case "RUN_LED":{
-                embed.setTitle(`${dungeon?.dungeonName} Top Leaders (Page ${page+1}/${lbSubsets.length})`)
+                embed.setTitle(`${dungeon?.dungeonName} Top Leaders (Page ${page+1}/${lbSubsets.length})`);
                 break;
             }
             case "KEY_POP":{
-                embed.setTitle(`Top Key Poppers (Page ${page+1}/${lbSubsets.length})`)
+                embed.setTitle(`Top Key Poppers (Page ${page+1}/${lbSubsets.length})`);
                 break;
             }
             case "RUNE_POP":{
-                embed.setTitle(`Top Rune Poppers (Page ${page+1}/${lbSubsets.length})`)
+                embed.setTitle(`Top Rune Poppers (Page ${page+1}/${lbSubsets.length})`);
                 break;
             }
             default:{
@@ -374,7 +374,7 @@ export class Leaderboard extends BaseCommand {
 
         const firstTen = splitLb[0];
         const firstTenLabel = `Top ${10*(2*page+1)}`;
-        let firstTenValue = ``;
+        let firstTenValue = "";
         for(let i = 0; i < firstTen.length; i++){
             const lbEntry = firstTen[i];
             firstTenValue += `#${10*(2*page)+(i+1)}. <@${lbEntry.user.discordId}> - ${lbEntry.count}\n`;
@@ -384,7 +384,7 @@ export class Leaderboard extends BaseCommand {
 
         const lastTen = splitLb[1];
         const lastTenLabel = `Top ${10*(2*page+2)}`;
-        let lastTenValue = ``;
+        let lastTenValue = "";
         for(let i = 0; i < lastTen.length; i++){
             const lbEntry = lastTen[i];
             lastTenValue += `#${10*(2*page+1)+(i+1)}. <@${lbEntry.user.discordId}> - ${lbEntry.count}\n`;

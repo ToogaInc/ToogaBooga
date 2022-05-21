@@ -49,7 +49,7 @@ export class ListAll extends BaseCommand {
         const users = role.members;
 
         const limit = 4096;
-        const str = StringUtil.codifyString(Array.from(users.values()).map(user => user.displayName).sort().join(`, `));
+        const str = StringUtil.codifyString(Array.from(users.values()).map(user => user.displayName).sort().join(", "));
         if(str.length > limit){
             await ctx.interaction.reply({
                 content: `Too many members for role: ${role.name}.`,

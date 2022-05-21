@@ -114,9 +114,9 @@ export class Bot {
             ]
         });
         Bot.BotInstance = this;
-        LOGGER.info(`Starting Bot`);
+        LOGGER.info("Starting Bot");
 
-        LOGGER.info(`Configuring commands`);
+        LOGGER.info("Configuring commands");
         Bot.Commands = new Collection<string, Cmds.BaseCommand[]>();
 
         Bot.Commands.set("Bot Information", [
@@ -325,7 +325,7 @@ export class Bot {
         const guilds = this.client.guilds;
         guilds.cache.forEach(guild => { 
             guild.members.fetch();
-        })
+        });
         return true;
     }
 }

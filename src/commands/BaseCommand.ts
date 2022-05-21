@@ -304,7 +304,7 @@ export abstract class BaseCommand {
      * @throws {Error} If the command has invalid role permissions defined.
      */
     public hasPermissionToRun(userToTest: User | GuildMember, guild: Guild | null,
-                              guildDoc: IGuildInfo | null): ICanRunResult {
+        guildDoc: IGuildInfo | null): ICanRunResult {
         const results: ICanRunResult = {
             canRun: false,
             hasAdmin: false,
@@ -368,7 +368,7 @@ export abstract class BaseCommand {
         // See if custom permissions are defined.
         // If so, use it.
         const customPermData = guildDoc.properties.customCmdPermissions.find(x => x.key === this.commandInfo.cmdCode);
-        const rolePermissions = Boolean(customPermData && !customPermData.value.useDefaultRolePerms)
+        const rolePermissions = (customPermData && !customPermData.value.useDefaultRolePerms)
             ? customPermData!.value.rolePermsNeeded
             : this.commandInfo.rolePermissions;
         // This represents the roles that are needed to ensure that the command can be executed. The user must have

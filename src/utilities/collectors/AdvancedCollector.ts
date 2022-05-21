@@ -168,9 +168,9 @@ export namespace AdvancedCollector {
      */
     export async function startInteractionEphemeralCollector(
         options: Omit<IInteractionBase, "msgOptions"
-            | "oldMsg"
-            | "deleteBaseMsgAfterComplete"
-            | "clearInteractionsAfterComplete">,
+        | "oldMsg"
+        | "deleteBaseMsgAfterComplete"
+        | "clearInteractionsAfterComplete">,
         uniqueIdentifier: string
     ): Promise<MessageComponentInteraction | null> {
         let returnInteraction: MessageComponentInteraction | null = null;
@@ -444,7 +444,7 @@ export namespace AdvancedCollector {
 
             if (options) {
                 if (options.min && m.content.length < options.min) {
-                    const tooShortDesc = new StringBuilder().append(`Your message is too short. It needs to be at `)
+                    const tooShortDesc = new StringBuilder().append("Your message is too short. It needs to be at ")
                         .append(`least ${options.min} characters long.`);
                     const tooShortEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Short")
@@ -454,7 +454,7 @@ export namespace AdvancedCollector {
                 }
 
                 if (options.max && options.max < m.content.length) {
-                    const tooLongDesc = new StringBuilder().append(`Your message is too long. It needs to be at `)
+                    const tooLongDesc = new StringBuilder().append("Your message is too long. It needs to be at ")
                         .append(`most ${options.max} characters long.`);
                     const tooLongEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Long")
@@ -489,7 +489,7 @@ export namespace AdvancedCollector {
      * @return {Function} A function that takes in a message and returns a Role, if any.
      */
     export function getRolePrompt(msg: Message, pChan: PartialTextBasedChannelFields): (m: Message)
-        => Promise<Role | undefined> {
+    => Promise<Role | undefined> {
         return async (m: Message): Promise<undefined | Role> => {
             const origRole = m.mentions.roles.first();
             const guild = msg.guild!;

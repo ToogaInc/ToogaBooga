@@ -215,7 +215,7 @@ export namespace DungeonUtilities {
         const selectMenus: MessageSelectMenu[] = [];
         const uIdentifier = StringUtil.generateRandomString(20);
         
-        let exaltDungeons:IDungeonInfo[] = [];
+        const exaltDungeons:IDungeonInfo[] = [];
         for(const dungeon of dungeons){
             if(dungeon.dungeonCategory === "Exaltation Dungeons"){
                 exaltDungeons.push(dungeon);
@@ -258,11 +258,11 @@ export namespace DungeonUtilities {
             );
         }
         const askDgnEmbed = MessageUtilities.generateBlankEmbed(ctx.member!, "GOLD")
-        .setTitle(`Select Dungeon`)
-        .setDescription("Please select a dungeon from the dropdown menu(s) below. If you want to cancel this,"
-            + " press the **Cancel** button.")
-        .setFooter({text: "You have 1 minute and 30 seconds to select a dungeon."})
-        .setTimestamp();
+            .setTitle("Select Dungeon")
+            .setDescription("Please select a dungeon from the dropdown menu(s) below. If you want to cancel this,"
+                + " press the **Cancel** button.")
+            .setFooter({text: "You have 1 minute and 30 seconds to select a dungeon."})
+            .setTimestamp();
 
         if (dungeonSubset.length > 4) {
             askDgnEmbed.addField(
@@ -274,12 +274,12 @@ export namespace DungeonUtilities {
 
         if(!(ctx.interaction.replied || ctx.interaction.deferred)){
             await ctx.interaction.reply({
-                content: `Creating dungeon selection panel`,
-            })
+                content: "Creating dungeon selection panel",
+            });
         }
 
         await ctx.interaction.editReply({
-            content: ` `,
+            content: " ",
             embeds: [askDgnEmbed],
             components: AdvancedCollector.getActionRowsFromComponents([
                 ...selectMenus,

@@ -119,13 +119,13 @@ export class FindPunishment extends BaseCommand {
             .append(`- Moderator Nickname: ${punishmentObj.moderator.name}`).appendLine();
         embed.setColor(pInfo.resolved?.actionId === punishmentId ? "GREEN" : "RED")
             .setDescription(descSb.toString()).addField(
-            "Moderation ID",
-            StringUtil.codifyString(punishmentObj.actionId)
-        ).addField(
-            "Issued At",
-            StringUtil.codifyString(`${TimeUtilities.getDateTime(punishmentObj.issuedAt)} GMT`),
-            true
-        );
+                "Moderation ID",
+                StringUtil.codifyString(punishmentObj.actionId)
+            ).addField(
+                "Issued At",
+                StringUtil.codifyString(`${TimeUtilities.getDateTime(punishmentObj.issuedAt)} GMT`),
+                true
+            );
 
         // If this is a punishment, we also include duration, expiration time BEFORE the reason + evidence
         if (pInfo.actionId === punishmentId) {
