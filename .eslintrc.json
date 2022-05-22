@@ -46,12 +46,12 @@
         "no-bitwise": "off",
         "prefer-const": "warn",
         "no-prototype-builtins": "off",
-        "no-inner-declarations": "off",
-        "no-async-promise-executor": "off",
+        "no-inner-declarations": "off", // A lot of function declarations "not in programt root" (i.e. VerifyManager)
+        "no-async-promise-executor": "off", // Used a lot
         "no-constant-condition": "off",
-        "@typescript-eslint/no-empty-interface": "off",
+        "@typescript-eslint/no-empty-interface": "off", // Following rules are for matching current code style
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/no-namespace": "off",
-        "@typescript-eslint/no-inferrable-types": "off"
+        "@typescript-eslint/no-inferrable-types": "off" // Not necessary but for incomplete types that extend and add nothing
     }
 }
