@@ -46,7 +46,6 @@ export async function onReadyEvent(): Promise<void> {
     }));
 
     LOGGER.info("Resuming any interrupted instances.");
-    // @ts-ignore
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
     await Promise.all([
         MuteManager.startChecker(guildDocs),

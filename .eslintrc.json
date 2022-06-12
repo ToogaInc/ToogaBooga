@@ -1,0 +1,57 @@
+{
+    "env": {
+        "es2021": true,
+        "node": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@typescript-eslint/eslint-recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "rules": {
+        "indent": "off", // Apparently have to disable entirely to override with typescript plugin's indent
+        "@typescript-eslint/indent": [
+            "error",
+            4,
+            {
+                "SwitchCase": 1, // Default is 0 so it's aligned with "switch"
+                "FunctionDeclaration": { "parameters": "first" }, // Spacing for parameters before function
+                "ignoreComments": true // No option to match comments with expected indent and it looks really ugly
+            }
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "quotes": [
+            "error", // Ignores when template literals are actually used (`${something}` vs `something`)
+            "double"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
+        "object-shorthand": "off",
+        "no-console": "off",
+        "no-trailing-spaces": "off",
+        "no-empty": "warn",
+        "no-bitwise": "off",
+        "prefer-const": "warn",
+        "no-prototype-builtins": "off",
+        "no-inner-declarations": "off", // A lot of function declarations "not in programt root" (i.e. VerifyManager)
+        "no-async-promise-executor": "off", // Used a lot
+        "no-constant-condition": "off",
+        "@typescript-eslint/no-empty-interface": "off", // Following rules are for matching current code style
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "@typescript-eslint/no-namespace": "off",
+        "@typescript-eslint/no-inferrable-types": "off" // Not necessary but for incomplete types that extend and add nothing
+    }
+}

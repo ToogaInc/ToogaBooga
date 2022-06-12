@@ -83,10 +83,10 @@ export class LogRun extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const canRemoveRuns = [
-                ctx.guildDoc!.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
-                ctx.guildDoc!.roles.staffRoles.moderation.officerRoleId,
-                ctx.guildDoc!.roles.staffRoles.moderation.moderatorRoleId
-            ].some(x => GuildFgrUtilities.memberHasCachedRole(ctx.member!, x))
+            ctx.guildDoc!.roles.staffRoles.universalLeaderRoleIds.headLeaderRoleId,
+            ctx.guildDoc!.roles.staffRoles.moderation.officerRoleId,
+            ctx.guildDoc!.roles.staffRoles.moderation.moderatorRoleId
+        ].some(x => GuildFgrUtilities.memberHasCachedRole(ctx.member!, x))
             || ctx.member!.permissions.has("ADMINISTRATOR");
 
         const mStr = ctx.interaction.options.getString("member", false);

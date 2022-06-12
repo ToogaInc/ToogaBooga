@@ -182,7 +182,7 @@ export namespace QuotaManager {
                 .appendLine()
                 .append(`\tRoles: [${members[i]?.roles.cache.map(x => x.name).join(", ") ?? ""}]`)
                 .appendLine()
-                .append(`\tBreakdown:`)
+                .append("\tBreakdown:")
                 .appendLine();
             const entries = Object.entries(logInfo.quotaBreakdown);
             if (entries.length === 0) {

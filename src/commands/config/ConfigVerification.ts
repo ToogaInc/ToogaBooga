@@ -889,7 +889,7 @@ export class ConfigVerification extends BaseCommand {
      * @return {Promise<TimedResult<IExaltationReq>>} The new exaltation requirements, if any.
      */
     public async configExaltations(ctx: ICommandContext, botMsg: Message,
-                                   exaltationInfo: IExaltationReq): Promise<TimedResult<IExaltationReq>> {
+        exaltationInfo: IExaltationReq): Promise<TimedResult<IExaltationReq>> {
         const newExaltationInfo: IExaltationReq = {
             checkThis: exaltationInfo.checkThis,
             minimum: {...exaltationInfo.minimum},
@@ -1020,7 +1020,7 @@ export class ConfigVerification extends BaseCommand {
      * @return {Promise<TimedResult<IExaltationReq>>} The new character requirements, if any.
      */
     public async configCharacters(ctx: ICommandContext, botMsg: Message,
-                                  charInfo: ICharacterReq): Promise<TimedResult<ICharacterReq>> {
+        charInfo: ICharacterReq): Promise<TimedResult<ICharacterReq>> {
         const newCharRequirements: ICharacterReq = {
             checkThis: charInfo.checkThis,
             statsNeeded: charInfo.statsNeeded.slice() as [
@@ -1172,7 +1172,7 @@ export class ConfigVerification extends BaseCommand {
      * @private
      */
     private async configDungeonReq(ctx: ICommandContext, botMsg: Message,
-                                   dungeonReq: IDungeonReq): Promise<TimedResult<IDungeonReq>> {
+        dungeonReq: IDungeonReq): Promise<TimedResult<IDungeonReq>> {
         const newDungeonReq: IDungeonReq = {
             botCompletions: dungeonReq.botCompletions
                 .filter(x => !!DungeonUtilities.getDungeonInfo(x.key, ctx.guildDoc!))

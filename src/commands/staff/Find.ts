@@ -72,8 +72,8 @@ export class Find extends BaseCommand {
         const resMember = await UserManager.resolveMember(ctx.guild!, memberStr);
 
         await ctx.interaction.deferReply();
-        let targetMember: GuildMember | null = resMember?.member ?? null;
-        let nameIdRes: IIdNameInfo | null = resMember?.idNameDoc ?? null;
+        const targetMember: GuildMember | null = resMember?.member ?? null;
+        const nameIdRes: IIdNameInfo | null = resMember?.idNameDoc ?? null;
 
         // Final result
         if (!targetMember) {
@@ -327,10 +327,10 @@ export class Find extends BaseCommand {
                     const time = new StringBuilder()
                         .append(`Issued: \`${getDateTime(x.issuedAt)} GMT\``).appendLine()
                         .append(
-                        x.resolved
-                            ? `Resolved: \`${getDateTime(x.resolved.issuedAt)} GMT\``
-                            : `Expires At: \`${expiresAtDisplay}\``
-                    );
+                            x.resolved
+                                ? `Resolved: \`${getDateTime(x.resolved.issuedAt)} GMT\``
+                                : `Expires At: \`${expiresAtDisplay}\``
+                        );
 
                     return {
                         e: MessageUtilities.generateBlankEmbed(targetMember!, colorToUse)

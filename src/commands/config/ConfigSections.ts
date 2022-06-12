@@ -211,7 +211,7 @@ export class ConfigSections extends BaseCommand {
         if (ctx.guildDoc!.guildSections.length > 0) {
             embed.addField(
                 "Edit Section",
-                "Press the \`Edit\` button to manage an existing server section. You will be able to change the"
+                "Press the `Edit` button to manage an existing server section. You will be able to change the"
                 + " section's name and delete the section here."
             );
 

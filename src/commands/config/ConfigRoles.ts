@@ -474,7 +474,7 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public getCurrentConfiguration(guild: Guild, guildDoc: IGuildInfo, section: ISectionInfo,
-                                   displayFilter: number): string {
+        displayFilter: number): string {
         const currentConfiguration = new StringBuilder();
 
         if (displayFilter & DisplayFilter.General) {
@@ -746,7 +746,7 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
      * @private
      */
     public async editDatabaseSettings(ctx: ICommandContext, section: ISectionInfo, botMsg: Message,
-                                      entries: IRoleMongo[], group: string): Promise<void> {
+        entries: IRoleMongo[], group: string): Promise<void> {
         const guild = ctx.guild!;
 
         let selected = 0;

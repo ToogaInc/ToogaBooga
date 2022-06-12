@@ -1341,7 +1341,7 @@ export namespace VerifyManager {
         else if (checkRes.orig.firstSeen)
             descSb.append(`- First Seen: **\`${checkRes.orig.firstSeen}\`**`).appendLine();
         else
-            descSb.append("- Account Created: **\`N/A\`**").appendLine();
+            descSb.append("- Account Created: **`N/A`**").appendLine();
 
         descSb.append(`- Last Seen: **\`${checkRes.orig.lastSeen}\`**`).appendLine();
 

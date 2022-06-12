@@ -896,7 +896,7 @@ export class ConfigQuotas extends BaseCommand {
                             }
                         }
 
-                            // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
+                        // If the new quota log type does not have a specific dungeon, remove dungeon run quota log
                         // types w/ said specific dungeon
                         else {
                             for (let i = ptsToUse.length - 1; i >= 0; i--) {
@@ -1100,8 +1100,8 @@ export class ConfigQuotas extends BaseCommand {
                             + " be asked to assign a point value to this dungeon, which then can be used for"
                             + " quota logging. If you don't want to add a dungeon, press the **Cancel** button."
                         ).setFields(fields.map(x => {
-                        return {name: GeneralConstants.ZERO_WIDTH_SPACE, value: x};
-                    }))
+                            return {name: GeneralConstants.ZERO_WIDTH_SPACE, value: x};
+                        }))
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([
                     ButtonConstants.CANCEL_BUTTON

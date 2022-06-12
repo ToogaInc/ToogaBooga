@@ -492,7 +492,7 @@ export namespace PunishmentManager {
 
                 // Logging
                 logToChanEmbed
-                    .setTitle(`Modmail Blacklisted.`)
+                    .setTitle("Modmail Blacklisted.")
                     .setDescription(`⇒ Modmail Blacklisted: ${member} (${member.id})`);
 
                 // To send to member
@@ -507,7 +507,7 @@ export namespace PunishmentManager {
 
                 // Logging
                 logToChanEmbed
-                    .setTitle(`Modmail Blacklisted Removed.`)
+                    .setTitle("Modmail Blacklisted Removed.")
                     .setDescription(`⇒ Modmail Unblacklisted: ${member} (${member.id})`);
 
                 // To send to member
@@ -522,7 +522,7 @@ export namespace PunishmentManager {
 
                 // Logging
                 logToChanEmbed
-                    .setTitle(`Server Muted.`)
+                    .setTitle("Server Muted.")
                     .setDescription(`⇒ Member Muted: ${member} (${member.id})`)
                     .addField("Mute Time", durationStr);
 
@@ -539,7 +539,7 @@ export namespace PunishmentManager {
 
                 // Logging
                 logToChanEmbed
-                    .setTitle(`Server Mute Removed.`)
+                    .setTitle("Server Mute Removed.")
                     .setDescription(`⇒ Member Unmuted: ${member} (${member.id})`);
 
                 // To send to member
@@ -1018,7 +1018,7 @@ export namespace SuspensionManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "section" | "duration">
     ): Promise<IPunishmentCommandResult> {
-        LOGGER.info(`${mod ? mod.displayName : `Bot`} is removing suspension for ${member.displayName}`);
+        LOGGER.info(`${mod ? mod.displayName : "Bot"} is removing suspension for ${member.displayName}`);
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
             ? lookupSuspension(info.guildDoc, null, {actionId: info.actionId})
@@ -1094,7 +1094,7 @@ export namespace SuspensionManager {
         mod: GuildMember | null,
         info: IAdditionalPunishmentParams
     ): Promise<IPunishmentCommandResult> {
-        LOGGER.info(`${mod ? mod.displayName : `Bot`} is section suspending ${member.displayName}`);
+        LOGGER.info(`${mod ? mod.displayName : "Bot"} is section suspending ${member.displayName}`);
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (info.section.moderation.sectionSuspended.some(x => x.affectedUser.id === member.id))
             return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
@@ -1171,7 +1171,7 @@ export namespace SuspensionManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "duration">
     ): Promise<IPunishmentCommandResult> {
-        LOGGER.info(`${mod ? mod.displayName : `Bot`} is removing section suspension for ${member.displayName}`);
+        LOGGER.info(`${mod ? mod.displayName : "Bot"} is removing section suspension for ${member.displayName}`);
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
             ? lookupSuspension(info.guildDoc, info.section, {actionId: info.actionId})
@@ -1236,7 +1236,7 @@ export namespace SuspensionManager {
         memberId?: string;
         actionId?: string;
     }): ISuspendedUser | null {
-        LOGGER.info(`Looking up suspension`);
+        LOGGER.info("Looking up suspension");
         if (!lookupType.memberId && !lookupType.actionId)
             return null;
 
@@ -1393,11 +1393,11 @@ export namespace MuteManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "actionId" | "section">
     ): Promise<IPunishmentCommandResult> {
-        LOGGER.info(`${mod ? mod.displayName : `Bot`} is adding mute for ${member.displayName}`);
+        LOGGER.info(`${mod ? mod.displayName : "Bot"} is adding mute for ${member.displayName}`);
         // Create the role if it doesn't already exist.
         let mutedRole = await GuildFgrUtilities.fetchRole(member.guild, info.guildDoc.roles.mutedRoleId);
         if (!mutedRole) {
-            LOGGER.info(`Muted role does not exist, creating role`);
+            LOGGER.info("Muted role does not exist, creating role");
             mutedRole = await member.guild.roles.create({
                 name: "Muted",
                 permissions: []
@@ -1497,7 +1497,7 @@ export namespace MuteManager {
         mod: GuildMember | null,
         info: Omit<IAdditionalPunishmentParams, "section" | "duration">
     ): Promise<IPunishmentCommandResult> {
-        LOGGER.info(`${mod ? mod.displayName : `Bot`} is removing mute for ${member.displayName}`);
+        LOGGER.info(`${mod ? mod.displayName : "Bot"} is removing mute for ${member.displayName}`);
         if (!GuildFgrUtilities.hasCachedRole(member.guild, info.guildDoc.roles.mutedRoleId))
             return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
 
@@ -1551,7 +1551,7 @@ export namespace MuteManager {
      */
     export async function removeAllMuteInGuild(guild: Guild, mod: GuildMember | null,
                                                reason?: string): Promise<boolean> {
-        LOGGER.info(`${mod ? mod.displayName : `Bot`} is removing all mutes for the server`);
+        LOGGER.info(`${mod ? mod.displayName : "Bot"} is removing all mutes for the server`);
         MutedMembers.get(guild.id)?.forEach(x => {
             _queuedDelMutedUsers.enqueue({...x, guildId: guild.id});
         });
@@ -1597,7 +1597,7 @@ export namespace MuteManager {
         memberId?: string;
         actionId?: string;
     }): IMutedUser | null {
-        LOGGER.info(`Looking up mute`);
+        LOGGER.info("Looking up mute");
         if (!lookupType.memberId && !lookupType.actionId)
             return null;
 
