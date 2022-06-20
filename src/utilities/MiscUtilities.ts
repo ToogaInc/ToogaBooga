@@ -8,17 +8,17 @@ import {
     Snowflake,
     TextChannel
 } from "discord.js";
-import {CommonRegex} from "../constants/CommonRegex";
-import {DefinedRole} from "../definitions/Types";
-import {IGuildInfo, ISectionInfo} from "../definitions";
-import {MongoManager} from "../managers/MongoManager";
-import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
-import {MessageUtilities} from "./MessageUtilities";
-import {StringBuilder} from "./StringBuilder";
-import {AdvancedCollector} from "./collectors/AdvancedCollector";
-import {ButtonConstants} from "../constants/ButtonConstants";
-import {PermsConstants} from "../constants/PermsConstants";
-import {Logger} from "./Logger";
+import { CommonRegex } from "../constants/CommonRegex";
+import { DefinedRole } from "../definitions/Types";
+import { IGuildInfo, ISectionInfo } from "../definitions";
+import { MongoManager } from "../managers/MongoManager";
+import { GuildFgrUtilities } from "./fetch-get-request/GuildFgrUtilities";
+import { MessageUtilities } from "./MessageUtilities";
+import { StringBuilder } from "./StringBuilder";
+import { AdvancedCollector } from "./collectors/AdvancedCollector";
+import { ButtonConstants } from "../constants/ButtonConstants";
+import { PermsConstants } from "../constants/PermsConstants";
+import { Logger } from "./Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -106,8 +106,7 @@ export namespace MiscUtilities {
      * @param {string} desc The description (i.e. instructions) to post.
      * @return {Promise<ISectionInfo | null>} The section, if any. Null otherwise.
      */
-    export async function getSectionQuery(guildDb: IGuildInfo, member: GuildMember, channel: TextChannel,
-                                          desc: string): Promise<[ISectionInfo, Message | null] | null> {
+    export async function getSectionQuery(guildDb: IGuildInfo, member: GuildMember, channel: TextChannel, desc: string): Promise<[ISectionInfo, Message | null] | null> {
         const allSections = MongoManager.getAllSections(guildDb);
         const selectOptions: MessageSelectOptionData[] = allSections
             .map(x => {
@@ -126,7 +125,7 @@ export namespace MiscUtilities {
                     .setDescription(new StringBuilder(desc)
                         .appendLine().appendLine()
                         .append("If you wish to cancel this process, please press the `Cancel` button.").toString())
-                    .setFooter({text: "Section Selector"})
+                    .setFooter({ text: "Section Selector" })
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 new MessageSelectMenu()

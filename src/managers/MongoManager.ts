@@ -340,7 +340,7 @@ export namespace MongoManager {
         if (foundDocs.length === 0)
             return doc;
 
-        const userDoc = getDefaultUserConfig(member.id, ign);
+        const userDoc = getDefaultUserConfig(member.id);
         const allNotes: string[] = [];
         // Copy all old values to the new document
         for (const doc of foundDocs) {
@@ -571,10 +571,9 @@ export namespace MongoManager {
     /**
      * Gets the default user configuration object.
      * @param {string} userId The person's Discord ID.
-     * @param {string} [ign] The IGN of the person, if any.
      * @return {IUserInfo} The user configuration object.
      */
-    export function getDefaultUserConfig(userId: string, ign?: string): IUserInfo {
+    export function getDefaultUserConfig(userId: string): IUserInfo {
         return {
             details: {moderationHistory: [], universalNotes: "", guildNotes: []},
             discordId: userId,

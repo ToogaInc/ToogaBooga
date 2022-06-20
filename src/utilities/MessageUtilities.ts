@@ -98,7 +98,7 @@ export namespace MessageUtilities {
                                    channel: PartialTextBasedChannelFields,
                                    timeout: number = 5000): void {
         channel.send(info).then(async x => {
-            await MiscUtilities.stopFor(5 * 1000);
+            await MiscUtilities.stopFor(timeout);
             await x.delete().catch();
         });
     }

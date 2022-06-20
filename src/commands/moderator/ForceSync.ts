@@ -160,7 +160,7 @@ export class ForceSync extends BaseCommand {
                 embeds: [createEmbed()]
             });
 
-            let promises: Promise<any>[] = [];
+            let promises: Promise<unknown>[] = [];
             let addedAnyDocs = false;
             for await (const obj of allMembers) {
                 if (promises.length > 0 && promises.length % 250 === 0) {

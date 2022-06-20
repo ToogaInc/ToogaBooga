@@ -411,7 +411,7 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
     }
 
     /** @inheritDoc */
-    public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
+    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
         if (botMsg) {
             await MessageUtilities.tryDelete(botMsg);
         }

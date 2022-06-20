@@ -1,4 +1,4 @@
-import {CommandInteraction, Interaction, Message, NewsChannel, TextChannel} from "discord.js";
+import {CommandInteraction, Interaction, Message, NewsChannel} from "discord.js";
 import {Bot} from "../Bot";
 import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
 import {MongoManager} from "../managers/MongoManager";
@@ -250,8 +250,6 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
             return;
         }
 
-        const mmMessage = interaction.message;
-        const modmailChannel = channel as TextChannel;
         switch (interaction.customId) {
             case ButtonConstants.OPEN_THREAD_ID: {
                 await ModmailManager.openModmailThread(guildDoc, interaction.message, resolvedMember);

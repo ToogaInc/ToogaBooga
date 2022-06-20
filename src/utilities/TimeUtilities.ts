@@ -11,8 +11,6 @@ export namespace TimeUtilities {
     export function parseTimeUnit(timeUnit: string): TimeUnitType | null {
         // Break up the time + units into individual strings
         // For example, 3d5m = [3d, 5m]
-        const timeStrArr: string[] = [];
-
         let validStr = false;
         let lastIdx = 0;
         let duration = 0;

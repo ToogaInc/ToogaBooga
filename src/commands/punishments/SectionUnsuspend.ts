@@ -120,7 +120,6 @@ export class SectionUnsuspend extends BaseCommand {
 
         const sectionPicked = sections.find(x => x.uniqueIdentifier === result.values[0])!;
         const reason = ctx.interaction.options.getString("reason", true);
-        const currTime = Date.now();
 
         const unsuspensionRes = await SuspensionManager.removeSectionSuspension(resMember!.member, ctx.member!, {
             section: sectionPicked,

@@ -61,8 +61,6 @@ export class ManualVerifySection extends BaseCommand {
             return 0;
         }
 
-        const ign = ctx.interaction.options.getString("ign", false);
-
         // If the member verified, no need to do it again.
         if (!GuildFgrUtilities.memberHasCachedRole(resMember.member, ctx.guildDoc!.roles.verifiedRoleId)) {
             await ctx.interaction.reply({

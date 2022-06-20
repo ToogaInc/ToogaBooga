@@ -199,12 +199,6 @@ export class HeadcountInstance {
         // Which essential reacts are we going to use.
         const reactions = getReactions(dungeon, guildDoc);
 
-        // This defines the number of people that gets early location via NITRO only.
-        const numEarlyLoc: number = -2;
-        // And this is the raid VC limit
-        const vcLimit: number = -2;
-        // And this is the point cost.
-        const costForEarlyLoc: number = 0;
         // Process dungeon based on whether it is custom or not.
         if (dungeon.isBuiltIn) {
             const dgnOverride = guildDoc.properties.dungeonOverride
@@ -679,7 +673,6 @@ export class HeadcountInstance {
             if (!emoji)
                 continue;
 
-            const maximum = this._allEssentialOptions.get(codeName)!.earlyLocAmt;
             earlyReactInfo.push(`- ${emoji} ${peopleThatReacted.length} People`);
         }
 

@@ -877,7 +877,6 @@ export namespace SuspensionManager {
             if (!guildDoc) continue;
 
             const suspendedPpl = SuspendedMembers.get(guild.id)!;
-            const mainSection = MongoManager.getMainSection(guildDoc);
 
             for await (const [memberId, details] of suspendedPpl) {
                 const suspendedMember = await GuildFgrUtilities.fetchGuildMember(guild, memberId);
@@ -1292,7 +1291,6 @@ export namespace MuteManager {
         LOGGER.info("Starting MuteManager checker");
         if (documents.length > 0) {
             for await (const guildDoc of documents) {
-                const serverSus = new Collection<string, IMutedUser[]>();
                 const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
                 if (!guild) continue;
                 MutedMembers.set(
@@ -1404,7 +1402,7 @@ export namespace MuteManager {
             });
 
             const promisesToResolve: Promise<GuildChannel>[] = [];
-            for (const [id, channel] of member.guild.channels.cache) {
+            for (const [, channel] of member.guild.channels.cache) {
                 if (channel.isThread() || !channel.isText())
                     continue;
 

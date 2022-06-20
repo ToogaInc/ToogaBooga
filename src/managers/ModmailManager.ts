@@ -19,9 +19,8 @@ import {EmojiConstants} from "../constants/EmojiConstants";
 import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
 import {ButtonConstants} from "../constants/ButtonConstants";
 import {StringUtil} from "../utilities/StringUtilities";
-import {Logger} from "../utilities/Logger";
+import {} from "../utilities/Logger";
 
-const LOGGER: Logger = new Logger(__filename, false);
 export namespace ModmailManager {
 
     /**
@@ -205,10 +204,6 @@ export namespace ModmailManager {
 
     // Red
     const NOT_RESPONDED_TO_COLOR: number = 0xc90808;
-    // Blue
-    const ARCHIVED_THREAD_COLOR: number = 0x142fb5;
-    // Green
-    const ACTIVE_THREAD_COLOR: number = 0x31a10e;
     // Purple
     const GENERAL_THREAD_COLOR: number = 0xb31772;
 

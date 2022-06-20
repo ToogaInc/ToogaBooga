@@ -1,5 +1,5 @@
 import {TimeUtilities} from "./TimeUtilities";
-import path from "path";
+import * as path from "path";
 
 /**
  * Custom Logger class
@@ -32,7 +32,7 @@ export class Logger {
      * Logs information to console with time and file information
      * @param {*} args the message to log to the console
      */
-    public info(...args: any[]): void {
+    public info(...args: unknown[]): void {
         console.info("[INFO]", Logger.getCurrentTime(), this.formattedPath, ...args);
     }
 
@@ -40,7 +40,7 @@ export class Logger {
      * Logs debug information to the console with the time and file information.
      * @param {*} args the message to log to the console.
      */
-    public debug(...args: any[]): void {
+    public debug(...args: unknown[]): void {
         if (!this.outputDebug) return;
         console.debug("[DEBUG]", Logger.getCurrentTime(), this.formattedPath, ...args);
     }
@@ -49,7 +49,7 @@ export class Logger {
      * Logs a warning to the console with the time and file information.
      * @param {*} args the message to log to the console.
      */
-    public warn(...args: any[]): void {
+    public warn(...args: unknown[]): void {
         console.warn("[WARN]", Logger.getCurrentTime(), this.formattedPath, ...args);
     }
 
@@ -57,7 +57,7 @@ export class Logger {
      * Logs error message to console with time and file information
      * @param {*} args the error message to log to the console
      */
-    public error(...args: any[]): void {
+    public error(...args: unknown[]): void {
         console.error("[ERROR]", Logger.getCurrentTime(), this.formattedPath, ...args);
     }
 

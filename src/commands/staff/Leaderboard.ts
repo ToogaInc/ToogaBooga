@@ -15,6 +15,7 @@ import {StringUtil} from "../../utilities/StringUtilities";
 import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
 import {ButtonConstants} from "../../constants/ButtonConstants";
 import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { MiscUtilities } from "../../utilities/MiscUtilities";
 
 export type LeaderboardEntry = { user: IUserInfo; count: number; };
 
@@ -157,17 +158,16 @@ export class Leaderboard extends BaseCommand {
                         embeds: [pageEmbed]
                     });
                     let pageNumber = currPage;
-                    await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ["time"] })
-                        .then(async collected => {
-                            const msg = parseInt(collected.first()?.content ?? "NaN");
-                            pageNumber = isNaN(msg) ? currPage : msg - 1;
-                            await setTimeout(resolve=>resolve, 500);
-                            await collected.first()?.delete();
-                        })
-                        .catch(async collected => {
-                            await setTimeout(resolve=>resolve, 500);
-                            await collected.first()?.delete();
-                        });
+                    try {
+                        const collected = await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ["time"] });
+                        const msg = parseInt(collected.first()?.content ?? "NaN");
+                        pageNumber = isNaN(msg) ? currPage : msg - 1;
+                        await MiscUtilities.stopFor(1000);
+                        await collected.first()?.delete();
+                    } catch (e) {
+                        // ignored
+                    }
+                    
                     await tempMsg.delete();          
                     currPage = pageNumber;
                     break;
@@ -180,16 +180,15 @@ export class Leaderboard extends BaseCommand {
                         embeds: [pageEmbed]
                     });
                     let memberResolvable = "";
-                    await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ["time"] })
-                        .then(async collected => {
-                            memberResolvable = collected.first()?.content ?? "";
-                            await setTimeout(resolve=>resolve, 500);
-                            await collected.first()?.delete();
-                        })
-                        .catch(async collected => {
-                            await setTimeout(resolve=>resolve, 500);
-                            await collected.first()?.delete();
-                        });
+                    try {
+                        const collected = await ctx.channel.awaitMessages({max: 1, time: 10000, errors: ["time"] });
+                        memberResolvable = collected.first()?.content ?? "";
+                        await MiscUtilities.stopFor(1000);
+                        await collected.first()?.delete();
+                    } catch (e) {
+                        // ignored    
+                    }
+
                     await tempMsg.delete();          
                     const resMember = await UserManager.resolveMember(ctx.guild!, memberResolvable);
                     if(!resMember){
@@ -211,7 +210,7 @@ export class Leaderboard extends BaseCommand {
                 components: active ? AdvancedCollector.getActionRowsFromComponents(components) : []
             });
         });
-        collector.on("end", async (_, r) => {
+        collector.on("end", async () => {
             active = false;
             // Possible that someone might delete the message before this triggers.
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
@@ -229,14 +228,13 @@ export class Leaderboard extends BaseCommand {
      * Sends a temporary message in the channel of the interaction.
      * @param {string} message The Content of the message
      * @param {ICommandContex} ctx The interaction
-     * @param {number} duration How long before the message is deleted
-     * @returns {Promise<number>}
+     * @param {number} duration How long before the message is deleted.
      */
-    public async sendTempMessage(message: string, ctx: ICommandContext, duration: number){
+    public async sendTempMessage(message: string, ctx: ICommandContext, duration: number) {
         const tempMsg = await ctx.channel.send({
             content: message,
         });
-        return setTimeout(resolve => tempMsg.delete().catch(), 5000);
+        return setTimeout(() => tempMsg.delete().catch(), duration);
     }
 
     /**

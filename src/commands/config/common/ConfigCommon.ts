@@ -73,9 +73,9 @@ export interface IConfigCommand {
     /**
      * Disposes this instance. Use this function to clean up any messages that were used.
      * @param {ICommandContext} ctx The command context.
-     * @param args Anything else.
+     * @param {unknown[]} args Anything else.
      */
-    dispose(ctx: ICommandContext, ...args: any[]): Promise<void>;
+    dispose(ctx: ICommandContext, ...args: unknown[]): Promise<void>;
 }
 
 export interface IBaseDatabaseEntryInfo {
@@ -107,7 +107,7 @@ export interface IBaseDatabaseEntryInfo {
     /**
      * A function that returns the current value from the database.
      */
-    getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => any;
+    getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => unknown;
 }
 
 export enum ConfigType {

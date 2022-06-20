@@ -285,14 +285,7 @@ export namespace QuotaManager {
         else
             await quotaChannel.send({embeds: [summaryEmbed]});
 
-
         const startTime = new Date();
-        const endTime = TimeUtilities.getNextDate(
-            startTime,
-            guildDoc.quotas.resetTime.dayOfWeek,
-            guildDoc.quotas.resetTime.time
-        );
-        const timeLeft = TimeUtilities.formatDuration(endTime.getTime() - startTime.getTime(), true);
 
         if (role) {
             oldQuotas.quotaLog = [];

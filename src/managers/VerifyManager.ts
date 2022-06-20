@@ -157,7 +157,6 @@ export namespace VerifyManager {
     const CHECK_PROFILE_ID: string = "check_profile";
     const NO_MANUAL_VERIFY_ID: string = "deny";
     const MANUAL_VERIFY_ID: string = "manual_verify";
-    const MANUAL_EVIDENCE_ID: string = "manual_evidence";
 
     // For approving or denying manual verification applications
     export const MANUAL_VERIFY_ACCEPT_ID: string = "accept_manual";
@@ -176,10 +175,6 @@ export namespace VerifyManager {
     const MANUAL_VERIFY_BUTTON = new MessageButton()
         .setLabel("Accept")
         .setCustomId(MANUAL_VERIFY_ID)
-        .setStyle("PRIMARY");
-    const MANUAL_EVIDENCE_BUTTON = new MessageButton()
-        .setLabel("Accept With Evidence")
-        .setCustomId(MANUAL_EVIDENCE_ID)
         .setStyle("PRIMARY");
 
     const GUILD_ROLES: string[] = [
@@ -1057,7 +1052,6 @@ export namespace VerifyManager {
 
         const names = UserManager.getAllNames(member.displayName);
         let nameToUse: string;
-        const uIdentifier = StringUtil.generateRandomString(30);
         if (names.length === 0) {
             // lookup database for name
             const nameRes = await MongoManager.findIdInIdNameCollection(member.id);
@@ -1484,7 +1478,7 @@ export namespace VerifyManager {
         );
 
         // Promises to resolve after evaluating the response ID
-        const promises: (Promise<any> | undefined)[] = [];
+        const promises: (Promise<unknown> | undefined)[] = [];
         switch (responseId) {
             case (MANUAL_VERIFY_MODMAIL_ID): {
                 return await ModmailManager.startModmailWithUser(member, moderator);

@@ -461,7 +461,7 @@ export class Find extends BaseCommand {
                 });
             });
 
-            collector.on("end", async (_, r) => {
+            collector.on("end", async () => {
                 // Possible that someone might delete the message before this triggers.
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
                     await ctx.interaction.editReply({

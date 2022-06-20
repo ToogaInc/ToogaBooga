@@ -1,6 +1,5 @@
 import {
     BaseMessageComponent,
-    ButtonInteraction,
     DMChannel,
     EmojiIdentifierResolvable,
     Guild,
@@ -119,7 +118,7 @@ export namespace AdvancedCollector {
      */
     export async function startNormalCollector<T>(
         options: IMessageCollectorArgument,
-        func: (collectedMsg: Message, ...otherArgs: any[]) => (T | undefined) | (Promise<T | undefined>)
+        func: (collectedMsg: Message, ...otherArgs: unknown[]) => (T | undefined) | (Promise<T | undefined>)
     ): Promise<T | null> {
         return new Promise(async (resolve) => {
             const cancelFlag = options.cancelFlag;
@@ -232,7 +231,7 @@ export namespace AdvancedCollector {
      */
     export async function startDoubleCollector<T>(
         options: IInteractionBase & IMessageCollectorArgument,
-        func: (collectedMsg: Message, ...otherArgs: any[]) => (T | undefined) | (Promise<T | undefined>)
+        func: (collectedMsg: Message, ...otherArgs: unknown[]) => (T | undefined) | (Promise<T | undefined>)
     ): Promise<T | MessageComponentInteraction | null> {
         const cancelFlag = options.cancelFlag;
         const botMsg = await initSendCollectorMessage(options);

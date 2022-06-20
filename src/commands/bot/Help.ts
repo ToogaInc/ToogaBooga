@@ -80,7 +80,6 @@ export class Help extends BaseCommand {
                         )
                     );
 
-                const pRoleIds: string[] = [];
                 if (ctx.guildDoc) {
                     const customPermData = ctx.guildDoc.properties.customCmdPermissions
                         .find(x => x.key === command.commandInfo.cmdCode);

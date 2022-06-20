@@ -65,7 +65,6 @@ export class Unsuspend extends BaseCommand {
         }
 
         const reason = ctx.interaction.options.getString("reason", true);
-        const currTime = Date.now();
 
         const unsuspensionRes = await SuspensionManager.removeSuspension(resMember!.member, ctx.member!, {
             evidence: [],

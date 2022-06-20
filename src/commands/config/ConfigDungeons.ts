@@ -1753,7 +1753,7 @@ export class ConfigDungeons extends BaseCommand {
             removeButton.setDisabled(selected.length === 0);
 
             embed.fields = [];
-            const fields = ArrayUtilities.arrayToStringFields(selected, (i, elem) => {
+            const fields = ArrayUtilities.arrayToStringFields(selected, (i,) => {
                 return new StringBuilder()
                     .append(
                         i === currentIdx
