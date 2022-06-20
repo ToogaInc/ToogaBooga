@@ -8,17 +8,17 @@ import {
     ThreadChannel,
     User
 } from "discord.js";
-import {IGuildInfo, IModmailThread} from "../definitions";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {MongoManager} from "./MongoManager";
-import {CommonRegex} from "../constants/CommonRegex";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {MessageUtilities} from "../utilities/MessageUtilities";
-import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {EmojiConstants} from "../constants/EmojiConstants";
-import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {ButtonConstants} from "../constants/ButtonConstants";
-import {StringUtil} from "../utilities/StringUtilities";
+import { IGuildInfo, IModmailThread } from "../definitions";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { MongoManager } from "./MongoManager";
+import { CommonRegex } from "../constants/CommonRegex";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { MessageUtilities } from "../utilities/MessageUtilities";
+import { ArrayUtilities } from "../utilities/ArrayUtilities";
+import { EmojiConstants } from "../constants/EmojiConstants";
+import { AdvancedCollector } from "../utilities/collectors/AdvancedCollector";
+import { ButtonConstants } from "../constants/ButtonConstants";
+import { StringUtil } from "../utilities/StringUtilities";
 import {} from "../utilities/Logger";
 
 export namespace ModmailManager {
@@ -88,10 +88,10 @@ export namespace ModmailManager {
         if (created) {
             mm.embeds[0].spliceFields(mm.embeds[0].fields.findIndex(x => x.name === "Directions"), 1);
             mm.embeds[0].addField("Directions", OPEN_MODMAIL_INSTRUCTIONS);
-            await MessageUtilities.tryEdit(mm, {embeds: [mm.embeds[0]]});
+            await MessageUtilities.tryEdit(mm, { embeds: [mm.embeds[0]] });
         }
         else {
-            await GlobalFgrUtilities.sendMsg(t, {content: openedBy.toString()});
+            await GlobalFgrUtilities.sendMsg(t, { content: openedBy.toString() });
         }
     }
 
@@ -146,7 +146,7 @@ export namespace ModmailManager {
                 return [m.thread!, false];
             }
 
-            await MongoManager.updateAndFetchGuildDoc({guildId: modmailMsg.guild!.id}, {
+            await MongoManager.updateAndFetchGuildDoc({ guildId: modmailMsg.guild!.id }, {
                 $pull: {
                     "properties.modmailThreads": {
                         recipientId: modmailMsg.embeds[0].footer!.text
@@ -159,7 +159,7 @@ export namespace ModmailManager {
             if (moderator) {
                 await acknowledgeModmailThreadCreation(modmailMsg, t, moderator, true);
             }
-            await MongoManager.updateAndFetchGuildDoc({guildId: modmailMsg.guild!.id}, {
+            await MongoManager.updateAndFetchGuildDoc({ guildId: modmailMsg.guild!.id }, {
                 $push: {
                     "properties.modmailThreads": {
                         baseMsg: modmailMsg.id,
@@ -172,7 +172,7 @@ export namespace ModmailManager {
             const baseMsg = await t.fetchStarterMessage();
             baseMsg.embeds[0].spliceFields(baseMsg.embeds[0].fields.findIndex(x => x.name === "Directions"), 1);
             baseMsg.embeds[0].addField("Directions", OPEN_MODMAIL_INSTRUCTIONS);
-            await MessageUtilities.tryEdit(baseMsg, {embeds: [baseMsg.embeds[0]]});
+            await MessageUtilities.tryEdit(baseMsg, { embeds: [baseMsg.embeds[0]] });
         };
 
         if (modmailMsg.hasThread) {
@@ -226,9 +226,9 @@ export namespace ModmailManager {
      */
     export function getEmbedForModmail(author: User, msg: Message | string): MessageEmbed {
         const embed = new MessageEmbed()
-            .setAuthor({name: author.tag, iconURL: author.displayAvatarURL()})
+            .setAuthor({ name: author.tag, iconURL: author.displayAvatarURL() })
             .setTimestamp()
-            .setFooter({text: author.id})
+            .setFooter({ text: author.id })
             .setDescription(
                 typeof msg === "string"
                     ? msg
@@ -279,14 +279,14 @@ export namespace ModmailManager {
         origMsg.embeds[0].addField("Directions", NEW_MODMAIL_INSTRUCTIONS);
         await Promise.all([
             thread.setArchived(true, "Closed modmail."),
-            MongoManager.updateAndFetchGuildDoc({guildId: origMsg.guild!.id}, {
+            MongoManager.updateAndFetchGuildDoc({ guildId: origMsg.guild!.id }, {
                 $pull: {
                     "properties.modmailThreads": {
                         baseMsg: origMsg.id
                     }
                 }
             }),
-            MessageUtilities.tryEdit(origMsg, {embeds: [origMsg.embeds[0]]})
+            MessageUtilities.tryEdit(origMsg, { embeds: [origMsg.embeds[0]] })
         ]);
 
         return true;
@@ -331,7 +331,7 @@ export namespace ModmailManager {
                 new MessageSelectMenu()
                     .setCustomId(`${uniqueId}_${i++}`)
                     .setOptions(subset.map(x => {
-                        return {value: x.id, label: x.name};
+                        return { value: x.id, label: x.name };
                     }))
                     .setMaxValues(1)
                     .setMinValues(1)
@@ -462,20 +462,20 @@ export namespace ModmailManager {
         const embedToSave = getEmbedForModmail(author, msg).setColor(GENERAL_THREAD_COLOR);
         const embedToRecipient = getEmbedForModmail(author, msg).setColor(GENERAL_THREAD_COLOR);
         if (anon) {
-            embedToRecipient.setAuthor({name: `${guild.name} Staff`, iconURL: guild.iconURL() ?? undefined})
-                .setFooter({text: guild.id});
-            embedToSave.setAuthor({name: `${author.tag} (Anonymous)`, iconURL: author.displayAvatarURL()});
+            embedToRecipient.setAuthor({ name: `${guild.name} Staff`, iconURL: guild.iconURL() ?? undefined })
+                .setFooter({ text: guild.id });
+            embedToSave.setAuthor({ name: `${author.tag} (Anonymous)`, iconURL: author.displayAvatarURL() });
         }
 
-        const m = await GlobalFgrUtilities.sendMsg(thread, {embeds: [embedToSave]});
+        const m = await GlobalFgrUtilities.sendMsg(thread, { embeds: [embedToSave] });
         if (!m) {
             return false;
         }
 
-        const r = await GlobalFgrUtilities.sendMsg(member, {embeds: [embedToRecipient]});
+        const r = await GlobalFgrUtilities.sendMsg(member, { embeds: [embedToRecipient] });
         if (!r) {
             m.embeds[0].addField("Warning", "This message could not be sent to the recipient; did they block the bot?");
-            await MessageUtilities.tryEdit(m, {embeds: [m.embeds[0]]});
+            await MessageUtilities.tryEdit(m, { embeds: [m.embeds[0]] });
         }
 
         return !!r;
@@ -503,16 +503,16 @@ export namespace ModmailManager {
 
         const thread = await findModmailThreadByUser(user.user, guild, guildDoc);
         if (thread) {
-            await GlobalFgrUtilities.sendMsg(thread, {content: moderator.toString()});
+            await GlobalFgrUtilities.sendMsg(thread, { content: moderator.toString() });
             return true;
         }
 
         const mm = await GlobalFgrUtilities.sendMsg(modmailChannel, {
             embeds: [
                 new MessageEmbed()
-                    .setAuthor({name: user.user.tag, iconURL: user.user.displayAvatarURL()})
+                    .setAuthor({ name: user.user.tag, iconURL: user.user.displayAvatarURL() })
                     .setTimestamp()
-                    .setFooter({text: user.user.id})
+                    .setFooter({ text: user.user.id })
                     .setDescription("*Thread created by command.*")
             ],
             components: AdvancedCollector.getActionRowsFromComponents([

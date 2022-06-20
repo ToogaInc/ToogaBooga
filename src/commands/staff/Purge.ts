@@ -1,7 +1,7 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {TextChannel} from "discord.js";
-import {MiscUtilities} from "../../utilities/MiscUtilities";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { TextChannel } from "discord.js";
+import { MiscUtilities } from "../../utilities/MiscUtilities";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class Purge extends BaseCommand {
     private static readonly OLDEST_POSS_MSG: number = 1.123e+9;

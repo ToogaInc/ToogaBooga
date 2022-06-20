@@ -8,9 +8,9 @@ import {
     PartialTextBasedChannelFields,
     User
 } from "discord.js";
-import {MiscUtilities} from "../MiscUtilities";
-import {Bot} from "../../Bot";
-import {IReactionInfo} from "../../definitions";
+import { MiscUtilities } from "../MiscUtilities";
+import { Bot } from "../../Bot";
+import { IReactionInfo } from "../../definitions";
 
 /**
  * A set of functions that essentially "abstract" away the client methods. This was created so that if discord.js

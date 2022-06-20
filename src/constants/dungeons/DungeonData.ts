@@ -1,4 +1,4 @@
-import {IDungeonInfo} from "../../definitions";
+import { IDungeonInfo } from "../../definitions";
 
 export const DUNGEON_DATA: readonly IDungeonInfo[] = [
     {

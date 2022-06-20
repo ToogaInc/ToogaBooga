@@ -1,12 +1,12 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {CommonRegex} from "../../constants/CommonRegex";
-import {MongoManager} from "../../managers/MongoManager";
-import {IBlacklistedUser} from "../../definitions";
-import {PunishmentManager} from "../../managers/PunishmentManager";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { CommonRegex } from "../../constants/CommonRegex";
+import { MongoManager } from "../../managers/MongoManager";
+import { IBlacklistedUser } from "../../definitions";
+import { PunishmentManager } from "../../managers/PunishmentManager";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import generateRandomString = StringUtil.generateRandomString;
 
 export class Blacklist extends BaseCommand {
@@ -92,19 +92,19 @@ export class Blacklist extends BaseCommand {
                 actionId: blacklistId,
                 evidence: [],
                 issuedAt: currTime,
-                moderator: {id: ctx.user.id, name: ctx.member!.displayName, tag: ctx.user.tag},
-                realmName: {lowercaseIgn: mStr.toLowerCase(), ign: mStr},
+                moderator: { id: ctx.user.id, name: ctx.member!.displayName, tag: ctx.user.tag },
+                realmName: { lowercaseIgn: mStr.toLowerCase(), ign: mStr },
                 reason: reason,
                 discordId: ""
             };
 
-            ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+            ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                 $push: {
                     "moderation.blacklistedUsers": blObj
                 }
             });
 
-            const res = await PunishmentManager.logPunishment({name: mStr}, "Blacklist", {
+            const res = await PunishmentManager.logPunishment({ name: mStr }, "Blacklist", {
                 actionIdToUse: blacklistId,
                 evidence: [],
                 guildDoc: ctx.guildDoc!,
@@ -176,14 +176,14 @@ export class Blacklist extends BaseCommand {
             actionId: blacklistId,
             evidence: [],
             issuedAt: currTime,
-            moderator: {id: ctx.user.id, name: ctx.member!.displayName, tag: ctx.user.tag},
-            realmName: {lowercaseIgn: finalIgnToBl.toLowerCase(), ign: finalIgnToBl},
+            moderator: { id: ctx.user.id, name: ctx.member!.displayName, tag: ctx.user.tag },
+            realmName: { lowercaseIgn: finalIgnToBl.toLowerCase(), ign: finalIgnToBl },
             reason: reason,
             discordId: resMember.member.id
         };
 
         const [newDoc,] = await Promise.all([
-            MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+            MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                 $push: {
                     "moderation.blacklistedUsers": rBlInfo
                 }
@@ -196,7 +196,7 @@ export class Blacklist extends BaseCommand {
         ]);
 
         ctx.guildDoc = newDoc;
-        const logInfo = await PunishmentManager.logPunishment({name: finalIgnToBl}, "Blacklist", {
+        const logInfo = await PunishmentManager.logPunishment({ name: finalIgnToBl }, "Blacklist", {
             actionIdToUse: blacklistId,
             evidence: [],
             guild: ctx.guild!,

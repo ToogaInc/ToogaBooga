@@ -1,8 +1,8 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {Role} from "discord.js";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { Role } from "discord.js";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 
 export class ListAll extends BaseCommand {
@@ -67,7 +67,7 @@ export class ListAll extends BaseCommand {
             .setTimestamp(null)
             .setDescription(str);
 
-        const m = await GlobalFgrUtilities.sendMsg(ctx.channel, {embeds: [embed]});
+        const m = await GlobalFgrUtilities.sendMsg(ctx.channel, { embeds: [embed] });
         if (!m) {
             await ctx.interaction.reply({
                 content: "Something went wrong when trying to send the list of users.",

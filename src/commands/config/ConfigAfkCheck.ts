@@ -1,6 +1,6 @@
 // noinspection DuplicatedCode
 
-import {BaseCommand, ICommandContext} from "../BaseCommand";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
 import {
     Message,
     MessageButton,
@@ -11,22 +11,22 @@ import {
     Role,
     TextChannel
 } from "discord.js";
-import {MongoManager} from "../../managers/MongoManager";
-import {askInput, sendOrEditBotMsg} from "./common/ConfigCommon";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {EmojiConstants} from "../../constants/EmojiConstants";
-import {IAfkCheckProperties, IGuildInfo, IPermAllowDeny, IPropertyKeyValuePair, ISectionInfo} from "../../definitions";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {MiscUtilities} from "../../utilities/MiscUtilities";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {TimedResult, TimedStatus} from "../../definitions/Types";
-import {ParseUtilities} from "../../utilities/ParseUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {Filter, UpdateFilter} from "mongodb";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {PermsConstants} from "../../constants/PermsConstants";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { askInput, sendOrEditBotMsg } from "./common/ConfigCommon";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { EmojiConstants } from "../../constants/EmojiConstants";
+import { IAfkCheckProperties, IGuildInfo, IPermAllowDeny, IPropertyKeyValuePair, ISectionInfo } from "../../definitions";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { MiscUtilities } from "../../utilities/MiscUtilities";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { TimedResult, TimedStatus } from "../../definitions/Types";
+import { ParseUtilities } from "../../utilities/ParseUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { Filter, UpdateFilter } from "mongodb";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { PermsConstants } from "../../constants/PermsConstants";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
 
 export class ConfigAfkCheck extends BaseCommand {
     public static readonly MAX_PERMS_SET: number = 15;
@@ -84,7 +84,7 @@ export class ConfigAfkCheck extends BaseCommand {
         botMsg = await sendOrEditBotMsg(ctx.channel, botMsg, {
             embeds: [
                 new MessageEmbed()
-                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                     .setTitle("Select Section")
                     .setDescription(
                         "Please select the section that you want to configure the AFK check system for. If you don't"
@@ -134,18 +134,18 @@ export class ConfigAfkCheck extends BaseCommand {
         const newAfkCheckProps: IAfkCheckProperties = {
             afkCheckPermissions: section.otherMajorConfig.afkCheckProperties.afkCheckPermissions
                 .map(x => {
-                    return {...x};
+                    return { ...x };
                 }),
             allowUsingExistingVcs: section.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs,
             afkCheckTimeout: section.otherMajorConfig.afkCheckProperties.afkCheckTimeout,
             allowedDungeons: section.otherMajorConfig.afkCheckProperties.allowedDungeons.slice(),
             createLogChannel: section.otherMajorConfig.afkCheckProperties.createLogChannel,
-            customMsg: {...section.otherMajorConfig.afkCheckProperties.customMsg},
+            customMsg: { ...section.otherMajorConfig.afkCheckProperties.customMsg },
             nitroEarlyLocationLimit: section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit,
             pointUserLimit: section.otherMajorConfig.afkCheckProperties.pointUserLimit,
             prePostAfkCheckPermissions: section.otherMajorConfig.afkCheckProperties.prePostAfkCheckPermissions
                 .map(x => {
-                    return {...x};
+                    return { ...x };
                 }),
             vcLimit: section.otherMajorConfig.afkCheckProperties.vcLimit,
             defaultPosition: section.otherMajorConfig.afkCheckProperties.defaultPosition
@@ -208,7 +208,7 @@ export class ConfigAfkCheck extends BaseCommand {
         ];
 
         const embed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle(`Configure AFK Check Settings: **${section.sectionName}**`)
             .setDescription(
                 new StringBuilder()
@@ -337,7 +337,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set Section VC Limit")
                                     .setDescription(
                                         "Here, you can set the section default raid VC limit. If a dungeon doesn't"
@@ -373,7 +373,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set Point User Limit")
                                     .setDescription(
                                         "Here, you can set how many people can redeem points to gain priority access"
@@ -409,7 +409,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set Nitro User Limit")
                                     .setDescription(
                                         "Here, you can set how many people can gain priority access to raids in this"
@@ -446,7 +446,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set AFK Check Message")
                                     .setDescription(
                                         "Here, you can set the message that will be displayed on AFK checks in this"
@@ -479,7 +479,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set Post-AFK Check Message")
                                     .setDescription(
                                         "Here, you can set the message that will be displayed on AFK checks in this"
@@ -511,7 +511,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set Early Location Message")
                                     .setDescription(
                                         "Here, you can set the message that will be shown to people when they react"
@@ -545,7 +545,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set AFK Check Expiration Time")
                                     .setDescription(
                                         "Here, you can set how long AFK checks last in this section. The lowest time"
@@ -611,7 +611,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Default AFK VC Position")
                                     .setDescription(
                                         "Here you can set the default raid AFK VC position. This is so that "
@@ -658,11 +658,11 @@ export class ConfigAfkCheck extends BaseCommand {
                 }
                 case ButtonConstants.SAVE_ID: {
                     const filterQuery: Filter<IGuildInfo> = section.isMainSection
-                        ? {guildId: ctx.guild!.id}
-                        : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
+                        ? { guildId: ctx.guild!.id }
+                        : { guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier };
                     const updateQuery: UpdateFilter<IGuildInfo> = section.isMainSection
-                        ? {$set: {"otherMajorConfig.afkCheckProperties": newAfkCheckProps}}
-                        : {$set: {"guildSections.$.otherMajorConfig.afkCheckProperties": newAfkCheckProps}};
+                        ? { $set: { "otherMajorConfig.afkCheckProperties": newAfkCheckProps } }
+                        : { $set: { "guildSections.$.otherMajorConfig.afkCheckProperties": newAfkCheckProps } };
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(filterQuery, updateQuery);
                     await this.mainMenu(ctx, botMsg);
                     return;
@@ -719,7 +719,7 @@ export class ConfigAfkCheck extends BaseCommand {
                 return GuildFgrUtilities.hasCachedRole(ctx.guild!, x.key);
             })
             .map(x => {
-                return {...x};
+                return { ...x };
             });
 
         const upButton = AdvancedCollector.cloneButton(ButtonConstants.UP_BUTTON);
@@ -778,7 +778,7 @@ export class ConfigAfkCheck extends BaseCommand {
             .toString();
 
         const embed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle(`Modifying Permissions: **${permType}**`);
 
         let currentRoleIdx = 0;
@@ -846,7 +846,7 @@ export class ConfigAfkCheck extends BaseCommand {
             });
 
             if (!selectedButton)
-                return {value: null, status: TimedStatus.TIMED_OUT};
+                return { value: null, status: TimedStatus.TIMED_OUT };
 
             switch (selectedButton.customId) {
                 case ButtonConstants.PREVIOUS_ID: {
@@ -862,7 +862,7 @@ export class ConfigAfkCheck extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                 .setTitle("Add Role")
                                 .setDescription(
                                     "Here, you will be able to add a role that you can then configure permissions"
@@ -905,7 +905,7 @@ export class ConfigAfkCheck extends BaseCommand {
                     }, m => ParseUtilities.parseRole(m) ?? undefined);
 
                     if (!specifiedChoice)
-                        return {value: null, status: TimedStatus.TIMED_OUT};
+                        return { value: null, status: TimedStatus.TIMED_OUT };
 
                     if (specifiedChoice instanceof MessageComponentInteraction) {
                         if (!specifiedChoice.isSelectMenu())
@@ -919,7 +919,7 @@ export class ConfigAfkCheck extends BaseCommand {
 
                         newPerms.push({
                             key: specifiedChoice.values[0],
-                            value: {allow: [], deny: []}
+                            value: { allow: [], deny: [] }
                         });
                         break;
                     }
@@ -932,7 +932,7 @@ export class ConfigAfkCheck extends BaseCommand {
 
                     newPerms.push({
                         key: specifiedChoice.id,
-                        value: {allow: [], deny: []}
+                        value: { allow: [], deny: [] }
                     });
                     currentRoleIdx = newPerms.length - 1;
                     break;
@@ -945,7 +945,7 @@ export class ConfigAfkCheck extends BaseCommand {
                     break;
                 }
                 case ButtonConstants.SAVE_ID: {
-                    return {value: newPerms, status: TimedStatus.SUCCESS};
+                    return { value: newPerms, status: TimedStatus.SUCCESS };
                 }
                 case ButtonConstants.UP_ID: {
                     currentPermIdx = (currentPermIdx
@@ -989,10 +989,10 @@ export class ConfigAfkCheck extends BaseCommand {
                     break;
                 }
                 case ButtonConstants.BACK_ID: {
-                    return {value: oldPerms, status: TimedStatus.SUCCESS};
+                    return { value: oldPerms, status: TimedStatus.SUCCESS };
                 }
                 case ButtonConstants.QUIT_ID: {
-                    return {value: null, status: TimedStatus.TIMED_OUT};
+                    return { value: null, status: TimedStatus.TIMED_OUT };
                 }
             }
         }

@@ -52,6 +52,10 @@
         "@typescript-eslint/no-empty-interface": "off", // Following rules are for matching current code style
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/no-namespace": "off",
-        "@typescript-eslint/no-inferrable-types": "off" // Not necessary but for incomplete types that extend and add nothing
+        "@typescript-eslint/no-inferrable-types": "off", // Not necessary but for incomplete types that extend and add nothing
+        "object-curly-spacing": [
+            "error",
+            "always"
+        ]
     }
 }

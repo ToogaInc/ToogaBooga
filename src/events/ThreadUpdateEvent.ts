@@ -1,7 +1,7 @@
-import {NewsChannel, ThreadChannel} from "discord.js";
-import {MongoManager} from "../managers/MongoManager";
-import {ModmailManager} from "../managers/ModmailManager";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { NewsChannel, ThreadChannel } from "discord.js";
+import { MongoManager } from "../managers/MongoManager";
+import { ModmailManager } from "../managers/ModmailManager";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
 
 export async function onThreadArchiveEvent(oldThread: ThreadChannel, newThread: ThreadChannel): Promise<void> {
     const guildDoc = await MongoManager.getOrCreateGuildDoc(oldThread.guild.id, true);

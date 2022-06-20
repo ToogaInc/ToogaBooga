@@ -1,7 +1,7 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
-import {ThreadChannel} from "discord.js";
-import {ModmailManager} from "../../managers/ModmailManager";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
+import { ThreadChannel } from "discord.js";
+import { ModmailManager } from "../../managers/ModmailManager";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
 
 export class Archive extends BaseCommand {
     public constructor() {

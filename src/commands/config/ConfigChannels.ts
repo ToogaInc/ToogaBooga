@@ -7,19 +7,19 @@ import {
     IBaseDatabaseEntryInfo,
     IConfigCommand
 } from "./common/ConfigCommon";
-import {Guild, Message, MessageButton, MessageEmbed, TextChannel} from "discord.js";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {BaseCommand, ICommandContext} from "../BaseCommand";
-import {ParseUtilities} from "../../utilities/ParseUtilities";
-import {Filter} from "mongodb";
-import {MongoManager} from "../../managers/MongoManager";
-import {IGuildInfo, ISectionInfo} from "../../definitions";
-import {EmojiConstants} from "../../constants/EmojiConstants";
-import {MainLogType, SectionLogType} from "../../definitions/Types";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
+import { Guild, Message, MessageButton, MessageEmbed, TextChannel } from "discord.js";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
+import { ParseUtilities } from "../../utilities/ParseUtilities";
+import { Filter } from "mongodb";
+import { MongoManager } from "../../managers/MongoManager";
+import { IGuildInfo, ISectionInfo } from "../../definitions";
+import { EmojiConstants } from "../../constants/EmojiConstants";
+import { MainLogType, SectionLogType } from "../../definitions/Types";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
 import getCachedChannel = GuildFgrUtilities.getCachedChannel;
 
 enum ChannelCategoryType {
@@ -323,10 +323,10 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
         ];
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
+            .setAuthor({ name: guild.name, iconURL: guild.iconURL() ?? undefined })
             .setTitle(`[${section.sectionName}] **Channel** Configuration Main Menu`)
             .setDescription(`Please select the appropriate option.\n\n${currentConfiguration}`)
-            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
+            .setFooter({ text: `ID: ${section.uniqueIdentifier}` })
             .addField(
                 "Go Back",
                 "Click on the `Back` button to go back to the section selection embed. You can choose a new"
@@ -497,12 +497,12 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
         let selectedIdx = 0;
         const embedToDisplay = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle(`[${section.sectionName}] **Logging** Configuration`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
         while (true) {
             embedToDisplay.fields = [];
-            embedToDisplay.setFooter({text: "Either mention the channel or provide a valid channel ID."});
+            embedToDisplay.setFooter({ text: "Either mention the channel or provide a valid channel ID." });
             for (let i = 0; i < logIds.length; i++) {
                 const channelId = (
                     section.isMainSection
@@ -553,8 +553,8 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
             // Case 2: Channel
             const query: Filter<IGuildInfo> = section.isMainSection
-                ? {guildId: ctx.guild!.id}
-                : {guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
+                ? { guildId: ctx.guild!.id }
+                : { guildId: ctx.guild!.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier };
             const keySetter = section.isMainSection
                 ? "channels.loggingChannels"
                 : "guildSections.$.channels.loggingChannels";
@@ -659,10 +659,10 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
+            .setAuthor({ name: guild.name, iconURL: guild.iconURL() ?? undefined })
             .setTitle(`[${section.sectionName}] **Channel** Configuration ⇒ Base Channels`)
             .setDescription(`Select the button corresponding to the channel group you want to edit.\n\n${curConf}`)
-            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
+            .setFooter({ text: `ID: ${section.uniqueIdentifier}` })
             .addField(
                 "Back",
                 "Click on the `Back` button to go back to the main menu."
@@ -782,13 +782,13 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
         let selected = 0;
         const embedToDisplay = new MessageEmbed()
-            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
+            .setAuthor({ name: guild.name, iconURL: guild.iconURL() ?? undefined })
             .setTitle(`[${section.sectionName}] **Channel** Configuration ⇒ Base Channels ⇒ ${group}`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
 
         while (true) {
             embedToDisplay.fields = [];
-            embedToDisplay.setFooter({text: getInstructions(entries[selected].configTypeOrInstructions)});
+            embedToDisplay.setFooter({ text: getInstructions(entries[selected].configTypeOrInstructions) });
             for (let i = 0; i < entries.length; i++) {
                 const currSet: TextChannel | null = GuildFgrUtilities.getCachedChannel<TextChannel>(
                     guild,
@@ -833,8 +833,8 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
             // Case 2: Channel
             const query: Filter<IGuildInfo> = section.isMainSection
-                ? {guildId: guild.id}
-                : {guildId: guild.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
+                ? { guildId: guild.id }
+                : { guildId: guild.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier };
             const keySetter = section.isMainSection
                 ? entries[selected].guildDocPath
                 : entries[selected].sectionPath;

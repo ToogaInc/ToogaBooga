@@ -1,5 +1,5 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {ActivitiesOptions, ClientPresenceStatus, PresenceData} from "discord.js";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { ActivitiesOptions, ClientPresenceStatus, PresenceData } from "discord.js";
 
 export class SetStatus extends BaseCommand {
     public constructor() {

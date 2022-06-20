@@ -1,8 +1,8 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {Message, MessageAttachment, VoiceChannel} from "discord.js";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {RaidInstance} from "../../instances/RaidInstance";
-import {QuotaManager} from "../../managers/QuotaManager";
+import { BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { Message, MessageAttachment, VoiceChannel } from "discord.js";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { RaidInstance } from "../../instances/RaidInstance";
+import { QuotaManager } from "../../managers/QuotaManager";
 
 export class Parse extends BaseCommand {
     public constructor() {

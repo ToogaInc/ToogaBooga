@@ -1,13 +1,13 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {MessageSelectMenu, TextChannel} from "discord.js";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {QuotaManager} from "../../managers/QuotaManager";
-import {ButtonConstants} from "../../constants/ButtonConstants";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { MessageSelectMenu, TextChannel } from "discord.js";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { QuotaManager } from "../../managers/QuotaManager";
+import { ButtonConstants } from "../../constants/ButtonConstants";
 
 export class ManualVerifySection extends BaseCommand {
     public constructor() {
@@ -171,7 +171,7 @@ export class ManualVerifySection extends BaseCommand {
             );
         }
 
-        await GlobalFgrUtilities.sendMsg(resMember.member, {embeds: [secVerifEmbed]});
+        await GlobalFgrUtilities.sendMsg(resMember.member, { embeds: [secVerifEmbed] });
 
         await GlobalFgrUtilities.tryExecuteAsync(async () => {
             await resMember.member.roles.add(section.roles.verifiedRoleId);
@@ -184,7 +184,7 @@ export class ManualVerifySection extends BaseCommand {
         const sVerifyEntry = ctx.guildDoc!.manualVerificationEntries
             .find(x => x.userId === resMember.member.id && x.sectionId === section.uniqueIdentifier);
         if (sVerifyEntry) {
-            await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+            await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                 $pull: {
                     manualVerificationEntries: {
                         sectionId: section.uniqueIdentifier,

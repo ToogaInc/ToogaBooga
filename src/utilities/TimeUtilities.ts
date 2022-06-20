@@ -1,4 +1,4 @@
-import {CommonRegex} from "../constants/CommonRegex";
+import { CommonRegex } from "../constants/CommonRegex";
 
 export namespace TimeUtilities {
     type TimeUnitType = { ms: number; formatted: string; };
@@ -57,7 +57,7 @@ export namespace TimeUtilities {
             validStr = true;
         }
 
-        return validStr ? {ms: duration, formatted: formatDuration(duration, true, false)} : null;
+        return validStr ? { ms: duration, formatted: formatDuration(duration, true, false) } : null;
     }
 
     /**
@@ -124,7 +124,7 @@ export namespace TimeUtilities {
      */
     export function isValidTimeZone(tz: string): boolean {
         try {
-            Intl.DateTimeFormat(undefined, {timeZone: tz.trim()});
+            Intl.DateTimeFormat(undefined, { timeZone: tz.trim() });
             return true;
         } catch (ex) {
             return false;

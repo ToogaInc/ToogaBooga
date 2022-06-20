@@ -1,4 +1,4 @@
-import {TimeUtilities} from "./TimeUtilities";
+import { TimeUtilities } from "./TimeUtilities";
 import * as path from "path";
 
 /**

@@ -12,23 +12,23 @@ import {
     MessageSelectMenu,
     TextChannel
 } from "discord.js";
-import {QuotaLogType} from "../definitions/Types";
-import {MongoManager} from "./MongoManager";
-import {StringBuilder} from "../utilities/StringBuilder";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {MessageUtilities} from "../utilities/MessageUtilities";
-import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {IGuildInfo, IQuotaInfo} from "../definitions";
-import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
-import {TimeUtilities} from "../utilities/TimeUtilities";
-import {StringUtil} from "../utilities/StringUtilities";
-import {GeneralConstants} from "../constants/GeneralConstants";
-import {DungeonUtilities} from "../utilities/DungeonUtilities";
-import {MiscUtilities} from "../utilities/MiscUtilities";
-import {EmojiConstants} from "../constants/EmojiConstants";
-import {Logger} from "../utilities/Logger";
+import { QuotaLogType } from "../definitions/Types";
+import { MongoManager } from "./MongoManager";
+import { StringBuilder } from "../utilities/StringBuilder";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { MessageUtilities } from "../utilities/MessageUtilities";
+import { ArrayUtilities } from "../utilities/ArrayUtilities";
+import { AdvancedCollector } from "../utilities/collectors/AdvancedCollector";
+import { IGuildInfo, IQuotaInfo } from "../definitions";
+import { DUNGEON_DATA } from "../constants/dungeons/DungeonData";
+import { TimeUtilities } from "../utilities/TimeUtilities";
+import { StringUtil } from "../utilities/StringUtilities";
+import { GeneralConstants } from "../constants/GeneralConstants";
+import { DungeonUtilities } from "../utilities/DungeonUtilities";
+import { MiscUtilities } from "../utilities/MiscUtilities";
+import { EmojiConstants } from "../constants/EmojiConstants";
+import { Logger } from "../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, true);
 export namespace QuotaManager {
@@ -94,7 +94,7 @@ export namespace QuotaManager {
         // No channel = pull from database since we can't update it
         const quotaChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(guild, oldQuotas.channel);
         if (!quotaChannel) {
-            await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+            await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
                 $pull: {
                     "quotas.quotaInfo.roleId": roleId
                 }
@@ -108,7 +108,7 @@ export namespace QuotaManager {
         const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, oldQuotas.messageId);
         // Only care about quota actions worth points
         const quotaLogMap = new Collection<string, number>();
-        for (const {key, value} of oldQuotas.pointValues) {
+        for (const { key, value } of oldQuotas.pointValues) {
             if (value === 0) continue;
             quotaLogMap.set(key, value);
         }
@@ -190,7 +190,7 @@ export namespace QuotaManager {
                     .appendLine();
             }
             else {
-                for (const [quotaType, {pts, qty, breakdown}] of entries) {
+                for (const [quotaType, { pts, qty, breakdown }] of entries) {
                     // Need to look into quota types like `RunComplete:DUNGEON_ID` or `Parse`.
                     const logArr = quotaType.split(":");
                     if (logArr.length === 2) {
@@ -279,11 +279,11 @@ export namespace QuotaManager {
         }
 
         if (quotaMsg) {
-            await quotaMsg.edit({embeds: [summaryEmbed]});
+            await quotaMsg.edit({ embeds: [summaryEmbed] });
             quotaMsg.unpin().catch();
         }
         else
-            await quotaChannel.send({embeds: [summaryEmbed]});
+            await quotaChannel.send({ embeds: [summaryEmbed] });
 
         const startTime = new Date();
 
@@ -310,7 +310,7 @@ export namespace QuotaManager {
             });
         }
         else {
-            await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+            await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
                 $pull: {
                     "quotas.quotaInfo.roleId": roleId
                 }
@@ -381,9 +381,9 @@ export namespace QuotaManager {
 
             let bestQuotaInSection: {quota : IQuotaInfo, rank : number} | undefined;
             const roleArr: {id: string, rank: number}[] = [];
-            roleArr.push({id: section.roles.leaders.sectionVetLeaderRoleId, rank: 3});
-            roleArr.push({id: section.roles.leaders.sectionLeaderRoleId, rank: 2});
-            roleArr.push({id: section.roles.leaders.sectionAlmostLeaderRoleId, rank: 1});
+            roleArr.push({ id: section.roles.leaders.sectionVetLeaderRoleId, rank: 3 });
+            roleArr.push({ id: section.roles.leaders.sectionLeaderRoleId, rank: 2 });
+            roleArr.push({ id: section.roles.leaders.sectionAlmostLeaderRoleId, rank: 1 });
 
             for(const leaderRole of roleArr){
                 const quota = availableQuotas.find(userRole => userRole.roleId === leaderRole.id);
@@ -400,10 +400,10 @@ export namespace QuotaManager {
 
         //Run a pass for moderation quota
         const roleArr: {id: string, rank: number}[] = [];
-        roleArr.push({id: guildDoc.roles.staffRoles.moderation.moderatorRoleId, rank: 4});
-        roleArr.push({id: guildDoc.roles.staffRoles.moderation.officerRoleId, rank: 3});
-        roleArr.push({id: guildDoc.roles.staffRoles.moderation.securityRoleId, rank: 2});
-        roleArr.push({id: guildDoc.roles.staffRoles.moderation.helperRoleId, rank: 1});
+        roleArr.push({ id: guildDoc.roles.staffRoles.moderation.moderatorRoleId, rank: 4 });
+        roleArr.push({ id: guildDoc.roles.staffRoles.moderation.officerRoleId, rank: 3 });
+        roleArr.push({ id: guildDoc.roles.staffRoles.moderation.securityRoleId, rank: 2 });
+        roleArr.push({ id: guildDoc.roles.staffRoles.moderation.helperRoleId, rank: 1 });
 
         let bestQuotaInModeration: {quota : IQuotaInfo, rank : number} | undefined;
 
@@ -644,7 +644,7 @@ export namespace QuotaManager {
      */
     export function getPointListAsString(guildDoc: IGuildInfo, quotaInfo: IQuotaInfo): string {
         return quotaInfo.pointValues.map(x => {
-            const {key, value} = x;
+            const { key, value } = x;
             const logTypeDgnId = key.split(":");
             const logType = logTypeDgnId[0];
             if (key.startsWith("Run")) {
@@ -710,14 +710,14 @@ export namespace QuotaManager {
                     .toString()
             )
             .setTimestamp()
-            .setFooter({text: `Leaderboard updated every ${timeToUpdate} minute(s). Last Updated:`});
+            .setFooter({ text: `Leaderboard updated every ${timeToUpdate} minute(s). Last Updated:` });
 
         if (quotaInfo.quotaLog.length === 0)
             return embed;
 
         const points: [GuildMember | string, number][] = [];
         const memberIdSeen = new Set<string>();
-        for (const {userId} of quotaInfo.quotaLog) {
+        for (const { userId } of quotaInfo.quotaLog) {
             if (memberIdSeen.has(userId))
                 continue;
             memberIdSeen.add(userId);

@@ -1,12 +1,12 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MongoManager} from "../../managers/MongoManager";
-import {Collection, MessageSelectMenu} from "discord.js";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {QuotaManager} from "../../managers/QuotaManager";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MongoManager } from "../../managers/MongoManager";
+import { Collection, MessageSelectMenu } from "discord.js";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { QuotaManager } from "../../managers/QuotaManager";
 
 export class RemoveName extends BaseCommand {
     public constructor() {
@@ -102,7 +102,7 @@ export class RemoveName extends BaseCommand {
             .setMaxValues(1)
             .setPlaceholder("Possible Names to Remove")
             .setOptions(names.map(x => {
-                return {value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database"};
+                return { value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database" };
             }));
         const cancelButton = AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
             .setCustomId(uniqueIdentifier + "_cancel");
@@ -159,7 +159,7 @@ export class RemoveName extends BaseCommand {
 
             namesInDb.splice(idx, 1);
 
-            await MongoManager.getIdNameCollection().updateOne({currentDiscordId: member.id}, {
+            await MongoManager.getIdNameCollection().updateOne({ currentDiscordId: member.id }, {
                 $set: {
                     rotmgNames: namesInDb
                 },

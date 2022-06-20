@@ -8,14 +8,14 @@ import {
     TextBasedChannel,
     TextChannel
 } from "discord.js";
-import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
-import {EmojiConstants} from "../../../constants/EmojiConstants";
-import {StringBuilder} from "../../../utilities/StringBuilder";
-import {IGuildInfo, ISectionInfo} from "../../../definitions";
-import {ICommandContext} from "../../BaseCommand";
-import {GuildFgrUtilities} from "../../../utilities/fetch-get-request/GuildFgrUtilities";
-import {MiscUtilities} from "../../../utilities/MiscUtilities";
-import {ButtonConstants} from "../../../constants/ButtonConstants";
+import { AdvancedCollector } from "../../../utilities/collectors/AdvancedCollector";
+import { EmojiConstants } from "../../../constants/EmojiConstants";
+import { StringBuilder } from "../../../utilities/StringBuilder";
+import { IGuildInfo, ISectionInfo } from "../../../definitions";
+import { ICommandContext } from "../../BaseCommand";
+import { GuildFgrUtilities } from "../../../utilities/fetch-get-request/GuildFgrUtilities";
+import { MiscUtilities } from "../../../utilities/MiscUtilities";
+import { ButtonConstants } from "../../../constants/ButtonConstants";
 
 export const DB_CONFIG_BUTTONS: MessageButton[] = [
     ButtonConstants.BACK_BUTTON,

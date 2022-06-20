@@ -1,13 +1,13 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MongoManager} from "../../managers/MongoManager";
-import {Collection, MessageSelectMenu} from "discord.js";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {QuotaManager} from "../../managers/QuotaManager";
-import {CommonRegex} from "../../constants/CommonRegex";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MongoManager } from "../../managers/MongoManager";
+import { Collection, MessageSelectMenu } from "discord.js";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { QuotaManager } from "../../managers/QuotaManager";
+import { CommonRegex } from "../../constants/CommonRegex";
 
 export class EditName extends BaseCommand {
     public constructor() {
@@ -253,7 +253,7 @@ export class EditName extends BaseCommand {
             .setMaxValues(1)
             .setPlaceholder("Possible Names to Replace")
             .setOptions(names.map(x => {
-                return {value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database"};
+                return { value: x[0], label: x[0], description: x[1] ? "In Database" : "Not In Database" };
             }));
 
         await ctx.interaction.editReply({
@@ -304,7 +304,7 @@ export class EditName extends BaseCommand {
             allNames[idx].ign = newIgn;
             allNames[idx].lowercaseIgn = newIgn.toLowerCase();
 
-            await MongoManager.getIdNameCollection().updateOne({currentDiscordId: doc[0].currentDiscordId}, {
+            await MongoManager.getIdNameCollection().updateOne({ currentDiscordId: doc[0].currentDiscordId }, {
                 $set: {
                     rotmgNames: allNames
                 },

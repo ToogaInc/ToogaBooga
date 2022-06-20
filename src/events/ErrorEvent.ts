@@ -1,5 +1,5 @@
-import {StringBuilder} from "../utilities/StringBuilder";
-import {TimeUtilities} from "../utilities/TimeUtilities";
+import { StringBuilder } from "../utilities/StringBuilder";
+import { TimeUtilities } from "../utilities/TimeUtilities";
 
 export async function onErrorEvent(error: Error): Promise<void> {
     console.error(

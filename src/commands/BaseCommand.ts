@@ -8,14 +8,14 @@ import {
     TextBasedChannel,
     User
 } from "discord.js";
-import {Bot} from "../Bot";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {IGuildInfo} from "../definitions";
-import {DefinedRole} from "../definitions/Types";
-import {MiscUtilities} from "../utilities/MiscUtilities";
-import {SlashCommandBuilder, SlashCommandChannelOption} from "@discordjs/builders";
-import {MongoManager} from "../managers/MongoManager";
-import {PermsConstants} from "../constants/PermsConstants";
+import { Bot } from "../Bot";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { IGuildInfo } from "../definitions";
+import { DefinedRole } from "../definitions/Types";
+import { MiscUtilities } from "../utilities/MiscUtilities";
+import { SlashCommandBuilder, SlashCommandChannelOption } from "@discordjs/builders";
+import { MongoManager } from "../managers/MongoManager";
+import { PermsConstants } from "../constants/PermsConstants";
 
 export interface ICommandContext {
     /**

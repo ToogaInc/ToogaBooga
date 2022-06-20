@@ -1,5 +1,5 @@
-import {IMappedAfkCheckReactions} from "../../definitions";
-import {EmojiConstants} from "../EmojiConstants";
+import { IMappedAfkCheckReactions } from "../../definitions";
+import { EmojiConstants } from "../EmojiConstants";
 
 export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
     NITRO: {

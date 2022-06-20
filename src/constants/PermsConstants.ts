@@ -1,5 +1,5 @@
-import {IPermAllowDeny} from "../definitions";
-import {DefinedRole} from "../definitions/Types";
+import { IPermAllowDeny } from "../definitions";
+import { DefinedRole } from "../definitions/Types";
 
 export namespace PermsConstants {
     export const EVERYONE_ROLE: DefinedRole = "Everyone";

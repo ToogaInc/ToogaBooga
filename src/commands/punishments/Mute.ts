@@ -1,12 +1,12 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {MuteManager} from "../../managers/PunishmentManager";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {preCheckPunishment} from "./common/PunishmentCommon";
-import {Logger} from "../../utilities/Logger";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { MuteManager } from "../../managers/PunishmentManager";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { preCheckPunishment } from "./common/PunishmentCommon";
+import { Logger } from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 

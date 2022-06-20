@@ -13,8 +13,8 @@ import {
     TextBasedChannel,
     User
 } from "discord.js";
-import {MiscUtilities} from "./MiscUtilities";
-import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
+import { MiscUtilities } from "./MiscUtilities";
+import { GlobalFgrUtilities } from "./fetch-get-request/GlobalFgrUtilities";
 
 export namespace MessageUtilities {
     /**
@@ -114,13 +114,13 @@ export namespace MessageUtilities {
                                        color: ColorResolvable = "RANDOM"): MessageEmbed {
         const embed = new MessageEmbed().setTimestamp().setColor(color);
         if (obj instanceof User)
-            embed.setAuthor({name: obj.tag, iconURL: obj.displayAvatarURL()});
+            embed.setAuthor({ name: obj.tag, iconURL: obj.displayAvatarURL() });
         else if (obj instanceof GuildMember)
-            embed.setAuthor({name: obj.displayName, iconURL: obj.user.displayAvatarURL()});
+            embed.setAuthor({ name: obj.displayName, iconURL: obj.user.displayAvatarURL() });
         else {
             const icon = obj.iconURL();
-            if (icon) embed.setAuthor({name: obj.name, iconURL: icon});
-            else embed.setAuthor({name: obj.name});
+            if (icon) embed.setAuthor({ name: obj.name, iconURL: icon });
+            else embed.setAuthor({ name: obj.name });
         }
 
         return embed;

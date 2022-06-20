@@ -1,10 +1,10 @@
-import {Bot} from "../Bot";
-import {MongoManager} from "../managers/MongoManager";
-import {IBotInfo} from "../definitions";
-import {MuteManager, SuspensionManager} from "../managers/PunishmentManager";
-import {RaidInstance} from "../instances/RaidInstance";
-import {HeadcountInstance} from "../instances/HeadcountInstance";
-import {Logger} from "../utilities/Logger";
+import { Bot } from "../Bot";
+import { MongoManager } from "../managers/MongoManager";
+import { IBotInfo } from "../definitions";
+import { MuteManager, SuspensionManager } from "../managers/PunishmentManager";
+import { RaidInstance } from "../instances/RaidInstance";
+import { HeadcountInstance } from "../instances/HeadcountInstance";
+import { Logger } from "../utilities/Logger";
 import getMongoClient = MongoManager.getMongoClient;
 
 const LOGGER: Logger = new Logger(__filename, false);
@@ -25,7 +25,7 @@ export async function onReadyEvent(): Promise<void> {
     // If the bot doc isn't in the database, then we add it.
     LOGGER.info("Ensuring bot is in the database.");
     const thisBotCollection = await MongoManager.getBotCollection()
-        .findOne({clientId: botUser.id});
+        .findOne({ clientId: botUser.id });
 
     if (!thisBotCollection) {
         LOGGER.info("Bot not found in database, adding to database collection.");

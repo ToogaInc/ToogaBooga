@@ -1,5 +1,5 @@
-import {IBasicOverwriteData, IPermAllowDeny, IPropertyKeyValuePair} from "./MiscInterfaces";
-import {OverwriteData, VoiceChannel} from "discord.js";
+import { IBasicOverwriteData, IPermAllowDeny, IPropertyKeyValuePair } from "./MiscInterfaces";
+import { OverwriteData, VoiceChannel } from "discord.js";
 
 export type DungeonType = "Uncategorized"
 | "Basic Dungeons"

@@ -1,10 +1,10 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
-import {Bot} from "../../Bot";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {GeneralConstants} from "../../constants/GeneralConstants";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
+import { Bot } from "../../Bot";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { GeneralConstants } from "../../constants/GeneralConstants";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class BotInfo extends BaseCommand {
     public constructor() {

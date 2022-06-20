@@ -1,4 +1,4 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
 import {
     Message,
     MessageButton,
@@ -8,24 +8,24 @@ import {
     Role,
     TextChannel
 } from "discord.js";
-import {EmojiConstants} from "../../constants/EmojiConstants";
-import {IPropertyKeyValuePair, IQuotaInfo} from "../../definitions";
-import {DUNGEON_DATA} from "../../constants/dungeons/DungeonData";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {askInput, sendOrEditBotMsg} from "./common/ConfigCommon";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {ParseUtilities} from "../../utilities/ParseUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {QuotaLogType, QuotaRunLogType, TimedResult, TimedStatus} from "../../definitions/Types";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {DungeonUtilities} from "../../utilities/DungeonUtilities";
-import {GeneralConstants} from "../../constants/GeneralConstants";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {QuotaManager} from "../../managers/QuotaManager";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
+import { EmojiConstants } from "../../constants/EmojiConstants";
+import { IPropertyKeyValuePair, IQuotaInfo } from "../../definitions";
+import { DUNGEON_DATA } from "../../constants/dungeons/DungeonData";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { askInput, sendOrEditBotMsg } from "./common/ConfigCommon";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { ParseUtilities } from "../../utilities/ParseUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { QuotaLogType, QuotaRunLogType, TimedResult, TimedStatus } from "../../definitions/Types";
+import { ArrayUtilities } from "../../utilities/ArrayUtilities";
+import { DungeonUtilities } from "../../utilities/DungeonUtilities";
+import { GeneralConstants } from "../../constants/GeneralConstants";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { QuotaManager } from "../../managers/QuotaManager";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
 
 type QuotaAddResult = {
     quotaType: QuotaLogType;
@@ -125,7 +125,7 @@ export class ConfigQuotas extends BaseCommand {
         const seconds = resetInfo.time % 100;
         const timeReset = `${Math.floor(resetInfo.time / 100)}:${seconds < 10 ? "0" + seconds.toString() : seconds}`;
         const embed: MessageEmbed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle("Quota Configuration Command")
             .setDescription(
                 "Here, you will be able to configure quotas for one or more roles. Select the appropriate option to"
@@ -196,7 +196,7 @@ export class ConfigQuotas extends BaseCommand {
             await botMsg!.edit({
                 embeds: [
                     new MessageEmbed()
-                        .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                        .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                         .setTitle("Select Quota")
                         .setDescription(
                             new StringBuilder()
@@ -237,10 +237,10 @@ export class ConfigQuotas extends BaseCommand {
             });
 
             if (!selected)
-                return {value: null, status: TimedStatus.TIMED_OUT};
+                return { value: null, status: TimedStatus.TIMED_OUT };
 
             if (!selected.isSelectMenu())
-                return {value: null, status: TimedStatus.CANCELED};
+                return { value: null, status: TimedStatus.CANCELED };
 
             return {
                 value: selected.values,
@@ -257,7 +257,7 @@ export class ConfigQuotas extends BaseCommand {
                 await botMsg!.edit({
                     embeds: [
                         new MessageEmbed()
-                            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                             .setTitle("Specify Day of Week for Reset")
                             .setDescription(
                                 "Select the day of the week that you want all quotas to reset at via the"
@@ -300,7 +300,7 @@ export class ConfigQuotas extends BaseCommand {
                 await botMsg!.edit({
                     embeds: [
                         new MessageEmbed()
-                            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                             .setTitle("Specify Time for Reset")
                             .setDescription(
                                 new StringBuilder()
@@ -350,7 +350,7 @@ export class ConfigQuotas extends BaseCommand {
                 if (resetTimePrompt instanceof MessageComponentInteraction)
                     break;
 
-                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                     $set: {
                         "quotas.resetTime.dayOfWeek": Number.parseInt(resetDoWPrompt.values[0], 10),
                         "quotas.resetTime.time": resetTimePrompt
@@ -398,7 +398,7 @@ export class ConfigQuotas extends BaseCommand {
                     return;
                 }
 
-                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                     $pull: {
                         "quotas.quotaInfo": {
                             roleId: quotaToRemove.value![0]
@@ -470,7 +470,7 @@ export class ConfigQuotas extends BaseCommand {
         });
 
         const embed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle("Quota Configuration")
             .setDescription(
                 new StringBuilder()
@@ -569,7 +569,7 @@ export class ConfigQuotas extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set Role for Quota")
                                     .setDescription(
                                         `Current Role: ${role ?? "Not Set"}\n\nPlease mention, or type the ID of, the`
@@ -609,7 +609,7 @@ export class ConfigQuotas extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set Channel for Quota")
                                     .setDescription(
                                         `Current Channel: ${channel ?? "Not Set"}\n\nPlease mention, or type the ID of,`
@@ -646,7 +646,7 @@ export class ConfigQuotas extends BaseCommand {
                         {
                             embeds: [
                                 new MessageEmbed()
-                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                     .setTitle("Set Minimum Points Needed for Quota")
                                     .setDescription(
                                         `Current Minimum Points: ${quotaToEdit.pointsNeeded}\n\nType a positive number`
@@ -688,7 +688,7 @@ export class ConfigQuotas extends BaseCommand {
                 }
                 case ButtonConstants.SAVE_ID: {
                     if (quotaInfo) {
-                        await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                        await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                             $pull: {
                                 "quotas.quotaInfo": {
                                     roleId: quotaInfo.roleId
@@ -697,7 +697,7 @@ export class ConfigQuotas extends BaseCommand {
                         });
                     }
 
-                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                         $push: {
                             "quotas.quotaInfo": quotaToEdit
                         }
@@ -739,7 +739,7 @@ export class ConfigQuotas extends BaseCommand {
                 : DUNGEON_DATA.some(dgn => dgn.codeName === logAndId[1]);
         });
         const embed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle("Modify Point Values")
             .setDescription(
                 new StringBuilder()
@@ -881,9 +881,9 @@ export class ConfigQuotas extends BaseCommand {
                 case ButtonConstants.ADD_ID: {
                     const r = await this.addNewQuota(ctx, botMsg, ptsToUse);
                     if (r.status === TimedStatus.TIMED_OUT)
-                        return {status: TimedStatus.TIMED_OUT, value: null};
+                        return { status: TimedStatus.TIMED_OUT, value: null };
                     if (r.status === TimedStatus.CANCELED)
-                        return {status: TimedStatus.CANCELED, value: null};
+                        return { status: TimedStatus.CANCELED, value: null };
 
                     if (r.value!.quotaType.startsWith("Run")) {
                         const runType = r.value!.quotaType.split(":")[0];
@@ -921,13 +921,13 @@ export class ConfigQuotas extends BaseCommand {
                     break;
                 }
                 case ButtonConstants.BACK_ID: {
-                    return {value: pts, status: TimedStatus.SUCCESS};
+                    return { value: pts, status: TimedStatus.SUCCESS };
                 }
                 case ButtonConstants.SAVE_ID: {
-                    return {value: ptsToUse, status: TimedStatus.SUCCESS};
+                    return { value: ptsToUse, status: TimedStatus.SUCCESS };
                 }
                 case ButtonConstants.QUIT_ID: {
-                    return {value: null, status: TimedStatus.CANCELED};
+                    return { value: null, status: TimedStatus.CANCELED };
                 }
             }
         }
@@ -1032,7 +1032,7 @@ export class ConfigQuotas extends BaseCommand {
         await botMsg.edit({
             embeds: [
                 new MessageEmbed()
-                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                     .setTitle("Add New Quota Rule")
                     .setDescription(
                         "Please select, from the select menu, the quota rule that you want to add to this quota. If"
@@ -1064,9 +1064,9 @@ export class ConfigQuotas extends BaseCommand {
         });
 
         if (!selectedInt)
-            return {value: null, status: TimedStatus.TIMED_OUT};
+            return { value: null, status: TimedStatus.TIMED_OUT };
         if (!selectedInt.isSelectMenu())
-            return {value: null, status: TimedStatus.CANCELED};
+            return { value: null, status: TimedStatus.CANCELED };
 
         const selectedQuotaType = selectedInt.values[0] as QuotaLogType;
         let finalQuotaType: QuotaLogType = selectedQuotaType;
@@ -1093,14 +1093,14 @@ export class ConfigQuotas extends BaseCommand {
             await botMsg.edit({
                 embeds: [
                     new MessageEmbed()
-                        .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                        .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                         .setTitle("Select Dungeon")
                         .setDescription(
                             "Please select **one** dungeon from the list of dungeons below. Afterwards, you will"
                             + " be asked to assign a point value to this dungeon, which then can be used for"
                             + " quota logging. If you don't want to add a dungeon, press the **Cancel** button."
                         ).setFields(fields.map(x => {
-                            return {name: GeneralConstants.ZERO_WIDTH_SPACE, value: x};
+                            return { name: GeneralConstants.ZERO_WIDTH_SPACE, value: x };
                         }))
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([
@@ -1118,12 +1118,12 @@ export class ConfigQuotas extends BaseCommand {
                 oldMsg: botMsg,
                 targetAuthor: ctx.user,
                 targetChannel: ctx.channel
-            }, AdvancedCollector.getNumberPrompt(ctx.channel, {min: 1, max: allDungeons.length + 1}));
+            }, AdvancedCollector.getNumberPrompt(ctx.channel, { min: 1, max: allDungeons.length + 1 }));
 
             if (!resNum)
-                return {value: null, status: TimedStatus.TIMED_OUT};
+                return { value: null, status: TimedStatus.TIMED_OUT };
             if (resNum instanceof MessageComponentInteraction)
-                return {value: null, status: TimedStatus.CANCELED};
+                return { value: null, status: TimedStatus.CANCELED };
             finalQuotaType = `${logType}:${allDungeons[resNum - 1].codeName}`;
         }
 
@@ -1131,7 +1131,7 @@ export class ConfigQuotas extends BaseCommand {
         await botMsg.edit({
             embeds: [
                 new MessageEmbed()
-                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                     .setTitle("Select Value")
                     .setDescription(
                         "Please type a  __positive whole number__ between 1 and 500 (inclusive). This will represent"
@@ -1154,12 +1154,12 @@ export class ConfigQuotas extends BaseCommand {
             oldMsg: botMsg,
             targetAuthor: ctx.user,
             targetChannel: ctx.channel
-        }, AdvancedCollector.getNumberPrompt(ctx.channel, {min: 1, max: 500}));
+        }, AdvancedCollector.getNumberPrompt(ctx.channel, { min: 1, max: 500 }));
 
         if (!resPts)
-            return {value: null, status: TimedStatus.TIMED_OUT};
+            return { value: null, status: TimedStatus.TIMED_OUT };
         if (resPts instanceof MessageComponentInteraction)
-            return {value: null, status: TimedStatus.CANCELED};
+            return { value: null, status: TimedStatus.CANCELED };
         return {
             status: TimedStatus.SUCCESS,
             value: {

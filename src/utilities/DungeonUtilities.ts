@@ -6,21 +6,21 @@ import {
     IGuildInfo,
     IReactionInfo
 } from "../definitions";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
-import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
+import { MAPPED_AFK_CHECK_REACTIONS } from "../constants/dungeons/MappedAfkCheckReactions";
+import { DUNGEON_DATA } from "../constants/dungeons/DungeonData";
 import {
     Guild,
     MessageSelectMenu
 } from "discord.js";
-import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
-import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
-import {MongoManager} from "../managers/MongoManager";
-import {ArrayUtilities} from "./ArrayUtilities";
-import {MessageUtilities} from "./MessageUtilities";
-import {AdvancedCollector} from "./collectors/AdvancedCollector";
-import {ButtonConstants} from "../constants/ButtonConstants";
-import {StringUtil} from "./StringUtilities";
-import {ICommandContext} from "../commands/BaseCommand";
+import { GuildFgrUtilities } from "./fetch-get-request/GuildFgrUtilities";
+import { GlobalFgrUtilities } from "./fetch-get-request/GlobalFgrUtilities";
+import { MongoManager } from "../managers/MongoManager";
+import { ArrayUtilities } from "./ArrayUtilities";
+import { MessageUtilities } from "./MessageUtilities";
+import { AdvancedCollector } from "./collectors/AdvancedCollector";
+import { ButtonConstants } from "../constants/ButtonConstants";
+import { StringUtil } from "./StringUtilities";
+import { ICommandContext } from "../commands/BaseCommand";
 
 /**
  * A namespace containing a series of useful functions for dungeons, raids, and so on.
@@ -138,7 +138,7 @@ export namespace DungeonUtilities {
         console.assert(overriddenDungeons.length === guildDoc.properties.dungeonOverride.length);
         console.assert(customDungeons.length === guildDoc.properties.customDungeons.length);
 
-        return changed ? await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+        return changed ? await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
             $set: {
                 "properties.customDungeons": customDungeons,
                 "properties.dungeonOverride": overriddenDungeons,
@@ -169,7 +169,7 @@ export namespace DungeonUtilities {
             return guildDoc;
         }
 
-        return await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+        return await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
             $set: {
                 "properties.genEarlyLocReactions": temp
             }
@@ -261,7 +261,7 @@ export namespace DungeonUtilities {
             .setTitle("Select Dungeon")
             .setDescription("Please select a dungeon from the dropdown menu(s) below. If you want to cancel this,"
                 + " press the **Cancel** button.")
-            .setFooter({text: "You have 1 minute and 30 seconds to select a dungeon."})
+            .setFooter({ text: "You have 1 minute and 30 seconds to select a dungeon." })
             .setTimestamp();
 
         if (dungeonSubset.length > 4) {

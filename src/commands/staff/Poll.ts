@@ -1,10 +1,10 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {EmojiIdentifierResolvable} from "discord.js";
-import {EmojiConstants} from "../../constants/EmojiConstants";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { EmojiIdentifierResolvable } from "discord.js";
+import { EmojiConstants } from "../../constants/EmojiConstants";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
 
 export class Poll extends BaseCommand {
     public constructor() {
@@ -93,7 +93,7 @@ export class Poll extends BaseCommand {
             .setTimestamp(null)
             .setDescription(desc.toString());
 
-        const m = await GlobalFgrUtilities.sendMsg(ctx.channel, {embeds: [embed]});
+        const m = await GlobalFgrUtilities.sendMsg(ctx.channel, { embeds: [embed] });
         if (!m) {
             await ctx.interaction.reply({
                 content: "Something went wrong when trying to send this poll message.",

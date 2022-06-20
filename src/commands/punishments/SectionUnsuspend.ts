@@ -1,12 +1,12 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {SuspensionManager} from "../../managers/PunishmentManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {MessageSelectMenu, MessageSelectOptionData} from "discord.js";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {preCheckPunishment} from "./common/PunishmentCommon";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { SuspensionManager } from "../../managers/PunishmentManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { MessageSelectMenu, MessageSelectOptionData } from "discord.js";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { preCheckPunishment } from "./common/PunishmentCommon";
 
 export class SectionUnsuspend extends BaseCommand {
     public constructor() {

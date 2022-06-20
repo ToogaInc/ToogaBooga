@@ -1,17 +1,17 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {SuspensionManager} from "../../managers/PunishmentManager";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {MessageSelectMenu, MessageSelectOptionData} from "discord.js";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {Suspend} from "./Suspend";
-import {preCheckPunishment} from "./common/PunishmentCommon";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {Logger} from "../../utilities/Logger";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { SuspensionManager } from "../../managers/PunishmentManager";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { MessageSelectMenu, MessageSelectOptionData } from "discord.js";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { Suspend } from "./Suspend";
+import { preCheckPunishment } from "./common/PunishmentCommon";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { Logger } from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 

@@ -1,10 +1,10 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {MuteManager} from "../../managers/PunishmentManager";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {preCheckPunishment} from "./common/PunishmentCommon";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { MuteManager } from "../../managers/PunishmentManager";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { preCheckPunishment } from "./common/PunishmentCommon";
 
 export class Unmute extends BaseCommand {
     public static readonly ERROR_NO_UNMUTE_STR: string = new StringBuilder()

@@ -1,14 +1,14 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MongoManager} from "../../managers/MongoManager";
-import {MessageSelectMenu} from "discord.js";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {LoggerManager} from "../../managers/LoggerManager";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../../constants/dungeons/MappedAfkCheckReactions";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MongoManager } from "../../managers/MongoManager";
+import { MessageSelectMenu } from "discord.js";
+import { ArrayUtilities } from "../../utilities/ArrayUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { LoggerManager } from "../../managers/LoggerManager";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { MAPPED_AFK_CHECK_REACTIONS } from "../../constants/dungeons/MappedAfkCheckReactions";
 
 export class LogKey extends BaseCommand {
     public constructor() {
@@ -85,14 +85,14 @@ export class LogKey extends BaseCommand {
         const exaltKeys = Object.keys(MAPPED_AFK_CHECK_REACTIONS)
             .filter(x => MAPPED_AFK_CHECK_REACTIONS[x].isExaltKey)
             .map(x => {
-                return {key: x, val: MAPPED_AFK_CHECK_REACTIONS[x]};
+                return { key: x, val: MAPPED_AFK_CHECK_REACTIONS[x] };
             });
         
         const otherKeys = Object.keys(MAPPED_AFK_CHECK_REACTIONS)
             .filter(x => !MAPPED_AFK_CHECK_REACTIONS[x].isExaltKey && 
                 (MAPPED_AFK_CHECK_REACTIONS[x].type === "KEY" || MAPPED_AFK_CHECK_REACTIONS[x].type === "NM_KEY"))
             .map(x => {
-                return {key: x, val: MAPPED_AFK_CHECK_REACTIONS[x]};
+                return { key: x, val: MAPPED_AFK_CHECK_REACTIONS[x] };
             });
         
             

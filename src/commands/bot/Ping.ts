@@ -1,4 +1,4 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
 
 export class Ping extends BaseCommand {
     public constructor() {

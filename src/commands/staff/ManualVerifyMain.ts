@@ -1,14 +1,14 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {IRealmIgn} from "../../definitions";
-import {MessageSelectMenu, TextChannel} from "discord.js";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {QuotaManager} from "../../managers/QuotaManager";
-import {ButtonConstants} from "../../constants/ButtonConstants";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { IRealmIgn } from "../../definitions";
+import { MessageSelectMenu, TextChannel } from "discord.js";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { QuotaManager } from "../../managers/QuotaManager";
+import { ButtonConstants } from "../../constants/ButtonConstants";
 
 export class ManualVerifyMain extends BaseCommand {
     public constructor() {
@@ -209,7 +209,7 @@ export class ManualVerifyMain extends BaseCommand {
             );
         }
 
-        await GlobalFgrUtilities.sendMsg(resMember.member, {embeds: [finishedEmbed]});
+        await GlobalFgrUtilities.sendMsg(resMember.member, { embeds: [finishedEmbed] });
 
         await GlobalFgrUtilities.tryExecuteAsync(async () => {
             return await resMember.member.roles.add(verifiedRole);
@@ -219,7 +219,7 @@ export class ManualVerifyMain extends BaseCommand {
         const mVerifyEntry = ctx.guildDoc!.manualVerificationEntries
             .find(x => x.userId === resMember.member.id && x.sectionId === "MAIN");
         if (mVerifyEntry) {
-            await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+            await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                 $pull: {
                     manualVerificationEntries: {
                         sectionId: "MAIN",

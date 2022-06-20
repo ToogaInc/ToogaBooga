@@ -1,19 +1,19 @@
-import {CommandInteraction, Interaction, Message, NewsChannel} from "discord.js";
-import {Bot} from "../Bot";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {MongoManager} from "../managers/MongoManager";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {VerifyManager} from "../managers/VerifyManager";
-import {RaidInstance} from "../instances/RaidInstance";
-import {IGuildInfo} from "../definitions";
-import {MessageUtilities} from "../utilities/MessageUtilities";
-import {StringUtil} from "../utilities/StringUtilities";
-import {ICommandContext} from "../commands";
-import {TimeUtilities} from "../utilities/TimeUtilities";
-import {MessageConstants} from "../constants/MessageConstants";
-import {StringBuilder} from "../utilities/StringBuilder";
-import {ModmailManager} from "../managers/ModmailManager";
-import {ButtonConstants} from "../constants/ButtonConstants";
+import { CommandInteraction, Interaction, Message, NewsChannel } from "discord.js";
+import { Bot } from "../Bot";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { MongoManager } from "../managers/MongoManager";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { VerifyManager } from "../managers/VerifyManager";
+import { RaidInstance } from "../instances/RaidInstance";
+import { IGuildInfo } from "../definitions";
+import { MessageUtilities } from "../utilities/MessageUtilities";
+import { StringUtil } from "../utilities/StringUtilities";
+import { ICommandContext } from "../commands";
+import { TimeUtilities } from "../utilities/TimeUtilities";
+import { MessageConstants } from "../constants/MessageConstants";
+import { StringBuilder } from "../utilities/StringBuilder";
+import { ModmailManager } from "../managers/ModmailManager";
+import { ButtonConstants } from "../constants/ButtonConstants";
 
 /**
  * Acknowledges a slash command.

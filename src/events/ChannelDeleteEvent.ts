@@ -1,5 +1,5 @@
-import {DMChannel, GuildChannel} from "discord.js";
-import {RaidInstance} from "../instances/RaidInstance";
+import { DMChannel, GuildChannel } from "discord.js";
+import { RaidInstance } from "../instances/RaidInstance";
 
 export async function onChannelDeleteEvent(c: DMChannel | GuildChannel): Promise<void> {
     if (c instanceof DMChannel) {

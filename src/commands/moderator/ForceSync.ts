@@ -1,14 +1,14 @@
-import {BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {UserManager} from "../../managers/UserManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {IRealmIgn} from "../../definitions";
-import {FindCursor} from "mongodb";
-import {MessageEmbed} from "discord.js";
+import { BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { UserManager } from "../../managers/UserManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { IRealmIgn } from "../../definitions";
+import { FindCursor } from "mongodb";
+import { MessageEmbed } from "discord.js";
 
 // It might be worth blocking access to the bot while this command is running.
 // Or, better yet, making this command bot developer-only
@@ -63,7 +63,7 @@ export class ForceSync extends BaseCommand {
         const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RANDOM")
             .setTitle("Preparing to Sync.")
             .setDescription("Fetching all members in this server...")
-            .setFooter({text: "This might take a while, please wait."})
+            .setFooter({ text: "This might take a while, please wait." })
             .setTimestamp();
 
         await ctx.interaction.reply({
@@ -74,7 +74,7 @@ export class ForceSync extends BaseCommand {
             return x.roles.cache.has(memberRole.id) || x.roles.cache.has(ctx.guildDoc!.roles.suspendedRoleId)
                 && !!x.nickname;
         }).map(x => {
-            return {member: x, names: x.nickname ? UserManager.getAllNames(x.nickname) : []};
+            return { member: x, names: x.nickname ? UserManager.getAllNames(x.nickname) : [] };
         });
 
         const allDocs: FindCursor<{
