@@ -502,6 +502,13 @@ export interface IAfkCheckProperties {
      * @type {boolean}
      */
     createLogChannel: boolean;
+    
+    /**
+     * Default position for the voice channel to avoid confusing staff.
+     * 
+     * @type {number}
+     */
+    defaultPosition: number;
 }
 
 /**

@@ -487,7 +487,8 @@ export namespace MongoManager {
                 afkCheckTimeout: 30 * 60 * 1000,
                 afkCheckPermissions: generalAfkCheckPerms,
                 prePostAfkCheckPermissions: prePostAfkCheckPerms,
-                allowedDungeons: DUNGEON_DATA.map(x => x.codeName)
+                allowedDungeons: DUNGEON_DATA.map(x => x.codeName),
+                defaultPosition: 0
             }
         };
     }
