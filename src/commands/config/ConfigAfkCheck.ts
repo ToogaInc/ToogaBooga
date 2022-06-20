@@ -147,7 +147,8 @@ export class ConfigAfkCheck extends BaseCommand {
                 .map(x => {
                     return {...x};
                 }),
-            vcLimit: section.otherMajorConfig.afkCheckProperties.vcLimit
+            vcLimit: section.otherMajorConfig.afkCheckProperties.vcLimit,
+            defaultPosition: section.otherMajorConfig.afkCheckProperties.defaultPosition
         };
 
         const logChannelButton = new MessageButton()
@@ -186,6 +187,10 @@ export class ConfigAfkCheck extends BaseCommand {
                 .setStyle("PRIMARY"),
             logChannelButton,
             existingVcButton,
+            new MessageButton()
+                .setLabel("Set Default Position")
+                .setCustomId("set_default_pos")
+                .setStyle("PRIMARY"),
             new MessageButton()
                 .setLabel("Set AFK Check Expiration Time")
                 .setCustomId("afk_check_expiration")
@@ -268,6 +273,11 @@ export class ConfigAfkCheck extends BaseCommand {
                 .addField(
                     "AFK Check Expiration Time",
                     StringUtil.codifyString(TimeUtilities.formatDuration(newAfkCheckProps.afkCheckTimeout, true, false)),
+                    true
+                )
+                .addField(
+                    "Default VC Position",
+                    StringUtil.codifyString(newAfkCheckProps.defaultPosition),
                     true
                 )
                 .addField(
@@ -592,6 +602,39 @@ export class ConfigAfkCheck extends BaseCommand {
                         break;
 
                     newAfkCheckProps.prePostAfkCheckPermissions = p.value!;
+                    break;
+                }
+                case "set_default_pos": {
+                    const n = await askInput<number>(
+                        ctx,
+                        botMsg,
+                        {
+                            embeds: [
+                                new MessageEmbed()
+                                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                    .setTitle("Default AFK VC Position")
+                                    .setDescription(
+                                        "Here you can set the default raid AFK VC position. This is so that "
+                                        + "staff aren't confused by the position of the newly created channel at the top of "
+                                        + "the list. "
+                                        + "The current value is: " + StringUtil.codifyString(newAfkCheckProps.defaultPosition)
+                                        + "Type a __integer__ that represents the position of the channel. "
+                                        + "If you don't want to set this, press the **Back** button."
+                                    )
+                            ]
+                        },
+                        m => {
+                            const num = Number.parseInt(m.content, 10);
+                            return Number.isNaN(num) ? null : num;
+                        }
+                    );
+
+                    if (typeof n === "undefined" || typeof n !== "number") {
+                        await this.dispose(ctx, botMsg);
+                        return;
+                    }
+
+                    newAfkCheckProps.defaultPosition = n;
                     break;
                 }
                 case "config_gen_afk": {
