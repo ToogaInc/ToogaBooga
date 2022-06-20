@@ -3302,8 +3302,7 @@ export class RaidInstance {
                             membersAtEnd.push(memberThatJoined);
                             continue;
                         }
-
-                        membersThatLeft.push(memberThatJoined);
+                        else if (memberThatJoined.id !== mainLeader?.id) membersThatLeft.push(memberThatJoined);
                     }
                 }
                 else {
@@ -3325,14 +3324,13 @@ export class RaidInstance {
 
             // Giving completes to those who were in VC instead of asking for a /who
             if (!(resObj instanceof Message) && resObj.customId) {
-                if (resObj.customId !== "parse-vc") // Else, it is the "skip" button
-                    return; 
-                
-                // Filter against those who originally joined VC to remove those who left.
-                const lastInVC = this._membersThatJoined.filter(member => !this._membersThatLeftChannel.includes(member));
+                if (resObj.customId === "parse-vc") { // Else, it is the "skip" button    
+                    // Filter against those who originally joined VC to remove those who left.
+                    const lastInVC = this._membersThatJoined.filter(member => !this._membersThatLeftChannel.includes(member) && mainLeader?.id !== member.id);
 
-                membersAtEnd.push(...lastInVC.values());
-                membersThatLeft.push(...this._membersThatLeftChannel);
+                    membersAtEnd.push(...lastInVC.values());
+                    membersThatLeft.push(...this._membersThatLeftChannel);
+                }
             }
         }
         else {
@@ -3350,6 +3348,8 @@ export class RaidInstance {
         }
 
         if (mainLeader) {
+            membersAtEnd.push(mainLeader); // Allows the leader to receive a completion
+
             await LoggerManager.logDungeonLead(
                 mainLeader,
                 dungeonId,
