@@ -587,7 +587,8 @@ export class HeadcountInstance {
         if (!this._headcountMsg || !this._controlPanelMsg)
             return;
 
-        this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTED;
+        // This is for the purposes of not having to edit getHeadcountEmbed, letting users know it's in progress.
+        this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTING; 
 
         // Stop 0: Stop all collectors
         await this.stopAllIntervalsAndCollectors("Headcount converted.");
@@ -603,7 +604,7 @@ export class HeadcountInstance {
         ]);
 
         // Edit the headcount message
-        await this._headcountMsg.edit({
+        await this._headcountMsg.edit({ 
             embeds: [this.getHeadcountEmbed()!],
             content: "@here",
             components: [],
@@ -632,6 +633,14 @@ export class HeadcountInstance {
         );
 
         await rm?.startPreAfkCheck();
+        this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTED;
+
+        // Update the headcount message to say it has been converted
+        await this._headcountMsg.edit({
+            embeds: [this.getHeadcountEmbed()!],
+            content: "@here",
+            components: []
+        });
     }
 
     /**
@@ -679,7 +688,8 @@ export class HeadcountInstance {
 
         //Do not include react information for aborted or converted headcounts
         if (earlyReactInfo.length > 0 && this._headcountStatus !== HeadcountStatus.HEADCOUNT_ABORTED
-            && this._headcountStatus !== HeadcountStatus.HEADCOUNT_CONVERTED) {
+            && this._headcountStatus !== HeadcountStatus.HEADCOUNT_CONVERTED
+            && this._headcountStatus !== HeadcountStatus.HEADCOUNT_CONVERTING) {
             headcountEmbed.addField("Reaction Status", earlyReactInfo.join("\n"));
         }
         switch (this._headcountStatus) {
@@ -690,6 +700,15 @@ export class HeadcountInstance {
                         iconURL: this._memberInit.user.displayAvatarURL()
                     })
                     .setDescription("Please wait for the raid leader to continue.");
+                return headcountEmbed;
+
+            case HeadcountStatus.HEADCOUNT_CONVERTING:
+                headcountEmbed
+                    .setAuthor({
+                        name: `The ${this._dungeon.dungeonName} headcount is currently being converted to an AFK check.`,
+                        iconURL: this._memberInit.user.displayAvatarURL()
+                    })
+                    .setDescription("Converting to an AFK check, please be patient.");
                 return headcountEmbed;
 
             case HeadcountStatus.HEADCOUNT_CONVERTED:
@@ -764,6 +783,11 @@ export class HeadcountInstance {
                 break;
             case HeadcountStatus.HEADCOUNT_ABORTED:
                 descSb.append("This headcount is currently **ABORTED**.").appendLine()
+                    .append("This panel will remain behind.").appendLine(2)
+                    .append(`**${this._pplWithEarlyLoc.get("interested")!.length}** member(s) were interested in joining.`);
+                break;
+            case HeadcountStatus.HEADCOUNT_CONVERTING:
+                descSb.append("This headcount is being **CONVERTED TO AFK CHECK**.").appendLine()
                     .append("This panel will remain behind.").appendLine(2)
                     .append(`**${this._pplWithEarlyLoc.get("interested")!.length}** member(s) were interested in joining.`);
                 break;
@@ -1267,4 +1291,5 @@ enum HeadcountStatus {
     HEADCOUNT_FINISHED,
     HEADCOUNT_ABORTED,
     HEADCOUNT_CONVERTED,
+    HEADCOUNT_CONVERTING
 }
