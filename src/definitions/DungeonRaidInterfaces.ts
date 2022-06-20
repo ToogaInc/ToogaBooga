@@ -508,7 +508,7 @@ export interface IAfkCheckProperties {
      * 
      * @type {number}
      */
-     defaultPosition: number;
+    defaultPosition: number;
 }
 
 /**
