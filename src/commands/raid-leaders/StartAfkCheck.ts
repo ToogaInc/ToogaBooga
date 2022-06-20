@@ -1,16 +1,16 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {MongoManager} from "../../managers/MongoManager";
-import {HeadcountInstance} from "../../instances/HeadcountInstance";
-import {RaidInstance} from "../../instances/RaidInstance";
-import {SlashCommandBuilder} from "@discordjs/builders";
-import {DungeonUtilities} from "../../utilities/DungeonUtilities";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { MongoManager } from "../../managers/MongoManager";
+import { HeadcountInstance } from "../../instances/HeadcountInstance";
+import { RaidInstance } from "../../instances/RaidInstance";
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { DungeonUtilities } from "../../utilities/DungeonUtilities";
 import {
     DungeonSelectionType,
     getAvailableSections,
     getSelectedSection, selectVc
 } from "./common/RaidLeaderCommon";
-import {IRaidOptions} from "../../definitions";
-import {TextChannel, VoiceChannel} from "discord.js";
+import { IRaidOptions } from "../../definitions";
+import { TextChannel, VoiceChannel } from "discord.js";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";

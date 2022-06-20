@@ -1,5 +1,5 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {MongoManager} from "../../managers/MongoManager";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { MongoManager } from "../../managers/MongoManager";
 
 export class RemovePunishment extends BaseCommand {
     public constructor() {

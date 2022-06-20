@@ -1,7 +1,7 @@
-import {Channel, Guild, GuildBasedChannel, GuildMember, Message, Role, Snowflake, TextBasedChannel,} from "discord.js";
-import {MiscUtilities} from "../MiscUtilities";
-import {DefinedRole} from "../../definitions/Types";
-import {IGuildInfo} from "../../definitions";
+import { Channel, Guild, GuildBasedChannel, GuildMember, Message, Role, Snowflake, TextBasedChannel, } from "discord.js";
+import { MiscUtilities } from "../MiscUtilities";
+import { DefinedRole } from "../../definitions/Types";
+import { IGuildInfo } from "../../definitions";
 
 /**
  * A set of functions that essentially "abstract" away the guild methods. This was created so that if discord.js

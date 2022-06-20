@@ -1,7 +1,7 @@
-import {Collection, GuildMember} from "discord.js";
-import {MongoManager} from "../managers/MongoManager";
-import {MuteManager, SuspensionManager} from "../managers/PunishmentManager";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { Collection, GuildMember } from "discord.js";
+import { MongoManager } from "../managers/MongoManager";
+import { MuteManager, SuspensionManager } from "../managers/PunishmentManager";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export async function onGuildMemberAdd(member: GuildMember): Promise<void> {
     const guildDoc = await MongoManager.getOrCreateGuildDoc(member.guild.id, true);
@@ -21,10 +21,10 @@ export async function onGuildMemberAdd(member: GuildMember): Promise<void> {
             if (!guildMuteManager.some(x => x.affectedUser.id === member.id)) {
                 guildMuteManager.push({
                     actionId: mutedUser.actionId,
-                    affectedUser: {...mutedUser.affectedUser},
+                    affectedUser: { ...mutedUser.affectedUser },
                     evidence: mutedUser.evidence.slice(),
                     issuedAt: mutedUser.issuedAt,
-                    moderator: {...mutedUser.moderator},
+                    moderator: { ...mutedUser.moderator },
                     reason: mutedUser.reason,
                     timeEnd: mutedUser.timeEnd
                 });
@@ -47,10 +47,10 @@ export async function onGuildMemberAdd(member: GuildMember): Promise<void> {
             if (!SuspensionManager.SuspendedMembers.get(member.guild.id)!.has(member.id)) {
                 SuspensionManager.SuspendedMembers.get(member.guild.id)!.set(member.id, {
                     actionId: suspendedUser.actionId,
-                    affectedUser: {...suspendedUser.affectedUser},
+                    affectedUser: { ...suspendedUser.affectedUser },
                     evidence: suspendedUser.evidence.slice(),
                     issuedAt: suspendedUser.issuedAt,
-                    moderator: {...suspendedUser.moderator},
+                    moderator: { ...suspendedUser.moderator },
                     oldRoles: suspendedUser.oldRoles.slice(),
                     reason: suspendedUser.reason,
                     timeEnd: suspendedUser.timeEnd
@@ -77,10 +77,10 @@ export async function onGuildMemberAdd(member: GuildMember): Promise<void> {
             if (!secSusArr.some(x => x.affectedUser.id === member.id)) {
                 secSusArr.push({
                     actionId: secSuspendedUser.actionId,
-                    affectedUser: {...secSuspendedUser.affectedUser},
+                    affectedUser: { ...secSuspendedUser.affectedUser },
                     evidence: secSuspendedUser.evidence.slice(),
                     issuedAt: secSuspendedUser.issuedAt,
-                    moderator: {...secSuspendedUser.moderator},
+                    moderator: { ...secSuspendedUser.moderator },
                     oldRoles: secSuspendedUser.oldRoles.slice(),
                     reason: secSuspendedUser.reason,
                     timeEnd: secSuspendedUser.timeEnd

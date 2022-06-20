@@ -1,11 +1,10 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {MuteManager} from "../../managers/PunishmentManager";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {preCheckPunishment} from "./common/PunishmentCommon";
-import generateRandomString = StringUtil.generateRandomString;
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { MuteManager } from "../../managers/PunishmentManager";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { preCheckPunishment } from "./common/PunishmentCommon";
 
 export class Unmute extends BaseCommand {
     public static readonly ERROR_NO_UNMUTE_STR: string = new StringBuilder()
@@ -71,9 +70,7 @@ export class Unmute extends BaseCommand {
             return -1;
         }
 
-        const unmuteId = `Unmute_${Date.now()}_${generateRandomString(15)}`;
         const reason = ctx.interaction.options.getString("reason", true);
-        const currTime = Date.now();
 
         const unmuteRes = await MuteManager.removeMute(resMember!.member, ctx.member!, {
             evidence: [],

@@ -1,11 +1,11 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {MongoManager} from "../../managers/MongoManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {Bot} from "../../Bot";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { MongoManager } from "../../managers/MongoManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { Bot } from "../../Bot";
 
 export class FindPunishment extends BaseCommand {
     public constructor() {
@@ -88,7 +88,7 @@ export class FindPunishment extends BaseCommand {
 
         // Bot owner can see guild name in footer
         if (Bot.BotInstance.config.ids.botOwnerIds.includes(ctx.user.id)) {
-            embed.setFooter({text: `Guild Name/ID: ${guild?.name ?? pInfo.guildId}`});
+            embed.setFooter({ text: `Guild Name/ID: ${guild?.name ?? pInfo.guildId}` });
         }
 
         const punishmentObj = pInfo.resolved?.actionId === punishmentId

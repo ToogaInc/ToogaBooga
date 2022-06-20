@@ -1,13 +1,12 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {MuteManager} from "../../managers/PunishmentManager";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {preCheckPunishment} from "./common/PunishmentCommon";
-import {Logger} from "../../utilities/Logger";
-import generateRandomString = StringUtil.generateRandomString;
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { MuteManager } from "../../managers/PunishmentManager";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { preCheckPunishment } from "./common/PunishmentCommon";
+import { Logger } from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -86,8 +85,6 @@ export class Mute extends BaseCommand {
             return -1;
         }
 
-        const muteId = `Mute_${Date.now()}_${generateRandomString(15)}`;
-
         let durationStr = ctx.interaction.options.getString("duration", false);
         if (durationStr === "-1") durationStr = null;
 
@@ -96,7 +93,6 @@ export class Mute extends BaseCommand {
         const parsedDuration = durationStr ? TimeUtilities.parseTimeUnit(durationStr) : null;
 
         const reason = ctx.interaction.options.getString("reason", true);
-        const currTime = Date.now();
 
         const muteRes = await MuteManager.addMute(resMember!.member, ctx.member!, {
             duration: parsedDuration?.ms ?? -1,

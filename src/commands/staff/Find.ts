@@ -1,18 +1,18 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {BaseMessageComponent, ColorResolvable, GuildMember, MessageEmbed} from "discord.js";
-import {UserManager} from "../../managers/UserManager";
-import {MongoManager} from "../../managers/MongoManager";
-import {IIdNameInfo, IUserInfo} from "../../definitions";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {Bot} from "../../Bot";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {EmojiConstants} from "../../constants/EmojiConstants";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {ButtonConstants} from "../../constants/ButtonConstants";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { BaseMessageComponent, ColorResolvable, GuildMember, MessageEmbed } from "discord.js";
+import { UserManager } from "../../managers/UserManager";
+import { MongoManager } from "../../managers/MongoManager";
+import { IIdNameInfo, IUserInfo } from "../../definitions";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { Bot } from "../../Bot";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { ArrayUtilities } from "../../utilities/ArrayUtilities";
+import { EmojiConstants } from "../../constants/EmojiConstants";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { ButtonConstants } from "../../constants/ButtonConstants";
 import getDateTime = TimeUtilities.getDateTime;
 
 export class Find extends BaseCommand {
@@ -116,7 +116,7 @@ export class Find extends BaseCommand {
         // Member found
         const [userNameIds, userDoc]: [IIdNameInfo[], IUserInfo | null] = await Promise.all([
             MongoManager.findIdInIdNameCollection(targetMember.id),
-            MongoManager.getUserCollection().findOne({discordId: targetMember.id})
+            MongoManager.getUserCollection().findOne({ discordId: targetMember.id })
         ]);
 
         if (userNameIds.length > 1) {
@@ -338,7 +338,7 @@ export class Find extends BaseCommand {
                             .setDescription(desc.toString())
                             .addField("Reason", x.reason)
                             .addField("Time", time.toString())
-                            .setFooter({text: `Page ${i + 2}/${thisGuildPunishmentHist.length + 1}`}),
+                            .setFooter({ text: `Page ${i + 2}/${thisGuildPunishmentHist.length + 1}` }),
                         i: `**\`${x.actionId}\`**`
                     };
                 }
@@ -402,11 +402,11 @@ export class Find extends BaseCommand {
                 embed.setFooter({
                     text: `Page ${i + 2}/${thisGuildPunishmentHist.length + 1}`
                 });
-                return {e: embed, i: `**\`${x.actionId}\`**`};
+                return { e: embed, i: `**\`${x.actionId}\`**` };
             });
 
             displayModHist.unshift({
-                e: successEmbed.setFooter({text: `Page 1/${thisGuildPunishmentHist.length + 1}`}),
+                e: successEmbed.setFooter({ text: `Page 1/${thisGuildPunishmentHist.length + 1}` }),
                 i: null
             });
 
@@ -461,7 +461,7 @@ export class Find extends BaseCommand {
                 });
             });
 
-            collector.on("end", async (_, r) => {
+            collector.on("end", async () => {
                 // Possible that someone might delete the message before this triggers.
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
                     await ctx.interaction.editReply({

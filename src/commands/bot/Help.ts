@@ -1,11 +1,11 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {Bot} from "../../Bot";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {Role} from "discord.js";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { Bot } from "../../Bot";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { Role } from "discord.js";
+import { ArrayUtilities } from "../../utilities/ArrayUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
 
 export class Help extends BaseCommand {
     public constructor() {
@@ -80,7 +80,6 @@ export class Help extends BaseCommand {
                         )
                     );
 
-                const pRoleIds: string[] = [];
                 if (ctx.guildDoc) {
                     const customPermData = ctx.guildDoc.properties.customCmdPermissions
                         .find(x => x.key === command.commandInfo.cmdCode);

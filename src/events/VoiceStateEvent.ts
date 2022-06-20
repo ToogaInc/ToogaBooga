@@ -1,5 +1,5 @@
-import {VoiceState} from "discord.js";
-import {RaidInstance} from "../instances/RaidInstance";
+import { VoiceState } from "discord.js";
+import { RaidInstance } from "../instances/RaidInstance";
 
 export async function onVoiceStateEvent(oldState: VoiceState, newState: VoiceState): Promise<void> {
     // Only want events that pertain to this raid.

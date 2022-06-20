@@ -8,14 +8,14 @@ import {
     TextBasedChannel,
     TextChannel
 } from "discord.js";
-import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
-import {EmojiConstants} from "../../../constants/EmojiConstants";
-import {StringBuilder} from "../../../utilities/StringBuilder";
-import {IGuildInfo, ISectionInfo} from "../../../definitions";
-import {ICommandContext} from "../../BaseCommand";
-import {GuildFgrUtilities} from "../../../utilities/fetch-get-request/GuildFgrUtilities";
-import {MiscUtilities} from "../../../utilities/MiscUtilities";
-import {ButtonConstants} from "../../../constants/ButtonConstants";
+import { AdvancedCollector } from "../../../utilities/collectors/AdvancedCollector";
+import { EmojiConstants } from "../../../constants/EmojiConstants";
+import { StringBuilder } from "../../../utilities/StringBuilder";
+import { IGuildInfo, ISectionInfo } from "../../../definitions";
+import { ICommandContext } from "../../BaseCommand";
+import { GuildFgrUtilities } from "../../../utilities/fetch-get-request/GuildFgrUtilities";
+import { MiscUtilities } from "../../../utilities/MiscUtilities";
+import { ButtonConstants } from "../../../constants/ButtonConstants";
 
 export const DB_CONFIG_BUTTONS: MessageButton[] = [
     ButtonConstants.BACK_BUTTON,
@@ -73,9 +73,9 @@ export interface IConfigCommand {
     /**
      * Disposes this instance. Use this function to clean up any messages that were used.
      * @param {ICommandContext} ctx The command context.
-     * @param args Anything else.
+     * @param {unknown[]} args Anything else.
      */
-    dispose(ctx: ICommandContext, ...args: any[]): Promise<void>;
+    dispose(ctx: ICommandContext, ...args: unknown[]): Promise<void>;
 }
 
 export interface IBaseDatabaseEntryInfo {
@@ -107,7 +107,7 @@ export interface IBaseDatabaseEntryInfo {
     /**
      * A function that returns the current value from the database.
      */
-    getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => any;
+    getCurrentValue: (guildDoc: IGuildInfo, section: ISectionInfo) => unknown;
 }
 
 export enum ConfigType {

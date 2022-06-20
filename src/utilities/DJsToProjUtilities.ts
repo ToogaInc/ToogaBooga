@@ -1,5 +1,5 @@
-import {OverwriteData} from "discord.js";
-import {IBasicOverwriteData} from "../definitions";
+import { OverwriteData } from "discord.js";
+import { IBasicOverwriteData } from "../definitions";
 
 /**
  * An interface designed to help convert some types found in discord.js's libraries

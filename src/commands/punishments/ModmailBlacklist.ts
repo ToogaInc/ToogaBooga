@@ -1,10 +1,10 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {IBlacklistedModmailUser} from "../../definitions";
-import {PunishmentManager} from "../../managers/PunishmentManager";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { IBlacklistedModmailUser } from "../../definitions";
+import { PunishmentManager } from "../../managers/PunishmentManager";
 import generateRandomString = StringUtil.generateRandomString;
 
 export class ModmailBlacklist extends BaseCommand {
@@ -80,7 +80,7 @@ export class ModmailBlacklist extends BaseCommand {
             actionId: modmaiLBlacklistId,
             evidence: [],
             issuedAt: currTime,
-            moderator: {id: ctx.user.id, name: ctx.member!.displayName, tag: ctx.user.tag},
+            moderator: { id: ctx.user.id, name: ctx.member!.displayName, tag: ctx.user.tag },
             reason: reason,
             affectedUser: {
                 id,
@@ -89,7 +89,7 @@ export class ModmailBlacklist extends BaseCommand {
             }
         };
 
-        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
             $push: {
                 "moderation.blacklistedModmailUsers": rBlInfo
             }

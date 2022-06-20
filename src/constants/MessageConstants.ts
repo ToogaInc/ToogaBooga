@@ -1,4 +1,4 @@
-import {MessageEmbed} from "discord.js";
+import { MessageEmbed } from "discord.js";
 
 export namespace MessageConstants {
     // Command must be executed in the server.

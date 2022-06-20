@@ -1,12 +1,12 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {SuspensionManager} from "../../managers/PunishmentManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {MessageSelectMenu, MessageSelectOptionData} from "discord.js";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {preCheckPunishment} from "./common/PunishmentCommon";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { SuspensionManager } from "../../managers/PunishmentManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { MessageSelectMenu, MessageSelectOptionData } from "discord.js";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { preCheckPunishment } from "./common/PunishmentCommon";
 
 export class SectionUnsuspend extends BaseCommand {
     public constructor() {
@@ -120,7 +120,6 @@ export class SectionUnsuspend extends BaseCommand {
 
         const sectionPicked = sections.find(x => x.uniqueIdentifier === result.values[0])!;
         const reason = ctx.interaction.options.getString("reason", true);
-        const currTime = Date.now();
 
         const unsuspensionRes = await SuspensionManager.removeSectionSuspension(resMember!.member, ctx.member!, {
             section: sectionPicked,

@@ -1,4 +1,4 @@
-import {IDungeonModifier} from "../../definitions";
+import { IDungeonModifier } from "../../definitions";
 
 export const HIGHEST_MODIFIER_LEVEL: number = 5;
 
@@ -20,7 +20,7 @@ export const DUNGEON_MODIFIERS: readonly IDungeonModifier[] = [
     {
         modifierName: "Bored Minions",
         maxLevel: 3,
-        description: "Minions’ projectiles have x% less lifetime.",
+        description: "Minions' projectiles have x% less lifetime.",
         modifierId: "BORED_MINIONS",
         defaultDisplay: true
     },
@@ -55,7 +55,7 @@ export const DUNGEON_MODIFIERS: readonly IDungeonModifier[] = [
     {
         modifierName: "Dull Minions",
         maxLevel: 4,
-        description: "Minions’ projectiles travel x% slower.",
+        description: "Minions' projectiles travel x% slower.",
         modifierId: "DULL_MINIONS",
         defaultDisplay: true
     },
@@ -69,7 +69,7 @@ export const DUNGEON_MODIFIERS: readonly IDungeonModifier[] = [
     {
         modifierName: "Energized Minions",
         maxLevel: 3,
-        description: "Minions’ projectiles have x% more lifetime.",
+        description: "Minions' projectiles have x% more lifetime.",
         modifierId: "ENERGIZED_MINIONS",
         defaultDisplay: true
     },
@@ -118,7 +118,7 @@ export const DUNGEON_MODIFIERS: readonly IDungeonModifier[] = [
     {
         modifierName: "Keen Minions",
         maxLevel: 4,
-        description: "Minions’s projectiles travel x% faster.",
+        description: "Minions's projectiles travel x% faster.",
         modifierId: "KEEN_MINIONS",
         defaultDisplay: true
     },
@@ -334,7 +334,7 @@ export const DUNGEON_MODIFIERS: readonly IDungeonModifier[] = [
         defaultDisplay: false
     },
     {
-        modifierName: "Alexander’s Legacy",
+        modifierName: "Alexander's Legacy",
         maxLevel: 4,
         description: "Thessal has an additional chance of becoming wounded upon defeat.",
         modifierId: "ALEXANDERS_LEGACY",

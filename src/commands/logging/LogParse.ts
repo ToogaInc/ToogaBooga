@@ -1,13 +1,13 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MongoManager} from "../../managers/MongoManager";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {QuotaManager} from "../../managers/QuotaManager";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {Logger} from "../../utilities/Logger";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MongoManager } from "../../managers/MongoManager";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { QuotaManager } from "../../managers/QuotaManager";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { Logger } from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 

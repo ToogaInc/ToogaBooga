@@ -1,7 +1,7 @@
-import {Message, PartialMessage} from "discord.js";
-import {MongoManager} from "../managers/MongoManager";
-import {HeadcountInstance} from "../instances/HeadcountInstance";
-import {RaidInstance} from "../instances/RaidInstance";
+import { Message, PartialMessage } from "discord.js";
+import { MongoManager } from "../managers/MongoManager";
+import { HeadcountInstance } from "../instances/HeadcountInstance";
+import { RaidInstance } from "../instances/RaidInstance";
 
 export async function onMessageDeleteEvent(msg: Message | PartialMessage): Promise<void> {
     if (!msg.guild) {
@@ -30,7 +30,7 @@ export async function onMessageDeleteEvent(msg: Message | PartialMessage): Promi
     // Modmail message?
     const thread = guildDoc.properties.modmailThreads.find(x => x.baseMsg === msg.id);
     if (thread) {
-        await MongoManager.updateAndFetchGuildDoc({guildId: msg.guild.id}, {
+        await MongoManager.updateAndFetchGuildDoc({ guildId: msg.guild.id }, {
             $pull: {
                 "properties.modmailThreads": {
                     baseMsg: msg.id

@@ -1,10 +1,10 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {SuspensionManager} from "../../managers/PunishmentManager";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {preCheckPunishment} from "./common/PunishmentCommon";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { SuspensionManager } from "../../managers/PunishmentManager";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { preCheckPunishment } from "./common/PunishmentCommon";
 
 export class Unsuspend extends BaseCommand {
     public static readonly ERROR_NO_UNSUSPEND_STR: string = new StringBuilder()
@@ -65,7 +65,6 @@ export class Unsuspend extends BaseCommand {
         }
 
         const reason = ctx.interaction.options.getString("reason", true);
-        const currTime = Date.now();
 
         const unsuspensionRes = await SuspensionManager.removeSuspension(resMember!.member, ctx.member!, {
             evidence: [],

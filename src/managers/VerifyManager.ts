@@ -11,13 +11,13 @@ import {
     MessageSelectMenu,
     TextChannel
 } from "discord.js";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {MessageUtilities} from "../utilities/MessageUtilities";
-import {StringBuilder} from "../utilities/StringBuilder";
-import {StringUtil} from "../utilities/StringUtilities";
-import {RealmSharperWrapper} from "../private-api/RealmSharperWrapper";
-import {PrivateApiDefinitions as PAD} from "../private-api/PrivateApiDefinitions";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { MessageUtilities } from "../utilities/MessageUtilities";
+import { StringBuilder } from "../utilities/StringBuilder";
+import { StringUtil } from "../utilities/StringUtilities";
+import { RealmSharperWrapper } from "../private-api/RealmSharperWrapper";
+import { PrivateApiDefinitions as PAD } from "../private-api/PrivateApiDefinitions";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
 import {
     IGuildInfo,
     IIdNameInfo,
@@ -26,17 +26,17 @@ import {
     ISectionInfo,
     IVerificationProperties
 } from "../definitions";
-import {MongoManager} from "./MongoManager";
-import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {EmojiConstants} from "../constants/EmojiConstants";
-import {TimeUtilities} from "../utilities/TimeUtilities";
-import {UserManager} from "./UserManager";
-import {DungeonUtilities} from "../utilities/DungeonUtilities";
-import {LoggerManager} from "./LoggerManager";
-import {ButtonConstants} from "../constants/ButtonConstants";
-import {InteractivityManager} from "./InteractivityManager";
-import {ModmailManager} from "./ModmailManager";
-import {CommonRegex} from "../constants/CommonRegex";
+import { MongoManager } from "./MongoManager";
+import { AdvancedCollector } from "../utilities/collectors/AdvancedCollector";
+import { EmojiConstants } from "../constants/EmojiConstants";
+import { TimeUtilities } from "../utilities/TimeUtilities";
+import { UserManager } from "./UserManager";
+import { DungeonUtilities } from "../utilities/DungeonUtilities";
+import { LoggerManager } from "./LoggerManager";
+import { ButtonConstants } from "../constants/ButtonConstants";
+import { InteractivityManager } from "./InteractivityManager";
+import { ModmailManager } from "./ModmailManager";
+import { CommonRegex } from "../constants/CommonRegex";
 
 export namespace VerifyManager {
     export const NUMBER_OF_STATS: number = 8;
@@ -157,7 +157,6 @@ export namespace VerifyManager {
     const CHECK_PROFILE_ID: string = "check_profile";
     const NO_MANUAL_VERIFY_ID: string = "deny";
     const MANUAL_VERIFY_ID: string = "manual_verify";
-    const MANUAL_EVIDENCE_ID: string = "manual_evidence";
 
     // For approving or denying manual verification applications
     export const MANUAL_VERIFY_ACCEPT_ID: string = "accept_manual";
@@ -176,10 +175,6 @@ export namespace VerifyManager {
     const MANUAL_VERIFY_BUTTON = new MessageButton()
         .setLabel("Accept")
         .setCustomId(MANUAL_VERIFY_ID)
-        .setStyle("PRIMARY");
-    const MANUAL_EVIDENCE_BUTTON = new MessageButton()
-        .setLabel("Accept With Evidence")
-        .setCustomId(MANUAL_EVIDENCE_ID)
         .setStyle("PRIMARY");
 
     const GUILD_ROLES: string[] = [
@@ -465,7 +460,7 @@ export namespace VerifyManager {
                             + " select a name that you want to use to verify with this server. If you want to use a"
                             + " name that isn't listed, simply press the **Skip** button."
                         )
-                        .setFooter({text: "Respond By"})
+                        .setFooter({ text: "Respond By" })
                         .setTimestamp(Date.now() + 2 * 60 * 1000)
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([
@@ -473,7 +468,7 @@ export namespace VerifyManager {
                         .setMaxValues(1)
                         .setMinValues(1)
                         .addOptions(userDocs[0].rotmgNames.map(x => {
-                            return {label: x.ign, value: x.ign};
+                            return { label: x.ign, value: x.ign };
                         }))
                         .setCustomId("select"),
                     new MessageButton()
@@ -535,7 +530,7 @@ export namespace VerifyManager {
                             "Cancel Process",
                             "To cancel the verification process, simply type **`-cancel`**."
                         )
-                        .setFooter({text: "Respond By"})
+                        .setFooter({ text: "Respond By" })
                         .setTimestamp(Date.now() + 2 * 60 * 1000)
                 ],
                 components: []
@@ -601,7 +596,7 @@ export namespace VerifyManager {
                                 + " user. You will need to resolve this issue by messaging a staff member for"
                                 + " assistance. If you want to verify with a different in-game name, please"
                                 + " restart the verification process.")
-                            .setFooter({text: "Verification Process Stopped."})
+                            .setFooter({ text: "Verification Process Stopped." })
                     ]
                 }).catch();
 
@@ -630,7 +625,7 @@ export namespace VerifyManager {
         await verifKit.msg.edit({
             embeds: [
                 getVerifEmbed(member, nameToVerify, code, guildDoc, guildDoc.otherMajorConfig.verificationProperties)
-                    .setFooter({text: "Verification Process Expires"})
+                    .setFooter({ text: "Verification Process Expires" })
                     .setTimestamp(timeStarted + 20 * 60 * 1000)
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
@@ -755,7 +750,7 @@ export namespace VerifyManager {
                             code,
                             guildDoc,
                             guildDoc.otherMajorConfig.verificationProperties
-                        ).setFooter({text: "Verification Process Expires"})
+                        ).setFooter({ text: "Verification Process Expires" })
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
                                 `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
@@ -804,7 +799,7 @@ export namespace VerifyManager {
                             code,
                             guildDoc,
                             guildDoc.otherMajorConfig.verificationProperties
-                        ).setFooter({text: "Verification Process Expires"})
+                        ).setFooter({ text: "Verification Process Expires" })
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
                                 `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
@@ -870,7 +865,7 @@ export namespace VerifyManager {
                                     + " blacklist with the server staff. When doing so, please give them the"
                                     + " moderation ID associated with your blacklist (shown below)."
                                 )
-                                .setFooter({text: `Mod. ID: ${blacklistEntry.actionId}`})
+                                .setFooter({ text: `Mod. ID: ${blacklistEntry.actionId}` })
                                 .setTimestamp()
                         ],
                         components: []
@@ -897,7 +892,7 @@ export namespace VerifyManager {
             if (checkRes.conclusion === "FAIL") {
                 const issuesToUse = checkRes.fatalIssues.length === 0 ? checkRes.manualIssues : checkRes.fatalIssues;
                 const fields: EmbedFieldData[] = issuesToUse.map(x => {
-                    return {name: x.key, value: x.value};
+                    return { name: x.key, value: x.value };
                 });
 
                 const failEmbed = MessageUtilities.generateBlankEmbed(member.guild, "RED")
@@ -943,7 +938,7 @@ export namespace VerifyManager {
                             code,
                             guildDoc,
                             guildDoc.otherMajorConfig.verificationProperties
-                        ).setFooter({text: "Verification Process Expires"})
+                        ).setFooter({ text: "Verification Process Expires" })
                             .setTimestamp(timeStarted + 20 * 60 * 1000)
                             .addField(
                                 `${EmojiConstants.WARNING_EMOJI} Verification Issues`,
@@ -1001,7 +996,7 @@ export namespace VerifyManager {
 
             const finishedEmbed = MessageUtilities.generateBlankEmbed(member.guild, "GREEN")
                 .setTitle(`**${member.guild.name}**: Guild Verification Successful`)
-                .setFooter({text: "Verification Completed At"})
+                .setFooter({ text: "Verification Completed At" })
                 .setTimestamp();
             if (guildDoc.otherMajorConfig.verificationProperties.verificationSuccessMessage) {
                 finishedEmbed.setDescription(
@@ -1016,7 +1011,7 @@ export namespace VerifyManager {
             }
 
             await Promise.all([
-                verifKit.msg!.edit({embeds: [finishedEmbed]}).catch(),
+                verifKit.msg!.edit({ embeds: [finishedEmbed] }).catch(),
                 await member.send({
                     content: "Your verification was successful."
                 }).catch(),
@@ -1057,7 +1052,6 @@ export namespace VerifyManager {
 
         const names = UserManager.getAllNames(member.displayName);
         let nameToUse: string;
-        const uIdentifier = StringUtil.generateRandomString(30);
         if (names.length === 0) {
             // lookup database for name
             const nameRes = await MongoManager.findIdInIdNameCollection(member.id);
@@ -1218,7 +1212,7 @@ export namespace VerifyManager {
                 + " **Keep in mind** that you will not be able to verify in this server or section until your"
                 + " manual verification results come back, and you will **not** be able to stop this process."
             )
-            .setFooter({text: "Respond By:"})
+            .setFooter({ text: "Respond By:" })
             .setTimestamp(Date.now() + 2 * 60 * 1000);
 
         const [m, , dmChannel] = await Promise.all([
@@ -1378,7 +1372,7 @@ export namespace VerifyManager {
             ])
         });
 
-        await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
+        await MongoManager.updateAndFetchGuildDoc({ guildId: member.guild.id }, {
             $push: {
                 manualVerificationEntries: {
                     userId: member.id,
@@ -1421,7 +1415,7 @@ export namespace VerifyManager {
         // Note that this should've been accounted for when a member leaves
         if (!member) {
             // Remove all entries with this person's user ID
-            await MongoManager.updateAndFetchGuildDoc({guildId: moderator.guild.id}, {
+            await MongoManager.updateAndFetchGuildDoc({ guildId: moderator.guild.id }, {
                 $pull: {
                     manualVerificationEntries: {
                         userId: manualVerifyRes.userId
@@ -1454,7 +1448,7 @@ export namespace VerifyManager {
         // No section = remove all manual verification requests for that section
         if (!section) {
             if (manualVerifyRes.sectionId !== "MAIN") {
-                await MongoManager.updateAndFetchGuildDoc({guildId: moderator.guild.id}, {
+                await MongoManager.updateAndFetchGuildDoc({ guildId: moderator.guild.id }, {
                     $pull: {
                         manualVerificationEntries: {
                             sectionId: manualVerifyRes.sectionId
@@ -1484,7 +1478,7 @@ export namespace VerifyManager {
         );
 
         // Promises to resolve after evaluating the response ID
-        const promises: (Promise<any> | undefined)[] = [];
+        const promises: (Promise<unknown> | undefined)[] = [];
         switch (responseId) {
             case (MANUAL_VERIFY_MODMAIL_ID): {
                 return await ModmailManager.startModmailWithUser(member, moderator);
@@ -1497,7 +1491,7 @@ export namespace VerifyManager {
                             : `**${member.guild.name}**: ${section.sectionName} Section Verification Denied`
                     )
                     .setTimestamp()
-                    .setFooter({text: "Manual Verification Request Denied."})
+                    .setFooter({ text: "Manual Verification Request Denied." })
                     .setDescription(
                         "Your manual verification request was **denied**. If you have any questions regarding why"
                         + " your request was denied, please message a staff member or send a modmail."
@@ -1505,7 +1499,7 @@ export namespace VerifyManager {
 
                 promises.push(
                     manualVerifMsg?.delete().catch(),
-                    GlobalFgrUtilities.sendMsg(member, {embeds: [finishedEmbed]}),
+                    GlobalFgrUtilities.sendMsg(member, { embeds: [finishedEmbed] }),
                     section.isMainSection
                         ? verifyFailChannel?.send({
                             content: `[Main] ${member} has tried to verify as **\`${manualVerifyRes.ign}\`**, but`
@@ -1542,7 +1536,7 @@ export namespace VerifyManager {
 
                 promises.push(
                     manualVerifMsg?.delete().catch(),
-                    GlobalFgrUtilities.sendMsg(member, {embeds: [finishedEmbed]}),
+                    GlobalFgrUtilities.sendMsg(member, { embeds: [finishedEmbed] }),
                     member.roles.add(section.roles.verifiedRoleId).catch()
                 );
 
@@ -1575,7 +1569,7 @@ export namespace VerifyManager {
         }
 
         promises.push(
-            MongoManager.updateAndFetchGuildDoc({guildId: moderator.guild.id}, {
+            MongoManager.updateAndFetchGuildDoc({ guildId: moderator.guild.id }, {
                 $pull: {
                     manualVerificationEntries: {
                         sectionId: manualVerifyRes.sectionId,
@@ -1613,7 +1607,7 @@ export namespace VerifyManager {
                 .append("Please complete the following steps. If you do not want to complete verification at this ")
                 .append("time, press the **Cancel** button.")
                 .toString())
-            .setFooter({text: "You have 15 minutes to complete this process."})
+            .setFooter({ text: "You have 15 minutes to complete this process." })
             .addField(
                 "1. Verification Code",
                 new StringBuilder().append(`Your verification code is: ${StringUtil.codifyString(code)}`)

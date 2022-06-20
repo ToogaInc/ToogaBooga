@@ -20,23 +20,23 @@ import {
     IHeadcountInfo,
     ISectionInfo
 } from "../definitions";
-import {DEFAULT_MODIFIERS, DUNGEON_MODIFIERS} from "../constants/dungeons/DungeonModifiers";
-import {UserManager} from "../managers/UserManager";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {confirmReaction, controlPanelCollectorFilter, getItemDisplay, getReactions, ReactionInfoMore} from "./Common";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {MongoManager} from "../managers/MongoManager";
-import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
-import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {EmojiConstants} from "../constants/EmojiConstants";
-import {ArrayUtilities} from "../utilities/ArrayUtilities";
-import {StringBuilder} from "../utilities/StringBuilder";
-import {GeneralConstants} from "../constants/GeneralConstants";
-import {RaidInstance} from "./RaidInstance";
-import {MessageUtilities} from "../utilities/MessageUtilities";
-import {Logger} from "../utilities/Logger";
-import {TimeUtilities} from "../utilities/TimeUtilities";
-import {selectVc} from "../commands/raid-leaders/common/RaidLeaderCommon";
+import { DEFAULT_MODIFIERS, DUNGEON_MODIFIERS } from "../constants/dungeons/DungeonModifiers";
+import { UserManager } from "../managers/UserManager";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { confirmReaction, controlPanelCollectorFilter, getItemDisplay, getReactions, ReactionInfoMore } from "./Common";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { MongoManager } from "../managers/MongoManager";
+import { DUNGEON_DATA } from "../constants/dungeons/DungeonData";
+import { AdvancedCollector } from "../utilities/collectors/AdvancedCollector";
+import { EmojiConstants } from "../constants/EmojiConstants";
+import { ArrayUtilities } from "../utilities/ArrayUtilities";
+import { StringBuilder } from "../utilities/StringBuilder";
+import { GeneralConstants } from "../constants/GeneralConstants";
+import { RaidInstance } from "./RaidInstance";
+import { MessageUtilities } from "../utilities/MessageUtilities";
+import { Logger } from "../utilities/Logger";
+import { TimeUtilities } from "../utilities/TimeUtilities";
+import { selectVc } from "../commands/raid-leaders/common/RaidLeaderCommon";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -199,12 +199,6 @@ export class HeadcountInstance {
         // Which essential reacts are we going to use.
         const reactions = getReactions(dungeon, guildDoc);
 
-        // This defines the number of people that gets early location via NITRO only.
-        const numEarlyLoc: number = -2;
-        // And this is the raid VC limit
-        const vcLimit: number = -2;
-        // And this is the point cost.
-        const costForEarlyLoc: number = 0;
         // Process dungeon based on whether it is custom or not.
         if (dungeon.isBuiltIn) {
             const dgnOverride = guildDoc.properties.dungeonOverride
@@ -283,7 +277,7 @@ export class HeadcountInstance {
 
         this._allEssentialOptions.set("interested", {
             earlyLocAmt: 0,
-            emojiInfo: {identifier: EmojiConstants.GREEN_CHECK_EMOJI, isCustom: false},
+            emojiInfo: { identifier: EmojiConstants.GREEN_CHECK_EMOJI, isCustom: false },
             isCustomReaction: false,
             name: "Interested",
             type: "UTILITY",
@@ -653,7 +647,7 @@ export class HeadcountInstance {
         if (this._headcountStatus === HeadcountStatus.NOTHING) return null;
 
         const headcountEmbed = new MessageEmbed()
-            .setFooter({text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Headcount.`})
+            .setFooter({ text: `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName}: Headcount.` })
             .setTimestamp()
             .setColor(this._embedColor);
 
@@ -679,7 +673,6 @@ export class HeadcountInstance {
             if (!emoji)
                 continue;
 
-            const maximum = this._allEssentialOptions.get(codeName)!.earlyLocAmt;
             earlyReactInfo.push(`- ${emoji} ${peopleThatReacted.length} People`);
         }
 
@@ -1111,7 +1104,7 @@ export class HeadcountInstance {
         if (!prop)
             return false;
 
-        prop.push({member: member, modifiers: modifiers});
+        prop.push({ member: member, modifiers: modifiers });
 
         if (!addToDb || !this._addedToDb || !this._headcountMsg)
             return true;
@@ -1144,7 +1137,7 @@ export class HeadcountInstance {
 
         const obj = this.getHeadcountInfoObject();
         if (!obj) return false;
-        const res = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
+        const res = await MongoManager.updateAndFetchGuildDoc({ guildId: this._guild.id }, {
             $push: {
                 activeHeadcounts: obj
             }
@@ -1165,7 +1158,7 @@ export class HeadcountInstance {
         if (!this._headcountMsg || !this._addedToDb)
             return false;
 
-        const res = await MongoManager.updateAndFetchGuildDoc({guildId: this._guild.id}, {
+        const res = await MongoManager.updateAndFetchGuildDoc({ guildId: this._guild.id }, {
             $pull: {
                 activeHeadcounts: {
                     headcountMessageId: this._headcountMsg.id

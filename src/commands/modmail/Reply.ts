@@ -1,7 +1,7 @@
-import {ArgumentType, BaseCommand, ICommandContext} from "../BaseCommand";
-import {ThreadChannel} from "discord.js";
-import {ModmailManager} from "../../managers/ModmailManager";
-import {QuotaManager} from "../../managers/QuotaManager";
+import { ArgumentType, BaseCommand, ICommandContext } from "../BaseCommand";
+import { ThreadChannel } from "discord.js";
+import { ModmailManager } from "../../managers/ModmailManager";
+import { QuotaManager } from "../../managers/QuotaManager";
 
 export class Reply extends BaseCommand {
     public constructor() {

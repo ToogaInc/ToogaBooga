@@ -1,7 +1,7 @@
-import {StringBuilder} from "./StringBuilder";
-import {GeneralConstants} from "../constants/GeneralConstants";
-import {ArrayUtilities} from "./ArrayUtilities";
-import {EmojiConstants} from "../constants/EmojiConstants";
+import { StringBuilder } from "./StringBuilder";
+import { GeneralConstants } from "../constants/GeneralConstants";
+import { ArrayUtilities } from "./ArrayUtilities";
+import { EmojiConstants } from "../constants/EmojiConstants";
 
 export namespace StringUtil {
     /**

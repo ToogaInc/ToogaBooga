@@ -1,4 +1,4 @@
-import {CommonRegex} from "../constants/CommonRegex";
+import { CommonRegex } from "../constants/CommonRegex";
 
 export namespace TimeUtilities {
     type TimeUnitType = { ms: number; formatted: string; };
@@ -11,8 +11,6 @@ export namespace TimeUtilities {
     export function parseTimeUnit(timeUnit: string): TimeUnitType | null {
         // Break up the time + units into individual strings
         // For example, 3d5m = [3d, 5m]
-        const timeStrArr: string[] = [];
-
         let validStr = false;
         let lastIdx = 0;
         let duration = 0;
@@ -59,7 +57,7 @@ export namespace TimeUtilities {
             validStr = true;
         }
 
-        return validStr ? {ms: duration, formatted: formatDuration(duration, true, false)} : null;
+        return validStr ? { ms: duration, formatted: formatDuration(duration, true, false) } : null;
     }
 
     /**
@@ -126,7 +124,7 @@ export namespace TimeUtilities {
      */
     export function isValidTimeZone(tz: string): boolean {
         try {
-            Intl.DateTimeFormat(undefined, {timeZone: tz.trim()});
+            Intl.DateTimeFormat(undefined, { timeZone: tz.trim() });
             return true;
         } catch (ex) {
             return false;

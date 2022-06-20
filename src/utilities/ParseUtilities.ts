@@ -1,7 +1,7 @@
-import {GuildBasedChannel, Message, Role, User} from "discord.js";
-import {MiscUtilities} from "./MiscUtilities";
-import {GuildFgrUtilities} from "./fetch-get-request/GuildFgrUtilities";
-import {GlobalFgrUtilities} from "./fetch-get-request/GlobalFgrUtilities";
+import { GuildBasedChannel, Message, Role, User } from "discord.js";
+import { MiscUtilities } from "./MiscUtilities";
+import { GuildFgrUtilities } from "./fetch-get-request/GuildFgrUtilities";
+import { GlobalFgrUtilities } from "./fetch-get-request/GlobalFgrUtilities";
 
 export namespace ParseUtilities {
     /**

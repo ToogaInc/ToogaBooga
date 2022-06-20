@@ -1,4 +1,4 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
 import {
     Message,
     MessageButton,
@@ -9,18 +9,18 @@ import {
     Role,
     TextChannel
 } from "discord.js";
-import {EmojiConstants} from "../../constants/EmojiConstants";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {DB_CONFIG_BUTTONS, sendOrEditBotMsg} from "./common/ConfigCommon";
-import {ParseUtilities} from "../../utilities/ParseUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {MiscUtilities} from "../../utilities/MiscUtilities";
-import {ISectionInfo} from "../../definitions";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
+import { EmojiConstants } from "../../constants/EmojiConstants";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { DB_CONFIG_BUTTONS, sendOrEditBotMsg } from "./common/ConfigCommon";
+import { ParseUtilities } from "../../utilities/ParseUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { MiscUtilities } from "../../utilities/MiscUtilities";
+import { ISectionInfo } from "../../definitions";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
 
 // Type that defines the values for the new section
 type SectionCreateType = [string | null, Role | null, TextChannel | null, TextChannel | null, TextChannel | null, TextChannel | null];
@@ -86,7 +86,7 @@ export class ConfigSections extends BaseCommand {
                     targetAuthor: ctx.user,
                     oldMsg: botMsg,
                     ...ConfigSections.COLLECTOR_BASE_OPTIONS
-                }, AdvancedCollector.getStringPrompt(ctx.channel!, {min: 1, max: 30}));
+                }, AdvancedCollector.getStringPrompt(ctx.channel!, { min: 1, max: 30 }));
             }
         },
         {
@@ -187,7 +187,7 @@ export class ConfigSections extends BaseCommand {
         descSb.append("Please select the appropriate option.");
 
         const embed: MessageEmbed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle("Section Manager Command")
             .setDescription(descSb.toString())
             .addField(
@@ -290,7 +290,7 @@ export class ConfigSections extends BaseCommand {
         await botMsg.edit({
             embeds: [
                 new MessageEmbed()
-                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                     .setTitle("Select Section")
                     .setDescription(
                         "Please select a section that you want to manage. If you want to go back, press the **Back**"
@@ -367,10 +367,10 @@ export class ConfigSections extends BaseCommand {
         ];
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle(`[${section.sectionName}] Section Manager`)
             .setDescription("Please select an option.")
-            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
+            .setFooter({ text: `ID: ${section.uniqueIdentifier}` })
             .addField(
                 "Go Back",
                 "Click on the `Go Back` button to go back to the main menu."
@@ -437,13 +437,13 @@ export class ConfigSections extends BaseCommand {
      */
     private async renameSection(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const displayEmbed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle(`[${section.sectionName}] Rename Section`)
             .setDescription("Please send a message containing the new name for this section. This must be at least 1"
                 + " character long and at most 30 characters long, and must not conflict with another section's"
                 + " name. If you don't want to rename this section at this time, click the **Go Back** button. If"
                 + " you want to quit, press the **Quit** button.")
-            .setFooter({text: `ID: ${section.uniqueIdentifier}`});
+            .setFooter({ text: `ID: ${section.uniqueIdentifier}` });
 
         await botMsg.edit({
             embeds: [displayEmbed],
@@ -460,7 +460,7 @@ export class ConfigSections extends BaseCommand {
             clearInteractionsAfterComplete: false,
             deleteBaseMsgAfterComplete: false,
             duration: 60 * 1000
-        }, AdvancedCollector.getStringPrompt(ctx.channel!, {max: 30, min: 1}));
+        }, AdvancedCollector.getStringPrompt(ctx.channel!, { max: 30, min: 1 }));
 
         if (!res) {
             await this.dispose(ctx, botMsg);
@@ -499,10 +499,10 @@ export class ConfigSections extends BaseCommand {
      */
     private async deleteSection(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const displayEmbed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle(`[${section.sectionName}] Delete Section?`)
             .setDescription("Are you sure you want to delete this section? Once completed, you cannot reverse this.")
-            .setFooter({text: `ID: ${section.uniqueIdentifier}`});
+            .setFooter({ text: `ID: ${section.uniqueIdentifier}` });
 
         await botMsg.edit({
             embeds: [displayEmbed],
@@ -525,7 +525,7 @@ export class ConfigSections extends BaseCommand {
         }
 
         // delete the section
-        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id,}, {
+        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id, }, {
             $pull: {
                 "guildSections": {
                     uniqueIdentifier: section.uniqueIdentifier
@@ -544,7 +544,7 @@ export class ConfigSections extends BaseCommand {
      */
     private async createSection(ctx: ICommandContext, botMsg: Message): Promise<void> {
         const baseEmbed: MessageEmbed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle("**Create Section**")
             .setDescription(
                 new StringBuilder()
@@ -682,7 +682,7 @@ export class ConfigSections extends BaseCommand {
         sectionObj.channels.verification.verificationChannelId = verify?.id ?? "";
         sectionObj.channels.eliteLocChannelId = eliteLoc?.id ?? "";
 
-        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
             $push: {
                 guildSections: sectionObj
             }

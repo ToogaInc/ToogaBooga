@@ -1,16 +1,16 @@
-import {ArgumentType, BaseCommand, ICommandContext} from "../BaseCommand";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {DungeonUtilities} from "../../utilities/DungeonUtilities";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {GeneralConstants} from "../../constants/GeneralConstants";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {BaseMessageComponent, MessageSelectMenu, MessageSelectOptionData} from "discord.js";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
+import { ArgumentType, BaseCommand, ICommandContext } from "../BaseCommand";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { DungeonUtilities } from "../../utilities/DungeonUtilities";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { GeneralConstants } from "../../constants/GeneralConstants";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { BaseMessageComponent, MessageSelectMenu, MessageSelectOptionData } from "discord.js";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { ArrayUtilities } from "../../utilities/ArrayUtilities";
 
 export class ConfigEarlyLocRoles extends BaseCommand {
     private static readonly MAX_EARLY_LOC_ROLES: number = 3;
@@ -87,7 +87,7 @@ export class ConfigEarlyLocRoles extends BaseCommand {
             embed.setDescription(`There are ${earlyLocRoles.length}/${ConfigEarlyLocRoles.MAX_EARLY_LOC_ROLES}`
                 + " early location roles set.");
 
-            for (const {roleId, mappingKey} of earlyLocRoles) {
+            for (const { roleId, mappingKey } of earlyLocRoles) {
                 const r = DungeonUtilities.getReaction(ctx.guildDoc!, mappingKey)!;
                 embed.addField(
                     GeneralConstants.ZERO_WIDTH_SPACE,
@@ -128,7 +128,7 @@ export class ConfigEarlyLocRoles extends BaseCommand {
             }
 
             earlyLocRoles.splice(idx, 1);
-            await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+            await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                 $set: {
                     "properties.genEarlyLocReactions": earlyLocRoles
                 }
@@ -233,7 +233,7 @@ export class ConfigEarlyLocRoles extends BaseCommand {
             mappingKey: res.values[0]
         });
 
-        await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+        await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
             $set: {
                 "properties.genEarlyLocReactions": earlyLocRoles
             }

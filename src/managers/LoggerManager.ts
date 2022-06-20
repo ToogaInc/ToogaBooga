@@ -1,9 +1,9 @@
-import {Collection, GuildMember, User} from "discord.js";
-import {MongoManager} from "./MongoManager";
-import {Filter, UpdateFilter} from "mongodb";
-import {IGuildInfo, IUserInfo} from "../definitions";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
-import {DungeonUtilities} from "../utilities/DungeonUtilities";
+import { Collection, GuildMember, User } from "discord.js";
+import { MongoManager } from "./MongoManager";
+import { Filter, UpdateFilter } from "mongodb";
+import { IGuildInfo, IUserInfo } from "../definitions";
+import { MAPPED_AFK_CHECK_REACTIONS } from "../constants/dungeons/MappedAfkCheckReactions";
+import { DungeonUtilities } from "../utilities/DungeonUtilities";
 
 export namespace LoggerManager {
     export enum RunResult {
@@ -91,7 +91,7 @@ export namespace LoggerManager {
             };
         }
         else {
-            filterQuery = {discordId: member.id};
+            filterQuery = { discordId: member.id };
             updateQuery = {
                 $push: {
                     loggedInfo: {
@@ -224,7 +224,7 @@ export namespace LoggerManager {
         if(!dId){
             return null;
         }
-        const userDoc = await MongoManager.getUserCollection().findOne({discordId: dId});
+        const userDoc = await MongoManager.getUserCollection().findOne({ discordId: dId });
         if (!userDoc) {
             return null;
         }
@@ -262,7 +262,7 @@ export namespace LoggerManager {
             ? userInfo.loggedInfo.filter(x => x.key.includes(guildDoc.guildId))
             : userInfo.loggedInfo;
 
-        for (const {key, value} of logInfoToProcess) {
+        for (const { key, value } of logInfoToProcess) {
 
             const [type, gId, vId, ...rest] = key.split(":");
             switch (type) {
@@ -319,11 +319,11 @@ export namespace LoggerManager {
                     }
                     else {
                         if (result === "Completed")
-                            stats.dungeonsLed.get(gId)!.set(dgnName, {completed: value, failed: 0, assisted: 0});
+                            stats.dungeonsLed.get(gId)!.set(dgnName, { completed: value, failed: 0, assisted: 0 });
                         else if (result === "Assisted")
-                            stats.dungeonsLed.get(gId)!.set(dgnName, {completed: 0, failed: 0, assisted: value});
+                            stats.dungeonsLed.get(gId)!.set(dgnName, { completed: 0, failed: 0, assisted: value });
                         else
-                            stats.dungeonsLed.get(gId)!.set(dgnName, {completed: 0, failed: value, assisted: 0});
+                            stats.dungeonsLed.get(gId)!.set(dgnName, { completed: 0, failed: value, assisted: 0 });
                     }
 
                     break;
@@ -355,9 +355,9 @@ export namespace LoggerManager {
                     }
                     else {
                         if (result === 0)
-                            stats.dungeonRuns.get(gId)!.set(dgnName, {completed: 0, failed: value});
+                            stats.dungeonRuns.get(gId)!.set(dgnName, { completed: 0, failed: value });
                         else
-                            stats.dungeonRuns.get(gId)!.set(dgnName, {completed: value, failed: 0});
+                            stats.dungeonRuns.get(gId)!.set(dgnName, { completed: value, failed: 0 });
                     }
 
                     break;

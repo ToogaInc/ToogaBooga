@@ -1,4 +1,4 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
 import {
     ConfigType,
     DATABASE_CONFIG_DESCRIPTION,
@@ -8,20 +8,20 @@ import {
     IBaseDatabaseEntryInfo,
     IConfigCommand
 } from "./common/ConfigCommon";
-import {IGuildInfo, ISectionInfo} from "../../definitions";
-import {Guild, Message, MessageButton, MessageEmbed, Role, TextChannel} from "discord.js";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {EmojiConstants} from "../../constants/EmojiConstants";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {Filter} from "mongodb";
-import {MongoManager} from "../../managers/MongoManager";
-import {ParseUtilities} from "../../utilities/ParseUtilities";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {GeneralConstants} from "../../constants/GeneralConstants";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {UserManager} from "../../managers/UserManager";
+import { IGuildInfo, ISectionInfo } from "../../definitions";
+import { Guild, Message, MessageButton, MessageEmbed, Role, TextChannel } from "discord.js";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { EmojiConstants } from "../../constants/EmojiConstants";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { Filter } from "mongodb";
+import { MongoManager } from "../../managers/MongoManager";
+import { ParseUtilities } from "../../utilities/ParseUtilities";
+import { ArrayUtilities } from "../../utilities/ArrayUtilities";
+import { GeneralConstants } from "../../constants/GeneralConstants";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { UserManager } from "../../managers/UserManager";
 import getCachedRole = GuildFgrUtilities.getCachedRole;
 import hasCachedRole = GuildFgrUtilities.hasCachedRole;
 
@@ -335,10 +335,10 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
         ];
 
         const displayEmbed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle(`[${section.sectionName}] **Role** Configuration Main Menu`)
             .setDescription(`Please select the appropriate option.\n\n${currentConfiguration}`)
-            .setFooter({text: `ID: ${section.uniqueIdentifier}`})
+            .setFooter({ text: `ID: ${section.uniqueIdentifier}` })
             .addField(
                 "Go Back",
                 "Click on the `Back` button to go back to the section selection embed. You can choose a new section"
@@ -592,7 +592,7 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
     }
 
     /** @inheritDoc */
-    public async dispose(ctx: ICommandContext, botMsg: Message | null, ...args: any[]): Promise<void> {
+    public async dispose(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
         if (botMsg) {
             await MessageUtilities.tryDelete(botMsg);
         }
@@ -607,7 +607,7 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
         const guild = ctx.guild!;
 
         const embedToDisplay = new MessageEmbed()
-            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
+            .setAuthor({ name: guild.name, iconURL: guild.iconURL() ?? undefined })
             .setDescription(
                 "Here, you will have the ability to modify what __custom__ (i.e. not built-in) roles are *staff*"
                 + " roles. Members will receive the Team role when they receive a staff role and will lose the"
@@ -629,12 +629,12 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
                 const staffRoles = ctx.guildDoc!.roles.staffRoles.otherStaffRoleIds
                     .map(x => {
                         // r = role ID, v = whether it exists
-                        return {r: x, v: hasCachedRole(guild, x)};
+                        return { r: x, v: hasCachedRole(guild, x) };
                     });
 
                 const invalidRoles = staffRoles.filter(x => !x.v);
                 if (invalidRoles.length > 0) {
-                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
                         $pull: {
                             "roles.staffRoles.otherStaffRoleIds": {
                                 "$in": invalidRoles.map(x => x.r)
@@ -699,7 +699,7 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
 
             // Case 1: Number
             if (typeof result === "number") {
-                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
                     $pull: {
                         "roles.staffRoles.otherStaffRoleIds": validStaffRoles[result].id
                     }
@@ -712,7 +712,7 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
             // Case 2: Role
             if (result instanceof Role) {
                 const toRemove = validStaffRoles.some(x => x.id === result.id);
-                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+                ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
                     [toRemove ? "$pull" : "$push"]: {
                         "roles.staffRoles.otherStaffRoleIds": result.id
                     }
@@ -751,12 +751,12 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
 
         let selected = 0;
         const embedToDisplay = new MessageEmbed()
-            .setAuthor({name: guild.name, iconURL: guild.iconURL() ?? undefined})
+            .setAuthor({ name: guild.name, iconURL: guild.iconURL() ?? undefined })
             .setTitle(`[${section.sectionName}] **Role** Configuration ⇒ ${group}`)
             .setDescription(DATABASE_CONFIG_DESCRIPTION);
         while (true) {
             embedToDisplay.fields = [];
-            embedToDisplay.setFooter({text: getInstructions(entries[selected].configTypeOrInstructions)});
+            embedToDisplay.setFooter({ text: getInstructions(entries[selected].configTypeOrInstructions) });
             for (let i = 0; i < entries.length; i++) {
                 const currSet: Role | null = getCachedRole(
                     guild,
@@ -813,8 +813,8 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
 
             // Case 2: Role
             const query: Filter<IGuildInfo> = section.isMainSection
-                ? {guildId: guild.id}
-                : {guildId: guild.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier};
+                ? { guildId: guild.id }
+                : { guildId: guild.id, "guildSections.uniqueIdentifier": section.uniqueIdentifier };
             const keySetter = section.isMainSection
                 ? entries[selected].guildDocPath
                 : entries[selected].sectionPath;

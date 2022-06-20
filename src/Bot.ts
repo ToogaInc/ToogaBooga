@@ -1,4 +1,4 @@
-import {IConfiguration} from "./definitions";
+import { IConfiguration } from "./definitions";
 import {
     Client,
     Collection,
@@ -12,14 +12,14 @@ import {
     ThreadChannel,
     VoiceState
 } from "discord.js";
-import {MongoManager} from "./managers/MongoManager";
-import axios, {AxiosInstance} from "axios";
+import { MongoManager } from "./managers/MongoManager";
+import axios, { AxiosInstance } from "axios";
 import * as Cmds from "./commands";
 import {
     onChannelDeleteEvent,
     onErrorEvent,
     onGuildCreateEvent,
-    onGuildMemberAdd, 
+    onGuildMemberAdd,
     onGuildMemberUpdate,
     onInteractionEvent,
     onMessageDeleteEvent,
@@ -28,10 +28,10 @@ import {
     onThreadArchiveEvent,
     onVoiceStateEvent
 } from "./events";
-import {QuotaService} from "./managers/QuotaManager";
-import {REST} from "@discordjs/rest";
-import {RESTPostAPIApplicationCommandsJSONBody, Routes} from "discord-api-types/v10";
-import {Logger} from "./utilities/Logger";
+import { QuotaService } from "./managers/QuotaManager";
+import { REST } from "@discordjs/rest";
+import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
+import { Logger } from "./utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -201,7 +201,7 @@ export class Bot {
 
         Bot.JsonCommands = [];
         Bot.NameCommands = new Collection<string, Cmds.BaseCommand>();
-        Bot.Rest = new REST({version: "9"}).setToken(config.tokens.botToken);
+        Bot.Rest = new REST({ version: "9" }).setToken(config.tokens.botToken);
         for (const command of Array.from(Bot.Commands.values()).flat()) {
             Bot.JsonCommands.push(command.data.toJSON() as RESTPostAPIApplicationCommandsJSONBody);
 
@@ -219,7 +219,7 @@ export class Bot {
             if (config.slash.guildIds.length === 0) {
                 await Bot.Rest.put(
                     Routes.applicationCommands(config.slash.clientId),
-                    {body: Bot.JsonCommands}
+                    { body: Bot.JsonCommands }
                 );
             }
             else {
@@ -227,7 +227,7 @@ export class Bot {
                     config.slash.guildIds.map(async guildId => {
                         await Bot.Rest.put(
                             Routes.applicationGuildCommands(config.slash.clientId, guildId),
-                            {body: Bot.JsonCommands}
+                            { body: Bot.JsonCommands }
                         );
                     })
                 );
@@ -323,7 +323,7 @@ export class Bot {
 
         LOGGER.info("Caching Members of Each Guild");
         const guilds = this.client.guilds;
-        guilds.cache.forEach(guild => { 
+        guilds.cache.forEach(guild => {
             guild.members.fetch();
         });
         return true;

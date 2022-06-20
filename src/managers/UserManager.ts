@@ -1,11 +1,11 @@
-import {CommonRegex} from "../constants/CommonRegex";
-import {Collection, Guild, GuildMember, Role, User} from "discord.js";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {MongoManager} from "./MongoManager";
-import {IGuildInfo, IIdNameInfo, IUserInfo} from "../definitions";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {PermsConstants} from "../constants/PermsConstants";
-import {DefinedRole} from "../definitions/Types";
+import { CommonRegex } from "../constants/CommonRegex";
+import { Collection, Guild, GuildMember, Role, User } from "discord.js";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { MongoManager } from "./MongoManager";
+import { IGuildInfo, IIdNameInfo, IUserInfo } from "../definitions";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { PermsConstants } from "../constants/PermsConstants";
+import { DefinedRole } from "../definitions/Types";
 
 export interface IResolvedMember {
     member: GuildMember;
@@ -64,7 +64,7 @@ export namespace UserManager {
 
             const doc = possDocs[0];
             const user = await GlobalFgrUtilities.fetchUser(doc.currentDiscordId);
-            return user ? {user, idNameDoc: doc} : null;
+            return user ? { user, idNameDoc: doc } : null;
         }
 
         // No other choices.

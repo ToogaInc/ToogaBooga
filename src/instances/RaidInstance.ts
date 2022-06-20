@@ -1166,16 +1166,11 @@ export class RaidInstance {
                 ? memberEnded
                 : GuildFgrUtilities.getCachedMember(this._guild, memberEnded.id);
 
-        const raidVcId = this._raidVc.id;
-
         const memberThatEnded =
             memberEnded instanceof User
                 ? GuildFgrUtilities.getCachedMember(this._guild, memberEnded.id) ?? this._memberInit
                 : memberEnded;
 
-        // Get the name.
-        const name = UserManager.getAllNames(memberThatEnded.displayName);
-        const leaderName = name.length === 0 ? memberThatEnded.displayName : name[0];
         // Stop the collector.
         // We don't care about the result of this function, just that it should run.
         this._membersThatLeftChannel = this.membersThatJoinedVc.filter(member => ![...this.raidVc!.members.values()].includes(member));
@@ -2271,7 +2266,7 @@ export class RaidInstance {
             return false;
         }
 
-        const tempMsg = await this._eliteLocChannel.send({
+        await this._eliteLocChannel.send({
             content: `@here Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${
                 this._location ? this._location : "Not Set"
             }\``,
@@ -2974,7 +2969,6 @@ export class RaidInstance {
      */
     private async logRun(memberThatEnded: GuildMember): Promise<void> {
         LOGGER.info(`${this._instanceInfo} Logging the run`);
-        const membersThatLed: GuildMember[] = [];
         const membersKeyPoppers: PriorityLogInfo[] = [];
         const membersAtEnd: GuildMember[] = [];
         const membersThatLeft: GuildMember[] = [];

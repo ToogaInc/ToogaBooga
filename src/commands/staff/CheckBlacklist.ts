@@ -1,9 +1,9 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {SlashCommandBuilder} from "@discordjs/builders";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
 
 export class CheckBlacklist extends BaseCommand {
     public constructor() {
@@ -85,7 +85,7 @@ export class CheckBlacklist extends BaseCommand {
                 StringUtil.codifyString(`${TimeUtilities.getDateTime(blInfo.issuedAt)} GMT`)
             )
             .addField("Blacklist Reason", StringUtil.codifyString(blInfo.reason))
-            .setFooter({text: `Moderation ID: ${blInfo.actionId}`});
+            .setFooter({ text: `Moderation ID: ${blInfo.actionId}` });
 
         if (blInfo.evidence.length > 0) {
             let i = 1;

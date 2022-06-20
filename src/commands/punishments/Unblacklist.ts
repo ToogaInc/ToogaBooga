@@ -1,11 +1,11 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {CommonRegex} from "../../constants/CommonRegex";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {PunishmentManager} from "../../managers/PunishmentManager";
-import {User} from "discord.js";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { CommonRegex } from "../../constants/CommonRegex";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { PunishmentManager } from "../../managers/PunishmentManager";
+import { User } from "discord.js";
 
 export class Unblacklist extends BaseCommand {
     public constructor() {
@@ -85,7 +85,7 @@ export class Unblacklist extends BaseCommand {
 
         const reason = ctx.interaction.options.getString("reason", true);
         const currTime = Date.now();
-        await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+        await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
             $pull: {
                 "moderation.blacklistedUsers": {
                     actionId: blInfo.actionId

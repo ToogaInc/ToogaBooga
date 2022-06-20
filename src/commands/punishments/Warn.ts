@@ -1,9 +1,9 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {PunishmentManager} from "../../managers/PunishmentManager";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { PunishmentManager } from "../../managers/PunishmentManager";
 import generateRandomString = StringUtil.generateRandomString;
 
 export class Warn extends BaseCommand {

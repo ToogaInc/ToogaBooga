@@ -1,4 +1,4 @@
-import {Collection} from "discord.js";
+import { Collection } from "discord.js";
 
 export namespace InteractivityManager {
     // The key is the user ID.

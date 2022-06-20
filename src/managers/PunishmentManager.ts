@@ -1,16 +1,16 @@
-import {Collection, Guild, GuildChannel, GuildMember, TextChannel} from "discord.js";
-import {IGuildInfo, IMutedUser, IPunishmentHistoryEntry, ISectionInfo, ISuspendedUser, IUserInfo} from "../definitions";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {MongoManager} from "./MongoManager";
-import {StringUtil} from "../utilities/StringUtilities";
-import {StringBuilder} from "../utilities/StringBuilder";
-import {AllModLogType, MainOnlyModLogType, SectionModLogType} from "../definitions/Types";
-import {Filter} from "mongodb";
-import {Queue} from "../utilities/Queue";
-import {TimeUtilities} from "../utilities/TimeUtilities";
-import {MessageUtilities} from "../utilities/MessageUtilities";
-import {Logger} from "../utilities/Logger";
+import { Collection, Guild, GuildChannel, GuildMember, TextChannel } from "discord.js";
+import { IGuildInfo, IMutedUser, IPunishmentHistoryEntry, ISectionInfo, ISuspendedUser, IUserInfo } from "../definitions";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { MongoManager } from "./MongoManager";
+import { StringUtil } from "../utilities/StringUtilities";
+import { StringBuilder } from "../utilities/StringBuilder";
+import { AllModLogType, MainOnlyModLogType, SectionModLogType } from "../definitions/Types";
+import { Filter } from "mongodb";
+import { Queue } from "../utilities/Queue";
+import { TimeUtilities } from "../utilities/TimeUtilities";
+import { MessageUtilities } from "../utilities/MessageUtilities";
+import { Logger } from "../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -556,12 +556,12 @@ export namespace PunishmentManager {
         async function sendLoggingAndNoticeMsg(): Promise<void> {
             // Do we really need to check if there is a description here specifically?
             if (details.sendLogInfo && logChannel && logToChanEmbed.description) {
-                await logChannel.send({embeds: [logToChanEmbed]}).catch();
+                await logChannel.send({ embeds: [logToChanEmbed] }).catch();
             }
 
             // These must have a description or else the default arm was reached.
             if (details.sendNoticeToAffectedUser && toSendToUserEmbed.description && member instanceof GuildMember) {
-                await GlobalFgrUtilities.sendMsg(member, {embeds: [toSendToUserEmbed]}).catch();
+                await GlobalFgrUtilities.sendMsg(member, { embeds: [toSendToUserEmbed] }).catch();
             }
         }
 
@@ -627,7 +627,7 @@ export namespace PunishmentManager {
 
             const addRes = await MongoManager.getUnclaimedBlacklistCollection().insertOne(entry);
 
-            const doc = await MongoManager.getUnclaimedBlacklistCollection().findOne({_id: addRes.insertedId});
+            const doc = await MongoManager.getUnclaimedBlacklistCollection().findOne({ _id: addRes.insertedId });
             if (doc) {
                 await sendLoggingAndNoticeMsg();
                 return doc.actionId;
@@ -787,7 +787,7 @@ export namespace SuspensionManager {
         }
 
         while (_queuedDelSectionIds.size() > 0) {
-            const {guildId, sectionId} = _queuedDelSectionIds.dequeue();
+            const { guildId, sectionId } = _queuedDelSectionIds.dequeue();
             SectionSuspendedMembers.get(guildId)?.delete(sectionId);
         }
 
@@ -817,7 +817,7 @@ export namespace SuspensionManager {
                 // since there isn't said section
                 const section = guildDoc.guildSections.find(x => x.uniqueIdentifier === sectionId);
                 if (!section) {
-                    _queuedDelSectionIds.enqueue({guildId: guild.id, sectionId: sectionId});
+                    _queuedDelSectionIds.enqueue({ guildId: guild.id, sectionId: sectionId });
                     break;
                 }
 
@@ -877,7 +877,6 @@ export namespace SuspensionManager {
             if (!guildDoc) continue;
 
             const suspendedPpl = SuspendedMembers.get(guild.id)!;
-            const mainSection = MongoManager.getMainSection(guildDoc);
 
             for await (const [memberId, details] of suspendedPpl) {
                 const suspendedMember = await GuildFgrUtilities.fetchGuildMember(guild, memberId);
@@ -929,7 +928,7 @@ export namespace SuspensionManager {
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (GuildFgrUtilities.memberHasCachedRole(member, info.guildDoc.roles.suspendedRoleId)
             || info.guildDoc.moderation.suspendedUsers.some(x => x.affectedUser.id === member.id))
-            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
+            return { punishmentResolved: false, punishmentLogged: false, moderationId: null };
 
         const timeStarted = Date.now();
         const suspendedUserObj: ISuspendedUser = {
@@ -1002,7 +1001,7 @@ export namespace SuspensionManager {
             evidence: info.evidence
         });
 
-        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
+        return { punishmentResolved: true, punishmentLogged: !!r, moderationId: r };
     }
 
     /**
@@ -1021,14 +1020,14 @@ export namespace SuspensionManager {
         LOGGER.info(`${mod ? mod.displayName : "Bot"} is removing suspension for ${member.displayName}`);
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
-            ? lookupSuspension(info.guildDoc, null, {actionId: info.actionId})
-            : lookupSuspension(info.guildDoc, null, {memberId: member.id});
+            ? lookupSuspension(info.guildDoc, null, { actionId: info.actionId })
+            : lookupSuspension(info.guildDoc, null, { memberId: member.id });
 
         if (!memberLookup)
-            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
+            return { punishmentResolved: false, punishmentLogged: false, moderationId: null };
 
         // And remove it from guild suspension list.
-        await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
+        await MongoManager.updateAndFetchGuildDoc({ guildId: member.guild.id }, {
             $pull: {
                 "moderation.suspendedUsers": {
                     actionId: memberLookup.actionId
@@ -1039,7 +1038,7 @@ export namespace SuspensionManager {
         // Might be inefficient in the long term.
         const data = SuspendedMembers.get(member.guild.id)?.get(member.id);
         if (data) {
-            _queuedDelSuspendedMembers.enqueue({...data, guildId: member.guild.id});
+            _queuedDelSuspendedMembers.enqueue({ ...data, guildId: member.guild.id });
         }
 
         const initPass = await GlobalFgrUtilities.tryExecuteAsync(() => {
@@ -1077,7 +1076,7 @@ export namespace SuspensionManager {
             evidence: info.evidence
         });
 
-        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
+        return { punishmentResolved: true, punishmentLogged: !!r, moderationId: r };
     }
 
     /**
@@ -1097,7 +1096,7 @@ export namespace SuspensionManager {
         LOGGER.info(`${mod ? mod.displayName : "Bot"} is section suspending ${member.displayName}`);
         // If the person was already suspended, then we don't need to re-suspend the person.
         if (info.section.moderation.sectionSuspended.some(x => x.affectedUser.id === member.id))
-            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
+            return { punishmentResolved: false, punishmentLogged: false, moderationId: null };
 
         const timeStarted = Date.now();
         const suspendedUserObj: ISuspendedUser = {
@@ -1154,7 +1153,7 @@ export namespace SuspensionManager {
             evidence: info.evidence
         });
 
-        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
+        return { punishmentResolved: true, punishmentLogged: !!r, moderationId: r };
     }
 
     /**
@@ -1174,11 +1173,11 @@ export namespace SuspensionManager {
         LOGGER.info(`${mod ? mod.displayName : "Bot"} is removing section suspension for ${member.displayName}`);
         // Find suspension info.
         const memberLookup: ISuspendedUser | null = info.actionId
-            ? lookupSuspension(info.guildDoc, info.section, {actionId: info.actionId})
-            : lookupSuspension(info.guildDoc, info.section, {memberId: member.id});
+            ? lookupSuspension(info.guildDoc, info.section, { actionId: info.actionId })
+            : lookupSuspension(info.guildDoc, info.section, { memberId: member.id });
 
         if (!memberLookup)
-            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
+            return { punishmentResolved: false, punishmentLogged: false, moderationId: null };
 
         // And remove it from guild suspension list.
         await MongoManager.updateAndFetchGuildDoc({
@@ -1221,7 +1220,7 @@ export namespace SuspensionManager {
             evidence: info.evidence
         });
 
-        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
+        return { punishmentResolved: true, punishmentLogged: !!r, moderationId: r };
     }
 
     /**
@@ -1292,7 +1291,6 @@ export namespace MuteManager {
         LOGGER.info("Starting MuteManager checker");
         if (documents.length > 0) {
             for await (const guildDoc of documents) {
-                const serverSus = new Collection<string, IMutedUser[]>();
                 const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
                 if (!guild) continue;
                 MutedMembers.set(
@@ -1404,7 +1402,7 @@ export namespace MuteManager {
             });
 
             const promisesToResolve: Promise<GuildChannel>[] = [];
-            for (const [id, channel] of member.guild.channels.cache) {
+            for (const [, channel] of member.guild.channels.cache) {
                 if (channel.isThread() || !channel.isText())
                     continue;
 
@@ -1418,7 +1416,7 @@ export namespace MuteManager {
 
             await Promise.all(promisesToResolve);
 
-            info.guildDoc = (await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
+            info.guildDoc = (await MongoManager.updateAndFetchGuildDoc({ guildId: member.guild.id }, {
                 $set: {
                     "roles.mutedRoleId": mutedRole.id
                 }
@@ -1428,7 +1426,7 @@ export namespace MuteManager {
         // If the person was already muted, then we don't need to mute the person again.
         if (GuildFgrUtilities.memberHasCachedRole(member, info.guildDoc.roles.mutedRoleId)
             || info.guildDoc.moderation.mutedUsers.some(x => x.affectedUser.id === member.id))
-            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
+            return { punishmentResolved: false, punishmentLogged: false, moderationId: null };
 
         const timeStarted = Date.now();
         const mutedUserObj: IMutedUser = {
@@ -1481,7 +1479,7 @@ export namespace MuteManager {
             evidence: info.evidence
         });
 
-        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
+        return { punishmentResolved: true, punishmentLogged: !!r, moderationId: r };
     }
 
     /**
@@ -1499,18 +1497,18 @@ export namespace MuteManager {
     ): Promise<IPunishmentCommandResult> {
         LOGGER.info(`${mod ? mod.displayName : "Bot"} is removing mute for ${member.displayName}`);
         if (!GuildFgrUtilities.hasCachedRole(member.guild, info.guildDoc.roles.mutedRoleId))
-            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
+            return { punishmentResolved: false, punishmentLogged: false, moderationId: null };
 
         // Find mute info.
         const memberLookup: IMutedUser | null = info.actionId
-            ? lookupMute(info.guildDoc, {actionId: info.actionId})
-            : lookupMute(info.guildDoc, {memberId: member.id});
+            ? lookupMute(info.guildDoc, { actionId: info.actionId })
+            : lookupMute(info.guildDoc, { memberId: member.id });
 
         if (!memberLookup)
-            return {punishmentResolved: false, punishmentLogged: false, moderationId: null};
+            return { punishmentResolved: false, punishmentLogged: false, moderationId: null };
 
         // And remove it from guild suspension list.
-        await MongoManager.updateAndFetchGuildDoc({guildId: member.guild.id}, {
+        await MongoManager.updateAndFetchGuildDoc({ guildId: member.guild.id }, {
             $pull: {
                 "moderation.mutedUsers": {
                     actionId: memberLookup.actionId
@@ -1521,7 +1519,7 @@ export namespace MuteManager {
         // Might be inefficient in the long term.
         const data = MutedMembers.get(member.guild.id)?.find(x => x.actionId === memberLookup.actionId);
         if (data) {
-            _queuedDelMutedUsers.enqueue({...data, guildId: member.guild.id});
+            _queuedDelMutedUsers.enqueue({ ...data, guildId: member.guild.id });
         }
 
         await member.roles.remove(info.guildDoc.roles.mutedRoleId).catch();
@@ -1538,7 +1536,7 @@ export namespace MuteManager {
             evidence: info.evidence
         });
 
-        return {punishmentResolved: true, punishmentLogged: !!r, moderationId: r};
+        return { punishmentResolved: true, punishmentLogged: !!r, moderationId: r };
     }
 
     /**
@@ -1553,7 +1551,7 @@ export namespace MuteManager {
                                                reason?: string): Promise<boolean> {
         LOGGER.info(`${mod ? mod.displayName : "Bot"} is removing all mutes for the server`);
         MutedMembers.get(guild.id)?.forEach(x => {
-            _queuedDelMutedUsers.enqueue({...x, guildId: guild.id});
+            _queuedDelMutedUsers.enqueue({ ...x, guildId: guild.id });
         });
 
         const guildDoc = MongoManager.CachedGuildCollection.get(guild.id)!;
@@ -1576,7 +1574,7 @@ export namespace MuteManager {
             });
         });
 
-        await MongoManager.updateAndFetchGuildDoc({guildId: guild.id}, {
+        await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
             $set: {
                 "moderation.mutedUsers": []
             }

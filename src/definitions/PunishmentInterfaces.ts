@@ -1,7 +1,7 @@
 /**
  * An interface that represents a suspended user, which will be stored in the guild document.
  */
-import {IRealmIgn} from "./MongoDocumentInterfaces";
+import { IRealmIgn } from "./MongoDocumentInterfaces";
 
 /**
  * The base punishment interface. All punishment objects will derive this object.

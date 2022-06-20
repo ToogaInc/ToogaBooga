@@ -4,23 +4,21 @@ import {
     MessageActionRow, MessageButton, MessageComponentInteraction,
     MessageSelectMenu,
     Role,
-    SelectMenuInteraction,
     TextChannel,
     VoiceChannel,
 } from "discord.js";
-import {IDungeonInfo, IGuildInfo, ISectionInfo,} from "../../../definitions";
-import {DefinedRole} from "../../../definitions/Types";
-import {canManageRaidsIn, hasPermsToRaid,} from "../../../instances/Common";
-import {ICommandContext} from "../../../commands";
-import {DUNGEON_DATA} from "../../../constants/dungeons/DungeonData";
-import {DungeonUtilities} from "../../../utilities/DungeonUtilities";
-import {ArrayUtilities} from "../../../utilities/ArrayUtilities";
-import {MessageUtilities} from "../../../utilities/MessageUtilities";
-import {ButtonConstants} from "../../../constants/ButtonConstants";
-import {GuildFgrUtilities} from "../../../utilities/fetch-get-request/GuildFgrUtilities";
-import {StringUtil} from "../../../utilities/StringUtilities";
-import {AdvancedCollector} from "../../../utilities/collectors/AdvancedCollector";
-import {StringBuilder} from "../../../utilities/StringBuilder";
+import { IDungeonInfo, IGuildInfo, ISectionInfo, } from "../../../definitions";
+import { DefinedRole } from "../../../definitions/Types";
+import { canManageRaidsIn, hasPermsToRaid, } from "../../../instances/Common";
+import { ICommandContext } from "../../../commands";
+import { DUNGEON_DATA } from "../../../constants/dungeons/DungeonData";
+import { DungeonUtilities } from "../../../utilities/DungeonUtilities";
+import { ArrayUtilities } from "../../../utilities/ArrayUtilities";
+import { MessageUtilities } from "../../../utilities/MessageUtilities";
+import { GuildFgrUtilities } from "../../../utilities/fetch-get-request/GuildFgrUtilities";
+import { StringUtil } from "../../../utilities/StringUtilities";
+import { AdvancedCollector } from "../../../utilities/collectors/AdvancedCollector";
+import { StringBuilder } from "../../../utilities/StringBuilder";
 
 
 export type DungeonSelectionType = {
@@ -247,7 +245,7 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
                 .append("Otherwise, select a VC from the dropdown menu.")
                 .toString()
         )
-        .setFooter({text: "You have 1 minute and 30 seconds to select a dungeon."})
+        .setFooter({ text: "You have 1 minute and 30 seconds to select a dungeon." })
         .setTimestamp();
 
     await interaction.editReply({

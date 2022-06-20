@@ -1,6 +1,5 @@
 import {
     BaseMessageComponent,
-    ButtonInteraction,
     DMChannel,
     EmojiIdentifierResolvable,
     Guild,
@@ -19,12 +18,12 @@ import {
     TextChannel,
     User
 } from "discord.js";
-import {MessageUtilities} from "../MessageUtilities";
-import {StringBuilder} from "../StringBuilder";
-import {GuildFgrUtilities} from "../fetch-get-request/GuildFgrUtilities";
-import {EmojiConstants} from "../../constants/EmojiConstants";
-import {GlobalFgrUtilities} from "../fetch-get-request/GlobalFgrUtilities";
-import {StringUtil} from "../StringUtilities";
+import { MessageUtilities } from "../MessageUtilities";
+import { StringBuilder } from "../StringBuilder";
+import { GuildFgrUtilities } from "../fetch-get-request/GuildFgrUtilities";
+import { EmojiConstants } from "../../constants/EmojiConstants";
+import { GlobalFgrUtilities } from "../fetch-get-request/GlobalFgrUtilities";
+import { StringUtil } from "../StringUtilities";
 
 /**
  * A series of helpful collector functions.
@@ -119,7 +118,7 @@ export namespace AdvancedCollector {
      */
     export async function startNormalCollector<T>(
         options: IMessageCollectorArgument,
-        func: (collectedMsg: Message, ...otherArgs: any[]) => (T | undefined) | (Promise<T | undefined>)
+        func: (collectedMsg: Message, ...otherArgs: unknown[]) => (T | undefined) | (Promise<T | undefined>)
     ): Promise<T | null> {
         return new Promise(async (resolve) => {
             const cancelFlag = options.cancelFlag;
@@ -232,7 +231,7 @@ export namespace AdvancedCollector {
      */
     export async function startDoubleCollector<T>(
         options: IInteractionBase & IMessageCollectorArgument,
-        func: (collectedMsg: Message, ...otherArgs: any[]) => (T | undefined) | (Promise<T | undefined>)
+        func: (collectedMsg: Message, ...otherArgs: unknown[]) => (T | undefined) | (Promise<T | undefined>)
     ): Promise<T | MessageComponentInteraction | null> {
         const cancelFlag = options.cancelFlag;
         const botMsg = await initSendCollectorMessage(options);
@@ -397,7 +396,7 @@ export namespace AdvancedCollector {
                 const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
                     .setDescription("You did not provide any message content. Do not send any attachments.");
-                MessageUtilities.sendThenDelete({embeds: [noContentEmbed]}, pChan);
+                MessageUtilities.sendThenDelete({ embeds: [noContentEmbed] }, pChan);
                 return;
             }
 
@@ -438,7 +437,7 @@ export namespace AdvancedCollector {
                 const noContentEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("No Content Provided")
                     .setDescription("You did not provide any message content. Do not send any attachments.");
-                MessageUtilities.sendThenDelete({embeds: [noContentEmbed]}, pChan);
+                MessageUtilities.sendThenDelete({ embeds: [noContentEmbed] }, pChan);
                 return;
             }
 
@@ -449,7 +448,7 @@ export namespace AdvancedCollector {
                     const tooShortEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Short")
                         .setDescription(tooShortDesc.toString());
-                    MessageUtilities.sendThenDelete({embeds: [tooShortEmbed]}, pChan);
+                    MessageUtilities.sendThenDelete({ embeds: [tooShortEmbed] }, pChan);
                     return;
                 }
 
@@ -459,7 +458,7 @@ export namespace AdvancedCollector {
                     const tooLongEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Message Too Long")
                         .setDescription(tooLongDesc.toString());
-                    MessageUtilities.sendThenDelete({embeds: [tooLongEmbed]}, pChan);
+                    MessageUtilities.sendThenDelete({ embeds: [tooLongEmbed] }, pChan);
                     return;
                 }
 
@@ -471,7 +470,7 @@ export namespace AdvancedCollector {
                                 ? options.regexFilter.withErrorMsg
                                 : "Your message failed to meet the REGEX requirement."
                         );
-                    MessageUtilities.sendThenDelete({embeds: [tooLongEmbed]}, pChan);
+                    MessageUtilities.sendThenDelete({ embeds: [tooLongEmbed] }, pChan);
                     return;
                 }
             }
@@ -501,7 +500,7 @@ export namespace AdvancedCollector {
                     const noRoleFound = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("No Role Found")
                         .setDescription("You didn't specify a role. Either mention the role or type its ID.");
-                    MessageUtilities.sendThenDelete({embeds: [noRoleFound]}, pChan);
+                    MessageUtilities.sendThenDelete({ embeds: [noRoleFound] }, pChan);
                     return;
                 }
 
@@ -530,7 +529,7 @@ export namespace AdvancedCollector {
                 const notNumberEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                     .setTitle("Invalid Number Specified")
                     .setDescription("You did not provide a valid number. Please try again.");
-                MessageUtilities.sendThenDelete({embeds: [notNumberEmbed]}, channel);
+                MessageUtilities.sendThenDelete({ embeds: [notNumberEmbed] }, channel);
                 return;
             }
 
@@ -539,7 +538,7 @@ export namespace AdvancedCollector {
                     const lowerThanMinEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Number Too Low")
                         .setDescription(`The number that you provided is lower than ${options.min}.`);
-                    MessageUtilities.sendThenDelete({embeds: [lowerThanMinEmbed]}, channel);
+                    MessageUtilities.sendThenDelete({ embeds: [lowerThanMinEmbed] }, channel);
                     return;
                 }
 
@@ -547,7 +546,7 @@ export namespace AdvancedCollector {
                     const higherThanMaxEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Number Too High")
                         .setDescription(`The number that you provided is higher than or equal to ${options.max}.`);
-                    MessageUtilities.sendThenDelete({embeds: [higherThanMaxEmbed]}, channel);
+                    MessageUtilities.sendThenDelete({ embeds: [higherThanMaxEmbed] }, channel);
                     return;
                 }
             }
@@ -583,7 +582,7 @@ export namespace AdvancedCollector {
                     const notTextChannelEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                         .setTitle("Invalid Text Channel Specified")
                         .setDescription(notTextChannelDesc.toString());
-                    MessageUtilities.sendThenDelete({embeds: [notTextChannelEmbed]}, channel);
+                    MessageUtilities.sendThenDelete({ embeds: [notTextChannelEmbed] }, channel);
                     return;
                 }
 
@@ -602,7 +601,7 @@ export namespace AdvancedCollector {
                             const noPermsEmbed = MessageUtilities.generateBlankEmbed(m.author, "RED")
                                 .setTitle("No Permissions!")
                                 .setDescription(noPermDesc.toString());
-                            MessageUtilities.sendThenDelete({embeds: [noPermsEmbed]}, channel);
+                            MessageUtilities.sendThenDelete({ embeds: [noPermsEmbed] }, channel);
                             return;
                         }
                     }

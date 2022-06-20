@@ -1,13 +1,13 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {SuspensionManager} from "../../managers/PunishmentManager";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {preCheckPunishment} from "./common/PunishmentCommon";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {Logger} from "../../utilities/Logger";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { SuspensionManager } from "../../managers/PunishmentManager";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { preCheckPunishment } from "./common/PunishmentCommon";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { Logger } from "../../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 

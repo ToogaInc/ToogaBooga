@@ -20,18 +20,18 @@ import {
     IReactionInfo,
     ISectionInfo
 } from "../definitions";
-import {GuildFgrUtilities} from "../utilities/fetch-get-request/GuildFgrUtilities";
-import {StringUtil} from "../utilities/StringUtilities";
-import {AdvancedCollector} from "../utilities/collectors/AdvancedCollector";
-import {HIGHEST_MODIFIER_LEVEL} from "../constants/dungeons/DungeonModifiers";
-import {StringBuilder} from "../utilities/StringBuilder";
-import {MAPPED_AFK_CHECK_REACTIONS} from "../constants/dungeons/MappedAfkCheckReactions";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {StartAfkCheck} from "../commands";
-import {DefinedRole} from "../definitions/Types";
-import {MiscUtilities} from "../utilities/MiscUtilities";
-import {LoggerManager} from "../managers/LoggerManager";
-import {Logger} from "../utilities/Logger";
+import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
+import { StringUtil } from "../utilities/StringUtilities";
+import { AdvancedCollector } from "../utilities/collectors/AdvancedCollector";
+import { HIGHEST_MODIFIER_LEVEL } from "../constants/dungeons/DungeonModifiers";
+import { StringBuilder } from "../utilities/StringBuilder";
+import { MAPPED_AFK_CHECK_REACTIONS } from "../constants/dungeons/MappedAfkCheckReactions";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { StartAfkCheck } from "../commands";
+import { DefinedRole } from "../definitions/Types";
+import { MiscUtilities } from "../utilities/MiscUtilities";
+import { LoggerManager } from "../managers/LoggerManager";
+import { Logger } from "../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -208,10 +208,10 @@ export async function confirmReaction(
         if (modifierRes.isButton()) {
             switch (modifierRes.customId) {
                 case noModifierId: {
-                    return {react: {mapKey, modifiers: [], accidentCt: 0}, success: true};
+                    return { react: { mapKey, modifiers: [], accidentCt: 0 }, success: true };
                 }
                 case noneListedId: {
-                    return {react: {mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0}, success: true};
+                    return { react: { mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0 }, success: true };
                 }
                 default: {
                     LOGGER.info(`Reaction for ${member.displayName} cancelled`);
@@ -240,7 +240,7 @@ export async function confirmReaction(
         const selectedModifiers = modifiers
             .filter(x => modifierRes.values.includes(x.modifierName));
 
-        const returnObj: KeyReactResponse = {react: {mapKey: mapKey, modifiers: [], accidentCt: 0}, success: true};
+        const returnObj: KeyReactResponse = { react: { mapKey: mapKey, modifiers: [], accidentCt: 0 }, success: true };
         // Define all possible buttons, don't construct new buttons for each modifier
         const numButtons: MessageButton[] = [];
         const accidentCustomId = `${uniqueIdentifier}_accident`;
@@ -446,7 +446,7 @@ export async function confirmReaction(
         };
     }
     LOGGER.info(`Reaction for ${member.displayName} confirmed`);
-    return {react: {mapKey, modifiers: [], accidentCt: 0}, success: true};
+    return { react: { mapKey, modifiers: [], accidentCt: 0 }, success: true };
 }
 
 

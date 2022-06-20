@@ -1,4 +1,4 @@
-import {EOL} from "os";
+import { EOL } from "os";
 
 export class StringBuilder {
     private _str: string;

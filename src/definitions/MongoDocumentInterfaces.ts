@@ -8,8 +8,8 @@ import {
     IRaidInfo,
     IReactionInfo
 } from "./DungeonRaidInterfaces";
-import {IManualVerificationEntry, IVerificationChannels, IVerificationProperties} from "./VerificationInterfaces";
-import {IModmailThread} from "./ModmailInterfaces";
+import { IManualVerificationEntry, IVerificationChannels, IVerificationProperties } from "./VerificationInterfaces";
+import { IModmailThread } from "./ModmailInterfaces";
 import {
     IBasePunishment,
     IBlacklistedModmailUser,
@@ -17,8 +17,8 @@ import {
     IMutedUser,
     ISuspendedUser
 } from "./PunishmentInterfaces";
-import {ICmdPermOverwrite, IPropertyKeyValuePair} from "./MiscInterfaces";
-import {MainLogType, MainOnlyModLogType, QuotaLogType, SectionLogType, SectionModLogType} from "./Types";
+import { ICmdPermOverwrite, IPropertyKeyValuePair } from "./MiscInterfaces";
+import { MainLogType, MainOnlyModLogType, QuotaLogType, SectionLogType, SectionModLogType } from "./Types";
 
 export interface IBotInfo {
     activeEvents: {

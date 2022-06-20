@@ -1,4 +1,4 @@
-import {IPropertyKeyValuePair} from "./MiscInterfaces";
+import { IPropertyKeyValuePair } from "./MiscInterfaces";
 
 /**
  * An interface that has the verification-related channels.

@@ -1,10 +1,10 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {IResolvedMember, UserManager} from "../../managers/UserManager";
-import {LoggerManager} from "../../managers/LoggerManager";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {Collection} from "discord.js";
-import {EmojiConstants} from "../../constants/EmojiConstants";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { IResolvedMember, UserManager } from "../../managers/UserManager";
+import { LoggerManager } from "../../managers/LoggerManager";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { ArrayUtilities } from "../../utilities/ArrayUtilities";
+import { Collection } from "discord.js";
+import { EmojiConstants } from "../../constants/EmojiConstants";
 import DungeonLedType = LoggerManager.DungeonLedType;
 import DungeonRanType = LoggerManager.DungeonRunType;
 
@@ -85,7 +85,7 @@ export class Stats extends BaseCommand {
 
         const embed = MessageUtilities.generateBlankEmbed(user, "RANDOM")
             .setTimestamp()
-            .setFooter({text: "C = Completed; F = Failed; A = Assisted."});
+            .setFooter({ text: "C = Completed; F = Failed; A = Assisted." });
 
         /**
          * Prettifies the dungeon led statistics, putting it into the embed.
@@ -97,7 +97,7 @@ export class Stats extends BaseCommand {
             }
 
             const ledInfo: string[] = [];
-            for (const [dgn, {completed, failed, assisted}] of dungeonsLed) {
+            for (const [dgn, { completed, failed, assisted }] of dungeonsLed) {
                 ledInfo.push(`__${dgn}__: \`${completed} / ${failed} / ${assisted}\``);
             }
 
@@ -117,7 +117,7 @@ export class Stats extends BaseCommand {
             }
 
             const runs: string[] = [];
-            for (const [dgn, {completed, failed}] of dungeonsRan) {
+            for (const [dgn, { completed, failed }] of dungeonsRan) {
                 runs.push(`__${dgn}__: \`${completed} / ${failed}\``);
             }
 
@@ -173,9 +173,9 @@ export class Stats extends BaseCommand {
 
             const dungeonsLed: DungeonLedType = new Collection();
             for (const [, dgnLedMap] of stats.dungeonsLed) {
-                for (const [dungeon, {completed, failed, assisted}] of dgnLedMap) {
+                for (const [dungeon, { completed, failed, assisted }] of dgnLedMap) {
                     if (!dungeonsLed.has(dungeon)) {
-                        dungeonsLed.set(dungeon, {completed: 0, failed: 0, assisted: 0});
+                        dungeonsLed.set(dungeon, { completed: 0, failed: 0, assisted: 0 });
                     }
 
                     dungeonsLed.get(dungeon)!.completed += completed;
@@ -188,9 +188,9 @@ export class Stats extends BaseCommand {
 
             const dungeonsRan: DungeonRanType = new Collection();
             for (const [, dgnRanMap] of stats.dungeonRuns) {
-                for (const [dungeon, {completed, failed}] of dgnRanMap) {
+                for (const [dungeon, { completed, failed }] of dgnRanMap) {
                     if (!dungeonsRan.has(dungeon)) {
-                        dungeonsRan.set(dungeon, {completed: 0, failed: 0});
+                        dungeonsRan.set(dungeon, { completed: 0, failed: 0 });
                     }
 
                     dungeonsRan.get(dungeon)!.completed += completed;

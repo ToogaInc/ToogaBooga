@@ -1,7 +1,7 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {UserManager} from "../../managers/UserManager";
-import {MongoManager} from "../../managers/MongoManager";
-import {LoggerManager} from "../../managers/LoggerManager";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { UserManager } from "../../managers/UserManager";
+import { MongoManager } from "../../managers/MongoManager";
+import { LoggerManager } from "../../managers/LoggerManager";
 
 export class GivePoints extends BaseCommand {
     public constructor() {

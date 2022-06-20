@@ -1,8 +1,8 @@
-import {Collection as MCollection, Filter, MongoClient, UpdateFilter} from "mongodb";
-import {Bot} from "../Bot";
-import {UserManager} from "./UserManager";
-import {Collection, Collection as DCollection, Guild, GuildMember, TextChannel} from "discord.js";
-import {DUNGEON_DATA} from "../constants/dungeons/DungeonData";
+import { Collection as MCollection, Filter, MongoClient, UpdateFilter } from "mongodb";
+import { Bot } from "../Bot";
+import { UserManager } from "./UserManager";
+import { Collection, Collection as DCollection, Guild, GuildMember, TextChannel } from "discord.js";
+import { DUNGEON_DATA } from "../constants/dungeons/DungeonData";
 import {
     IBotInfo,
     IGuildInfo,
@@ -15,10 +15,10 @@ import {
     IUnclaimedBlacklistInfo,
     IUserInfo
 } from "../definitions";
-import {GlobalFgrUtilities} from "../utilities/fetch-get-request/GlobalFgrUtilities";
-import {DefinedRole} from "../definitions/Types";
-import {StringUtil} from "../utilities/StringUtilities";
-import {PermsConstants} from "../constants/PermsConstants";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { DefinedRole } from "../definitions/Types";
+import { StringUtil } from "../utilities/StringUtilities";
+import { PermsConstants } from "../constants/PermsConstants";
 
 export namespace MongoManager {
     export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();
@@ -216,7 +216,7 @@ export namespace MongoManager {
             // If no entry is found, then we can add
             if (possIdEntries.length === 0) {
                 const t = await getIdNameCollection().insertOne(getDefaultIdNameObj(member.id));
-                return getIdNameCollection().findOne({_id: t.insertedId});
+                return getIdNameCollection().findOne({ _id: t.insertedId });
             }
 
             return possIdEntries[0];
@@ -231,20 +231,20 @@ export namespace MongoManager {
         // Case 1: No entries found.
         if (idEntries.length === 0 && ignEntries.length === 0) {
             const t = await getIdNameCollection().insertOne(getDefaultIdNameObj(member.id, ign));
-            return getIdNameCollection().findOne({_id: t.insertedId});
+            return getIdNameCollection().findOne({ _id: t.insertedId });
         }
 
         // Case 2: ID found, IGN not.
         // In this case, we can simply push the name into the names array.
         if (idEntries.length > 0 && ignEntries.length === 0) {
-            const r = await getIdNameCollection().findOneAndUpdate({currentDiscordId: idEntries[0].currentDiscordId}, {
+            const r = await getIdNameCollection().findOneAndUpdate({ currentDiscordId: idEntries[0].currentDiscordId }, {
                 $push: {
                     rotmgNames: {
                         lowercaseIgn: ign.toLowerCase(),
                         ign: ign
                     }
                 }
-            }, {returnDocument: "after"});
+            }, { returnDocument: "after" });
             return r.value ?? null;
         }
 
@@ -264,11 +264,11 @@ export namespace MongoManager {
                         toDate: Date.now()
                     }
                 }
-            }, {returnDocument: "after"});
+            }, { returnDocument: "after" });
 
             // Also update the user collection.
             if (oldDoc.value) {
-                await getUserCollection().updateOne({discordId: oldDiscordId}, {
+                await getUserCollection().updateOne({ discordId: oldDiscordId }, {
                     $set: {
                         discordId: member.id
                     }
@@ -292,7 +292,7 @@ export namespace MongoManager {
             }
 
             if (entry.currentDiscordId !== member.id)
-                newObj.pastDiscordIds.push({oldId: entry.currentDiscordId, toDate: Date.now()});
+                newObj.pastDiscordIds.push({ oldId: entry.currentDiscordId, toDate: Date.now() });
 
             newObj.pastRealmNames.push(...entry.pastRealmNames);
             newObj.pastDiscordIds.push(...entry.pastDiscordIds);
@@ -313,7 +313,7 @@ export namespace MongoManager {
             ]
         });
         const insertRes = await getIdNameCollection().insertOne(newObj);
-        const doc = await getIdNameCollection().findOne({_id: insertRes.insertedId});
+        const doc = await getIdNameCollection().findOne({ _id: insertRes.insertedId });
 
         if (!doc)
             return null;
@@ -340,7 +340,7 @@ export namespace MongoManager {
         if (foundDocs.length === 0)
             return doc;
 
-        const userDoc = getDefaultUserConfig(member.id, ign);
+        const userDoc = getDefaultUserConfig(member.id);
         const allNotes: string[] = [];
         // Copy all old values to the new document
         for (const doc of foundDocs) {
@@ -369,7 +369,7 @@ export namespace MongoManager {
                 const v = note.value;
                 const idx = userDoc.details.guildNotes.findIndex(x => x.key === k);
                 if (idx === -1) {
-                    userDoc.details.guildNotes.push({key: k, value: v});
+                    userDoc.details.guildNotes.push({ key: k, value: v });
                     continue;
                 }
 
@@ -397,7 +397,7 @@ export namespace MongoManager {
     function getOtherMajorConfigObj(): IOtherMajorConfig {
         const generalAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
         PermsConstants.DEFAULT_AFK_CHECK_PERMISSIONS.forEach(permObj => {
-            generalAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
+            generalAfkCheckPerms.push({ key: permObj.id, value: { allow: permObj.allow, deny: permObj.deny } });
         });
 
         const prePostAfkCheckPerms: IPropertyKeyValuePair<string, IPermAllowDeny>[] = [];
@@ -406,7 +406,7 @@ export namespace MongoManager {
         // Get everyone role and don't allow everyone to connect
         tempPerms[0].deny = ["VIEW_CHANNEL", "SPEAK", "STREAM", "CONNECT"];
         tempPerms.forEach(permObj => {
-            prePostAfkCheckPerms.push({key: permObj.id, value: {allow: permObj.allow, deny: permObj.deny}});
+            prePostAfkCheckPerms.push({ key: permObj.id, value: { allow: permObj.allow, deny: permObj.deny } });
         });
 
         return {
@@ -522,7 +522,7 @@ export namespace MongoManager {
             },
             guildId: guildId,
             guildSections: [],
-            moderation: {blacklistedUsers: [], suspendedUsers: [], blacklistedModmailUsers: [], mutedUsers: []},
+            moderation: { blacklistedUsers: [], suspendedUsers: [], blacklistedModmailUsers: [], mutedUsers: [] },
             otherMajorConfig: getOtherMajorConfigObj(),
             properties: {
                 blockedCommands: [],
@@ -539,7 +539,7 @@ export namespace MongoManager {
             roles: {
                 mutedRoleId: "",
                 staffRoles: {
-                    moderation: {helperRoleId: "", moderatorRoleId: "", officerRoleId: "", securityRoleId: ""},
+                    moderation: { helperRoleId: "", moderatorRoleId: "", officerRoleId: "", securityRoleId: "" },
                     otherStaffRoleIds: [],
                     sectionLeaderRoleIds: {
                         sectionAlmostLeaderRoleId: "",
@@ -571,12 +571,11 @@ export namespace MongoManager {
     /**
      * Gets the default user configuration object.
      * @param {string} userId The person's Discord ID.
-     * @param {string} [ign] The IGN of the person, if any.
      * @return {IUserInfo} The user configuration object.
      */
-    export function getDefaultUserConfig(userId: string, ign?: string): IUserInfo {
+    export function getDefaultUserConfig(userId: string): IUserInfo {
         return {
-            details: {moderationHistory: [], universalNotes: "", guildNotes: []},
+            details: { moderationHistory: [], universalNotes: "", guildNotes: [] },
             discordId: userId,
             loggedInfo: []
         };
@@ -590,7 +589,7 @@ export namespace MongoManager {
      */
     export function getDefaultIdNameObj(userId: string, ign?: string): IIdNameInfo {
         return {
-            rotmgNames: ign ? [{lowercaseIgn: ign.toLowerCase(), ign: ign}] : [],
+            rotmgNames: ign ? [{ lowercaseIgn: ign.toLowerCase(), ign: ign }] : [],
             currentDiscordId: userId,
             pastDiscordIds: [],
             pastRealmNames: []
@@ -618,9 +617,9 @@ export namespace MongoManager {
                 },
             },
             isMainSection: false,
-            moderation: {sectionSuspended: []},
+            moderation: { sectionSuspended: [] },
             otherMajorConfig: getOtherMajorConfigObj(),
-            properties: {giveVerifiedRoleUponUnsuspend: false},
+            properties: { giveVerifiedRoleUponUnsuspend: false },
             roles: {
                 leaders: {
                     sectionAlmostLeaderRoleId: "",
@@ -641,10 +640,10 @@ export namespace MongoManager {
      * @throws {Error} If adding a new user document is not possible.
      */
     export async function getOrCreateUserDoc(userId: string): Promise<IUserInfo> {
-        const docs = await getUserCollection().find({discordId: userId}).toArray();
+        const docs = await getUserCollection().find({ discordId: userId }).toArray();
         if (docs.length === 0) {
             const insertRes = await getUserCollection().insertOne(getDefaultUserConfig(userId));
-            const doc = await getUserCollection().findOne({_id: insertRes.insertedId});
+            const doc = await getUserCollection().findOne({ _id: insertRes.insertedId });
             if (doc) {
                 return doc;
             }
@@ -668,10 +667,10 @@ export namespace MongoManager {
             return CachedGuildCollection.get(id)!;
         }
 
-        const docs = await getGuildCollection().find({guildId: id}).toArray();
+        const docs = await getGuildCollection().find({ guildId: id }).toArray();
         if (docs.length === 0) {
             const insertRes = await getGuildCollection().insertOne(getDefaultGuildConfig(id));
-            const doc = await getGuildCollection().findOne({_id: insertRes.insertedId});
+            const doc = await getGuildCollection().findOne({ _id: insertRes.insertedId });
             if (doc) {
                 CachedGuildCollection.set(id, doc);
                 return doc;

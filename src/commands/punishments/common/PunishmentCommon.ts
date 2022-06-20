@@ -1,5 +1,5 @@
-import {IResolvedMember} from "../../../managers/UserManager";
-import {CommandInteraction, GuildMember} from "discord.js";
+import { IResolvedMember } from "../../../managers/UserManager";
+import { CommandInteraction, GuildMember } from "discord.js";
 
 /**
  * Checks if the punishment can be issued. This checks

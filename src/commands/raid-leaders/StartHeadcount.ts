@@ -1,12 +1,12 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
-import {MongoManager} from "../../managers/MongoManager";
-import {DungeonUtilities} from "../../utilities/DungeonUtilities";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
+import { MongoManager } from "../../managers/MongoManager";
+import { DungeonUtilities } from "../../utilities/DungeonUtilities";
 import {
     DungeonSelectionType,
     getAvailableSections,
     getSelectedSection
 } from "./common/RaidLeaderCommon";
-import {HeadcountInstance} from "../../instances/HeadcountInstance";
+import { HeadcountInstance } from "../../instances/HeadcountInstance";
 
 export class StartHeadcount extends BaseCommand {
     public static readonly START_HC_CMD_CODE: string = "HEADCOUNT_START";

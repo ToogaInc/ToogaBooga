@@ -10,7 +10,7 @@
     "lint:fix": "npx eslint src/**/* --fix"
   },
   "keywords": [],
-  "author": "Edward Wang",
+  "author": "Tooga Inc.",
   "license": "MIT",
   "dependencies": {
     "@discordjs/builders": "^0.12.0",

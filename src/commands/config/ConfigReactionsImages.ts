@@ -1,4 +1,4 @@
-import {BaseCommand, ICommandContext} from "../BaseCommand";
+import { BaseCommand, ICommandContext } from "../BaseCommand";
 import {
     Message,
     MessageButton,
@@ -7,24 +7,24 @@ import {
     MessageSelectMenu,
     TextChannel
 } from "discord.js";
-import {EmojiConstants} from "../../constants/EmojiConstants";
-import {AdvancedCollector} from "../../utilities/collectors/AdvancedCollector";
-import {StringBuilder} from "../../utilities/StringBuilder";
-import {ArrayUtilities} from "../../utilities/ArrayUtilities";
-import {GlobalFgrUtilities} from "../../utilities/fetch-get-request/GlobalFgrUtilities";
-import {GeneralConstants} from "../../constants/GeneralConstants";
-import {ReactionType} from "../../definitions";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {GuildFgrUtilities} from "../../utilities/fetch-get-request/GuildFgrUtilities";
-import {Bot} from "../../Bot";
-import {MiscUtilities} from "../../utilities/MiscUtilities";
+import { EmojiConstants } from "../../constants/EmojiConstants";
+import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { StringBuilder } from "../../utilities/StringBuilder";
+import { ArrayUtilities } from "../../utilities/ArrayUtilities";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
+import { GeneralConstants } from "../../constants/GeneralConstants";
+import { ReactionType } from "../../definitions";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
+import { Bot } from "../../Bot";
+import { MiscUtilities } from "../../utilities/MiscUtilities";
 import * as Stream from "stream";
-import {TimeUtilities} from "../../utilities/TimeUtilities";
-import {TimedResult, TimedStatus} from "../../definitions/Types";
-import {sendOrEditBotMsg} from "./common/ConfigCommon";
-import {ButtonConstants} from "../../constants/ButtonConstants";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
+import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { TimedResult, TimedStatus } from "../../definitions/Types";
+import { sendOrEditBotMsg } from "./common/ConfigCommon";
+import { ButtonConstants } from "../../constants/ButtonConstants";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
 
 type ReactionDetailedType = {
     type: ReactionType;
@@ -111,7 +111,7 @@ export class ConfigReactionsImages extends BaseCommand {
      */
     public async mainMenu(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
         const embed: MessageEmbed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle("Dungeon Configuration Command")
             .setDescription("Here, you will be able to manage reactions (for AFK checks) and images.")
             .addField(
@@ -211,12 +211,12 @@ export class ConfigReactionsImages extends BaseCommand {
             await botMsg.edit({
                 embeds: [
                     new MessageEmbed()
-                        .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                        .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                         .setTitle("Unable to Manage Images")
                         .setColor("RED")
                         .setDescription("You did not define a storage channel. Please do so via the channel"
                             + " configuration command.")
-                        .setFooter({text: "This process will go to the previous page in 5 seconds."})
+                        .setFooter({ text: "This process will go to the previous page in 5 seconds." })
                 ]
             });
 
@@ -248,7 +248,7 @@ export class ConfigReactionsImages extends BaseCommand {
 
         const selectedImages = ctx.guildDoc!.properties.approvedCustomImages.slice();
         const embed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle("Manage Images")
             .setDescription(
                 new StringBuilder()
@@ -321,7 +321,7 @@ export class ConfigReactionsImages extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                 .setTitle("Send Image")
                                 .setDescription("Please send your image __as an attachment__ now. The bot will"
                                     + " __not__ accept image links. If you don't want to add a new image at this"
@@ -415,7 +415,7 @@ export class ConfigReactionsImages extends BaseCommand {
                     break;
                 }
                 case ButtonConstants.SAVE_ID: {
-                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                         $set: {
                             "properties.approvedCustomImages": selectedImages
                         }
@@ -456,13 +456,13 @@ export class ConfigReactionsImages extends BaseCommand {
         return async function getNameForReaction(): Promise<TimedResult<string>> {
             const embed = embedType === "REACTION"
                 ? new MessageEmbed()
-                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                     .setTitle("Specify Reaction Name")
                     .setDescription("You will now specify the name for this reaction. This name will be displayed on"
                         + " the AFK check button. If you decide that you don't want to create a new reaction, press the"
                         + " **Cancel** button.")
                 : new MessageEmbed()
-                    .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                     .setTitle("Specify ReaImage Name")
                     .setDescription("You will now specify the name for this image. This is solely used to make"
                         + " identification of images easier. If you decide that you don't want to create a new image,"
@@ -485,15 +485,15 @@ export class ConfigReactionsImages extends BaseCommand {
                 oldMsg: botMsg,
                 targetAuthor: ctx.user,
                 targetChannel: ctx.channel
-            }, AdvancedCollector.getStringPrompt(ctx.channel, {min: 1, max: 50}));
+            }, AdvancedCollector.getStringPrompt(ctx.channel, { min: 1, max: 50 }));
 
             if (!res)
-                return {value: null, status: TimedStatus.TIMED_OUT};
+                return { value: null, status: TimedStatus.TIMED_OUT };
 
             if (res instanceof MessageComponentInteraction)
-                return {value: null, status: TimedStatus.CANCELED};
+                return { value: null, status: TimedStatus.CANCELED };
 
-            return {value: res, status: TimedStatus.SUCCESS};
+            return { value: res, status: TimedStatus.SUCCESS };
         };
     }
 
@@ -531,7 +531,7 @@ export class ConfigReactionsImages extends BaseCommand {
         ];
 
         const embed = new MessageEmbed()
-            .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle("Manage Reactions")
             .setDescription(
                 new StringBuilder()
@@ -559,7 +559,7 @@ export class ConfigReactionsImages extends BaseCommand {
         // Asks the user for an emoji for this reaction
         async function getEmojiForReaction(): Promise<TimedResult<{ identifier: string; isCustom: boolean; }>> {
             const emojiEmbed = new MessageEmbed()
-                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                 .setTitle("Select New Emoji")
                 .setDescription("You will now specify the emoji for this reaction. To specify the emoji that you"
                     + " want to use for this reaction, **react to this message with the emoji.** If you decide that"
@@ -708,7 +708,7 @@ export class ConfigReactionsImages extends BaseCommand {
                     await botMsg.edit({
                         embeds: [
                             new MessageEmbed()
-                                .setAuthor({name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined})
+                                .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                                 .setTitle("Specify Reaction Type")
                                 .setDescription("Please select the category that best represents this reaction."
                                     + " __Once you select a category, you cannot change it.__ If you do not want to"
@@ -782,7 +782,7 @@ export class ConfigReactionsImages extends BaseCommand {
                     break;
                 }
                 case ButtonConstants.SAVE_ID: {
-                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                         $set: {
                             "properties.customReactions": currentReactions
                         }

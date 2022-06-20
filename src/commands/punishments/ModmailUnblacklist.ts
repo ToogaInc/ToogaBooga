@@ -1,9 +1,9 @@
-import {ArgumentType, BaseCommand, ICommandContext, ICommandInfo} from "../BaseCommand";
-import {StringUtil} from "../../utilities/StringUtilities";
-import {MessageUtilities} from "../../utilities/MessageUtilities";
-import {MongoManager} from "../../managers/MongoManager";
-import {PunishmentManager} from "../../managers/PunishmentManager";
-import {UserManager} from "../../managers/UserManager";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { StringUtil } from "../../utilities/StringUtilities";
+import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { MongoManager } from "../../managers/MongoManager";
+import { PunishmentManager } from "../../managers/PunishmentManager";
+import { UserManager } from "../../managers/UserManager";
 
 export class ModmailUnblacklist extends BaseCommand {
     public constructor() {
@@ -71,7 +71,7 @@ export class ModmailUnblacklist extends BaseCommand {
 
         const reason = ctx.interaction.options.getString("reason", true);
         const currTime = Date.now();
-        await MongoManager.updateAndFetchGuildDoc({guildId: ctx.guild!.id}, {
+        await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
             $pull: {
                 "moderation.blacklistedModmailUsers": {
                     actionId: blInfo.actionId
