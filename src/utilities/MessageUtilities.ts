@@ -7,6 +7,7 @@ import {
     GuildMember,
     Message,
     MessageActionRow,
+    MessageEditOptions,
     MessageEmbed,
     MessageOptions,
     PartialTextBasedChannelFields,
@@ -63,7 +64,7 @@ export namespace MessageUtilities {
      * @param {MessageOptions} w The contents to edit the message with.
      * @returns {Promise<boolean>} Whether the message editing was successful.
      */
-    export async function tryEdit(m: Message, w: MessageOptions): Promise<boolean> {
+    export async function tryEdit(m: Message, w: MessageEditOptions): Promise<boolean> {
         return await GlobalFgrUtilities.tryExecuteAsync<boolean>(async () => {
             await m.edit(w);
             return true;
@@ -136,8 +137,8 @@ export namespace MessageUtilities {
     export function getMessageOptionsFromMessage(
         msg: Message,
         components?: MessageActionRow[]
-    ): MessageOptions & { split?: false | undefined } {
-        const obj: MessageOptions & { split?: false | undefined } = {
+    ): MessageEditOptions & { split?: false | undefined } {
+        const obj: MessageEditOptions & { split?: false | undefined } = {
             components: []
         };
         if (msg.content)

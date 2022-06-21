@@ -18,9 +18,9 @@ export class SetStatus extends BaseCommand {
                     type: ArgumentType.String,
                     restrictions: {
                         stringChoices: [
-                            ["Online", "online"],
-                            ["Idle", "idle"],
-                            ["Do Not Disturb", "dnd"]
+                            { name: "Online", value: "online" },
+                            { name: "Idle", value: "idle" },
+                            { name: "Do Not Disturb", value: "dnd" },
                         ]
                     },
                     prettyType: "String",
@@ -43,9 +43,9 @@ export class SetStatus extends BaseCommand {
                     type: ArgumentType.String,
                     restrictions: {
                         stringChoices: [
-                            ["Playing", "PLAYING"],
-                            ["Listening (to)", "LISTENING"],
-                            ["Watching", "WATCHING"]
+                            { name: "Playing", value: "PLAYING" },
+                            { name: "Listening (to)", value: "LISTENING" },
+                            { name: "Watching", value: "WATCHING" },
                         ]
                     },
                     prettyType: "String",

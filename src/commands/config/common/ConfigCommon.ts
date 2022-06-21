@@ -4,6 +4,7 @@ import {
     MessageActionRow,
     MessageButton,
     MessageComponentInteraction,
+    MessageEditOptions,
     MessageOptions,
     TextBasedChannel,
     TextChannel
@@ -145,7 +146,7 @@ export function getInstructions(type: ConfigType | string): string {
  * possible, `null` is returned.
  */
 export async function entryFunction(ctx: ICommandContext, botMsg: Message | null,
-                                    mOpt?: MessageOptions): Promise<[ISectionInfo, Message] | null> {
+                                    mOpt?: MessageEditOptions): Promise<[ISectionInfo, Message] | null> {
     const member = GuildFgrUtilities.getCachedMember(ctx.guild!, ctx.user.id);
     if (!member) return null;
 
@@ -191,12 +192,12 @@ export async function entryFunction(ctx: ICommandContext, botMsg: Message | null
 export async function sendOrEditBotMsg(
     channel: TextBasedChannel,
     botMsg: Message | null,
-    opt: MessageOptions
+    opt: MessageOptions | MessageEditOptions
 ): Promise<Message> {
     if (botMsg)
-        await botMsg.edit(opt);
+        await botMsg.edit(opt as MessageEditOptions);
     else
-        botMsg = await channel.send(opt);
+        botMsg = await channel.send(opt as MessageOptions);
     return botMsg;
 }
 
@@ -209,7 +210,7 @@ export async function sendOrEditBotMsg(
  * @returns {Promise<T | null | undefined>} The parsed result, if any. `null` if the user specifically chose not
  * to provide any information (for example, by pressing the Back button) and `undefined` if timed out.
  */
-export async function askInput<T>(ctx: ICommandContext, botMsg: Message, msgOptions: Omit<MessageOptions, "components">,
+export async function askInput<T>(ctx: ICommandContext, botMsg: Message, msgOptions: Omit<MessageEditOptions, "components">,
                                   validator: (m: Message) => T | null | Promise<T | null>): Promise<T | null | undefined> {
     await botMsg.edit({
         ...msgOptions,

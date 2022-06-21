@@ -33,9 +33,9 @@ export class ConfigEarlyLocRoles extends BaseCommand {
                     type: ArgumentType.String,
                     restrictions: {
                         stringChoices: [
-                            ["Add Role", "add"],
-                            ["Remove Role", "remove"],
-                            ["List All Roles", "list"]
+                            { name: "Add Role", value: "add" },
+                            { name: "Remove Role", value: "remove" },
+                            { name: "List All Roles", value: "list" },
                         ]
                     },
                     prettyType: "String",

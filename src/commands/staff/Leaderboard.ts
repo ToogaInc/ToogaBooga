@@ -47,9 +47,9 @@ export class Leaderboard extends BaseCommand {
                     type: ArgumentType.String,
                     restrictions: {
                         stringChoices: [
-                            ["Runs Led", "RUN_LED"],
-                            ["Keys Popped", "KEY_POP"],
-                            ["Runes Popped", "RUNE_POP"]
+                            { name: "Runs Led", value: "RUN_LED" },
+                            { name: "Keys Popped", value: "KEY_POP" },
+                            { name: "Runes Popped", value: "RUNE_POP" },
                         ]
                     },
                     prettyType: "String",

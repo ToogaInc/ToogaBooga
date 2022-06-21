@@ -2,6 +2,7 @@ import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../Bas
 import { VoiceChannel } from "discord.js";
 import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import { Logger } from "../../utilities/Logger";
+import { ChannelType } from "discord-api-types/v10";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -30,8 +31,7 @@ export class Yoink extends BaseCommand {
                     argName: "vc",
                     desc: "The voice channel where the bot should move the members out of.",
                     restrictions: {
-                        // 2 is the constant value for GuildVoice
-                        channelModifier: o => o.addChannelType(2)
+                        channelModifier: o => o.addChannelTypes(ChannelType.GuildVoice)
                     },
                     type: ArgumentType.Channel,
                     prettyType: "Voice Channel",
