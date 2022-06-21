@@ -2,6 +2,7 @@ import {
     Guild,
     GuildMember,
     Message,
+    MessageEditOptions,
     MessageOptions,
     MessageSelectMenu,
     MessageSelectOptionData,
@@ -171,7 +172,7 @@ export namespace MiscUtilities {
         guildDb: IGuildInfo,
         member: GuildMember,
         message: Message,
-        msgOptions?: Omit<MessageOptions, "components">
+        msgOptions?: Omit<MessageEditOptions, "components">
     ): Promise<ISectionInfo | null> {
         const allSections = MongoManager.getAllSections(guildDb);
         const selectOptions: MessageSelectOptionData[] = allSections
@@ -192,7 +193,7 @@ export namespace MiscUtilities {
                 .setMaxValues(1),
             ButtonConstants.CANCEL_BUTTON
         ]);
-        let o: MessageOptions;
+        let o: MessageEditOptions;
         if (msgOptions) {
             o = msgOptions;
             o.components = components;
