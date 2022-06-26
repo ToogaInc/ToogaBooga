@@ -129,6 +129,8 @@ export class HeadcountInstance {
     private readonly _leaderName: string;
     // Whether this has already been added to the database
     private _addedToDb: boolean = false;
+    // If the leader has already been pinged when the keys are ready
+    private _leaderAlerted: boolean = false;
 
     // Anyone that is currently confirming their reaction with the bot.
     // This is so we don't have double reactions
@@ -1105,6 +1107,16 @@ export class HeadcountInstance {
             return false;
 
         prop.push({ member: member, modifiers: modifiers });
+
+        // Filter reacts so that we have every key and there is at least one react
+        const keyReacts = this._pplWithEarlyLoc.filter((v, k) => k !== "interested" && v.length !== 0);
+        const completeSize = this._pplWithEarlyLoc.size - 1; // Ignore the interested key that appears on every headcount
+        if (keyReacts.size !== 0 && keyReacts.size === completeSize && !this._leaderAlerted) {
+            this._leaderAlerted = true;
+            this._controlPanelChannel.send({
+                content: `${this._memberInit} All key reacts have at least one react!`
+            });
+        }
 
         if (!addToDb || !this._addedToDb || !this._headcountMsg)
             return true;
