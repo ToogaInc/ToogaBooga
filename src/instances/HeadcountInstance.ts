@@ -1111,7 +1111,7 @@ export class HeadcountInstance {
         // Filter reacts so that we have every key and there is at least one react
         const keyReacts = this._pplWithEarlyLoc.filter((v, k) => k !== "interested" && v.length !== 0);
         const completeSize = this._pplWithEarlyLoc.size - 1; // Ignore the interested key that appears on every headcount
-        if (keyReacts.size === completeSize && !this._leaderAlerted) {
+        if (keyReacts.size !== 0 && keyReacts.size === completeSize && !this._leaderAlerted) {
             this._leaderAlerted = true;
             this._controlPanelChannel.send({
                 content: `${this._memberInit} All key reacts have at least one react!`
