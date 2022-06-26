@@ -17,7 +17,6 @@ export class Purge extends BaseCommand {
                 "Security",
                 "Officer",
                 "Moderator",
-                "RaidLeader",
                 "HeadRaidLeader",
                 "VeteranRaidLeader"
             ],

@@ -22,7 +22,6 @@ export class ManualVerifyMain extends BaseCommand {
                 "Security",
                 "Officer",
                 "Moderator",
-                "RaidLeader",
                 "HeadRaidLeader",
                 "VeteranRaidLeader"
             ],

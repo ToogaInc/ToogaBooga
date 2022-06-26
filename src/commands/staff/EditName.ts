@@ -21,7 +21,6 @@ export class EditName extends BaseCommand {
                 "Security",
                 "Officer",
                 "Moderator",
-                "RaidLeader",
                 "HeadRaidLeader",
                 "VeteranRaidLeader"
             ],
