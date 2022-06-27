@@ -2118,7 +2118,7 @@ export class RaidInstance {
             for (const { member, modifiers } of members) {
                 sb.append(`\t> ${member.displayName} (${member.user.tag}, ${member.id})`).appendLine();
                 if (modifiers.length > 0) {
-                    sb.append(`\t> Modifiers: ${modifiers.join(", ")}`).appendLine();
+                    sb.append(`\t\t> Modifiers: [${modifiers.join(", ")}]`).appendLine();
                 }
             }
         }
