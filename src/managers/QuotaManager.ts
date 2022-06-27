@@ -139,14 +139,20 @@ export namespace QuotaManager {
                 });
             }
 
-            if (!quotaLogMap.has(logInfo.logType)) continue;
+            const baseRule = logInfo.logType.split(":")[0];
+            let ruleToLog = logInfo.logType;
+            if (quotaLogMap.has(baseRule)) {
+                ruleToLog = baseRule;
+            }
 
-            const points = quotaLogMap.get(logInfo.logType)!;
+            if (!quotaLogMap.has(ruleToLog)) continue;
+
+            const points = quotaLogMap.get(ruleToLog)!;
             const pointLogEntry = quotaPointMap.get(logInfo.userId)!;
 
             pointLogEntry.points += points * logInfo.amount;
-            if (!pointLogEntry.quotaBreakdown[logInfo.logType]) {
-                pointLogEntry.quotaBreakdown[logInfo.logType] = {
+            if (!pointLogEntry.quotaBreakdown[ruleToLog]) {
+                pointLogEntry.quotaBreakdown[ruleToLog] = {
                     qty: logInfo.amount,
                     pts: points * logInfo.amount,
                     breakdown: [
@@ -156,9 +162,9 @@ export namespace QuotaManager {
                 continue;
             }
 
-            pointLogEntry.quotaBreakdown[logInfo.logType].qty += logInfo.amount;
-            pointLogEntry.quotaBreakdown[logInfo.logType].pts += points * logInfo.amount;
-            pointLogEntry.quotaBreakdown[logInfo.logType].breakdown.push(
+            pointLogEntry.quotaBreakdown[ruleToLog].qty += logInfo.amount;
+            pointLogEntry.quotaBreakdown[ruleToLog].pts += points * logInfo.amount;
+            pointLogEntry.quotaBreakdown[ruleToLog].breakdown.push(
                 `\t\t\t[${TimeUtilities.getDateTime(logInfo.timeIssued)}] Logged ${logInfo.amount} QTY.`
             );
         }
@@ -482,7 +488,16 @@ export namespace QuotaManager {
                 continue;
             }
 
-            // Inefficient, might need to find better way to do this
+            if (l.logType.startsWith("Run")) {
+                // See if we have RunComplete for all dungeons instead of specific dungeons
+                const baseLogType = l.logType.split(":")[0];
+                const quotaRule = quotaInfo.pointValues.find(x => x.key === baseLogType);
+                if (quotaRule) {
+                    ptsEarned += quotaRule.value * l.amount;
+                    continue;
+                }
+            }
+
             ptsEarned += (quotaInfo.pointValues.find(x => x.key === l.logType)?.value ?? 0) * l.amount;
         }
 
@@ -657,10 +672,10 @@ export namespace QuotaManager {
                     return "";
                 }
 
-                return `${ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
+                return `- ${ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
             }
 
-            return `${ALL_QUOTAS_KV[key]}: ${value} PT`;
+            return `- ${ALL_QUOTAS_KV[key]}: ${value} PT`;
         }).filter(x => x).join("\n");
     }
 
