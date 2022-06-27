@@ -871,12 +871,19 @@ export namespace QuotaService {
                     continue;
                 }
 
-                await quotaMsg.edit({
-                    embeds: [
-                        (await QuotaManager.getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo))!
-                    ]
-                });
-                LOGGER.debug(`Finished updating quota for role: ${role.name}`);
+                // Lots of errors here specifically indicating that "AbortError: The user aborted a request."
+                // Throwing a try/catch here should be a sufficient, albeit scuffed, fix for this problem.
+                try {
+                    await quotaMsg.edit({
+                        embeds: [
+                            (await QuotaManager.getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo))!
+                        ]
+                    });
+                    LOGGER.debug(`Finished updating quota for role: ${role.name}`);
+                }
+                catch (e) {
+                    LOGGER.debug(`Unable to update quota embed for role "${role.name}" in server "${guild.name}"\n${e}`);
+                }
             }
             LOGGER.debug(`Finished updating quota for guild: ${guild.name}`);
         }

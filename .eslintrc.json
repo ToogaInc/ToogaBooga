@@ -27,10 +27,6 @@
                 "ignoreComments": true // No option to match comments with expected indent and it looks really ugly
             }
         ],
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
         "quotes": [
             "error", // Ignores when template literals are actually used (`${something}` vs `something`)
             "double"
