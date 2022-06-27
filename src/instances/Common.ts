@@ -32,6 +32,7 @@ import { DefinedRole } from "../definitions/Types";
 import { MiscUtilities } from "../utilities/MiscUtilities";
 import { LoggerManager } from "../managers/LoggerManager";
 import { Logger } from "../utilities/Logger";
+import { EmojiConstants } from "../constants/EmojiConstants";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -125,7 +126,7 @@ export async function confirmReaction(
             .setCustomId(cancelModId);
 
         const sb = new StringBuilder()
-            .append(`You pressed the ${itemDisplay} button.`);
+            .append(`You pressed the ${itemDisplay} button. `);
         const buttons: BaseMessageComponent[] = [];
 
         if (modifiers.length > 0) {
@@ -138,7 +139,8 @@ export async function confirmReaction(
                 .append("- If you have **multiple** keys, please specify the modifiers for **one** of your keys and")
                 .append(" message the raid leader the modifiers of the remaining key.").appendLine()
                 .append("- If you do not have any modifiers, please press the **No Modifier** button.").appendLine()
-                .append("- If you did not mean to press this button, please press the **Cancel** button.");
+                .append("- If you did not mean to press this button, please press the **Cancel** button.")
+                .appendLine(2);
 
             buttons.push(
                 selectMenu,
@@ -161,7 +163,8 @@ export async function confirmReaction(
                 .append(" this raid, and that your key has at least one modifier.")
                 .appendLine()
                 .append("- Press the **Cancel** button to cancel this process (e.g. if you accidentally pressed this")
-                .append(" button.");
+                .append(" button.")
+                .appendLine(2);
 
             buttons.push(
                 new MessageButton()
@@ -174,6 +177,9 @@ export async function confirmReaction(
                     .setCustomId(noneListedId)
             );
         }
+
+        sb.append(`${EmojiConstants.WARNING_EMOJI} **Please note that once you confirm your reaction, you will not`
+            + " be able to unreact.**");
 
         buttons.push(cancelButton);
         await interaction.reply({
@@ -271,7 +277,7 @@ export async function confirmReaction(
             }
             buttonsToUse.push(accidentButton);
             buttonsToUse.push(cancelButton);
-            
+
             await interaction.editReply({
                 content: `What **level** is the **${modifier.modifierName}** modifier? If you want to cancel this,`
                     + " press the **Cancel** button. If you mistakenly selected this modifier, press the"
@@ -421,6 +427,9 @@ export async function confirmReaction(
             .appendLine(2)
             .append("You have **15** seconds to select an option. Failure to respond will result in an ")
             .append("automatic **no**.")
+            .appendLine(2)
+            .append(`${EmojiConstants.WARNING_EMOJI} **Please note that once you confirm your reaction, you will not`
+                + " be able to unreact.**")
             .toString();
     }
 
@@ -619,8 +628,11 @@ export function getItemDisplay(reactInfo: ReactionInfoMore): string {
  * @param {Guild} guild The guild.
  * @returns {CollectorFilter} The collector filter to use.
  */
-export function controlPanelCollectorFilter(guildDoc: IGuildInfo, section: ISectionInfo,
-                                            guild: Guild): CollectorFilter<[MessageComponentInteraction]> {
+export function controlPanelCollectorFilter(
+    guildDoc: IGuildInfo, 
+    section: ISectionInfo, 
+    guild: Guild
+): CollectorFilter<[MessageComponentInteraction]> {
     return async (i) => {
         if (i.user.bot) return false;
 
