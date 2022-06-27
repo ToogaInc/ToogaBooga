@@ -892,11 +892,16 @@ export namespace QuotaService {
 
                 // Lots of errors here specifically indicating that "AbortError: The user aborted a request."
                 // Throwing a try/catch here should be a sufficient, albeit scuffed, fix for this problem.
+                const newEmbed = await QuotaManager.getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo)!;
+                if (!newEmbed) {
+                    LOGGER.debug(`An unknown error occurred when trying to update quota for "${role.name}"`
+                        + ` in server "${guild.name}": embed creation failed`);
+                    continue;
+                }
+
                 try {
                     await quotaMsg.edit({
-                        embeds: [
-                            (await QuotaManager.getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo))!
-                        ]
+                        embeds: [newEmbed]
                     });
                     LOGGER.debug(`Finished updating quota for role: ${role.name}`);
                 }
