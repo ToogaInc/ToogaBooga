@@ -139,14 +139,20 @@ export namespace QuotaManager {
                 });
             }
 
-            if (!quotaLogMap.has(logInfo.logType)) continue;
+            const baseRule = logInfo.logType.split(":")[0];
+            let ruleToLog = logInfo.logType;
+            if (quotaLogMap.has(baseRule)) {
+                ruleToLog = baseRule;
+            }
 
-            const points = quotaLogMap.get(logInfo.logType)!;
+            if (!quotaLogMap.has(ruleToLog)) continue;
+
+            const points = quotaLogMap.get(ruleToLog)!;
             const pointLogEntry = quotaPointMap.get(logInfo.userId)!;
 
             pointLogEntry.points += points * logInfo.amount;
-            if (!pointLogEntry.quotaBreakdown[logInfo.logType]) {
-                pointLogEntry.quotaBreakdown[logInfo.logType] = {
+            if (!pointLogEntry.quotaBreakdown[ruleToLog]) {
+                pointLogEntry.quotaBreakdown[ruleToLog] = {
                     qty: logInfo.amount,
                     pts: points * logInfo.amount,
                     breakdown: [
@@ -156,9 +162,9 @@ export namespace QuotaManager {
                 continue;
             }
 
-            pointLogEntry.quotaBreakdown[logInfo.logType].qty += logInfo.amount;
-            pointLogEntry.quotaBreakdown[logInfo.logType].pts += points * logInfo.amount;
-            pointLogEntry.quotaBreakdown[logInfo.logType].breakdown.push(
+            pointLogEntry.quotaBreakdown[ruleToLog].qty += logInfo.amount;
+            pointLogEntry.quotaBreakdown[ruleToLog].pts += points * logInfo.amount;
+            pointLogEntry.quotaBreakdown[ruleToLog].breakdown.push(
                 `\t\t\t[${TimeUtilities.getDateTime(logInfo.timeIssued)}] Logged ${logInfo.amount} QTY.`
             );
         }
@@ -482,7 +488,16 @@ export namespace QuotaManager {
                 continue;
             }
 
-            // Inefficient, might need to find better way to do this
+            if (l.logType.startsWith("Run")) {
+                // See if we have RunComplete for all dungeons instead of specific dungeons
+                const baseLogType = l.logType.split(":")[0];
+                const quotaRule = quotaInfo.pointValues.find(x => x.key === baseLogType);
+                if (quotaRule) {
+                    ptsEarned += quotaRule.value * l.amount;
+                    continue;
+                }
+            }
+
             ptsEarned += (quotaInfo.pointValues.find(x => x.key === l.logType)?.value ?? 0) * l.amount;
         }
 
@@ -657,10 +672,10 @@ export namespace QuotaManager {
                     return "";
                 }
 
-                return `${ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
+                return `- ${ALL_QUOTAS_KV[logType]} (${dungeonName}): ${value} PT`;
             }
 
-            return `${ALL_QUOTAS_KV[key]}: ${value} PT`;
+            return `- ${ALL_QUOTAS_KV[key]}: ${value} PT`;
         }).filter(x => x).join("\n");
     }
 
@@ -757,9 +772,9 @@ export namespace QuotaManager {
     }
 }
 
-// Service that updates quota leaderboards every 3 minutes
+// Service that updates quota leaderboards every minute
 export namespace QuotaService {
-    export const TIME_TO_UPDATE: number = 3 * 60 * 1000;
+    export const TIME_TO_UPDATE: number = 60 * 1000;
 
     let _isRunning = false;
 
@@ -843,10 +858,14 @@ export namespace QuotaService {
             LOGGER.debug(`Updating quota for guild: ${guild.name}`);
             for await (const quotaInfo of guildDoc.quotas.quotaInfo) {
                 const quotaChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(guild, quotaInfo.channel);
-                const role = await GuildFgrUtilities.fetchRole(guild, quotaInfo.roleId);
-
-                if (!role || !quotaChannel)
+                if (!quotaChannel) {
                     continue;
+                }
+                
+                const role = await GuildFgrUtilities.fetchRole(guild, quotaInfo.roleId);
+                if (!role) {
+                    continue;
+                }
 
                 LOGGER.debug(`Updating quota for role: ${role.name}`);
                 const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, quotaInfo.messageId);
@@ -871,12 +890,27 @@ export namespace QuotaService {
                     continue;
                 }
 
-                await quotaMsg.edit({
-                    embeds: [
-                        (await QuotaManager.getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo))!
-                    ]
-                });
-                LOGGER.debug(`Finished updating quota for role: ${role.name}`);
+                // Lots of errors here specifically indicating that "AbortError: The user aborted a request."
+                // Throwing a try/catch here should be a sufficient, albeit scuffed, fix for this problem.
+                const newEmbed = await QuotaManager.getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo)!;
+                if (!newEmbed) {
+                    LOGGER.debug(`An unknown error occurred when trying to update quota for "${role.name}"`
+                        + ` in server "${guild.name}": embed creation failed`);
+                    continue;
+                }
+
+                try {
+                    await quotaMsg.edit({
+                        embeds: [newEmbed]
+                    });
+                    LOGGER.debug(`Finished updating quota for role: ${role.name}`);
+                }
+                catch (e) {
+                    LOGGER.debug(`Unable to update quota embed for role "${role.name}" in server "${guild.name}"\n${e}`);
+                }
+
+                // Small delay so we don't spam discord's API with requests.
+                await MiscUtilities.stopFor(2000);
             }
             LOGGER.debug(`Finished updating quota for guild: ${guild.name}`);
         }
