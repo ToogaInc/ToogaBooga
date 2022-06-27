@@ -757,9 +757,9 @@ export namespace QuotaManager {
     }
 }
 
-// Service that updates quota leaderboards every 3 minutes
+// Service that updates quota leaderboards every minute
 export namespace QuotaService {
-    export const TIME_TO_UPDATE: number = 3 * 60 * 1000;
+    export const TIME_TO_UPDATE: number = 60 * 1000;
 
     let _isRunning = false;
 
@@ -843,10 +843,14 @@ export namespace QuotaService {
             LOGGER.debug(`Updating quota for guild: ${guild.name}`);
             for await (const quotaInfo of guildDoc.quotas.quotaInfo) {
                 const quotaChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(guild, quotaInfo.channel);
-                const role = await GuildFgrUtilities.fetchRole(guild, quotaInfo.roleId);
-
-                if (!role || !quotaChannel)
+                if (!quotaChannel) {
                     continue;
+                }
+                
+                const role = await GuildFgrUtilities.fetchRole(guild, quotaInfo.roleId);
+                if (!role) {
+                    continue;
+                }
 
                 LOGGER.debug(`Updating quota for role: ${role.name}`);
                 const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, quotaInfo.messageId);
@@ -884,6 +888,9 @@ export namespace QuotaService {
                 catch (e) {
                     LOGGER.debug(`Unable to update quota embed for role "${role.name}" in server "${guild.name}"\n${e}`);
                 }
+
+                // Small delay so we don't spam discord's API with requests.
+                await MiscUtilities.stopFor(2000);
             }
             LOGGER.debug(`Finished updating quota for guild: ${guild.name}`);
         }
