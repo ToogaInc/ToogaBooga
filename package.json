@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "compile": "tsc -p .",
-    "start": "npm run compile && node out/index.js",
+    "start": "npm run compile && nodemon out/index.js",
     "lint": "npx eslint src/**/*",
     "lint:fix": "npx eslint src/**/* --fix"
   },
