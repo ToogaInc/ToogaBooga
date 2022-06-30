@@ -1,6 +1,6 @@
 import { BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
-import { writeFileSync} from "fs";
+import { writeFileSync } from "fs";
 import { join } from "path";
 
 
