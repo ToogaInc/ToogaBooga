@@ -214,14 +214,22 @@ export namespace DungeonUtilities {
     export async function selectDungeon(ctx: ICommandContext, dungeons: IDungeonInfo[]): Promise<IDungeonInfo | null>{
         const selectMenus: MessageSelectMenu[] = [];
         const uIdentifier = StringUtil.generateRandomString(20);
+        const preselectedDungeon = ctx.interaction.options.getString("dungeon");
+
+        if (preselectedDungeon) {
+            const preselected = dungeons.find(x => x.codeName === preselectedDungeon);
+            if (preselected) {
+                return preselected;
+            }
+        }
         
-        const exaltDungeons:IDungeonInfo[] = [];
-        for(const dungeon of dungeons){
-            if(dungeon.dungeonCategory === "Exaltation Dungeons"){
+        const exaltDungeons: IDungeonInfo[] = [];
+        for (const dungeon of dungeons){
+            if (dungeon.dungeonCategory === "Exaltation Dungeons") {
                 exaltDungeons.push(dungeon);
             }
         }
-        if(exaltDungeons.length > 0){
+        if (exaltDungeons.length > 0){
             selectMenus.push(
                 new MessageSelectMenu()
                     .setCustomId(`${uIdentifier}_${5}`)
@@ -272,7 +280,7 @@ export namespace DungeonUtilities {
             );
         }
 
-        if(!(ctx.interaction.replied || ctx.interaction.deferred)){
+        if (!(ctx.interaction.replied || ctx.interaction.deferred)){
             await ctx.interaction.reply({
                 content: "Creating dungeon selection panel",
             });

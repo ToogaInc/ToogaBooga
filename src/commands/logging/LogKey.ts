@@ -9,6 +9,7 @@ import { MessageUtilities } from "../../utilities/MessageUtilities";
 import { LoggerManager } from "../../managers/LoggerManager";
 import { ButtonConstants } from "../../constants/ButtonConstants";
 import { MAPPED_AFK_CHECK_REACTIONS } from "../../constants/dungeons/MappedAfkCheckReactions";
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class LogKey extends BaseCommand {
     public constructor() {
@@ -28,6 +29,28 @@ export class LogKey extends BaseCommand {
                     prettyType: "Member Resolvable (ID, Mention, IGN)",
                     required: false,
                     example: ["@Console#8939", "123313141413155", "Darkmattr"]
+                },
+                {
+                    displayName: "Dungeon",
+                    argName: "dungeon",
+                    desc: "The key popped.",
+                    type: ArgumentType.String,
+                    restrictions: {
+                        stringChoices: [
+                            { name: "shield", value: "SHIELD_RUNE" },
+                            { name: "sword", value: "SWORD_RUNE" },
+                            { name: "helm", value: "HELM_RUNE" },
+                            { name: "inc", value: "WC_INC" },
+                            { name: "nest", value: "NEST_KEY" },
+                            { name: "shatts", value: "SHATTERS_KEY" },
+                            { name: "halls", value: "LOST_HALLS_KEY" },
+                            { name: "fungal", value: "FUNGAL_CAVERN_KEY" },
+                            { name: "vial", value: "VIAL_OF_PURE_DARKNESS" },
+                        ]
+                    },
+                    prettyType: "Key name (one word: shield, shatts, fungal)",
+                    required: true,
+                    example: ["o3", "shatt", "cult"]
                 },
                 {
                     displayName: "Keys",
@@ -63,6 +86,7 @@ export class LogKey extends BaseCommand {
     public async run(ctx: ICommandContext): Promise<number> {
         const mStr = ctx.interaction.options.getString("member", false);
         const keys = ctx.interaction.options.getInteger("keys", false) ?? 1;
+        const preselectedKey = ctx.interaction.options.getString("dungeon", false);
 
         if (keys === 0) {
             await ctx.interaction.reply({
@@ -80,6 +104,25 @@ export class LogKey extends BaseCommand {
             : ctx.member!;
         await MongoManager.addIdNameToIdNameCollection(resMember);
         await MongoManager.getOrCreateUserDoc(resMember.id);
+
+        const userToLogFor = resMember.id === ctx.user.id ? "yourself" : resMember.toString();
+
+        // Check if there is already a key pre-selected
+        if (preselectedKey) {
+            const preselectedDungeon = MAPPED_AFK_CHECK_REACTIONS[preselectedKey];
+            await LoggerManager.logKeyUse(resMember, preselectedKey, keys);
+
+            const keyResponse = await GlobalFgrUtilities.getNormalOrCustomEmoji(preselectedDungeon) 
+                ?? `\`${preselectedDungeon.name}\``;
+            
+
+            await ctx.interaction.reply({
+                ephemeral: true,
+                content: `You logged ${keys} ${keyResponse} for ${userToLogFor}`
+            });
+
+            return 0;
+        }
 
         // Grab all dungeons, ask which one to log
         const exaltKeys = Object.keys(MAPPED_AFK_CHECK_REACTIONS)
@@ -132,8 +175,8 @@ export class LogKey extends BaseCommand {
             );
         }
 
-        const userToLogFor = resMember.id === ctx.user.id ? "yourself" : resMember.toString();
         await ctx.interaction.reply({
+            ephemeral: true,
             embeds: [
                 MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
                     .setTitle("Manually Logging Keys")

@@ -1,4 +1,4 @@
-import { BaseCommand, ICommandContext } from "../BaseCommand";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
 import { MongoManager } from "../../managers/MongoManager";
 import { DungeonUtilities } from "../../utilities/DungeonUtilities";
 import {
@@ -12,7 +12,7 @@ export class StartHeadcount extends BaseCommand {
     public static readonly START_HC_CMD_CODE: string = "HEADCOUNT_START";
 
     public constructor() {
-        super({
+        const cmi: ICommandInfo = {
             cmdCode: StartHeadcount.START_HC_CMD_CODE,
             formalCommandName: "Start Headcount Command",
             botCommandName: "headcount",
@@ -21,20 +21,42 @@ export class StartHeadcount extends BaseCommand {
             generalPermissions: [],
             botPermissions: [],
             rolePermissions: ["RaidLeader", "AlmostRaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
-            argumentInfo: [],
+            argumentInfo: [
+                {
+                    displayName: "Dungeon",
+                    argName: "dungeon",
+                    desc: "The dungeon for this headcount.",
+                    type: ArgumentType.String,
+                    restrictions: {
+                        stringChoices: [
+                            { name: "o3", value: "ORYX_3" },
+                            { name: "shatts", value: "SHATTERS" },
+                            { name: "nest", value: "NEST" },
+                            { name: "cult", value: "CULTIST_HIDEOUT" },
+                            { name: "fungal", value: "FUNGAL_CAVERN" },
+                            { name: "void", value: "THE_VOID" }
+                        ]
+                    },
+                    prettyType: "Dungeon name (one word: o3, oryx, shatts, shatters)",
+                    required: false,
+                    example: ["o3", "shatts", "cult"]
+                }
+            ],
             guildOnly: true,
             botOwnerOnly: false,
             allowMultipleExecutionByUser: false,
             guildConcurrencyLimit: 2
-        });
+        };
+
+        super(cmi);
     }
 
     /**
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.deferReply({ ephemeral: true });
         ctx.guildDoc = await DungeonUtilities.fixDungeons(ctx.guildDoc!, ctx.guild!)!;
-        await ctx.interaction.deferReply();
         const allSections = MongoManager.getAllSections(ctx.guildDoc!);
         const allRolePerms = MongoManager.getAllConfiguredRoles(ctx.guildDoc!);
 
@@ -61,8 +83,8 @@ export class StartHeadcount extends BaseCommand {
             });
             return 0;
         }
-        // Step 4: Ask for the appropriate dungeon
 
+        // Step 3: Ask for the appropriate dungeon
         const dungeonToUse = await DungeonUtilities.selectDungeon(ctx, sectionToUse.dungeons);
         if (!dungeonToUse) {
             await ctx.interaction.editReply({
