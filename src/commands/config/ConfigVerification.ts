@@ -753,10 +753,9 @@ export class ConfigVerification extends BaseCommand {
                         }
                     );
 
-                    if (typeof r === "undefined")
+                    if (typeof r !== "number")
                         return { value: null, status: TimedStatus.TIMED_OUT };
-                    if (!r)
-                        break;
+                    
                     newVerifReqs.rank.checkThis = r > 0;
                     newVerifReqs.rank.minRank = r;
                     break;
@@ -783,10 +782,9 @@ export class ConfigVerification extends BaseCommand {
                         }
                     );
 
-                    if (typeof f === "undefined")
+                    if (typeof f !== "number")
                         return { value: null, status: TimedStatus.TIMED_OUT };
-                    if (!f)
-                        break;
+
                     newVerifReqs.aliveFame.checkThis = f > 0;
                     newVerifReqs.aliveFame.minFame = f;
                     break;
