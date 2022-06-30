@@ -1,0 +1,21 @@
+name: Compile
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "master", "main" ]
+
+jobs:
+  eslint:
+    name: Test code compilation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: npm install
+      - name: Compile Code
+        run: npm run compile
