@@ -84,15 +84,15 @@ export class ForceSync extends BaseCommand {
         });
 
         let retDocs = 0;
-        const ttlDocs = await allDocs.count();
+        const ttlDocs = await MongoManager.getIdNameCollection().estimatedDocumentCount();
         const namesUsed = new Set<string>();
 
         const initEmbed = (): MessageEmbed => {
             const rawPercent = retDocs / ttlDocs;
-            const roundedPercent = Math.floor(rawPercent * 10000) / 100;
+            const roundedPercent = Math.min(Math.floor(rawPercent * 10000) / 100, 100);
             embed.setDescription(
                 new StringBuilder()
-                    .append(`Retrieved \`${retDocs} / ${ttlDocs}\` Documents.`).appendLine()
+                    .append(`Retrieved \`${retDocs} / ${ttlDocs}\` Estimated Documents.`).appendLine()
                     .append(StringUtil.getEmojiProgressBar(20, rawPercent)).appendLine()
                     .append(`Percent Completed: \`${roundedPercent}\`%`)
                     .toString()
