@@ -44,9 +44,9 @@ export class ShowBlacklist extends BaseCommand {
             return -1;
         }
 
-        else if (blInfo.length > limit){
+        else if (blInfo.length === 0 ){
             await ctx.interaction.reply({
-                content: "List of blacklisted members is too large."
+                content: "No users have been blacklisted."
             });
             return -1;
         }
