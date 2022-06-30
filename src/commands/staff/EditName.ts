@@ -128,18 +128,18 @@ export class EditName extends BaseCommand {
             const otherEntry = lookup[0];
             await ctx.interaction.editReply({
                 content: `The IGN, \`${newIgn}\`, is already in use by another person with the Discord ID`
-                    + ` \`${otherEntry.currentDiscordId}\`. Please have an Officer/HRL resolve this.`,
+                    + ` \`${otherEntry.currentDiscordId}\`. Please have a developer resolve this.`,
                 components: []
             });
 
             return 0;
         }
 
+        const bestQuotaToAdd = QuotaManager.findBestQuotaToAdd(ctx.member!, ctx.guildDoc!, "NameAdjustment");
+
         // At this point, if there is an entry, it MUST either be in member's database entry
         // OR it MUST not exist at all
 
-
-        const bestQuotaToAdd = QuotaManager.findBestQuotaToAdd(ctx.member!, ctx.guildDoc!, "NameAdjustment");
         // Adding
         if (selectedOption.customId === addId) {
             const yesButton = AdvancedCollector.cloneButton(ButtonConstants.YES_BUTTON)
@@ -181,20 +181,29 @@ export class EditName extends BaseCommand {
             let changedNickname = false;
             // Make sure we can edit the name
             const allNicknames = member.nickname
-                ? UserManager.getAllNames(member.nickname, true)
+                ? UserManager.getAllNames(member.nickname)
                 : [];
-            if ((member.nickname?.length ?? 0) + newIgn.length + 4 <= 32
-                && !allNicknames.includes(newIgn.toLowerCase())) {
-                const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    if (!member.nickname) {
-                        await member.setNickname(newIgn);
-                        return true;
-                    }
-                    await member.setNickname(`${member.nickname} | ${newIgn}`);
-                    return true;
-                });
+            const prefix = member.nickname
+                ? UserManager.getPrefix(member.nickname)
+                : "";
 
-                changedNickname = !!res;
+            // If the IGN doesn't already exist in their nickname...
+            if (!allNicknames.map(x => x.toLowerCase()).includes(newIgn.toLowerCase())) {
+                const proposedName = prefix + allNicknames.concat(newIgn).join(" | ");
+                // and the new name doesn't exceed the nickname character limit
+                if (proposedName.length <= 32) {
+                    // Then change it.
+                    const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                        await member.setNickname(
+                            proposedName === member.user.username
+                                ? proposedName + "."
+                                : proposedName
+                        );
+                        return true;
+                    });
+
+                    changedNickname = !!res;
+                }
             }
 
             let finalStr = addedToDatabase
@@ -284,14 +293,14 @@ export class EditName extends BaseCommand {
 
         const [, newNameInDb] = names.get(newIgn.toLowerCase()) ?? [undefined, false];
 
-        const oldNameLC = res.values[0].toLowerCase();
-        const [origName, isInDb, wasNickname] = names.get(oldNameLC)!;
+        const oldNameLowercase = res.values[0].toLowerCase();
+        const [origName, isInDb, wasNickname] = names.get(oldNameLowercase)!;
         let updatedDb = false;
         // If the original name is in the database AND the new name is not the same as the old name AND the new name
         // is not already in the database
-        if (isInDb && newIgn.toLowerCase() !== oldNameLC && !newNameInDb) {
+        if (isInDb && newIgn.toLowerCase() !== oldNameLowercase && !newNameInDb) {
             const allNames = doc[0].rotmgNames;
-            const idx = allNames.findIndex(x => x.lowercaseIgn === oldNameLC);
+            const idx = allNames.findIndex(x => x.lowercaseIgn === oldNameLowercase);
             if (idx === -1) {
                 await ctx.interaction.editReply({
                     content: `An index database error occurred. IGN: ${newIgn}. ID: ${doc[0].currentDiscordId}`,
@@ -310,7 +319,7 @@ export class EditName extends BaseCommand {
                 },
                 $push: {
                     pastRealmNames: {
-                        ign: oldNameLC,
+                        ign: oldNameLowercase,
                         lowercaseIgn: origName,
                         toDate: Date.now()
                     }
@@ -320,12 +329,16 @@ export class EditName extends BaseCommand {
         }
 
         let updatedName = false;
-        const prefix = UserManager.getPrefix(member.nickname!);
-        const allNames = UserManager.getAllNames(member.nickname!);
-        if (wasNickname && (member.nickname?.length ?? 0) + newIgn.length + 4 <= 32
-            && !allNames.map(x => x.toLowerCase()).includes(newIgn.toLowerCase())) {
-            const allNames = member.nickname!.split("|");
-            const idx = allNames.findIndex(x => x.toLowerCase().includes(oldNameLC));
+        const prefix = member.nickname
+            ? UserManager.getPrefix(member.nickname)
+            : "";
+        const allNames = member.nickname
+            ? UserManager.getAllNames(member.nickname)
+            : [];
+
+        // If the new ign doesn't already exist in the list of all names currently in their nickname...
+        if (wasNickname && !allNames.map(x => x.toLowerCase()).includes(newIgn.toLowerCase())) {
+            const idx = allNames.findIndex(x => x.toLowerCase() === oldNameLowercase);
             if (idx === -1) {
                 await ctx.interaction.editReply({
                     content: `An index update error occurred. IGN: ${newIgn}. ID: ${doc[0].currentDiscordId}`,
@@ -336,15 +349,19 @@ export class EditName extends BaseCommand {
             }
 
             allNames[idx] = newIgn;
-            let newName = allNames.join(" | ");
-            if (prefix && !newName.startsWith(prefix)) {
-                newName = prefix + newName;
+            const newName = prefix + allNames.join(" | ");
+            // and the proposed name doesn't exceed the nickname character limit...
+            if (newName.length <= 32) {
+                const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await member.setNickname(
+                        newName === member.user.username
+                            ? newName + "."
+                            : newName
+                    );
+                    return true;
+                });
+                updatedName = !!res;
             }
-            const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                await member.setNickname(newName);
-                return true;
-            });
-            updatedName = !!res;
         }
 
         let tFinalStr = updatedDb
