@@ -200,6 +200,16 @@ export class RemoveName extends BaseCommand {
             }
 
             const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                if (newName.length > 0) {
+                    await member.setNickname(
+                        newName === member.user.username
+                            ? newName + "."
+                            : newName
+                    );
+
+                    return true;
+                }
+                // Here, we permit setting their nickname to their username if no names exist.
                 await member.setNickname(newName);
                 return true;
             });
