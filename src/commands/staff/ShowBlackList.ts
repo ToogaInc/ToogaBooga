@@ -42,12 +42,7 @@ export class ShowBlacklist extends BaseCommand {
             .appendLine()
             .toString();
 
-        if (!blInfo) {
-            await ctx.interaction.reply({
-                content: "Could not retrieve blacklisted member(s).",
-            });
-            return -1;
-        } else if (blInfo.length === 0) {
+        if (blInfo.length === 0) {
             await ctx.interaction.reply({
                 content: "No users have been blacklisted.",
             });
