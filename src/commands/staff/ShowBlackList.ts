@@ -28,8 +28,9 @@ export class ShowBlacklist extends BaseCommand {
     public async run(ctx: ICommandContext): Promise<number> {
         const limit = 4096;
         const blInfo = ctx.guildDoc?.moderation.blacklistedUsers
-        .filter(x => !x.realmName.lowercaseIgn.includes("a"))
-        
+        // add pages check find user and discord docs then create pr
+        console.log(blInfo)
+
         if (!blInfo) {
             await ctx.interaction.reply({
                 content: "Could not retrieve blacklisted members."
@@ -47,10 +48,10 @@ export class ShowBlacklist extends BaseCommand {
         const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
             .setTitle("Blacklisted users: ")
             .setDescription(
-                new StringBuilder()
-                    .append(`- Blacklisted Members: ${blInfo}`).appendLine()
-                    .toString()
-            );
+                "A list of all currently blacklisted users"
+            )
+            .addField("blacklisted user(s) realmname:", blInfo.map(x => `
+            ___${x.realmName.lowercaseIgn}___`).join("\n"))
         await ctx.interaction.reply({
             embeds: [embed]
         });
