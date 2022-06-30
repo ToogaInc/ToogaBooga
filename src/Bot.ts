@@ -146,6 +146,7 @@ export class Bot {
             new Cmds.EditName(),
             new Cmds.RemoveName(),
             new Cmds.CheckBlacklist(),
+            new Cmds.ShowBlacklist(),
             new Cmds.ManualVerifyMain(),
             new Cmds.ManualVerifySection(),
             new Cmds.RemovePunishment()

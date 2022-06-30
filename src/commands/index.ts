@@ -23,6 +23,7 @@ export * from "./staff/ManualVerifyMain";
 export * from "./staff/ManualVerifySection";
 export * from "./staff/EditName";
 export * from "./staff/RemoveName";
+export * from "./staff/ShowBlacklist";
 export * from "./staff/Parse";
 export * from "./staff/Yoink";
 export * from "./staff/Clean";
