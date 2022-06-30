@@ -36,9 +36,6 @@ export class ShowBlacklist extends BaseCommand {
             writeFileSync(join(__dirname, "blackListedUsers.txt"), blInfo, {
                 flag: "w",
             });
-                
-            const contents = readFileSync(join(__dirname, "blackListedUsers.txt"), "utf-8");
-            console.log(contents);
         } catch(err){
             console.error(err);
             return -1;
@@ -65,8 +62,8 @@ export class ShowBlacklist extends BaseCommand {
             );
         
         await ctx.interaction.reply({
+            files: [`${__dirname}/blackListedUsers.txt`],
             embeds: [embed],
-            files: [`${__dirname}/blackListedUsers.txt`]
         });
 
         // try {
