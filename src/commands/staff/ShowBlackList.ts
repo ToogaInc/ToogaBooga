@@ -27,7 +27,6 @@ export class ShowBlacklist extends BaseCommand {
      */
     //add command to index of commands and bot.ts
     public async run(ctx: ICommandContext): Promise<number> {
-        const limit = 4096;
         const blInfo = ctx.guildDoc!.moderation.blacklistedUsers.map(x => ` Realm Name: ${x.realmName.lowercaseIgn}` + 
         ` - Reason: ${x.reason}`).join("\n");
 
