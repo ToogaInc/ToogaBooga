@@ -2,7 +2,6 @@ import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../Bas
 import { MongoManager } from "../../managers/MongoManager";
 import { HeadcountInstance } from "../../instances/HeadcountInstance";
 import { RaidInstance } from "../../instances/RaidInstance";
-import { SlashCommandBuilder } from "@discordjs/builders";
 import { DungeonUtilities } from "../../utilities/DungeonUtilities";
 import {
     DungeonSelectionType,
@@ -27,6 +26,25 @@ export class StartAfkCheck extends BaseCommand {
             rolePermissions: ["RaidLeader", "AlmostRaidLeader", "HeadRaidLeader", "VeteranRaidLeader"],
             argumentInfo: [
                 {
+                    displayName: "Dungeon",
+                    argName: "dungeon",
+                    desc: "The dungeon for this raid.",
+                    type: ArgumentType.String,
+                    restrictions: {
+                        stringChoices: [
+                            { name: "o3", value: "ORYX_3" },
+                            { name: "shatts", value: "SHATTERS" },
+                            { name: "nest", value: "NEST" },
+                            { name: "cult", value: "CULTIST_HIDEOUT" },
+                            { name: "fungal", value: "FUNGAL_CAVERN" },
+                            { name: "void", value: "THE_VOID" },
+                        ]
+                    },
+                    prettyType: "Dungeon name (one word: o3, shatts, cult)",
+                    required: false,
+                    example: ["o3", "shatt", "cult"]
+                },
+                {
                     displayName: "Location",
                     argName: "location",
                     desc: "The location for this raid.",
@@ -42,24 +60,15 @@ export class StartAfkCheck extends BaseCommand {
             guildConcurrencyLimit: 2
         };
 
-        const scb = new SlashCommandBuilder()
-            .setName(cmi.botCommandName)
-            .setDescription(cmi.description);
-        scb.addStringOption(o => o
-            .setName("location")
-            .setDescription("The location for this raid. You can change this later.")
-            .setRequired(false)
-        );
-
-        super(cmi, scb);
+        super(cmi);
     }
 
     /**
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        await ctx.interaction.deferReply({ ephemeral: true });
         ctx.guildDoc = await DungeonUtilities.fixDungeons(ctx.guildDoc!, ctx.guild!)!;
-        await ctx.interaction.deferReply();
         const location = ctx.interaction.options.getString("location");
         const allSections = MongoManager.getAllSections(ctx.guildDoc!);
         const allRolePerms = MongoManager.getAllConfiguredRoles(ctx.guildDoc!);

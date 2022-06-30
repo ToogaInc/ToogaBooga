@@ -58,6 +58,25 @@ export class LogRun extends BaseCommand {
                     prettyType: "Integer",
                     required: false,
                     example: ["5"]
+                },
+                {
+                    displayName: "Dungeon",
+                    argName: "dungeon",
+                    desc: "The dungeon to log as a complete/assist/fail.",
+                    type: ArgumentType.String,
+                    restrictions: {
+                        stringChoices: [
+                            { name: "o3", value: "ORYX_3" },
+                            { name: "shatts", value: "SHATTERS" },
+                            { name: "nest", value: "NEST" },
+                            { name: "cult", value: "CULTIST_HIDEOUT" },
+                            { name: "fungal", value: "FUNGAL_CAVERN" },
+                            { name: "void", value: "THE_VOID" },
+                        ]
+                    },
+                    prettyType: "Dungeon name (one word: o3, shatts, nest)",
+                    required: false,
+                    example: ["o3"]
                 }
             ],
             botPermissions: [],
@@ -132,6 +151,7 @@ export class LogRun extends BaseCommand {
         }
         const uniqueId = StringUtil.generateRandomString(20);
         await ctx.interaction.reply({
+            ephemeral: true,
             embeds: [
                 MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
                     .setTitle("Manually Logging Runs")
@@ -226,7 +246,7 @@ export class LogRun extends BaseCommand {
         await ctx.interaction.editReply({
             components: [],
             content: new StringBuilder()
-                .append(`Logging completed! As a reminder, you logged the following \`${dungeonInfo.dungeonName}\``)
+                .append(`Logging completed! As a reminder, you logged the following \`${dungeonInfo.dungeonName}\` `)
                 .append("runs for ").append(memberToLogAs.id === ctx.user.id ? "yourself" : memberToLogAs.toString())
                 .append(":").appendLine()
                 .append(`- \`${completedRuns}\` Completions.`).appendLine()
