@@ -1,5 +1,4 @@
 import { BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
-import { MessageUtilities } from "../../utilities/MessageUtilities";
 import { writeFileSync } from "fs";
 import { join } from "path";
 
@@ -55,25 +54,9 @@ export class ShowBlacklist extends BaseCommand {
             return -1;
         }
         
-        const embed = MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
-            .setTitle("Blacklisted users: ")
-            .setDescription(
-                "A list of all currently blacklisted users"
-            );
-        
         await ctx.interaction.reply({
             files: [`${__dirname}/blackListedUsers.txt`],
-            embeds: [embed],
         });
-
-        // try {
-        //     fs.unlinkSync("./blacklistedUsers.txt");
-        //     console.log("File removed:", "./blacklistedUsers.txt");
-        //   } catch (err) {
-        //     console.log("NOT FINDING IT OR TRYING TO DELTE BEFORE CREATED")
-        //     console.error(err);
-        //     return -1
-        //   }
         return 0;
     }
 }
