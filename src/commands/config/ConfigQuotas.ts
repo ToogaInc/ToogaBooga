@@ -661,13 +661,9 @@ export class ConfigQuotas extends BaseCommand {
                         }
                     );
 
-                    if (typeof n === "undefined") {
+                    if (typeof n !== "number") {
                         await this.dispose(ctx, botMsg);
                         return;
-                    }
-
-                    if (!n) {
-                        break;
                     }
 
                     quotaToEdit.pointsNeeded = n;
@@ -1120,7 +1116,7 @@ export class ConfigQuotas extends BaseCommand {
                 targetChannel: ctx.channel
             }, AdvancedCollector.getNumberPrompt(ctx.channel, { min: 1, max: allDungeons.length + 1 }));
 
-            if (!resNum)
+            if (resNum === null || typeof resNum === "undefined")
                 return { value: null, status: TimedStatus.TIMED_OUT };
             if (resNum instanceof MessageComponentInteraction)
                 return { value: null, status: TimedStatus.CANCELED };
@@ -1156,7 +1152,7 @@ export class ConfigQuotas extends BaseCommand {
             targetChannel: ctx.channel
         }, AdvancedCollector.getNumberPrompt(ctx.channel, { min: 1, max: 500 }));
 
-        if (!resPts)
+        if (resPts === null || typeof resPts === "undefined")
             return { value: null, status: TimedStatus.TIMED_OUT };
         if (resPts instanceof MessageComponentInteraction)
             return { value: null, status: TimedStatus.CANCELED };

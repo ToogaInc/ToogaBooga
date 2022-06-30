@@ -355,13 +355,10 @@ export class ConfigAfkCheck extends BaseCommand {
                         }
                     );
 
-                    if (typeof v === "undefined") {
+                    if (typeof v !== "number") {
                         await this.dispose(ctx, botMsg);
                         return;
                     }
-
-                    if (!v)
-                        break;
 
                     newAfkCheckProps.vcLimit = v;
                     break;
@@ -391,13 +388,10 @@ export class ConfigAfkCheck extends BaseCommand {
                         }
                     );
 
-                    if (typeof p === "undefined") {
+                    if (typeof p !== "number") {
                         await this.dispose(ctx, botMsg);
                         return;
                     }
-
-                    if (!p)
-                        break;
 
                     newAfkCheckProps.pointUserLimit = p;
                     break;
@@ -428,13 +422,10 @@ export class ConfigAfkCheck extends BaseCommand {
                         }
                     );
 
-                    if (typeof n === "undefined") {
+                    if (typeof n !== "number") {
                         await this.dispose(ctx, botMsg);
                         return;
                     }
-
-                    if (!n)
-                        break;
 
                     newAfkCheckProps.nitroEarlyLocationLimit = n;
                     break;
@@ -574,13 +565,10 @@ export class ConfigAfkCheck extends BaseCommand {
                         }
                     );
 
-                    if (typeof e === "undefined") {
+                    if (typeof e !== "number") {
                         await this.dispose(ctx, botMsg);
                         return;
                     }
-
-                    if (!e)
-                        break;
 
                     newAfkCheckProps.afkCheckTimeout = e;
                     break;
@@ -629,7 +617,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         }
                     );
 
-                    if (typeof n === "undefined" || typeof n !== "number") {
+                    if (typeof n !== "number") {
                         await this.dispose(ctx, botMsg);
                         return;
                     }
