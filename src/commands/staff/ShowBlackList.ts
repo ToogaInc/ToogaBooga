@@ -1,7 +1,7 @@
 import { BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
-import fs, { promises as fsPromises } from 'fs'
-import { join } from 'path';
+import { writeFileSync, readFileSync } from "fs";
+import { join } from "path";
 
 
 export class ShowBlacklist extends BaseCommand {
@@ -29,18 +29,19 @@ export class ShowBlacklist extends BaseCommand {
     //add command to index of commands and bot.ts
     public async run(ctx: ICommandContext): Promise<number> {
         const limit = 4096;
-        const blInfo = ctx.guildDoc!.moderation.blacklistedUsers.map(x => `
-        ___${x.realmName.lowercaseIgn}___`).join("\n")
+        const blInfo = ctx.guildDoc!.moderation.blacklistedUsers.map(x => ` Realm Name: ${x.realmName.lowercaseIgn}` + 
+        ` - Reason: ${x.reason}`).join("\n");
         
-        async () => {
-            try{
-                await fsPromises.writeFile(join(__dirname, "blackListedUsers.txt"), blInfo,{
-                    flag: 'w',
-                  });
-            } catch(err){
-                console.error(err)
-                return -1
-            }
+        try{
+            writeFileSync(join(__dirname, "blackListedUsers.txt"), blInfo, {
+                flag: "w",
+            });
+                
+            const contents = readFileSync(join(__dirname, "blackListedUsers.txt"), "utf-8");
+            console.log(contents);
+        } catch(err){
+            console.error(err);
+            return -1;
         }
 
         if (!blInfo) {
@@ -61,20 +62,21 @@ export class ShowBlacklist extends BaseCommand {
             .setTitle("Blacklisted users: ")
             .setDescription(
                 "A list of all currently blacklisted users"
-            )
-            .addField("blacklisted user(s) realmname:", "")
+            );
         
         await ctx.interaction.reply({
-            embeds: [embed], files: ["./blackListedUsers.txt"]
+            embeds: [embed],
+            files: [`${__dirname}/blackListedUsers.txt`]
         });
 
-        try {
-            fs.unlinkSync("./blacklistedUsers.txt");
-            console.log("File removed:", "./blacklistedUsers.txt");
-          } catch (err) {
-            console.error(err);
-            return -1
-          }
+        // try {
+        //     fs.unlinkSync("./blacklistedUsers.txt");
+        //     console.log("File removed:", "./blacklistedUsers.txt");
+        //   } catch (err) {
+        //     console.log("NOT FINDING IT OR TRYING TO DELTE BEFORE CREATED")
+        //     console.error(err);
+        //     return -1
+        //   }
         return 0;
     }
 }
