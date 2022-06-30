@@ -1,6 +1,6 @@
 import { BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
-import { writeFileSync } from "fs";
-import { join } from "path";
+import { MessageAttachment, } from "discord.js";
+import { StringBuilder } from "../../utilities/StringBuilder";
 
 
 export class ShowBlacklist extends BaseCommand {
@@ -30,15 +30,12 @@ export class ShowBlacklist extends BaseCommand {
         const limit = 4096;
         const blInfo = ctx.guildDoc!.moderation.blacklistedUsers.map(x => ` Realm Name: ${x.realmName.lowercaseIgn}` + 
         ` - Reason: ${x.reason}`).join("\n");
-        
-        try{
-            writeFileSync(join(__dirname, "blackListedUsers.txt"), blInfo, {
-                flag: "w",
-            });
-        } catch(err){
-            console.error(err);
-            return -1;
-        }
+
+        const usersBf = new StringBuilder()
+            .append("================= BlackListed Users =================").appendLine()
+            .append(blInfo).appendLine()
+            .append("======================= END =========================").appendLine()
+            .toString();
 
         if (!blInfo) {
             await ctx.interaction.reply({
@@ -53,9 +50,11 @@ export class ShowBlacklist extends BaseCommand {
             });
             return -1;
         }
-        
+      
         await ctx.interaction.reply({
-            files: [`${__dirname}/blackListedUsers.txt`],
+            files: [
+                new MessageAttachment(Buffer.from(usersBf),"blackListedUsers.txt")
+            ],
         });
         return 0;
     }
