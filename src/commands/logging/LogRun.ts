@@ -151,7 +151,6 @@ export class LogRun extends BaseCommand {
         }
         const uniqueId = StringUtil.generateRandomString(20);
         await ctx.interaction.reply({
-            ephemeral: true,
             embeds: [
                 MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
                     .setTitle("Manually Logging Runs")
@@ -187,7 +186,7 @@ export class LogRun extends BaseCommand {
             duration: 1.5 * 60 * 1000
         }, uniqueId);
 
-        if(!confirmation || confirmation.customId !== `${uniqueId}_${ButtonConstants.CONTINUE_ID}`){
+        if (!confirmation || confirmation.customId !== `${uniqueId}_${ButtonConstants.CONTINUE_ID}`) {
             await ctx.interaction.editReply({
                 components: [],
                 content: "You either did not select a dungeon to log or canceled this process.",
@@ -199,7 +198,7 @@ export class LogRun extends BaseCommand {
 
         // Grab all dungeons, ask which one to log
         const dungeonInfo = await DungeonUtilities.selectDungeon(ctx, DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons));
-        if(!dungeonInfo){
+        if (!dungeonInfo) {
             await ctx.interaction.editReply({
                 components: [],
                 content: "You either did not select a dungeon to log or canceled this process.",

@@ -112,13 +112,12 @@ export class LogKey extends BaseCommand {
             const preselectedDungeon = MAPPED_AFK_CHECK_REACTIONS[preselectedKey];
             await LoggerManager.logKeyUse(resMember, preselectedKey, amount);
 
-            const keyResponse = await GlobalFgrUtilities.getNormalOrCustomEmoji(preselectedDungeon) 
+            const keyResponse = await GlobalFgrUtilities.getNormalOrCustomEmoji(preselectedDungeon)
                 ?? `\`${preselectedDungeon.name}\``;
-            
+
 
             await ctx.interaction.reply({
-                ephemeral: true,
-                content: `You logged ${amount} ${keyResponse} for ${userToLogFor}`
+                content: `You logged ${amount} ${keyResponse} for ${userToLogFor}.`
             });
 
             return 0;
@@ -130,15 +129,15 @@ export class LogKey extends BaseCommand {
             .map(x => {
                 return { key: x, val: MAPPED_AFK_CHECK_REACTIONS[x] };
             });
-        
+
         const otherKeys = Object.keys(MAPPED_AFK_CHECK_REACTIONS)
-            .filter(x => !MAPPED_AFK_CHECK_REACTIONS[x].isExaltKey && 
+            .filter(x => !MAPPED_AFK_CHECK_REACTIONS[x].isExaltKey &&
                 (MAPPED_AFK_CHECK_REACTIONS[x].type === "KEY" || MAPPED_AFK_CHECK_REACTIONS[x].type === "NM_KEY"))
             .map(x => {
                 return { key: x, val: MAPPED_AFK_CHECK_REACTIONS[x] };
             });
-        
-            
+
+
         const subsets = ArrayUtilities.breakArrayIntoSubsets(otherKeys, 25);
         const selectMenus: MessageSelectMenu[] = [];
         const uniqueId = StringUtil.generateRandomString(20);
@@ -157,13 +156,14 @@ export class LogKey extends BaseCommand {
                     };
                 }))
         );
+
         for (let i = 0; i < Math.min(4, subsets.length); i++) {
             selectMenus.push(
                 new MessageSelectMenu()
                     .setCustomId(`${uniqueId}_${i}`)
                     .setMaxValues(1)
                     .setMinValues(1)
-                    .setPlaceholder(`All Dungeon Keys ${i+1}`)
+                    .setPlaceholder(`All Dungeon Keys ${i + 1}`)
                     .setOptions(subsets[i].map(y => {
                         return {
                             label: y.val.name,
@@ -176,7 +176,6 @@ export class LogKey extends BaseCommand {
         }
 
         await ctx.interaction.reply({
-            ephemeral: true,
             embeds: [
                 MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
                     .setTitle("Manually Logging Keys")
