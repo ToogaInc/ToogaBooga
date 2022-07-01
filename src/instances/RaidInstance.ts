@@ -2267,7 +2267,7 @@ export class RaidInstance {
         }
 
         await this._eliteLocChannel.send({
-            content: `@here Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${
+            content: `Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${
                 this._location ? this._location : "Not Set"
             }\``,
         });
