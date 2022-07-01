@@ -31,8 +31,17 @@ export class LogKey extends BaseCommand {
                     example: ["@Console#8939", "123313141413155", "Darkmattr"]
                 },
                 {
-                    displayName: "Dungeon",
-                    argName: "dungeon",
+                    displayName: "Amount",
+                    argName: "amount",
+                    desc: "The number of keys popped. Default is 1.",
+                    type: ArgumentType.Integer,
+                    prettyType: "Integer",
+                    required: false,
+                    example: ["5"]
+                },
+                {
+                    displayName: "Key",
+                    argName: "key",
                     desc: "The key popped.",
                     type: ArgumentType.String,
                     restrictions: {
@@ -49,18 +58,9 @@ export class LogKey extends BaseCommand {
                         ]
                     },
                     prettyType: "Key name (one word: shield, shatts, fungal)",
-                    required: true,
+                    required: false,
                     example: ["o3", "shatt", "cult"]
                 },
-                {
-                    displayName: "Keys",
-                    argName: "keys",
-                    desc: "The number of keys popped. Default is 1.",
-                    type: ArgumentType.Integer,
-                    prettyType: "Integer",
-                    required: false,
-                    example: ["5"]
-                }
             ],
             botPermissions: [],
             rolePermissions: [
@@ -85,10 +85,10 @@ export class LogKey extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const mStr = ctx.interaction.options.getString("member", false);
-        const keys = ctx.interaction.options.getInteger("keys", false) ?? 1;
-        const preselectedKey = ctx.interaction.options.getString("dungeon", false);
+        const amount = ctx.interaction.options.getInteger("amount", false) ?? 1;
+        const preselectedKey = ctx.interaction.options.getString("key", false);
 
-        if (keys === 0) {
+        if (amount === 0) {
             await ctx.interaction.reply({
                 ephemeral: true,
                 content: "You aren't logging anything."
@@ -110,7 +110,7 @@ export class LogKey extends BaseCommand {
         // Check if there is already a key pre-selected
         if (preselectedKey) {
             const preselectedDungeon = MAPPED_AFK_CHECK_REACTIONS[preselectedKey];
-            await LoggerManager.logKeyUse(resMember, preselectedKey, keys);
+            await LoggerManager.logKeyUse(resMember, preselectedKey, amount);
 
             const keyResponse = await GlobalFgrUtilities.getNormalOrCustomEmoji(preselectedDungeon) 
                 ?? `\`${preselectedDungeon.name}\``;
@@ -118,7 +118,7 @@ export class LogKey extends BaseCommand {
 
             await ctx.interaction.reply({
                 ephemeral: true,
-                content: `You logged ${keys} ${keyResponse} for ${userToLogFor}`
+                content: `You logged ${amount} ${keyResponse} for ${userToLogFor}`
             });
 
             return 0;
@@ -180,7 +180,7 @@ export class LogKey extends BaseCommand {
             embeds: [
                 MessageUtilities.generateBlankEmbed(ctx.guild!, "RED")
                     .setTitle("Manually Logging Keys")
-                    .setDescription(`You are logging \`${keys}\` key(s) for ${userToLogFor}.`)
+                    .setDescription(`You are logging \`${amount}\` key(s) for ${userToLogFor}.`)
                     .addField(
                         "Confirmation",
                         "If the above is correct, please select the key from the below list to complete this"
@@ -215,12 +215,12 @@ export class LogKey extends BaseCommand {
         await LoggerManager.logKeyUse(
             resMember,
             selectedKey.values[0],
-            keys
+            amount
         );
 
         await ctx.interaction.editReply({
             components: [],
-            content: `Logging completed! As a reminder, you are logging \`${keys}\` key(s) for ${userToLogFor}.`,
+            content: `Logging completed! As a reminder, you are logging \`${amount}\` key(s) for ${userToLogFor}.`,
             embeds: []
         });
 
