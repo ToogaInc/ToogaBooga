@@ -220,7 +220,10 @@ export async function askInput<T>(ctx: ICommandContext, botMsg: Message, msgOpti
     });
 
     while (true) {
-        const selectedValue = await AdvancedCollector.startDoubleCollector<T>({
+        // Because values like "0" are considered to be false values, even though they could be valid, we can just
+        // return an object so that something like the first if-statement directly after this expression doesn't
+        // run if a false value is given.
+        const selectedValue = await AdvancedCollector.startDoubleCollector<{val: T}>({
             acknowledgeImmediately: true,
             cancelFlag: null,
             clearInteractionsAfterComplete: false,
@@ -232,7 +235,9 @@ export async function askInput<T>(ctx: ICommandContext, botMsg: Message, msgOpti
             oldMsg: botMsg
         }, async m => {
             const v = await validator(m);
-            return v ? v : undefined;
+            return typeof v !== "undefined" && v !== null
+                ? { val: v }
+                : undefined;
         });
 
         if (!selectedValue) {
@@ -244,15 +249,8 @@ export async function askInput<T>(ctx: ICommandContext, botMsg: Message, msgOpti
         }
 
         // Is of type T
-        if (selectedValue)
-            return selectedValue;
-
-        // Failed = loop back to beginning and ask again
-        ctx.channel.send({
-            content: "Your input was invalid. Please refer to the directions above and try again."
-        }).then(async m => {
-            await MiscUtilities.stopFor(5 * 1000);
-            m.delete().catch();
-        });
+        if (selectedValue) {
+            return selectedValue.val;
+        }
     }
 }

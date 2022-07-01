@@ -56,7 +56,7 @@ export class CheckBlacklist extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const ignToLookUp = ctx.interaction.options.getString("name", true);
-        const blInfo = ctx.guildDoc?.moderation.blacklistedUsers
+        const blInfo = ctx.guildDoc!.moderation.blacklistedUsers
             .find(x => x.realmName.lowercaseIgn === ignToLookUp.toLowerCase());
         if (!blInfo) {
             await ctx.interaction.reply({
