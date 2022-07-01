@@ -31,7 +31,16 @@ export class LogKey extends BaseCommand {
                     example: ["@Console#8939", "123313141413155", "Darkmattr"]
                 },
                 {
-                    displayName: "Dungeon",
+                    displayName: "Amount",
+                    argName: "keys",
+                    desc: "The number of keys popped. Default is 1.",
+                    type: ArgumentType.Integer,
+                    prettyType: "Integer",
+                    required: false,
+                    example: ["5"]
+                },
+                {
+                    displayName: "Key",
                     argName: "dungeon",
                     desc: "The key popped.",
                     type: ArgumentType.String,
@@ -49,18 +58,9 @@ export class LogKey extends BaseCommand {
                         ]
                     },
                     prettyType: "Key name (one word: shield, shatts, fungal)",
-                    required: true,
+                    required: false,
                     example: ["o3", "shatt", "cult"]
                 },
-                {
-                    displayName: "Keys",
-                    argName: "keys",
-                    desc: "The number of keys popped. Default is 1.",
-                    type: ArgumentType.Integer,
-                    prettyType: "Integer",
-                    required: false,
-                    example: ["5"]
-                }
             ],
             botPermissions: [],
             rolePermissions: [
