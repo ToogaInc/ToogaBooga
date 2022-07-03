@@ -165,6 +165,24 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "DPS (4/4) Wizard",
         isExaltKey: false
     },
+    DPS_RANGED: {
+        type: "CLASS",
+        emojiInfo: {
+            isCustom: true,
+            identifier: EmojiConstants.DPS_RANGED
+        },
+        name: "DPS (Ranged)",
+        isExaltKey: false
+    },
+    DPS_GENERAL: {
+        type: "CLASS",
+        emojiInfo: {
+            isCustom: true,
+            identifier: EmojiConstants.DPS_GENERAL
+        },
+        name: "DPS",
+        isExaltKey: false
+    },
 
 
     CURSE: {

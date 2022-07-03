@@ -102,6 +102,8 @@ export namespace EmojiConstants {
     export const BARD: string = "714015181679624203";
 
     export const DPS_WIZARD: string = "929851498442133554";
+    export const DPS_RANGED: string = "992973584182022174";
+    export const DPS_GENERAL: string = "992973560068980858";
 
     // status effects
     export const PARALYZE: string = "678792068906352642";
