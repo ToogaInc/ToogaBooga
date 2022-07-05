@@ -1,4 +1,4 @@
-import { CommandInteraction, Interaction, Message, NewsChannel } from "discord.js";
+import { CommandInteraction, Interaction, Message } from "discord.js";
 import { Bot } from "../Bot";
 import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
 import { MongoManager } from "../managers/MongoManager";
@@ -183,7 +183,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
 
     // Get corresponding channel.
     const channel = interaction.channel;
-    if (!channel || !channel.isText() || channel instanceof NewsChannel) return;
+    if (!channel || !channel.isText()) return;
     const resolvedChannel = await channel.fetch();
     const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
 
