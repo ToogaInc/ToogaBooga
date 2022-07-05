@@ -870,11 +870,16 @@ export namespace QuotaService {
                 LOGGER.debug(`Updating quota for role: ${role.name}`);
                 const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, quotaInfo.messageId);
                 if (!quotaMsg) {
-                    const newMsg: Message = await quotaChannel.send({
+                    const newMsg = await GlobalFgrUtilities.sendMsg(quotaChannel, {
                         embeds: [
                             (await QuotaManager.getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo))!
                         ]
                     });
+
+                    // For now, skip
+                    if (!newMsg) {
+                        continue;
+                    }
 
                     newMsg.pin().catch();
 
@@ -899,17 +904,12 @@ export namespace QuotaService {
                     continue;
                 }
 
-                try {
-                    await quotaMsg.edit({
-                        embeds: [newEmbed]
-                    });
-                    LOGGER.debug(`Finished updating quota for role: ${role.name}`);
-                }
-                catch (e) {
-                    LOGGER.debug(`Unable to update quota embed for role "${role.name}" in server "${guild.name}"\n${e}`);
-                }
+                await MessageUtilities.tryEdit(quotaMsg, {
+                    embeds: [newEmbed]
+                });
 
-                // Small delay so we don't spam discord's API with requests.
+                LOGGER.debug(`Finished updating quota for role: ${role.name}`);
+                // Small delay, so we don't spam discord's API with requests.
                 await MiscUtilities.stopFor(2000);
             }
             LOGGER.debug(`Finished updating quota for guild: ${guild.name}`);
