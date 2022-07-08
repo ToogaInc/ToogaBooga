@@ -1,5 +1,4 @@
 import { StringBuilder } from "../utilities/StringBuilder";
-import { TimeUtilities } from "../utilities/TimeUtilities";
 import { Logger } from "../utilities/Logger";
 
 const LOGGER: Logger = new Logger(__filename, false);
