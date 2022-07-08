@@ -11,6 +11,9 @@ import {
 import { MiscUtilities } from "../MiscUtilities";
 import { Bot } from "../../Bot";
 import { IReactionInfo } from "../../definitions";
+import { Logger } from "../Logger";
+
+const LOGGER: Logger = new Logger(__filename, false);
 
 /**
  * A set of functions that essentially "abstract" away the client methods. This was created so that if discord.js
@@ -28,6 +31,8 @@ export namespace GlobalFgrUtilities {
         try {
             return await targetUser.createDM();
         } catch (e) {
+            // Respond in ephemeral reply if they don't have DMs enabled & tell them
+            LOGGER.error(e);
             return null;
         }
     }
@@ -67,6 +72,7 @@ export namespace GlobalFgrUtilities {
         try {
             return await Bot.BotInstance.client.guilds.fetch(guildId);
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }
@@ -125,6 +131,7 @@ export namespace GlobalFgrUtilities {
         try {
             return Bot.BotInstance.client.users.fetch(targetId);
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }
@@ -143,6 +150,7 @@ export namespace GlobalFgrUtilities {
         try {
             return await channel.send(msgOptions);
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }
@@ -157,6 +165,7 @@ export namespace GlobalFgrUtilities {
         try {
             return func();
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }
@@ -171,6 +180,7 @@ export namespace GlobalFgrUtilities {
         try {
             return await func();
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }

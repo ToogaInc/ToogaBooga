@@ -3,6 +3,7 @@ export * from "./InteractionEvent";
 export * from "./ReadyEvent";
 export * from "./VoiceStateEvent";
 export * from "./ErrorEvent";
+export * from "./RatelimitEvent";
 export * from "./MessageEvent";
 export * from "./ThreadUpdateEvent";
 export * from "./ChannelDeleteEvent";

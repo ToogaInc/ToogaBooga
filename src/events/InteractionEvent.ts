@@ -14,6 +14,9 @@ import { MessageConstants } from "../constants/MessageConstants";
 import { StringBuilder } from "../utilities/StringBuilder";
 import { ModmailManager } from "../managers/ModmailManager";
 import { ButtonConstants } from "../constants/ButtonConstants";
+import { Logger } from "../utilities/Logger";
+
+const LOGGER: Logger = new Logger(__filename, false);
 
 /**
  * Acknowledges a slash command.
@@ -211,7 +214,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         .find(x => x.manualVerifyMsgId === message.id && x.manualVerifyChannelId === channel.id);
 
     if (manualVerifyChannels) {
-        interaction.deferUpdate().catch();
+        interaction.deferUpdate().catch(LOGGER.error);
         VerifyManager.acknowledgeManualVerifyRes(manualVerifyChannels, resolvedMember, interaction.customId, message)
             .then();
         return;
@@ -241,7 +244,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
 
     // Check modmail
     if (channel.id === guildDoc.channels.modmailChannelId) {
-        interaction.deferUpdate().catch();
+        interaction.deferUpdate().catch(LOGGER.error);
         if (!(interaction.message instanceof Message) || interaction.message.embeds.length === 0) {
             return;
         }

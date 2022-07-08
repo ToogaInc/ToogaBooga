@@ -117,7 +117,7 @@ export class ConfigAfkCheck extends BaseCommand {
         });
 
         if (!selected || !selected.isSelectMenu()) {
-            this.dispose(ctx, botMsg).catch();
+            this.dispose(ctx, botMsg);
             return;
         }
 

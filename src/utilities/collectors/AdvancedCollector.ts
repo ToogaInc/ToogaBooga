@@ -24,6 +24,9 @@ import { GuildFgrUtilities } from "../fetch-get-request/GuildFgrUtilities";
 import { EmojiConstants } from "../../constants/EmojiConstants";
 import { GlobalFgrUtilities } from "../fetch-get-request/GlobalFgrUtilities";
 import { StringUtil } from "../StringUtilities";
+import { Logger } from "../Logger";
+
+const LOGGER: Logger = new Logger(__filename, false);
 
 /**
  * A series of helpful collector functions.
@@ -131,7 +134,7 @@ export namespace AdvancedCollector {
 
             msgCollector.on("collect", async (c: Message) => {
                 if (options.deleteResponseMessage)
-                    await c.delete().catch();
+                    await c.delete().catch(LOGGER.error);
 
                 if (cancelFlag && cancelFlag.toLowerCase() === c.content.toLowerCase())
                     return resolve(null);
@@ -148,7 +151,7 @@ export namespace AdvancedCollector {
 
             msgCollector.on("end", (c, r) => {
                 if (options.deleteBaseMsgAfterComplete && botMsg && botMsg.deletable)
-                    botMsg.delete().catch();
+                    botMsg.delete().catch(LOGGER.error);
                 if (r === "time") return resolve(null);
             });
         });
@@ -211,12 +214,13 @@ export namespace AdvancedCollector {
             if (options.acknowledgeImmediately)
                 await returnInteraction.deferUpdate();
         } catch (e) {
+            // check end.reason
             // Ignore the error; this is because the collector timed out.
         } finally {
             if (options.deleteBaseMsgAfterComplete)
-                await botMsg.delete().catch();
+                await botMsg.delete().catch(LOGGER.error);
             else if (options.clearInteractionsAfterComplete && botMsg.editable)
-                await botMsg.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
+                await botMsg.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch(LOGGER.error);
         }
 
         return returnInteraction;
@@ -291,9 +295,9 @@ export namespace AdvancedCollector {
                 if (hasCalled) return;
                 hasCalled = true;
                 if (options.deleteBaseMsgAfterComplete && botMsg?.deletable)
-                    botMsg?.delete().catch();
+                    botMsg?.delete().catch(LOGGER.error);
                 else if (options.clearInteractionsAfterComplete && botMsg?.editable)
-                    botMsg?.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
+                    botMsg?.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch(LOGGER.error);
                 if (r === "time") return resolve(null);
             }
         });

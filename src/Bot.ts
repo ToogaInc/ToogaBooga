@@ -9,6 +9,7 @@ import {
     Interaction,
     Message, PartialGuildMember,
     PartialMessage,
+    RateLimitData,
     ThreadChannel,
     VoiceState
 } from "discord.js";
@@ -18,6 +19,7 @@ import * as Cmds from "./commands";
 import {
     onChannelDeleteEvent,
     onErrorEvent,
+    onRatelimitEvent,
     onGuildCreateEvent,
     onGuildMemberAdd,
     onGuildMemberUpdate,
@@ -277,6 +279,7 @@ export class Bot {
         this._bot.on("voiceStateUpdate", async (o: VoiceState, n: VoiceState) => onVoiceStateEvent(o, n));
         this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
         this._bot.on("error", async (e: Error) => onErrorEvent(e));
+        this._bot.on("rateLimit", async (r: RateLimitData) => onRatelimitEvent(r));
         this._bot.on("threadUpdate", async (o: ThreadChannel, n: ThreadChannel) => onThreadArchiveEvent(o, n));
         this._bot.on("channelDelete", async (c: DMChannel | GuildChannel) => onChannelDeleteEvent(c));
         this._bot.on("messageDelete", async (m: Message | PartialMessage) => onMessageDeleteEvent(m));
