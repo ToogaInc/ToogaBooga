@@ -418,7 +418,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         },
                         m => {
                             const num = Number.parseInt(m.content, 10);
-                            return Number.isNaN(num) ? null : Math.max(5, num);
+                            return Number.isNaN(num) ? null : Math.max(0, num);
                         }
                     );
 
