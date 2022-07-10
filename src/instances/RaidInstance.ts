@@ -604,7 +604,7 @@ export class RaidInstance {
     ): Promise<RaidInstance | null> {
         LOGGER.info("Creating new raid instance from active raid");
 
-        const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+        const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
         if (!guild) return null;
 
         const memberInit = await GuildFgrUtilities.fetchGuildMember(guild, raidInfo.memberInit);
@@ -1325,7 +1325,6 @@ export class RaidInstance {
      * @param {boolean} force Whether this should delete all channels related to this raid. Useful if one component
      * of the raid is deleted.
      * @param {boolean} keepVc Whether to keep the VC. Note that this will be ignored if `force` is `true`.
-     * @param {boolean} keepEmbeds Whether to keep the embeds. Note that this will be ignored if `force` is `true`.
      */
     public async cleanUpRaid(force: boolean, keepVc: boolean = false): Promise<void> {
         this._isValid = false;
@@ -3328,7 +3327,6 @@ export class RaidInstance {
                         // /who, then give them credit
                         if (data.names.some((x) => names.includes(x.toLowerCase()))) {
                             membersAtEnd.push(memberThatJoined);
-                            continue;
                         }
                         else if (memberThatJoined.id !== mainLeader?.id) membersThatLeft.push(memberThatJoined);
                     }

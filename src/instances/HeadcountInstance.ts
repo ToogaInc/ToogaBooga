@@ -344,7 +344,7 @@ export class HeadcountInstance {
         hcInfo: IHeadcountInfo): Promise<HeadcountInstance | null> {
 
         LOGGER.info("Creating new headcount instance from active headcount");
-        const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+        const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
         if (!guild) return null;
 
         const memberInit = await GuildFgrUtilities.fetchGuildMember(guild, hcInfo.memberInit);
