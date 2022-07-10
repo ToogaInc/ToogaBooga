@@ -121,6 +121,16 @@ export namespace GlobalFgrUtilities {
     }
 
     /**
+     * Gets a cached guild.
+     * @param {string} guildId The guild ID. This assumes a valid ID. If an invalid ID is given, `null` will be returned.
+     * @returns {Guild | null} The guild, if at all. Otherwise, `null`.
+     */
+    export function getCachedGuild(guildId: string): Guild | null {
+        if (!MiscUtilities.isSnowflake(guildId)) return null;
+        return Bot.BotInstance.client.guilds.cache.get(guildId) ?? null;
+    }
+
+    /**
      * A simple function that fetches a user. This will handle any exceptions that may occur.
      * @param {string} targetId The target user ID. This assumes a valid user ID. If an invalid ID is given, `null`
      * will be returned.

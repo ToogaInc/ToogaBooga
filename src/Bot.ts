@@ -181,7 +181,6 @@ export class Bot {
         ]);
 
         Bot.Commands.set("Bot Owner", [
-            new Cmds.SendAnnouncement(),
             new Cmds.SetStatus()
         ]);
 

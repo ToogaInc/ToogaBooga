@@ -719,9 +719,10 @@ export namespace SuspensionManager {
         LOGGER.info("Starting SuspensionManager checker");
 
         if (documents.length > 0) {
-            for await (const guildDoc of documents) {
+            for (const guildDoc of documents) {
                 const serverSus = new Collection<string, ISuspendedUser>();
-                const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+                // NOTE: Getting a cached guild may cause some issues.
+                const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
                 if (!guild) continue;
 
                 // GUILD SUSPENSIONS
@@ -793,9 +794,8 @@ export namespace SuspensionManager {
 
         // Section suspended
         // Go through every guild that we need to process
-        const allGuildsSecSus: [string, Guild | null][] = await Promise.all(
-            Array.from(SectionSuspendedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
-        );
+        const allGuildsSecSus: [string, Guild | null][] = Array.from(SectionSuspendedMembers.keys())
+            .map(x => [x, GlobalFgrUtilities.getCachedGuild(x)]);
 
         const guildsToRemove: Set<string> = new Set<string>();
 
@@ -863,9 +863,8 @@ export namespace SuspensionManager {
         guildsToRemove.clear();
 
         // Regular suspensions
-        const allGuildsSuspend: [string, Guild | null][] = await Promise.all(
-            Array.from(SuspendedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
-        );
+        const allGuildsSuspend: [string, Guild | null][] = Array.from(SuspendedMembers.keys())
+            .map(x => [x, GlobalFgrUtilities.getCachedGuild(x)]);
 
         for await (const [id, guild] of allGuildsSuspend) {
             if (!guild) {
@@ -1290,8 +1289,9 @@ export namespace MuteManager {
         _isRunning = true;
         LOGGER.info("Starting MuteManager checker");
         if (documents.length > 0) {
-            for await (const guildDoc of documents) {
-                const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+            for (const guildDoc of documents) {
+                // NOTE: Getting a cached guild may cause some issues.
+                const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
                 if (!guild) continue;
                 MutedMembers.set(
                     guild.id,
@@ -1331,9 +1331,8 @@ export namespace MuteManager {
             );
         }
 
-        const allGuildsSecSus: [string, Guild | null][] = await Promise.all(
-            Array.from(MutedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
-        );
+        const allGuildsSecSus: [string, Guild | null][] = Array.from(MutedMembers.keys())
+            .map(x => [x, GlobalFgrUtilities.getCachedGuild(x)]);
 
         const guildsToRemove: Set<string> = new Set<string>();
         for (const [id, guild] of allGuildsSecSus) {

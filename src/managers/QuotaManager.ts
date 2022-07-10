@@ -787,7 +787,8 @@ export namespace QuotaService {
     async function resetGivenQuotas(docs: IGuildInfo[]): Promise<number> {
         const allQuotasToReset: Promise<boolean>[] = [];
         for (const doc of docs) {
-            const guild = await GlobalFgrUtilities.fetchGuild(doc.guildId);
+            // NOTE: Referring to a cached guild may cause some issues.
+            const guild = GlobalFgrUtilities.getCachedGuild(doc.guildId);
             if (!guild)
                 continue;
 
@@ -851,7 +852,7 @@ export namespace QuotaService {
             if (guildDoc.quotas.quotaInfo.length === 0)
                 continue;
 
-            const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+            const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
             if (!guild)
                 continue;
             
