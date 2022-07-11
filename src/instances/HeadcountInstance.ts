@@ -344,7 +344,7 @@ export class HeadcountInstance {
         hcInfo: IHeadcountInfo): Promise<HeadcountInstance | null> {
 
         LOGGER.info("Creating new headcount instance from active headcount");
-        const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+        const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
         if (!guild) return null;
 
         const memberInit = await GuildFgrUtilities.fetchGuildMember(guild, hcInfo.memberInit);
@@ -1010,8 +1010,8 @@ export class HeadcountInstance {
         this._intervalsAreRunning = true;
         LOGGER.info(`${this._instanceInfo} Starting all intervals`);
 
-        this.updateControlPanel().catch();
-        this.updateHeadcountPanel().catch();
+        this.updateControlPanel().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+        this.updateHeadcountPanel().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
         return true;
     }
@@ -1045,8 +1045,8 @@ export class HeadcountInstance {
 
         const delayUpdate = this.delay(this._intervalDelay);
 
-        await Promise.all([editMessage, delayUpdate]).catch();
-        this.updateControlPanel().catch();
+        await Promise.all([editMessage, delayUpdate]).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+        this.updateControlPanel().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
     }
 
     /**
@@ -1070,8 +1070,8 @@ export class HeadcountInstance {
         });
         const delayUpdate = this.delay(this._intervalDelay);
 
-        await Promise.all([editMessage, delayUpdate]).catch();
-        this.updateHeadcountPanel().catch();
+        await Promise.all([editMessage, delayUpdate]).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+        this.updateHeadcountPanel().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
     }
 
     /**
@@ -1204,7 +1204,7 @@ export class HeadcountInstance {
                     content: "You are in the process of confirming a reaction. If you accidentally dismissed the"
                         + " confirmation message, you may need to wait 15 seconds before you can try again.",
                     ephemeral: true
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -1213,7 +1213,7 @@ export class HeadcountInstance {
                 i.reply({
                     content: "An unknown error occurred.",
                     ephemeral: true
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -1226,7 +1226,7 @@ export class HeadcountInstance {
                 i.reply({
                     content: "You have already selected this!",
                     ephemeral: true
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -1237,7 +1237,7 @@ export class HeadcountInstance {
                 i.reply({
                     content: "You have indicated that you are interested in joining this raid, if it occurs.",
                     ephemeral: true
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 

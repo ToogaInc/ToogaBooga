@@ -62,8 +62,6 @@ export class ConfigAfkCheck extends BaseCommand {
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
-        if (!(ctx.channel instanceof TextChannel)) return -1;
-
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -117,7 +115,7 @@ export class ConfigAfkCheck extends BaseCommand {
         });
 
         if (!selected || !selected.isSelectMenu()) {
-            this.dispose(ctx, botMsg).catch();
+            this.dispose(ctx, botMsg);
             return;
         }
 
@@ -418,7 +416,7 @@ export class ConfigAfkCheck extends BaseCommand {
                         },
                         m => {
                             const num = Number.parseInt(m.content, 10);
-                            return Number.isNaN(num) ? null : Math.max(5, num);
+                            return Number.isNaN(num) ? null : Math.max(0, num);
                         }
                     );
 

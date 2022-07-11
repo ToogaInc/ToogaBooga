@@ -7,17 +7,6 @@ moderation, and raid management.
 
 The name was inspired by Ooga-Booga, another RotMG Discord bot.
 
-## Warning
-
-The bot is **not ready for production.** In particular:
-- There are numerous bugs that I need to fix.
-- Lots of refactoring needs to be done (i.e. the codebase is very messy).
-- The documentation (including setup guide) is very incomplete.
-- I did not set up a testing suite or configure ESLint yet.
-
-It is in your best interest to not use this bot in its current state. More work will be done to fix the bugs and 
-refactor the codebase. Once the bot is sufficiently cleaned/fixed up, a public invite link will be available. 
-
 ## Purpose
 
 The main purpose of this bot is to simplify verification and raid management in any Realm Discord server. This bot,

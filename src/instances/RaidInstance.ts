@@ -604,7 +604,7 @@ export class RaidInstance {
     ): Promise<RaidInstance | null> {
         LOGGER.info("Creating new raid instance from active raid");
 
-        const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+        const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
         if (!guild) return null;
 
         const memberInit = await GuildFgrUtilities.fetchGuildMember(guild, raidInfo.memberInit);
@@ -786,6 +786,7 @@ export class RaidInstance {
             const result = await Bot.AxiosClient.head(url);
             if (result.status > 300) return toReturn;
         } catch (e) {
+            LOGGER.error(e);
             return toReturn;
         }
 
@@ -934,7 +935,7 @@ export class RaidInstance {
             components: [],
         });
 
-        this.logEvent("AFK check has been started.", true).catch();
+        this.logEvent("AFK check has been started.", true).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
         const tempMsg = await this._afkCheckChannel.send({
             content: `${this._raidVc.toString()} will be unlocked in 5 seconds. Prepare to join!`,
         });
@@ -997,7 +998,7 @@ export class RaidInstance {
                 ? `${member.displayName} (${member.id}) has ended the AFK check.`
                 : "The AFK check has been ended automatically.",
             true
-        ).catch();
+        ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
         // Update the database so it is clear that we are in raid mode.
         await this.stopAllIntervalsAndCollectors();
@@ -1031,7 +1032,7 @@ export class RaidInstance {
         await this.updateMembersArr();
 
         // End the collector since it's useless. We'll use it again though.
-        this.stopAllIntervalsAndCollectors("AFK Check ended.").catch();
+        this.stopAllIntervalsAndCollectors("AFK Check ended.").catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
         // Remove reactions from AFK check.
         await this._afkCheckMsg.reactions.removeAll().catch();
@@ -1042,7 +1043,7 @@ export class RaidInstance {
                 embeds: [this.getControlPanelEmbed()!],
                 components: RaidInstance.CP_RAID_BUTTONS,
             })
-            .catch();
+            .catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
         // Edit the afk check panel to include reconnect
         await this._afkCheckMsg
@@ -1057,7 +1058,7 @@ export class RaidInstance {
                         .setStyle("SUCCESS"),
                 ]),
             })
-            .catch();
+            .catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
         this.startControlPanelCollector();
         this.startIntervals();
@@ -1189,7 +1190,7 @@ export class RaidInstance {
                     ? `${resolvedMember.displayName} (${resolvedMember.id}) has aborted the AFK check.`
                     : "The AFK check has been aborted automatically.",
                 false
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
             return;
         }
@@ -1199,10 +1200,10 @@ export class RaidInstance {
                 ? `${resolvedMember.displayName} (${resolvedMember.id}) has ended the raid.`
                 : "The raid has been ended automatically.",
             false
-        ).catch();
+        ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
         if (this._raidStatus === RaidStatus.RUN_FINISHED) {
-            this.logRun(memberThatEnded).catch();
+            this.logRun(memberThatEnded).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
         }
 
         // Check feedback channel
@@ -1324,7 +1325,6 @@ export class RaidInstance {
      * @param {boolean} force Whether this should delete all channels related to this raid. Useful if one component
      * of the raid is deleted.
      * @param {boolean} keepVc Whether to keep the VC. Note that this will be ignored if `force` is `true`.
-     * @param {boolean} keepEmbeds Whether to keep the embeds. Note that this will be ignored if `force` is `true`.
      */
     public async cleanUpRaid(force: boolean, keepVc: boolean = false): Promise<void> {
         this._isValid = false;
@@ -1348,7 +1348,7 @@ export class RaidInstance {
                             embeds: [this.getControlPanelEmbed()!],
                             components: [],
                         })
-                        .catch();
+                        .catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                     return;
                 }
                 await MessageUtilities.tryDelete(this._controlPanelMsg);
@@ -1364,8 +1364,8 @@ export class RaidInstance {
                             embeds: [this.getAfkCheckEmbed()!],
                             components: [],
                         })
-                        .catch();
-                    await this._afkCheckMsg.reactions.removeAll().catch();
+                        .catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+                    await this._afkCheckMsg.reactions.removeAll().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                     return;
                 }
                 await MessageUtilities.tryDelete(this.afkCheckMsg);
@@ -1919,7 +1919,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.NITRO_EMOJI} ${member.displayName} (${member.id}) has been added to the VC for being a priority react.`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -1929,7 +1929,7 @@ export class RaidInstance {
                 this.logEvent(
                     `${EmojiConstants.EYES_EMOJI} ${member.displayName} (${member.id}) has left the raid VC.`,
                     true
-                ).catch();
+                ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -1938,7 +1938,7 @@ export class RaidInstance {
                 this.logEvent(
                     `${EmojiConstants.GREEN_CHECK_EMOJI} ${member.displayName} (${member.id}) has joined the raid VC.`,
                     true
-                ).catch();
+                ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -1948,7 +1948,7 @@ export class RaidInstance {
                     `\tFrom: ${oldState.channel!.name} (${oldState.channelId})\n` +
                     `\tTo: ${newState.channel!.name} (${newState.channelId})`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -1958,7 +1958,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.MIC_EMOJI} ${member.displayName} (${member.id}) is no longer server muted.`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -1967,7 +1967,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.MIC_EMOJI} ${member.displayName} (${member.id}) is now server muted.`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -1976,7 +1976,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.HEADPHONE_EMOJI} ${member.displayName} (${member.id}) is no longer deafened.`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -1985,7 +1985,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.HEADPHONE_EMOJI} ${member.displayName} (${member.id}) is now deafened.`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -1994,7 +1994,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.CAM_EMOJI} ${member.displayName} (${member.id}) has turned off video.`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -2003,7 +2003,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.CAM_EMOJI} ${member.displayName} (${member.id}) has turned on video.`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -2012,7 +2012,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.TV_EMOJI} ${member.displayName} (${member.id}) has stopped streaming.`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -2021,7 +2021,7 @@ export class RaidInstance {
             this.logEvent(
                 `${EmojiConstants.TV_EMOJI} ${member.displayName} (${member.id}) has started streaming.`,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
     }
@@ -2056,7 +2056,7 @@ export class RaidInstance {
             return;
         }
 
-        interaction.deferUpdate().catch();
+        interaction.deferUpdate().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
         if (member.voice.channel.id === this._raidVc?.id) return;
 
@@ -2066,7 +2066,7 @@ export class RaidInstance {
         this.logEvent(
             `${EmojiConstants.GREEN_CHECK_EMOJI} ${member.displayName} (${member.id}) has reconnected to the raid VC.`,
             true
-        ).catch();
+        ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
         return;
     }
 
@@ -2232,7 +2232,7 @@ export class RaidInstance {
         if (!this._raidVc || !this._addedToDb || !this._isValid) return false;
 
         this._location = newLoc;
-        this.logEvent(`${EmojiConstants.MAP_EMOJI} Location changed to: ${newLoc}`, true).catch();
+        this.logEvent(`${EmojiConstants.MAP_EMOJI} Location changed to: ${newLoc}`, true).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
         // Update the location in the database.
         const res = await MongoManager.updateAndFetchGuildDoc(
@@ -2426,8 +2426,8 @@ export class RaidInstance {
         LOGGER.info(`${this._instanceInfo} Starting all intervals`);
         this._intervalsAreRunning = true;
 
-        this.updateControlPanel().catch();
-        this.updateRaidPanel().catch();
+        this.updateControlPanel().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+        this.updateRaidPanel().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
         return true;
     }
@@ -2464,8 +2464,8 @@ export class RaidInstance {
 
         const delayUpdate = delay(this._intervalDelay);
 
-        await Promise.all([editMessage, delayUpdate]).catch();
-        this.updateControlPanel().catch();
+        await Promise.all([editMessage, delayUpdate]).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+        this.updateControlPanel().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
     }
 
     /**
@@ -2499,8 +2499,8 @@ export class RaidInstance {
 
         const delayUpdate = delay(this._intervalDelay);
 
-        await Promise.all([editMessage, delayUpdate]).catch();
-        this.updateRaidPanel().catch();
+        await Promise.all([editMessage, delayUpdate]).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+        this.updateRaidPanel().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
     }
 
     /**
@@ -2528,7 +2528,7 @@ export class RaidInstance {
                         "You are in the process of confirming a reaction. If you accidentally dismissed the" +
                         " confirmation message, you may need to wait 15 seconds before you can try again.",
                     ephemeral: true,
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -2537,7 +2537,7 @@ export class RaidInstance {
                 i.reply({
                     content: "An unknown error occurred.",
                     ephemeral: true,
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -2552,7 +2552,7 @@ export class RaidInstance {
                 i.reply({
                     content: "In order to indicate your class/gear preference, you need to be in a voice channel.",
                     ephemeral: true,
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -2567,7 +2567,7 @@ export class RaidInstance {
                 i.reply({
                     content: "You have already selected this!",
                     ephemeral: true,
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -2579,7 +2579,7 @@ export class RaidInstance {
                 i.reply({
                     content: `Sorry, but the maximum number of ${itemDis} has been reached.`,
                     ephemeral: true,
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -2685,12 +2685,12 @@ export class RaidInstance {
                     " that they have" +
                     ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.react!.modifiers.join(", ")}]\``,
                 true
-            ).catch();
+            ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
             if (memberThatResponded.voice.channel) {
                 if (memberThatResponded.voice.channelId === this._raidVc.id) return;
                 LOGGER.info(`${this._instanceInfo} Moving ${memberThatResponded.displayName} into raid VC`);
-                memberThatResponded.voice.setChannel(this._raidVc).catch();
+                memberThatResponded.voice.setChannel(this._raidVc).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -2739,7 +2739,7 @@ export class RaidInstance {
                 i.reply({
                     content: "An unknown error occurred. Please try again later.",
                     ephemeral: true,
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return false;
             }
 
@@ -2747,7 +2747,7 @@ export class RaidInstance {
                 i.reply({
                     content: "You need to be in the correct raiding VC to interact with these controls.",
                     ephemeral: true,
-                }).catch();
+                }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return false;
             }
 
@@ -2866,7 +2866,7 @@ export class RaidInstance {
                     this._afkCheckChannel,
                     `${this._leaderName}'s Raid VC has been locked.`,
                     this._tempAlertDelay
-                ).catch();
+                ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -2880,13 +2880,13 @@ export class RaidInstance {
                         content: "Unlocked Raid VC.",
                         ephemeral: true,
                     }),
-                    this.logEvent("Raid VC unlocked.", true).catch(),
+                    this.logEvent("Raid VC unlocked.", true).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`)),
                 ]);
                 sendTemporaryAlert(
                     this._afkCheckChannel,
                     `${this._leaderName}'s Raid VC has been unlocked.`,
                     this._tempAlertDelay
-                ).catch();
+                ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -2923,10 +2923,10 @@ export class RaidInstance {
                 const parseSummary = await RaidInstance.parseScreenshot(res.url, this._raidVc);
                 if (!this._raidVc || !this._isValid) return;
 
-                this.logEvent(`Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``, true).catch();
+                this.logEvent(`Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``, true).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
                 if (!parseSummary) {
-                    this.logEvent("Parse failed; the API may not be functioning at this time.", true).catch();
+                    this.logEvent("Parse failed; the API may not be functioning at this time.", true).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
                     return;
                 }
@@ -2949,7 +2949,7 @@ export class RaidInstance {
 
         this._controlPanelReactionCollector.on("end", async (_, r) => {
             if (r !== "time") return;
-            this.endRaid(null).catch();
+            this.endRaid(null).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
         });
 
         return true;
@@ -3016,7 +3016,7 @@ export class RaidInstance {
 
         if (!runStatusRes || runStatusRes.customId === ButtonConstants.CANCEL_LOGGING_ID) {
             // TODO validate this better
-            botMsg.delete().catch();
+            botMsg.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
         }
 
@@ -3079,7 +3079,7 @@ export class RaidInstance {
             );
 
             if (!memberToPick) {
-                botMsg.delete().catch();
+                botMsg.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -3109,7 +3109,7 @@ export class RaidInstance {
                 }
 
                 if (memberToPick.customId === ButtonConstants.CANCEL_LOGGING_ID) {
-                    botMsg.delete().catch();
+                    botMsg.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                     return;
                 }
 
@@ -3194,7 +3194,7 @@ export class RaidInstance {
                 );
 
                 if (!memberToPick) {
-                    botMsg.delete().catch();
+                    botMsg.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                     return;
                 }
 
@@ -3231,7 +3231,7 @@ export class RaidInstance {
                     }
 
                     if (memberToPick.customId === ButtonConstants.CANCEL_LOGGING_ID) {
-                        botMsg.delete().catch();
+                        botMsg.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                         return;
                     }
 
@@ -3299,7 +3299,7 @@ export class RaidInstance {
                     // Images have a height property, non-images don't.
                     const imgAttachment = m.attachments.find((x) => x.height !== null);
                     if (!imgAttachment) {
-                        m.delete().catch();
+                        m.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                         return;
                     }
 
@@ -3309,7 +3309,7 @@ export class RaidInstance {
             );
 
             if (!resObj) {
-                botMsg.delete().catch();
+                botMsg.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
 
@@ -3319,7 +3319,7 @@ export class RaidInstance {
                     return res ? res : null;
                 });
                 LOGGER.info(`${this._instanceInfo} Names found in completion: ${data?.names}`);
-                resObj.delete().catch();
+                resObj.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 if (data && data.names.length > 0) {
                     for (const memberThatJoined of this._membersThatJoined) {
                         const names = UserManager.getAllNames(memberThatJoined.displayName, true);
@@ -3327,7 +3327,6 @@ export class RaidInstance {
                         // /who, then give them credit
                         if (data.names.some((x) => names.includes(x.toLowerCase()))) {
                             membersAtEnd.push(memberThatJoined);
-                            continue;
                         }
                         else if (memberThatJoined.id !== mainLeader?.id) membersThatLeft.push(memberThatJoined);
                     }

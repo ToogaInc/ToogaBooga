@@ -248,7 +248,7 @@ export namespace QuotaManager {
                             `quota_${guild.id}_${roleId}_${Date.now()}.txt`)
                     ]
                 }
-            ).catch();
+            ).catch(LOGGER.error);
 
             if (storageMsg)
                 urlToFile = storageMsg.attachments.first()!.url;
@@ -286,7 +286,7 @@ export namespace QuotaManager {
 
         if (quotaMsg) {
             await quotaMsg.edit({ embeds: [summaryEmbed] });
-            quotaMsg.unpin().catch();
+            quotaMsg.unpin().catch(LOGGER.error);
         }
         else
             await quotaChannel.send({ embeds: [summaryEmbed] });
@@ -302,7 +302,7 @@ export namespace QuotaManager {
                 ]
             });
 
-            newMsg.pin().catch();
+            newMsg.pin().catch(LOGGER.error);
 
             await MongoManager.updateAndFetchGuildDoc({
                 guildId: guild.id,
@@ -787,7 +787,8 @@ export namespace QuotaService {
     async function resetGivenQuotas(docs: IGuildInfo[]): Promise<number> {
         const allQuotasToReset: Promise<boolean>[] = [];
         for (const doc of docs) {
-            const guild = await GlobalFgrUtilities.fetchGuild(doc.guildId);
+            // NOTE: Referring to a cached guild may cause some issues.
+            const guild = GlobalFgrUtilities.getCachedGuild(doc.guildId);
             if (!guild)
                 continue;
 
@@ -851,7 +852,7 @@ export namespace QuotaService {
             if (guildDoc.quotas.quotaInfo.length === 0)
                 continue;
 
-            const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+            const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
             if (!guild)
                 continue;
             
@@ -881,7 +882,7 @@ export namespace QuotaService {
                         continue;
                     }
 
-                    newMsg.pin().catch();
+                    newMsg.pin().catch(LOGGER.error);
 
                     await MongoManager.updateAndFetchGuildDoc({
                         guildId: guild.id,

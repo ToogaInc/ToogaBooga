@@ -556,12 +556,12 @@ export namespace PunishmentManager {
         async function sendLoggingAndNoticeMsg(): Promise<void> {
             // Do we really need to check if there is a description here specifically?
             if (details.sendLogInfo && logChannel && logToChanEmbed.description) {
-                await logChannel.send({ embeds: [logToChanEmbed] }).catch();
+                await logChannel.send({ embeds: [logToChanEmbed] }).catch(LOGGER.error);
             }
 
             // These must have a description or else the default arm was reached.
             if (details.sendNoticeToAffectedUser && toSendToUserEmbed.description && member instanceof GuildMember) {
-                await GlobalFgrUtilities.sendMsg(member, { embeds: [toSendToUserEmbed] }).catch();
+                await GlobalFgrUtilities.sendMsg(member, { embeds: [toSendToUserEmbed] }).catch(LOGGER.error);
             }
         }
 
@@ -719,9 +719,10 @@ export namespace SuspensionManager {
         LOGGER.info("Starting SuspensionManager checker");
 
         if (documents.length > 0) {
-            for await (const guildDoc of documents) {
+            for (const guildDoc of documents) {
                 const serverSus = new Collection<string, ISuspendedUser>();
-                const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+                // NOTE: Getting a cached guild may cause some issues.
+                const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
                 if (!guild) continue;
 
                 // GUILD SUSPENSIONS
@@ -793,9 +794,8 @@ export namespace SuspensionManager {
 
         // Section suspended
         // Go through every guild that we need to process
-        const allGuildsSecSus: [string, Guild | null][] = await Promise.all(
-            Array.from(SectionSuspendedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
-        );
+        const allGuildsSecSus: [string, Guild | null][] = Array.from(SectionSuspendedMembers.keys())
+            .map(x => [x, GlobalFgrUtilities.getCachedGuild(x)]);
 
         const guildsToRemove: Set<string> = new Set<string>();
 
@@ -863,9 +863,8 @@ export namespace SuspensionManager {
         guildsToRemove.clear();
 
         // Regular suspensions
-        const allGuildsSuspend: [string, Guild | null][] = await Promise.all(
-            Array.from(SuspendedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
-        );
+        const allGuildsSuspend: [string, Guild | null][] = Array.from(SuspendedMembers.keys())
+            .map(x => [x, GlobalFgrUtilities.getCachedGuild(x)]);
 
         for await (const [id, guild] of allGuildsSuspend) {
             if (!guild) {
@@ -1137,7 +1136,7 @@ export namespace SuspensionManager {
         }
 
         // Remove roles and log it
-        await member.roles.remove(info.section.roles.verifiedRoleId).catch();
+        await member.roles.remove(info.section.roles.verifiedRoleId).catch(LOGGER.error);
         const r = await PunishmentManager.logPunishment(member, "SectionSuspend", {
             reason: info.reason,
             duration: info.duration === -1 ? undefined : info.duration,
@@ -1204,7 +1203,7 @@ export namespace SuspensionManager {
 
         if (info.section.properties.giveVerifiedRoleUponUnsuspend
             && GuildFgrUtilities.hasCachedRole(member.guild, info.section.roles.verifiedRoleId)) {
-            await member.roles.add(info.section.roles.verifiedRoleId).catch();
+            await member.roles.add(info.section.roles.verifiedRoleId).catch(LOGGER.error);
         }
 
         const r = await PunishmentManager.logPunishment(member, "SectionUnsuspend", {
@@ -1290,8 +1289,9 @@ export namespace MuteManager {
         _isRunning = true;
         LOGGER.info("Starting MuteManager checker");
         if (documents.length > 0) {
-            for await (const guildDoc of documents) {
-                const guild = await GlobalFgrUtilities.fetchGuild(guildDoc.guildId);
+            for (const guildDoc of documents) {
+                // NOTE: Getting a cached guild may cause some issues.
+                const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
                 if (!guild) continue;
                 MutedMembers.set(
                     guild.id,
@@ -1331,9 +1331,8 @@ export namespace MuteManager {
             );
         }
 
-        const allGuildsSecSus: [string, Guild | null][] = await Promise.all(
-            Array.from(MutedMembers.keys()).map(async x => [x, await GlobalFgrUtilities.fetchGuild(x)])
-        );
+        const allGuildsSecSus: [string, Guild | null][] = Array.from(MutedMembers.keys())
+            .map(x => [x, GlobalFgrUtilities.getCachedGuild(x)]);
 
         const guildsToRemove: Set<string> = new Set<string>();
         for (const [id, guild] of allGuildsSecSus) {
@@ -1462,7 +1461,7 @@ export namespace MuteManager {
             MutedMembers.get(member.guild.id)!.push(mutedUserObj);
         }
 
-        await member.roles.add(mutedRole).catch();
+        await member.roles.add(mutedRole).catch(LOGGER.error);
 
         const r = await PunishmentManager.logPunishment(member, "Mute", {
             reason: info.reason,
@@ -1522,7 +1521,7 @@ export namespace MuteManager {
             _queuedDelMutedUsers.enqueue({ ...data, guildId: member.guild.id });
         }
 
-        await member.roles.remove(info.guildDoc.roles.mutedRoleId).catch();
+        await member.roles.remove(info.guildDoc.roles.mutedRoleId).catch(LOGGER.error);
         const r = await PunishmentManager.logPunishment(member, "Unmute", {
             reason: info.reason,
             issuedTime: Date.now(),

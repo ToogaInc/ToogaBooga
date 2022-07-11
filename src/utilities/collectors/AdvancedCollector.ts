@@ -24,6 +24,9 @@ import { GuildFgrUtilities } from "../fetch-get-request/GuildFgrUtilities";
 import { EmojiConstants } from "../../constants/EmojiConstants";
 import { GlobalFgrUtilities } from "../fetch-get-request/GlobalFgrUtilities";
 import { StringUtil } from "../StringUtilities";
+import { Logger } from "../Logger";
+
+const LOGGER: Logger = new Logger(__filename, false);
 
 /**
  * A series of helpful collector functions.
@@ -131,7 +134,7 @@ export namespace AdvancedCollector {
 
             msgCollector.on("collect", async (c: Message) => {
                 if (options.deleteResponseMessage)
-                    await c.delete().catch();
+                    await c.delete().catch(LOGGER.error);
 
                 if (cancelFlag && cancelFlag.toLowerCase() === c.content.toLowerCase())
                     return resolve(null);
@@ -148,7 +151,7 @@ export namespace AdvancedCollector {
 
             msgCollector.on("end", (c, r) => {
                 if (options.deleteBaseMsgAfterComplete && botMsg && botMsg.deletable)
-                    botMsg.delete().catch();
+                    botMsg.delete().catch(LOGGER.error);
                 if (r === "time") return resolve(null);
             });
         });
@@ -193,7 +196,7 @@ export namespace AdvancedCollector {
      * Starts a general interaction collector. This will wait for the user to interact with one component and then
      * return the result of that component.
      * @param {IInteractionBase} options The collector options.
-     * @return {Promise<ButtonInteraction | null>} The interaction, if available. `null` otherwise.
+     * @return {Promise<MessageComponentInteraction | null>} The interaction, if available. `null` otherwise.
      */
     export async function startInteractionCollector(
         options: IInteractionBase
@@ -211,12 +214,13 @@ export namespace AdvancedCollector {
             if (options.acknowledgeImmediately)
                 await returnInteraction.deferUpdate();
         } catch (e) {
+            // check end.reason
             // Ignore the error; this is because the collector timed out.
         } finally {
             if (options.deleteBaseMsgAfterComplete)
-                await botMsg.delete().catch();
+                await botMsg.delete().catch(LOGGER.error);
             else if (options.clearInteractionsAfterComplete && botMsg.editable)
-                await botMsg.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
+                await botMsg.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch(LOGGER.error);
         }
 
         return returnInteraction;
@@ -226,7 +230,7 @@ export namespace AdvancedCollector {
      * Starts an interaction and message collector. The first collector to receive something will end both collectors.
      * @param {IInteractionBase & IMessageCollectorArgument} options The collector options.
      * @param {Function} func The function used to filter the message.
-     * @return {Promise<ButtonInteraction | T | null>} A `MessageComponentInteraction` if a button is pressed. `T`
+     * @return {Promise<MessageComponentInteraction | T | null>} A `MessageComponentInteraction` if a button is pressed. `T`
      * if the `MessageCollector` is fired. `null` otherwise.
      */
     export async function startDoubleCollector<T>(
@@ -291,9 +295,9 @@ export namespace AdvancedCollector {
                 if (hasCalled) return;
                 hasCalled = true;
                 if (options.deleteBaseMsgAfterComplete && botMsg?.deletable)
-                    botMsg?.delete().catch();
+                    botMsg?.delete().catch(LOGGER.error);
                 else if (options.clearInteractionsAfterComplete && botMsg?.editable)
-                    botMsg?.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch();
+                    botMsg?.edit(MessageUtilities.getMessageOptionsFromMessage(botMsg, [])).catch(LOGGER.error);
                 if (r === "time") return resolve(null);
             }
         });

@@ -11,6 +11,9 @@ import {
 import { MiscUtilities } from "../MiscUtilities";
 import { Bot } from "../../Bot";
 import { IReactionInfo } from "../../definitions";
+import { Logger } from "../Logger";
+
+const LOGGER: Logger = new Logger(__filename, false);
 
 /**
  * A set of functions that essentially "abstract" away the client methods. This was created so that if discord.js
@@ -28,6 +31,8 @@ export namespace GlobalFgrUtilities {
         try {
             return await targetUser.createDM();
         } catch (e) {
+            // Respond in ephemeral reply if they don't have DMs enabled & tell them
+            LOGGER.error(e);
             return null;
         }
     }
@@ -67,6 +72,7 @@ export namespace GlobalFgrUtilities {
         try {
             return await Bot.BotInstance.client.guilds.fetch(guildId);
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }
@@ -115,6 +121,16 @@ export namespace GlobalFgrUtilities {
     }
 
     /**
+     * Gets a cached guild.
+     * @param {string} guildId The guild ID. This assumes a valid ID. If an invalid ID is given, `null` will be returned.
+     * @returns {Guild | null} The guild, if at all. Otherwise, `null`.
+     */
+    export function getCachedGuild(guildId: string): Guild | null {
+        if (!MiscUtilities.isSnowflake(guildId)) return null;
+        return Bot.BotInstance.client.guilds.cache.get(guildId) ?? null;
+    }
+
+    /**
      * A simple function that fetches a user. This will handle any exceptions that may occur.
      * @param {string} targetId The target user ID. This assumes a valid user ID. If an invalid ID is given, `null`
      * will be returned.
@@ -125,6 +141,7 @@ export namespace GlobalFgrUtilities {
         try {
             return Bot.BotInstance.client.users.fetch(targetId);
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }
@@ -143,6 +160,7 @@ export namespace GlobalFgrUtilities {
         try {
             return await channel.send(msgOptions);
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }
@@ -157,6 +175,7 @@ export namespace GlobalFgrUtilities {
         try {
             return func();
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }
@@ -171,6 +190,7 @@ export namespace GlobalFgrUtilities {
         try {
             return await func();
         } catch (e) {
+            LOGGER.error(e);
             return null;
         }
     }
