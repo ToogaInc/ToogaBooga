@@ -209,20 +209,21 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     // All must exist.
     if (!resolvedMember || !resolvedUser || !message) return;
 
+    // ================================================================================================ //
     // Check MANUAL VERIFICATION
     const manualVerifyChannels = guildDoc.manualVerificationEntries
         .find(x => x.manualVerifyMsgId === message.id && x.manualVerifyChannelId === channel.id);
 
-    // TODO
+    
     if (manualVerifyChannels) {
-        interaction.deferUpdate().catch(LOGGER.error);
-        //VerifyManager.acknowledgeManualVerifyRes(manualVerifyChannels, resolvedMember, interaction.customId, message)
-        //    .then();
+        interaction.deferReply().catch(LOGGER.error);
+        VerifyManager.acknowledgeManualVerif(manualVerifyChannels, resolvedMember, interaction.customId, message)
+            .then();
         return;
     }
 
-
     // ================================================================================================ //
+
     // Check VERIFICATION
     // We do NOT defer the interaction here because that is handled via the verify function
     if (guildDoc.channels.verification.verificationChannelId === resolvedChannel.id && interaction.message.author.bot) {
@@ -246,6 +247,8 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         await afkCheckInstance.interactionEventFunction(interaction);
         return;
     }
+
+    // ================================================================================================ //
 
     // Check modmail
     if (channel.id === guildDoc.channels.modmailChannelId) {
