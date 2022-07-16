@@ -26,6 +26,7 @@ import { PrivateApiDefinitions as PAD } from "../private-api/PrivateApiDefinitio
 import { LoggerManager } from "./LoggerManager";
 import { DungeonUtilities } from "../utilities/DungeonUtilities";
 import { TimeUtilities } from "../utilities/TimeUtilities";
+import { UserManager } from "./UserManager";
 
 export namespace VerifyManager {
     export const NUMBER_OF_STATS: number = 8;
@@ -92,7 +93,11 @@ export namespace VerifyManager {
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section where verification should occur.
      */
-    export async function verify(i: MessageComponentInteraction, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
+    export async function verify(
+        i: MessageComponentInteraction, 
+        guildDoc: IGuildInfo, 
+        section: ISectionInfo
+    ): Promise<void> {
         // If they're in the process of verification, don't let them start.
         if (InteractivityManager.IN_VERIFICATION.has(i.user.id)) {
             await i.reply({
@@ -104,6 +109,16 @@ export namespace VerifyManager {
 
         // We want to ensure they can't start the verification process in another server.
         InteractivityManager.IN_VERIFICATION.add(i.user.id);
+
+        if (guildDoc.manualVerificationEntries.some(x => x.userId === i.user.id 
+                && x.sectionId === section.uniqueIdentifier)) {
+            await i.reply({
+                content: "You have a pending manual verificaton application here. Please try again later."
+            });
+
+            InteractivityManager.IN_VERIFICATION.delete(i.user.id);
+            return;
+        }
 
         if (!(await RealmSharperWrapper.isOnline())) {
             await i.reply({
@@ -195,27 +210,30 @@ export namespace VerifyManager {
         if (section.isMainSection) {
             verifyMain(i, verifInstance).catch();
         }
+        else {
+            verifySection(i, verifInstance).catch();
+        }
     }
 
     /**
      * Runs through the verification process for the main section.
-     * @param {MessageComponentInteraction} i The interaction, which has been deferred.
+     * @param {MessageComponentInteraction} interaction The interaction from the verify me embed, which has been deferred.
      * @param {IVerificationInstance} instance The verification instance.
      * @private
      */
-    async function verifyMain(i: MessageComponentInteraction, instance: IVerificationInstance): Promise<void> {
+    async function verifyMain(interaction: MessageComponentInteraction, instance: IVerificationInstance): Promise<void> {
         // First, we need to see if the person can be DMed.
         const msgDmResp = await dmMember(instance.member);
         if (!msgDmResp) {
-            await i.editReply({
+            await interaction.editReply({
                 content: "I am not able to directly message you. Please make sure anyone in this server can DM you."
             });
 
-            InteractivityManager.IN_VERIFICATION.delete(i.user.id);
+            InteractivityManager.IN_VERIFICATION.delete(interaction.user.id);
             return;
         }
 
-        await i.editReply({
+        await interaction.editReply({
             content: "Please check your direct messages for further instructions."
         });
 
@@ -801,7 +819,7 @@ export namespace VerifyManager {
             await Promise.all([
                 msg.edit({ embeds: [successEmbed] }),
                 GlobalFgrUtilities.sendMsg(instance.member, {
-                    content: "Your verification was succssful."
+                    content: "Your verification was successful."
                 }),
                 instance.verifySuccessChannel?.send({
                     content: `[Main] ${instance.member} has successfully verified as **\`${nameToVerify}\`**.`
@@ -813,10 +831,133 @@ export namespace VerifyManager {
         });
     }
 
+    /**
+     * Runs through the verification process for a non-main section.
+     * @param {MessageComponentInteraction} interaction The interaction from the verify me embed, which has been deferred.
+     * @param {IVerificationInstance} instance The verification instance.
+     * @private
+     */
+    async function verifySection(interaction: MessageComponentInteraction, instance: IVerificationInstance): Promise<void> {
+        if (!instance.section.otherMajorConfig.verificationProperties.checkRequirements) {
+            await Promise.all([
+                GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await instance.member.roles.add(instance.guildDoc.roles.verifiedRoleId);
+                }),
+                instance.verifySuccessChannel?.send({
+                    content: `[${instance.section.sectionName}] ${instance.member} has successfully been verified`
+                        + " in this section."
+                }),
+                interaction.editReply({
+                    content: "You have been verified successfully."
+                })
+            ]);
+
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+            return;
+        }
+
+        const names = UserManager.getAllNames(instance.member.displayName);
+        let nameToUse: string;
+        if (names.length === 0) {
+            const nameRes = await MongoManager.findIdInIdNameCollection(instance.member.id);
+            if (nameRes.length === 0 || nameRes[0].rotmgNames.length === 0) {
+                await Promise.all([
+                    interaction.editReply({
+                        content: "Something went wrong when trying to verify you. You do not have a name registered with"
+                            + " the bot and your Discord nickname is not a valid RotMG name. Please contact a staff"
+                            + " member for assistance."
+                    }),
+                    instance.verifyFailChannel?.send({
+                        content: `[${instance.section.sectionName}] ${instance.member} does not have a name registered with`
+                            + " the bot, or a valid nickname, and thus cannot verify in this section."
+                    })
+                ]);
+
+                InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+                return;
+            }
+
+            nameToUse = nameRes[0].rotmgNames[0].ign;
+        }
+        else {
+            nameToUse = names[0];
+        }
+
+        const requestData = await GlobalFgrUtilities.tryExecuteAsync<PAD.IPlayerData>(async () => {
+            return RealmSharperWrapper.getPlayerInfo(nameToUse);
+        });
+
+        if (!requestData) {
+            await Promise.all([
+                interaction.editReply({
+                    content: `Your in-game name, **\`${nameToUse}\`**, could not be found on RealmEye. Make sure your`
+                        + " profile is **public** (anyone can see it).",
+                }),
+                instance.verifyFailChannel?.send({
+                    content: `[${instance.section.sectionName}] ${instance.member} tried to verify as **\`${nameToUse}\`**,`
+                        + " but an unknown error occurred when trying to reach their RealmEye profile's basic data"
+                        + ` (https://www.realmeye.com/player/${nameToUse}). Is the profile private?`
+                })
+            ]);
+
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+            return;
+        }
+
+        const checkRes = await checkRequirements(instance, requestData);
+        if (checkRes.conclusion === "TRY_AGAIN") {
+            await Promise.all([
+                interaction.editReply({
+                    content: `Your in-game name, **\`${nameToUse}\`**, was found on RealmEye. However, your RealmEye`
+                        + " profile has a few issues that need to be resolved. These issues are listed below:\n"
+                        + checkRes.taIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n"),
+                }),
+                instance.verifyFailChannel?.send({
+                    content: `[${instance.section.sectionName}] ${instance.member} tried to verify as **\`${nameToUse}\`**,`
+                    + " but there were several minor issues with the person's profile. These issues are listed below:\n"
+                    + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                })
+            ]);
+        }
+        else if (checkRes.conclusion === "FAIL") {
+            await Promise.all([
+                interaction.editReply({
+                    content: `Your in-game name, **\`${nameToUse}\`**, was found on RealmEye. However, your RealmEye`
+                        + " profile has failed to meet one or more major issues. These issues are listed below:\n"
+                        + checkRes.fatalIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n"),
+                }),
+                instance.verifyFailChannel?.send({
+                    content: `[${instance.section.sectionName}] ${instance.member} tried to verify as **\`${nameToUse}\`**,`
+                        + " but there were several fatal issues with the person's profile. These issues are listed below:\n"
+                        + checkRes.fatalIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                })
+            ]);
+        }
+        else if (checkRes.conclusion === "MANUAL") {
+            await handleManualVerification(instance, checkRes, interaction);
+        }
+        else {
+            await Promise.all([
+                GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await instance.member.roles.add(instance.section.roles.verifiedRoleId);
+                }),
+                interaction.editReply({
+                    content: "You have successfully been verified."
+                }),
+                instance.verifySuccessChannel?.send({
+                    content: `[${instance.section.sectionName}] ${instance.member} has successfully been verified in this section.`
+                })
+            ]);
+        }
+
+        InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+    }
 
 
     /**
-     * Handles the case when manual verification is needed.
+     * Handles the case when manual verification is needed. Note that you need to handle the case of removing the 
+     * user from the set of all users currently dealing with verification manually.
+     * 
      * @param instance The verification instance.
      * @param checkRes The original results of checking the person's profile for requirements.
      * @param from The channel where this manual verification request is occurring, or the interaction where

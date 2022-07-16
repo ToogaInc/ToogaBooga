@@ -222,7 +222,9 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     }
 
 
+    // ================================================================================================ //
     // Check VERIFICATION
+    // We do NOT defer the interaction here because that is handled via the verify function
     if (guildDoc.channels.verification.verificationChannelId === resolvedChannel.id && interaction.message.author.bot) {
         await VerifyManager.verify(interaction, guildDoc, MongoManager.getMainSection(guildDoc));
         return;
@@ -234,6 +236,8 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         await VerifyManager.verify(interaction, guildDoc, relevantSec);
         return;
     }
+
+    // ================================================================================================ //
 
     // Check AFK CHECKS (reconnect button)
     for (const [msgId, afkCheckInstance] of RaidInstance.ActiveRaids) {
