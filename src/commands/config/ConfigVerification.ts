@@ -29,9 +29,9 @@ import { GeneralConstants } from "../../constants/GeneralConstants";
 import { DungeonUtilities } from "../../utilities/DungeonUtilities";
 import { ArrayUtilities } from "../../utilities/ArrayUtilities";
 import { DUNGEON_DATA } from "../../constants/dungeons/DungeonData";
-import { VerifyManager } from "../../managers/VerifyManager";
 import { ButtonConstants } from "../../constants/ButtonConstants";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { VerifyManager } from "../../managers/VerifyManager";
 import SHORT_STAT_TO_LONG = VerifyManager.SHORT_STAT_TO_LONG;
 
 export class ConfigVerification extends BaseCommand {
@@ -80,8 +80,6 @@ export class ConfigVerification extends BaseCommand {
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
-        if (!(ctx.channel instanceof TextChannel)) return -1;
-
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });
@@ -399,13 +397,12 @@ export class ConfigVerification extends BaseCommand {
                                 : `Section Verification: **${section.sectionName}**`
                         ).setFooter({ text: section.isMainSection ? "Server Verification" : "Section Verification" });
 
-                    const requirements = VerifyManager.getVerificationRequirements(ctx.guildDoc!, verifConfig);
                     const descSb = new StringBuilder();
                     if (section.isMainSection) {
                         descSb.append(`Welcome to **\`${ctx.guild!.name}\`**. `)
                             .append("In order to get access to the server, you will need to verify your identity with")
                             .append(" the bot and meet the following requirements (if any):")
-                            .append(StringUtil.codifyString(requirements))
+                            .append(StringUtil.codifyString("TODO"))
                             .appendLine()
                             .append("If you meet the requirements posted above, please press the **Verify Me** button.")
                             .append(" __Make sure anyone can direct message you.__");
@@ -414,7 +411,7 @@ export class ConfigVerification extends BaseCommand {
                         descSb.append(`Welcome to the **\`${section.sectionName}\`** section. `)
                             .append("In order to get access to the section, you will need to meet the following")
                             .append(" requirements (if any):")
-                            .append(StringUtil.codifyString(requirements))
+                            .append(StringUtil.codifyString("TODO"))
                             .appendLine()
                             .append("If you meet the requirements posted above, please press the **Verify Me** button.")
                             .append(" __Make sure anyone can direct message you.__");

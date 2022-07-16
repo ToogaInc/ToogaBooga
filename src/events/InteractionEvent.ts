@@ -213,24 +213,25 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     const manualVerifyChannels = guildDoc.manualVerificationEntries
         .find(x => x.manualVerifyMsgId === message.id && x.manualVerifyChannelId === channel.id);
 
+    // TODO
     if (manualVerifyChannels) {
         interaction.deferUpdate().catch(LOGGER.error);
-        VerifyManager.acknowledgeManualVerifyRes(manualVerifyChannels, resolvedMember, interaction.customId, message)
-            .then();
+        //VerifyManager.acknowledgeManualVerifyRes(manualVerifyChannels, resolvedMember, interaction.customId, message)
+        //    .then();
         return;
     }
 
 
     // Check VERIFICATION
     if (guildDoc.channels.verification.verificationChannelId === resolvedChannel.id && interaction.message.author.bot) {
-        await VerifyManager.verifyInteraction(interaction, guildDoc, MongoManager.getMainSection(guildDoc));
+        await VerifyManager.verify(interaction, guildDoc, MongoManager.getMainSection(guildDoc));
         return;
     }
 
     const relevantSec = guildDoc.guildSections
         .find(x => x.channels.verification.verificationChannelId === resolvedChannel.id);
     if (relevantSec) {
-        await VerifyManager.verifyInteraction(interaction, guildDoc, relevantSec);
+        await VerifyManager.verify(interaction, guildDoc, relevantSec);
         return;
     }
 
