@@ -10,7 +10,7 @@ export async function onMessageEvent(msg: Message): Promise<void> {
         return;
     }
 
-    if (InteractivityManager.ACTIVE_DIRECT_MESSAGES.has(msg.author.id)) {
+    if (InteractivityManager.IN_VERIFICATION.has(msg.author.id)) {
         return;
     }
 

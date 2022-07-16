@@ -86,23 +86,15 @@ export namespace VerifyManager {
     }
 
     /**
-     * Runs through the verification prompt.
+     * Runs through the verification prompt. This is the main entrypoint of the verification process.
      *
      * @param {MessageComponentInteraction} i The interaction. This should not be deferred.
      * @param {IGuildInfo} guildDoc The guild document.
      * @param {ISectionInfo} section The section where verification should occur.
      */
     export async function verify(i: MessageComponentInteraction, guildDoc: IGuildInfo, section: ISectionInfo): Promise<void> {
-        if (!(await RealmSharperWrapper.isOnline())) {
-            await i.reply({
-                content: "Verification is currently unavailable. Please try again later. If this issue persists,"
-                    + " please contact a staff member."
-            });
-
-            return;
-        }
-
-        if (InteractivityManager.ACTIVE_DIRECT_MESSAGES.has(i.user.id)) {
+        // If they're in the process of verification, don't let them start.
+        if (InteractivityManager.IN_VERIFICATION.has(i.user.id)) {
             await i.reply({
                 content: "You're currently in the process of getting verified. Please refer to your direct messages."
             });
@@ -110,23 +102,47 @@ export namespace VerifyManager {
             return;
         }
 
-        if (!i.isButton() || !i.guild) {
+        // We want to ensure they can't start the verification process in another server.
+        InteractivityManager.IN_VERIFICATION.add(i.user.id);
+
+        if (!(await RealmSharperWrapper.isOnline())) {
+            await i.reply({
+                content: "Verification is currently unavailable. Please try again later. If this issue persists,"
+                    + " please contact a staff member."
+            });
+
+            InteractivityManager.IN_VERIFICATION.delete(i.user.id);
             return;
         }
+
+        if (!i.isButton() || !i.guild) {
+            InteractivityManager.IN_VERIFICATION.delete(i.user.id);
+            return;
+        }
+
+        // Defer the reply so they can't spam the current verification button.
+        // After this line is executed, they should not be able to start a new verification process anywhere.
+        await i.deferReply({ ephemeral: true });
 
         // Get the guild member.
         const member = await GuildFgrUtilities.fetchGuildMember(i.guild, i.user.id);
         if (!member) {
+            await i.editReply({
+                content: "An unknown error occurred."
+            });
+            InteractivityManager.IN_VERIFICATION.delete(i.user.id);
             return;
         }
 
         // Get verified role
         const verifiedRole = await GuildFgrUtilities.fetchRole(i.guild, section.roles.verifiedRoleId);
         if (!verifiedRole || GuildFgrUtilities.memberHasCachedRole(member, verifiedRole.id)) {
+            await i.editReply({
+                content: "The verified member role for this section does not exist."
+            });
+            InteractivityManager.IN_VERIFICATION.delete(i.user.id);
             return;
         }
-
-        await i.deferReply({ ephemeral: true });
 
         // Get logging channels
         const loggingChannels = section.isMainSection
@@ -195,6 +211,7 @@ export namespace VerifyManager {
                 content: "I am not able to directly message you. Please make sure anyone in this server can DM you."
             });
 
+            InteractivityManager.IN_VERIFICATION.delete(i.user.id);
             return;
         }
 
@@ -203,7 +220,6 @@ export namespace VerifyManager {
         });
 
         // Okay, that person can be DMed. Let's begin the process.
-        InteractivityManager.ACTIVE_DIRECT_MESSAGES.add(instance.member.id);
         const [msg, dmChan] = msgDmResp;
         const baseEmbed = MessageUtilities.generateBlankEmbed(instance.member.user, "RED")
             .setTitle(`**${instance.member.guild.name}**: Guild Verification`);
@@ -251,7 +267,7 @@ export namespace VerifyManager {
                         + "their Discord account, something went wrong when trying to edit the base embed message."
                 });
 
-                InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(instance.member.id);
+                InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
                 return;
             }
 
@@ -272,7 +288,7 @@ export namespace VerifyManager {
                         + "their Discord account, but they did not select a name within the specified time."
                 });
 
-                InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(instance.member.id);
+                InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
                 msg.delete().catch();
                 return;
             }
@@ -288,7 +304,7 @@ export namespace VerifyManager {
                         + "the person was asked to either use an existing name or provide a new name."
                 });
 
-                InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(instance.member.id);
+                InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
                 msg.delete().catch();
                 return;
             }
@@ -319,7 +335,8 @@ export namespace VerifyManager {
                         + "something went wrong when trying to edit the base embed message."
                 });
 
-                InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(instance.member.id);
+                InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+                msg.delete().catch();
                 return;
             }
 
@@ -348,7 +365,7 @@ export namespace VerifyManager {
                     content: `\`[Main]\` ${instance.member} was asked for a name, but they did not respond in time.`
                 });
 
-                InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(instance.member.id);
+                InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
                 msg.delete().catch();
                 return;
             }
@@ -360,7 +377,7 @@ export namespace VerifyManager {
                         + " their name."
                 });
 
-                InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(instance.member.id);
+                InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
                 msg.delete().catch();
                 return;
             }
@@ -403,7 +420,7 @@ export namespace VerifyManager {
                     components: []
                 });
 
-                InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(instance.member.id);
+                InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
                 return;
             }
 
@@ -440,7 +457,7 @@ export namespace VerifyManager {
         });
 
         collector.on("end", () => {
-            InteractivityManager.ACTIVE_DIRECT_MESSAGES.delete(instance.member.id);
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
         });
 
         collector.on("collect", async i => {
@@ -791,6 +808,7 @@ export namespace VerifyManager {
                 })
             ]);
 
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
             collector.stop("done");
         });
     }
