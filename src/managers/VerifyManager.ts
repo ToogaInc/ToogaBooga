@@ -2,6 +2,7 @@ import {
     Collection,
     DMChannel,
     EmbedFieldData,
+    Guild,
     GuildMember,
     Message, MessageButton, MessageComponentInteraction,
     MessageEmbed, MessageSelectMenu,
@@ -1238,38 +1239,7 @@ export namespace VerifyManager {
         // If the member doesn't exist, then we can just remove all manual verification requests from 
         // said person.
         if (!member) {
-            // Remove all entries with this person's user ID
-            await MongoManager.updateAndFetchGuildDoc({ guildId: mod.guild.id }, {
-                $pull: {
-                    manualVerificationEntries: {
-                        userId: entry.userId
-                    }
-                }
-            });
-
-            // And then delete all manual verification request messages by this person.
-            await Promise.all([
-                guildDoc.manualVerificationEntries
-                    .filter(x => x.userId === entry.userId)
-                    .map(async x => {
-                        const channel = GuildFgrUtilities.getCachedChannel<TextChannel>(
-                            mod.guild,
-                            x.manualVerifyChannelId
-                        );
-
-                        if (!channel) {
-                            return;
-                        }
-
-                        const relevantMsg = await GuildFgrUtilities.fetchMessage(channel, x.manualVerifyMsgId);
-                        if (!relevantMsg) {
-                            return;
-                        }
-
-                        await MessageUtilities.tryDelete(relevantMsg);
-                    })
-            ]);
-
+            removeAllManualVerifApps(mod.guild, entry.userId).then();
             return;
         }
 
@@ -1916,5 +1886,48 @@ export namespace VerifyManager {
         }
     
         return sb.toString().trim();
+    }
+
+    /**
+     * Deletes all manual verification entries for the specified user. This deletes all manual verification application
+     * messages and entries from the database.
+     * @param guild The guild.
+     * @param userId The user ID corresponding to the user to delete all manual verification entries.
+     * @private
+     */
+    export async function removeAllManualVerifApps(guild: Guild, userId: string): Promise<void> {
+        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild, true);
+        
+        // Delete all manual verification request messages by this person.
+        await Promise.all([
+            guildDoc.manualVerificationEntries
+                .filter(x => x.userId === userId)
+                .map(async x => {
+                    const channel = GuildFgrUtilities.getCachedChannel<TextChannel>(
+                        guild,
+                        x.manualVerifyChannelId
+                    );
+                    if (!channel) {
+                        return;
+                    }
+        
+                    const relevantMsg = await GuildFgrUtilities.fetchMessage(channel, x.manualVerifyMsgId);
+                    if (!relevantMsg) {
+                        return;
+                    }
+        
+                    await MessageUtilities.tryDelete(relevantMsg);
+                })
+        ]);
+
+        // And then remove all manual verification requests
+        // Remove all entries with this person's user ID
+        await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
+            $pull: {
+                manualVerificationEntries: {
+                    userId
+                }
+            }
+        });
     }
 }
