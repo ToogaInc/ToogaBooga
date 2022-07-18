@@ -13,9 +13,9 @@ import { MongoManager } from "../../managers/MongoManager";
 import { EmojiConstants } from "../../constants/EmojiConstants";
 import {
     ICharacterReq,
-    IDungeonReq,
     IExaltationReq,
     IGuildInfo,
+    IPropertyKeyValuePair,
     ISectionInfo,
     IVerificationProperties,
     IVerificationRequirements
@@ -137,8 +137,7 @@ export class ConfigVerification extends BaseCommand {
             return;
         }
 
-        await this.configVerification(ctx, botMsg, allSections.find(x => x.uniqueIdentifier === selected.values[0])!)
-        ;
+        await this.configVerification(ctx, botMsg, allSections.find(x => x.uniqueIdentifier === selected.values[0])!);
     }
 
     /**
@@ -150,7 +149,6 @@ export class ConfigVerification extends BaseCommand {
     public async configVerification(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const verifConfig: IVerificationProperties = {
             checkRequirements: section.otherMajorConfig.verificationProperties.checkRequirements,
-            autoManualVerify: { ...section.otherMajorConfig.verificationProperties.autoManualVerify },
             verifReq: { ...section.otherMajorConfig.verificationProperties.verifReq },
             verificationSuccessMessage: section.otherMajorConfig.verificationProperties.verificationSuccessMessage,
             additionalVerificationInfo: section.otherMajorConfig.verificationProperties.additionalVerificationInfo
@@ -402,7 +400,9 @@ export class ConfigVerification extends BaseCommand {
                         descSb.append(`Welcome to **\`${ctx.guild!.name}\`**. `)
                             .append("In order to get access to the server, you will need to verify your identity with")
                             .append(" the bot and meet the following requirements (if any):")
-                            .append(StringUtil.codifyString("TODO"))
+                            .append(StringUtil.codifyString(
+                                VerifyManager.getVerificationRequirements(ctx.guildDoc!, verifConfig)
+                            ))
                             .appendLine()
                             .append("If you meet the requirements posted above, please press the **Verify Me** button.")
                             .append(" __Make sure anyone can direct message you.__");
@@ -411,7 +411,9 @@ export class ConfigVerification extends BaseCommand {
                         descSb.append(`Welcome to the **\`${section.sectionName}\`** section. `)
                             .append("In order to get access to the section, you will need to meet the following")
                             .append(" requirements (if any):")
-                            .append(StringUtil.codifyString("TODO"))
+                            .append(StringUtil.codifyString(
+                                VerifyManager.getVerificationRequirements(ctx.guildDoc!, verifConfig)
+                            ))
                             .appendLine()
                             .append("If you meet the requirements posted above, please press the **Verify Me** button.")
                             .append(" __Make sure anyone can direct message you.__");
@@ -456,7 +458,9 @@ export class ConfigVerification extends BaseCommand {
         const newVerifReqs: IVerificationRequirements = {
             characters: { ...verifReqs.characters },
             exaltations: { ...verifReqs.exaltations },
-            graveyardSummary: { ...verifReqs.graveyardSummary },
+            dungeonCompletions: verifReqs.dungeonCompletions?.map(x => {
+                return { ...x };
+            }) ?? [],
             guild: { ...verifReqs.guild },
             lastSeen: { ...verifReqs.lastSeen },
             rank: { ...verifReqs.rank },
@@ -578,7 +582,6 @@ export class ConfigVerification extends BaseCommand {
                     newVerifReqs.characters.checkThis && newVerifReqs.characters.statsNeeded.some(x => x > 0)
                         ? newVerifReqs.characters.statsNeeded
                             .map((num, idx) => `- ${idx}/8: ${num}`)
-                            .filter(x => !x.endsWith("0"))
                             .join("\n")
                         : "Not Checking."
                 )
@@ -861,12 +864,12 @@ export class ConfigVerification extends BaseCommand {
                     break;
                 }
                 case "dungeon_completions": {
-                    const c = await this.configDungeonReq(ctx, botMsg, newVerifReqs.graveyardSummary);
+                    const c = await this.configDungeonReq(ctx, botMsg, newVerifReqs.dungeonCompletions ?? []);
                     if (c.status === TimedStatus.TIMED_OUT)
                         return { value: null, status: TimedStatus.TIMED_OUT };
                     if (c.status === TimedStatus.CANCELED)
                         return { value: null, status: TimedStatus.CANCELED };
-                    newVerifReqs.graveyardSummary = c.value!;
+                    newVerifReqs.dungeonCompletions = c.value!;
                     break;
                 }
                 case ButtonConstants.SAVE_ID: {
@@ -1166,22 +1169,14 @@ export class ConfigVerification extends BaseCommand {
      * @return {Promise<TimedResult<IDungeonReq>>} The new requirements, if any.
      * @private
      */
-    private async configDungeonReq(ctx: ICommandContext, botMsg: Message,
-        dungeonReq: IDungeonReq): Promise<TimedResult<IDungeonReq>> {
-        const newDungeonReq: IDungeonReq = {
-            botCompletions: dungeonReq.botCompletions
-                .filter(x => !!DungeonUtilities.getDungeonInfo(x.key, ctx.guildDoc!))
-                .map(x => {
-                    return { ...x };
-                }),
-            checkThis: dungeonReq.checkThis,
-            // DISREGARD THIS
-            realmEyeCompletions: dungeonReq.realmEyeCompletions.map(x => {
-                return { ...x };
-            }),
-            // MUST BE TRUE
-            useBotCompletions: dungeonReq.useBotCompletions
-        };
+    private async configDungeonReq(
+        ctx: ICommandContext,
+        botMsg: Message,
+        dungeonReq: IPropertyKeyValuePair<string, number>[]
+    ): Promise<TimedResult<IPropertyKeyValuePair<string, number>[]>> {
+        const newDungeonReq = dungeonReq.map(x => {
+            return { ... x };
+        });
 
         const [backBtn, upBtn, downButton, addBtn, removeBtn, saveBtn] = ConfigVerification.getButtons(
             AdvancedCollector.cloneButton(ButtonConstants.ADD_BUTTON),
@@ -1222,16 +1217,16 @@ export class ConfigVerification extends BaseCommand {
 
         let selectedIdx = 0;
         while (true) {
-            upBtn.setDisabled(newDungeonReq.botCompletions.length <= 1);
-            downButton.setDisabled(newDungeonReq.botCompletions.length <= 1);
-            removeBtn.setDisabled(newDungeonReq.botCompletions.length === 0);
-            addBtn.setDisabled(newDungeonReq.botCompletions.length + 1 > ConfigVerification.MAX_DUNGEON_REQS);
+            upBtn.setDisabled(newDungeonReq.length <= 1);
+            downButton.setDisabled(newDungeonReq.length <= 1);
+            removeBtn.setDisabled(newDungeonReq.length === 0);
+            addBtn.setDisabled(newDungeonReq.length + 1 > ConfigVerification.MAX_DUNGEON_REQS);
 
             embed.fields = [];
             const fields = ArrayUtilities.arrayToStringFields(
-                newDungeonReq.botCompletions,
+                newDungeonReq,
                 (i, elem) => {
-                    const dgn = DungeonUtilities.getDungeonInfo(newDungeonReq.botCompletions[i].key, ctx.guildDoc!)!;
+                    const dgn = DungeonUtilities.getDungeonInfo(newDungeonReq[i].key, ctx.guildDoc!)!;
                     return i === selectedIdx
                         ? `${EmojiConstants.RIGHT_TRIANGLE_EMOJI} ${dgn.dungeonName}: \`${elem.value}\`\n`
                         : `${dgn.dungeonName}: \`${elem.value}\`\n`;
@@ -1268,18 +1263,18 @@ export class ConfigVerification extends BaseCommand {
 
             if (typeof selectedChoice === "number") {
                 if (selectedChoice === 0) {
-                    newDungeonReq.botCompletions.splice(selectedIdx, 1);
-                    if (newDungeonReq.botCompletions.length === 0)
+                    newDungeonReq.splice(selectedIdx, 1);
+                    if (newDungeonReq.length === 0)
                         continue;
-                    selectedIdx %= newDungeonReq.botCompletions.length;
+                    selectedIdx %= newDungeonReq.length;
                     continue;
                 }
 
-                if (selectedIdx >= newDungeonReq.botCompletions.length) {
+                if (selectedIdx >= newDungeonReq.length) {
                     continue;
                 }
 
-                newDungeonReq.botCompletions[selectedIdx].value = selectedChoice;
+                newDungeonReq[selectedIdx].value = selectedChoice;
                 continue;
             }
 
@@ -1289,7 +1284,7 @@ export class ConfigVerification extends BaseCommand {
                 }
                 case ButtonConstants.ADD_ID: {
                     const possDungeons = DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons)
-                        .filter(x => newDungeonReq.botCompletions.every(y => y.key !== x.codeName));
+                        .filter(x => newDungeonReq.every(y => y.key !== x.codeName));
 
                     if (possDungeons.length === 0)
                         break;
@@ -1345,29 +1340,28 @@ export class ConfigVerification extends BaseCommand {
                     if (!selectedInteraction.isSelectMenu())
                         break;
 
-                    newDungeonReq.botCompletions.push({ key: selectedInteraction.values[0], value: 1 });
+                    newDungeonReq.push({ key: selectedInteraction.values[0], value: 1 });
                     break;
                 }
                 case ButtonConstants.REMOVE_ID: {
-                    newDungeonReq.botCompletions.splice(selectedIdx, 1);
-                    if (newDungeonReq.botCompletions.length === 0)
+                    newDungeonReq.splice(selectedIdx, 1);
+                    if (newDungeonReq.length === 0)
                         break;
-                    selectedIdx %= newDungeonReq.botCompletions.length;
+                    selectedIdx %= newDungeonReq.length;
                     break;
                 }
                 case ButtonConstants.UP_ID: {
-                    selectedIdx = (selectedIdx + newDungeonReq.botCompletions.length - 1)
-                        % newDungeonReq.botCompletions.length;
-                    selectedIdx %= newDungeonReq.botCompletions.length;
+                    selectedIdx = (selectedIdx + newDungeonReq.length - 1)
+                        % newDungeonReq.length;
+                    selectedIdx %= newDungeonReq.length;
                     break;
                 }
                 case ButtonConstants.DOWN_ID: {
                     selectedIdx++;
-                    selectedIdx %= newDungeonReq.botCompletions.length;
+                    selectedIdx %= newDungeonReq.length;
                     break;
                 }
                 case ButtonConstants.SAVE_ID: {
-                    newDungeonReq.checkThis = newDungeonReq.botCompletions.some(x => x.value > 0);
                     return { value: newDungeonReq, status: TimedStatus.SUCCESS };
                 }
             }

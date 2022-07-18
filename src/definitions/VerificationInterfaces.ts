@@ -51,46 +51,6 @@ export interface IVerificationProperties {
      * @type {boolean}
      */
     checkRequirements: boolean;
-
-    /**
-     * Whether to force all members to manual verification. When members need to manually verify through this, they
-     * will be asked for:
-     * - Their IGN.
-     * - Any supporting image(s), as specified by the administrators.
-     * Upon submission, the manual verification application will be sent with the applicable image(s), which will be
-     * stored in the storage channel.
-     *
-     * @type {object}
-     */
-    autoManualVerify: {
-        /**
-         * The message to display to users when they want to attach evidence when getting manually verified.
-         *
-         * @type {string}
-         */
-        messageToShow: string;
-
-        /**
-         * The message to show on the verification embed.
-         *
-         * @type {string}
-         */
-        verifEmbedMsg: string;
-
-        /**
-         * The maximum number of images a person can send.
-         *
-         * @type {number}
-         */
-        maximumImages: number;
-
-        /**
-         * Whether to force all members to manual verification. This overrides `checkRequirements`.
-         *
-         * @type {boolean}
-         */
-        forceManualVerify: boolean;
-    };
 }
 
 /**
@@ -234,11 +194,13 @@ export interface IVerificationRequirements {
     exaltations: IExaltationReq;
 
     /**
-     * The graveyard summary requirements.
+     * The specified number of some dungeon(s) logged by the bot needed to pass verification.
      *
-     * @type {IDungeonReq}
+     * The key is the dungeon ID, the value is the amount.
+     *
+     * @type {IPropertyKeyValuePair<string, number>[]}
      */
-    graveyardSummary: IDungeonReq;
+    dungeonCompletions?: IPropertyKeyValuePair<string, number>[];
 }
 
 /**
@@ -396,59 +358,4 @@ export interface ICharacterReq {
      * @type {boolean}
      */
     checkPastDeaths: boolean;
-}
-
-/**
- * The interface representing the dungeon requirements for this section.
- */
-export interface IDungeonReq {
-    /**
-     * Whether to check this requirement.
-     *
-     * @type {boolean}
-     */
-    checkThis: boolean;
-
-    /**
-     * The specified summary type and the minimum number of that needed to pass the requirement. For example,
-     * you might have something like:
-     * ```
-     *  [
-     *      {
-     *          key: "Tiles uncovered",
-     *          value: 200_000_000
-     *      },
-     *      {
-     *          key: "Secluded Thickets completed",
-     *          value: 30
-     *      },
-     *      {
-     *          key: "Nests completed2",
-     *          value: 15
-     *      }
-     *  ]
-     * ```
-     *
-     * In this example, all the above requirements must be passed.
-     *
-     * @type {IPropertyKeyValuePair<string, number>[]}
-     */
-    realmEyeCompletions: IPropertyKeyValuePair<string, number>[];
-
-
-    /**
-     * The specified number of some dungeon(s) logged by the bot needed to pass verification.
-     *
-     * The key is the dungeon ID, the value is the amount.
-     *
-     * @type {IPropertyKeyValuePair<string, number>[]}
-     */
-    botCompletions: IPropertyKeyValuePair<string, number>[];
-
-    /**
-     * Whether to only use `botCompletions`. If `false`, this will check `minimum`.
-     *
-     * @type {boolean}
-     */
-    useBotCompletions: boolean;
 }

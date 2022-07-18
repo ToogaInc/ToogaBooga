@@ -457,18 +457,7 @@ export namespace MongoManager {
                             wis: 0,
                         }
                     },
-                    graveyardSummary: {
-                        checkThis: false,
-                        realmEyeCompletions: [],
-                        botCompletions: [],
-                        useBotCompletions: true
-                    }
-                },
-                autoManualVerify: {
-                    forceManualVerify: false,
-                    maximumImages: 1,
-                    verifEmbedMsg: "",
-                    messageToShow: ""
+                    dungeonCompletions: []
                 }
             },
             afkCheckProperties: {

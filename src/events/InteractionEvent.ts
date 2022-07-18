@@ -216,7 +216,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
 
     
     if (manualVerifyChannels) {
-        interaction.deferReply().catch(LOGGER.error);
+        interaction.deferUpdate().catch(LOGGER.error);
         VerifyManager.acknowledgeManualVerif(manualVerifyChannels, resolvedMember, interaction.customId, message)
             .then();
         return;
@@ -227,6 +227,17 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     // Check VERIFICATION
     // We do NOT defer the interaction here because that is handled via the verify function
     if (guildDoc.channels.verification.verificationChannelId === resolvedChannel.id && interaction.message.author.bot) {
+        // We check this in case the person is responding to an ephemeral message from the bot in the 
+        // verification channel (e.g., whether they want to be considered for manual verification).
+        //
+        // Discord.js doesn't provide an easy way to check if the interaction we're responding to is
+        // ephermeral, so here we are.
+        //
+        // Depending on how the verification channels are setup, we may need to account for this here even though
+        // the main section itself doesn't use ephemeral interactions in the verification channel.
+        if (!interaction.message.embeds.some(x => x?.footer?.text.includes("Verification"))) {
+            return;
+        }
         await VerifyManager.verify(interaction, guildDoc, MongoManager.getMainSection(guildDoc));
         return;
     }
@@ -234,6 +245,14 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     const relevantSec = guildDoc.guildSections
         .find(x => x.channels.verification.verificationChannelId === resolvedChannel.id);
     if (relevantSec) {
+        // We check this in case the person is responding to an ephemeral message from the bot in the 
+        // verification channel (e.g., whether they want to be considered for manual verification).
+        //
+        // Discord.js doesn't provide an easy way to check if the interaction we're responding to is
+        // ephermeral, so here we are.
+        if (!interaction.message.embeds.some(x => x?.footer?.text.endsWith("Verification"))) {
+            return;
+        }
         await VerifyManager.verify(interaction, guildDoc, relevantSec);
         return;
     }
