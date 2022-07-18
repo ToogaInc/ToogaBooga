@@ -60,6 +60,7 @@ export namespace VerifyManager {
     const CHECK_PROFILE_BUTTON = new MessageButton()
         .setLabel("Check Profile")
         .setCustomId(CHECK_PROFILE_ID)
+        .setEmoji(EmojiConstants.SEARCH_GLASS_EMOJI)
         .setStyle("PRIMARY");
 
     // Other constants.
@@ -285,6 +286,7 @@ export namespace VerifyManager {
                     new MessageButton()
                         .setStyle("DANGER")
                         .setLabel("Skip")
+                        .setEmoji(EmojiConstants.RIGHT_TRIANGLE_EMOJI)
                         .setCustomId("skip"),
                     ButtonConstants.CANCEL_BUTTON
                 ])

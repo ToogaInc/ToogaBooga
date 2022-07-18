@@ -389,6 +389,7 @@ export class ConfigVerification extends BaseCommand {
 
                     const verifEmbed = new MessageEmbed()
                         .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
+                        .setColor("RANDOM")
                         .setTitle(
                             section.isMainSection
                                 ? `Server Verification: **${ctx.guild!.name}**`
@@ -433,6 +434,7 @@ export class ConfigVerification extends BaseCommand {
                             new MessageButton()
                                 .setLabel("Verify Me")
                                 .setStyle("PRIMARY")
+                                .setEmoji(EmojiConstants.INBOX_EMOJI)
                                 .setCustomId("verify_me")
                         ])
                     });
