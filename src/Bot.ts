@@ -152,7 +152,8 @@ export class Bot {
             new Cmds.ShowAllBlacklist(),
             new Cmds.ManualVerifyMain(),
             new Cmds.ManualVerifySection(),
-            new Cmds.RemovePunishment()
+            new Cmds.RemovePunishment(),
+            new Cmds.CheckManualVerifyApp()
         ]);
 
         Bot.Commands.set("Configuration", [

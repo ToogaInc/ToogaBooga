@@ -1241,7 +1241,7 @@ export namespace VerifyManager {
         // If the member doesn't exist, then we can just remove all manual verification requests from 
         // said person.
         if (!member) {
-            removeAllManualVerifApps(mod.guild, entry.userId).then();
+            removeAllManualVerifAppsForUser(mod.guild, entry.userId).then();
             return;
         }
 
@@ -1897,7 +1897,7 @@ export namespace VerifyManager {
      * @param userId The user ID corresponding to the user to delete all manual verification entries.
      * @private
      */
-    export async function removeAllManualVerifApps(guild: Guild, userId: string): Promise<void> {
+    export async function removeAllManualVerifAppsForUser(guild: Guild, userId: string): Promise<void> {
         const guildDoc = await MongoManager.getOrCreateGuildDoc(guild, true);
         
         // Delete all manual verification request messages by this person.
