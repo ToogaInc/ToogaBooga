@@ -10,3 +10,4 @@ export * from "./ChannelDeleteEvent";
 export * from "./MessageDeleteEvent";
 export * from "./GuildMemberAddEvent";
 export * from "./GuildMemberUpdateEvent";
+export * from "./GuildMemberRemoveEvent";

@@ -200,18 +200,24 @@ export namespace PunishmentManager {
      * user, and saves the punishment information into the user's document. You will need to handle the punishment
      * information for the guild document.
      * @param {GuildMember | object} member The member who is receiving a punishment or getting a punishment
-     * removed. For blacklists, simply provide the `name` in an object.
+     * removed. For blacklists, simply provide the `name` in an object. If you only want to modify the punishment
+     * entry in the user's database, provide the `uId` in an object with the value being the user's ID. Note that
+     * providing an ID only will suppress any logging.
      * @param {AllModLogType} punishmentType The punishment type.
      * @param {IPunishmentDetails} details The details.
      * @returns {Promise<string | null>} The moderation ID associated with this punishment, if any.
      */
     export async function logPunishment(
-        member: GuildMember | { name: string; },
+        member: GuildMember | { name: string; } | { uId: string; },
         punishmentType: AllModLogType,
         details: IPunishmentDetails
     ): Promise<string | null> {
-
-        LOGGER.info(`Logging punishment for ${"name" in member ? member.name : member.displayName}, type: ${punishmentType}`);
+        const display = "name" in member
+            ? member.name
+            : "uId" in member
+                ? member.uId
+                : member.displayName;
+        LOGGER.info(`Logging punishment for ${display}, type: ${punishmentType}`);
 
         let logChannel: TextChannel | null;
         let resolvedModType: MainOnlyModLogType | SectionModLogType | null;
@@ -271,13 +277,28 @@ export namespace PunishmentManager {
             return null;
 
         // Now prepare logging message and database entry
+        let auName = "";
+        let auId = "";
+        let auTag = "";
+        if (member instanceof GuildMember) {
+            auName = member.displayName;
+            auId = member.id;
+            auTag = member.user.tag;
+        }
+        else if ("uId" in member) {
+            auId = member.uId;
+        }
+        else {
+            auName = member.name;
+        }
+
         const entry: IPunishmentHistoryEntry = {
             guildId: details.guild.id,
             moderationType: resolvedModType,
             affectedUser: {
-                name: "name" in member ? member.name : member.displayName,
-                id: "id" in member ? member.id : "",
-                tag: "user" in member ? member.user.tag : ""
+                name: auName,
+                id: auId,
+                tag: auTag
             },
             moderator: {
                 id: details.moderator?.id ?? AUTOMATIC,
@@ -333,227 +354,239 @@ export namespace PunishmentManager {
             );
         }
 
-        switch (punishmentType) {
-            case "Warn": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle("Warning Issued.")
-                    .setDescription(new StringBuilder()
-                        .append(`⇒ Member Warned: ${entry.affectedUser.name}`)
-                        .appendLine()
-                        .append(`⇒ Member Mention: ${member} (${member.id})`)
-                        .toString());
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Warning.")
-                    .setDescription(`You have been warned in **${details.guild.name}**.`);
-                break;
-            }
-            case "Unwarn": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle("Warning Removed.")
-                    .setDescription(new StringBuilder()
-                        .append(`⇒ Member Affected: ${entry.affectedUser.name}`)
-                        .appendLine()
-                        .append(`⇒ Member Mention: ${member} (${member.id})`)
-                        .toString());
-                break;
-            }
-            case "Blacklist": {
-                // Logging
-                const descSb = new StringBuilder()
-                    .append(`⇒ Blacklisted Name: \`${entry.affectedUser.name}\``)
-                    .appendLine();
-                if (member instanceof GuildMember) {
-                    descSb.append(`⇒ Member: ${member} (${member.id})`)
-                        .appendLine();
+        if (!("uId" in member)) {
+            switch (punishmentType) {
+                case "Warn": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle("Warning Issued.")
+                        .setDescription(new StringBuilder()
+                            .append(`⇒ Member Warned: ${entry.affectedUser.name}`)
+                            .appendLine()
+                            .append(`⇒ Member Mention: ${member} (${member.id})`)
+                            .toString());
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Warning.")
+                        .setDescription(`You have been warned in **${details.guild.name}**.`);
+                    break;
                 }
-
-                logToChanEmbed.setTitle("__Server__ Blacklisted.")
-                    .setDescription(descSb.toString());
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Server Blacklisted.")
-                    .setDescription(`You have been blacklisted from **${details.guild.name}**.`);
-
-                break;
-            }
-            case "Unblacklist": {
-                // Logging
-                logToChanEmbed.setTitle("__Server__ Blacklist Removed.")
-                    .setDescription(new StringBuilder()
-                        .append(`⇒ Unblacklisted Name: ${entry.affectedUser.name}`)
-                        .toString());
-
-                break;
-            }
-            case "Suspend": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle("__Server__ Suspended.")
-                    .setDescription(new StringBuilder()
-                        .append(`⇒ Member Suspended: ${entry.affectedUser.name}`)
-                        .appendLine()
-                        .append(`⇒ Member Mention: ${member} (${member.id})`)
-                        .toString())
-                    .addField("Suspension Time", durationStr);
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Suspended.")
-                    .setDescription(`You have been suspended from **${details.guild.name}**.`)
-                    .addField("Suspension Time", durationStr);
-                break;
-            }
-            case "Unsuspend": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle("__Server__ Suspension Removed.")
-                    .setDescription(new StringBuilder()
-                        .append(`⇒ Member Unsuspended: ${entry.affectedUser.name}`)
-                        .appendLine()
-                        .append(`⇒ Member Mention: ${member} (${member.id})`)
-                        .toString());
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Server Suspension Removed.")
-                    .setDescription(`You have been unsuspended from **${details.guild.name}**.`);
-                break;
-            }
-            case "SectionSuspend": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle(`${details.section.sectionName}: __Section__ Suspended.`)
-                    .setDescription(new StringBuilder()
-                        .append(`⇒ Member Suspended: ${entry.affectedUser.name}`)
-                        .appendLine()
-                        .append(`⇒ Member Mention: ${member} (${member.id})`)
-                        .appendLine()
-                        .append(`⇒ Suspended From: ${details.section.sectionName}`)
-                        .toString())
-                    .addField("Suspension Time", durationStr);
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Section Suspended.")
-                    .setDescription(new StringBuilder()
-                        .append(`You have been suspended from the **${details.section.sectionName}** section in the `)
-                        .append(`server, **${details.guild.name}**.`)
-                        .toString())
-                    .addField("Suspension Time", durationStr);
-                break;
-            }
-            case "SectionUnsuspend": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle("__Section__ Suspension Removed.")
-                    .setDescription(new StringBuilder()
-                        .append(`⇒ Member Unsuspended: ${entry.affectedUser.name}`)
-                        .appendLine()
-                        .append(`⇒ Member Mention: ${member} (${member.id})`)
-                        .appendLine()
-                        .append(`⇒ Unsuspended From: ${details.section.sectionName}`)
-                        .toString());
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Section Suspension Removed.")
-                    .setDescription(new StringBuilder()
-                        .append(`You have been unsuspended from the **${details.section.sectionName}** section in the `)
-                        .append(`server, **${details.guild.name}**.`)
-                        .toString());
-                break;
-            }
-            case "ModmailBlacklist": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle("Modmail Blacklisted.")
-                    .setDescription(`⇒ Modmail Blacklisted: ${member} (${member.id})`);
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Modmail Blacklisted.")
-                    .setDescription(`You have been blacklisted from sending modmail in **${details.guild.name}**.`);
-                break;
-            }
-            case "ModmailUnblacklist": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle("Modmail Blacklisted Removed.")
-                    .setDescription(`⇒ Modmail Unblacklisted: ${member} (${member.id})`);
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Modmail Blacklist Removed.")
-                    .setDescription(`Your modmail blacklist in **${details.guild.name}** has been removed.`);
-                break;
-            }
-            case "Mute": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle("Server Muted.")
-                    .setDescription(`⇒ Member Muted: ${member} (${member.id})`)
-                    .addField("Mute Time", durationStr);
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Server Muted.")
-                    .setDescription(`You have been server muted in **${details.guild.name}**.`)
-                    .addField("Mute Time", durationStr);
-                break;
-            }
-            case "Unmute": {
-                if (!("id" in member))
-                    return null;
-
-                // Logging
-                logToChanEmbed
-                    .setTitle("Server Mute Removed.")
-                    .setDescription(`⇒ Member Unmuted: ${member} (${member.id})`);
-
-                // To send to member
-                toSendToUserEmbed
-                    .setTitle("Server Mute Removed.")
-                    .setDescription(`You have been server unmuted in **${details.guild.name}**.`);
-                break;
-            }
-            default: {
-                break;
+                case "Unwarn": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle("Warning Removed.")
+                        .setDescription(new StringBuilder()
+                            .append(`⇒ Member Affected: ${entry.affectedUser.name}`)
+                            .appendLine()
+                            .append(`⇒ Member Mention: ${member} (${member.id})`)
+                            .toString());
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Warning Removed.")
+                        .setDescription(`A warning has been removed from **${details.guild.name}**.`);
+                    break;
+                }
+                case "Blacklist": {
+                    // Logging
+                    const descSb = new StringBuilder()
+                        .append(`⇒ Blacklisted Name: \`${entry.affectedUser.name}\``)
+                        .appendLine();
+                    if (member instanceof GuildMember) {
+                        descSb.append(`⇒ Member: ${member} (${member.id})`)
+                            .appendLine();
+                    }
+    
+                    logToChanEmbed.setTitle("__Server__ Blacklisted.")
+                        .setDescription(descSb.toString());
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Server Blacklisted.")
+                        .setDescription(`You have been blacklisted from **${details.guild.name}**.`);
+    
+                    break;
+                }
+                case "Unblacklist": {
+                    // Logging
+                    logToChanEmbed.setTitle("__Server__ Blacklist Removed.")
+                        .setDescription(new StringBuilder()
+                            .append(`⇒ Unblacklisted Name: ${entry.affectedUser.name}`)
+                            .toString());
+    
+                    break;
+                }
+                case "Suspend": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle("__Server__ Suspended.")
+                        .setDescription(new StringBuilder()
+                            .append(`⇒ Member Suspended: ${entry.affectedUser.name}`)
+                            .appendLine()
+                            .append(`⇒ Member Mention: ${member} (${member.id})`)
+                            .toString())
+                        .addField("Suspension Time", durationStr);
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Suspended.")
+                        .setDescription(`You have been suspended from **${details.guild.name}**.`)
+                        .addField("Suspension Time", durationStr);
+                    break;
+                }
+                case "Unsuspend": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle("__Server__ Suspension Removed.")
+                        .setDescription(new StringBuilder()
+                            .append(`⇒ Member Unsuspended: ${entry.affectedUser.name}`)
+                            .appendLine()
+                            .append(`⇒ Member Mention: ${member} (${member.id})`)
+                            .toString());
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Server Suspension Removed.")
+                        .setDescription(`You have been unsuspended from **${details.guild.name}**.`);
+                    break;
+                }
+                case "SectionSuspend": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle(`${details.section.sectionName}: __Section__ Suspended.`)
+                        .setDescription(new StringBuilder()
+                            .append(`⇒ Member Suspended: ${entry.affectedUser.name}`)
+                            .appendLine()
+                            .append(`⇒ Member Mention: ${member} (${member.id})`)
+                            .appendLine()
+                            .append(`⇒ Suspended From: ${details.section.sectionName}`)
+                            .toString())
+                        .addField("Suspension Time", durationStr);
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Section Suspended.")
+                        .setDescription(new StringBuilder()
+                            .append(`You have been suspended from the **${details.section.sectionName}** section in the `)
+                            .append(`server, **${details.guild.name}**.`)
+                            .toString())
+                        .addField("Suspension Time", durationStr);
+                    break;
+                }
+                case "SectionUnsuspend": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle("__Section__ Suspension Removed.")
+                        .setDescription(new StringBuilder()
+                            .append(`⇒ Member Unsuspended: ${entry.affectedUser.name}`)
+                            .appendLine()
+                            .append(`⇒ Member Mention: ${member} (${member.id})`)
+                            .appendLine()
+                            .append(`⇒ Unsuspended From: ${details.section.sectionName}`)
+                            .toString());
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Section Suspension Removed.")
+                        .setDescription(new StringBuilder()
+                            .append(`You have been unsuspended from the **${details.section.sectionName}** section in the `)
+                            .append(`server, **${details.guild.name}**.`)
+                            .toString());
+                    break;
+                }
+                case "ModmailBlacklist": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle("Modmail Blacklisted.")
+                        .setDescription(`⇒ Modmail Blacklisted: ${member} (${member.id})`);
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Modmail Blacklisted.")
+                        .setDescription(`You have been blacklisted from sending modmail in **${details.guild.name}**.`);
+                    break;
+                }
+                case "ModmailUnblacklist": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle("Modmail Blacklisted Removed.")
+                        .setDescription(`⇒ Modmail Unblacklisted: ${member} (${member.id})`);
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Modmail Blacklist Removed.")
+                        .setDescription(`Your modmail blacklist in **${details.guild.name}** has been removed.`);
+                    break;
+                }
+                case "Mute": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle("Server Muted.")
+                        .setDescription(`⇒ Member Muted: ${member} (${member.id})`)
+                        .addField("Mute Time", durationStr);
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Server Muted.")
+                        .setDescription(`You have been server muted in **${details.guild.name}**.`)
+                        .addField("Mute Time", durationStr);
+                    break;
+                }
+                case "Unmute": {
+                    if (!("id" in member))
+                        return null;
+    
+                    // Logging
+                    logToChanEmbed
+                        .setTitle("Server Mute Removed.")
+                        .setDescription(`⇒ Member Unmuted: ${member} (${member.id})`);
+    
+                    // To send to member
+                    toSendToUserEmbed
+                        .setTitle("Server Mute Removed.")
+                        .setDescription(`You have been server unmuted in **${details.guild.name}**.`);
+                    break;
+                }
+                default: {
+                    break;
+                }
             }
         }
 
         async function sendLoggingAndNoticeMsg(): Promise<void> {
+            // If we're providing an ID, then we cannot send a notice/log message.
+            if ("uId" in member) {
+                return;
+            }
+
             // Do we really need to check if there is a description here specifically?
             if (details.sendLogInfo && logChannel && logToChanEmbed.description) {
                 await logChannel.send({ embeds: [logToChanEmbed] }).catch(LOGGER.error);
@@ -568,6 +601,11 @@ export namespace PunishmentManager {
         // Update the user database if possible.
         let idToResolve: string;
         if (isAddingPunishment) {
+            // We can only use the ID to resolve a punishment
+            if ("uId" in member) {
+                return null;
+            }
+
             const filterQuery: Filter<IUserInfo> = {
                 $or: []
             };

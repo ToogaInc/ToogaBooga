@@ -1,4 +1,4 @@
-import { CommandInteraction, Interaction, Message, NewsChannel } from "discord.js";
+import { CommandInteraction, Interaction, Message } from "discord.js";
 import { Bot } from "../Bot";
 import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
 import { MongoManager } from "../managers/MongoManager";
@@ -186,7 +186,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
 
     // Get corresponding channel.
     const channel = interaction.channel;
-    if (!channel || !channel.isText() || channel instanceof NewsChannel) return;
+    if (!channel || !channel.isText()) return;
     const resolvedChannel = await channel.fetch();
     const guildDoc = await MongoManager.getOrCreateGuildDoc(guild.id, true);
 
@@ -209,30 +209,55 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     // All must exist.
     if (!resolvedMember || !resolvedUser || !message) return;
 
+    // ================================================================================================ //
     // Check MANUAL VERIFICATION
     const manualVerifyChannels = guildDoc.manualVerificationEntries
         .find(x => x.manualVerifyMsgId === message.id && x.manualVerifyChannelId === channel.id);
 
+    
     if (manualVerifyChannels) {
         interaction.deferUpdate().catch(LOGGER.error);
-        VerifyManager.acknowledgeManualVerifyRes(manualVerifyChannels, resolvedMember, interaction.customId, message)
+        VerifyManager.acknowledgeManualVerif(manualVerifyChannels, resolvedMember, interaction.customId, message)
             .then();
         return;
     }
 
+    // ================================================================================================ //
 
     // Check VERIFICATION
+    // We do NOT defer the interaction here because that is handled via the verify function
     if (guildDoc.channels.verification.verificationChannelId === resolvedChannel.id && interaction.message.author.bot) {
-        await VerifyManager.verifyInteraction(interaction, guildDoc, MongoManager.getMainSection(guildDoc));
+        // We check this in case the person is responding to an ephemeral message from the bot in the 
+        // verification channel (e.g., whether they want to be considered for manual verification).
+        //
+        // Discord.js doesn't provide an easy way to check if the interaction we're responding to is
+        // ephemeral, so here we are.
+        //
+        // Depending on how the verification channels are setup, we may need to account for this here even though
+        // the main section itself doesn't use ephemeral interactions in the verification channel.
+        if (!interaction.message.embeds.some(x => x?.footer?.text.includes("Verification"))) {
+            return;
+        }
+        await VerifyManager.verify(interaction, guildDoc, MongoManager.getMainSection(guildDoc));
         return;
     }
 
     const relevantSec = guildDoc.guildSections
         .find(x => x.channels.verification.verificationChannelId === resolvedChannel.id);
     if (relevantSec) {
-        await VerifyManager.verifyInteraction(interaction, guildDoc, relevantSec);
+        // We check this in case the person is responding to an ephemeral message from the bot in the 
+        // verification channel (e.g., whether they want to be considered for manual verification).
+        //
+        // Discord.js doesn't provide an easy way to check if the interaction we're responding to is
+        // ephemeral, so here we are.
+        if (!interaction.message.embeds.some(x => x?.footer?.text.endsWith("Verification"))) {
+            return;
+        }
+        await VerifyManager.verify(interaction, guildDoc, relevantSec);
         return;
     }
+
+    // ================================================================================================ //
 
     // Check AFK CHECKS (reconnect button)
     for (const [msgId, afkCheckInstance] of RaidInstance.ActiveRaids) {
@@ -241,6 +266,8 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         await afkCheckInstance.interactionEventFunction(interaction);
         return;
     }
+
+    // ================================================================================================ //
 
     // Check modmail
     if (channel.id === guildDoc.channels.modmailChannelId) {

@@ -62,8 +62,6 @@ export class ConfigAfkCheck extends BaseCommand {
 
     /** @inheritDoc */
     public async run(ctx: ICommandContext): Promise<number> {
-        if (!(ctx.channel instanceof TextChannel)) return -1;
-
         await ctx.interaction.reply({
             content: "A new message should have popped up! Please refer to that message."
         });

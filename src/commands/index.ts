@@ -30,6 +30,7 @@ export * from "./staff/Clean";
 export * from "./staff/Poll";
 export * from "./staff/Purge";
 export * from "./staff/RemovePunishment";
+export * from "./staff/CheckManualVerifyApp";
 
 export * from "./punishments/Suspend";
 export * from "./punishments/SectionSuspend";

@@ -12,8 +12,7 @@
     "keyofStringsOnly": true,
     // Discord.js has a bunch of issues for some reason
     "skipLibCheck": true,
-    "removeComments": true,
-    "incremental": true,
+    "removeComments": true
   },
   "exclude": [
     "test/",

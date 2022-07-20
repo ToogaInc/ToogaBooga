@@ -21,6 +21,7 @@ import { MiscUtilities } from "../../utilities/MiscUtilities";
 import { ISectionInfo } from "../../definitions";
 import { ButtonConstants } from "../../constants/ButtonConstants";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { PunishmentManager, SuspensionManager } from "../../managers/PunishmentManager";
 
 // Type that defines the values for the new section
 type SectionCreateType = [string | null, Role | null, TextChannel | null, TextChannel | null, TextChannel | null, TextChannel | null];
@@ -524,7 +525,40 @@ export class ConfigSections extends BaseCommand {
             return;
         }
 
-        // delete the section
+        // Remove all manual verification requests
+        await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
+            $pull: {
+                "manualVerificationEntries": {
+                    sectionId: section.uniqueIdentifier
+                }
+            }
+        });
+
+        // Unsuspend anyone that might have been in the section (so it's reflected in their
+        // punishment records)
+        const allSecSusUsers = SuspensionManager.SectionSuspendedMembers.get(ctx.guild!.id);
+        if (allSecSusUsers) {
+            allSecSusUsers.delete(section.uniqueIdentifier);
+        }
+
+        Promise.all(
+            section.moderation.sectionSuspended.map(async x => {
+                await PunishmentManager.logPunishment({ uId: x.affectedUser.id }, "SectionUnsuspend", {
+                    reason: "Section has been deleted from the bot's database.",
+                    issuedTime: Date.now(),
+                    moderator: null,
+                    guildDoc: ctx.guildDoc!,
+                    section,
+                    guild: ctx.guild!,
+                    sendNoticeToAffectedUser: false,
+                    sendLogInfo: false,
+                    actionIdToResolve: x.actionId,
+                    evidence: []
+                });
+            })
+        ).catch();
+
+        // Delete the section
         ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id, }, {
             $pull: {
                 "guildSections": {

@@ -196,7 +196,7 @@ export namespace AdvancedCollector {
      * Starts a general interaction collector. This will wait for the user to interact with one component and then
      * return the result of that component.
      * @param {IInteractionBase} options The collector options.
-     * @return {Promise<ButtonInteraction | null>} The interaction, if available. `null` otherwise.
+     * @return {Promise<MessageComponentInteraction | null>} The interaction, if available. `null` otherwise.
      */
     export async function startInteractionCollector(
         options: IInteractionBase
@@ -230,7 +230,7 @@ export namespace AdvancedCollector {
      * Starts an interaction and message collector. The first collector to receive something will end both collectors.
      * @param {IInteractionBase & IMessageCollectorArgument} options The collector options.
      * @param {Function} func The function used to filter the message.
-     * @return {Promise<ButtonInteraction | T | null>} A `MessageComponentInteraction` if a button is pressed. `T`
+     * @return {Promise<MessageComponentInteraction | T | null>} A `MessageComponentInteraction` if a button is pressed. `T`
      * if the `MessageCollector` is fired. `null` otherwise.
      */
     export async function startDoubleCollector<T>(

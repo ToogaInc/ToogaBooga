@@ -28,7 +28,8 @@ import {
     onMessageEvent,
     onReadyEvent,
     onThreadArchiveEvent,
-    onVoiceStateEvent
+    onVoiceStateEvent,
+    onGuildMemberRemove
 } from "./events";
 import { QuotaService } from "./managers/QuotaManager";
 import { REST } from "@discordjs/rest";
@@ -151,7 +152,8 @@ export class Bot {
             new Cmds.ShowAllBlacklist(),
             new Cmds.ManualVerifyMain(),
             new Cmds.ManualVerifySection(),
-            new Cmds.RemovePunishment()
+            new Cmds.RemovePunishment(),
+            new Cmds.CheckManualVerifyApp()
         ]);
 
         Bot.Commands.set("Configuration", [
@@ -272,21 +274,22 @@ export class Bot {
 
         LOGGER.info("Starting all events");
 
-        this._bot.on("ready", async () => onReadyEvent());
-        this._bot.on("interactionCreate", async (i: Interaction) => onInteractionEvent(i));
-        this._bot.on("guildCreate", async (g: Guild) => onGuildCreateEvent(g));
-        this._bot.on("voiceStateUpdate", async (o: VoiceState, n: VoiceState) => onVoiceStateEvent(o, n));
-        this._bot.on("messageCreate", async (m: Message) => onMessageEvent(m));
-        this._bot.on("error", async (e: Error) => onErrorEvent(e));
-        this._bot.on("rateLimit", async (r: RateLimitData) => onRatelimitEvent(r));
-        this._bot.on("threadUpdate", async (o: ThreadChannel, n: ThreadChannel) => onThreadArchiveEvent(o, n));
-        this._bot.on("channelDelete", async (c: DMChannel | GuildChannel) => onChannelDeleteEvent(c));
-        this._bot.on("messageDelete", async (m: Message | PartialMessage) => onMessageDeleteEvent(m));
-        this._bot.on("guildMemberAdd", async (m: GuildMember) => onGuildMemberAdd(m));
-        this._bot.on("guildMemberUpdate", async (
+        this._bot.on("ready", () => onReadyEvent());
+        this._bot.on("interactionCreate", (i: Interaction) => onInteractionEvent(i));
+        this._bot.on("guildCreate", (g: Guild) => onGuildCreateEvent(g));
+        this._bot.on("voiceStateUpdate", (o: VoiceState, n: VoiceState) => onVoiceStateEvent(o, n));
+        this._bot.on("messageCreate", (m: Message) => onMessageEvent(m));
+        this._bot.on("error", (e: Error) => onErrorEvent(e));
+        this._bot.on("rateLimit", (r: RateLimitData) => onRatelimitEvent(r));
+        this._bot.on("threadUpdate", (o: ThreadChannel, n: ThreadChannel) => onThreadArchiveEvent(o, n));
+        this._bot.on("channelDelete", (c: DMChannel | GuildChannel) => onChannelDeleteEvent(c));
+        this._bot.on("messageDelete", (m: Message | PartialMessage) => onMessageDeleteEvent(m));
+        this._bot.on("guildMemberAdd", (m: GuildMember) => onGuildMemberAdd(m));
+        this._bot.on("guildMemberUpdate", (
             o: GuildMember | PartialGuildMember,
             n: GuildMember | PartialGuildMember
         ) => onGuildMemberUpdate(o, n));
+        this._bot.on("guildMemberRemove", (m: GuildMember | PartialGuildMember) => onGuildMemberRemove(m));
         this._eventsIsStarted = true;
     }
 
