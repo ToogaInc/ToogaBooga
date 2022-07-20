@@ -231,7 +231,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         // verification channel (e.g., whether they want to be considered for manual verification).
         //
         // Discord.js doesn't provide an easy way to check if the interaction we're responding to is
-        // ephermeral, so here we are.
+        // ephemeral, so here we are.
         //
         // Depending on how the verification channels are setup, we may need to account for this here even though
         // the main section itself doesn't use ephemeral interactions in the verification channel.
@@ -249,7 +249,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         // verification channel (e.g., whether they want to be considered for manual verification).
         //
         // Discord.js doesn't provide an easy way to check if the interaction we're responding to is
-        // ephermeral, so here we are.
+        // ephemeral, so here we are.
         if (!interaction.message.embeds.some(x => x?.footer?.text.endsWith("Verification"))) {
             return;
         }
