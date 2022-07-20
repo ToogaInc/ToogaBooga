@@ -783,15 +783,13 @@ export namespace VerifyManager {
             }
 
             // Otherwise, they must have passed.
-            await Promise.all([
-                MongoManager.addIdNameToIdNameCollection(instance.member, generalData.name),
-                GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await instance.member.roles.add(instance.guildDoc.roles.verifiedRoleId);
-                }),
-                GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await instance.member.setNickname(generalData.name, "Verified in the main section successfully.");
-                })
-            ]);
+            await MongoManager.addIdNameToIdNameCollection(instance.member, generalData.name);
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await instance.member.roles.add(instance.guildDoc.roles.verifiedRoleId);
+            });
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await instance.member.setNickname(generalData.name, "Verified in the main section successfully.");
+            });
 
             // Let them know that it's done
             const successEmbed = MessageUtilities.generateBlankEmbed(instance.member.guild, "GREEN")
@@ -931,17 +929,15 @@ export namespace VerifyManager {
             await handleManualVerification(instance, checkRes, interaction);
         }
         else {
-            await Promise.all([
-                GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await instance.member.roles.add(instance.section.roles.verifiedRoleId);
-                }),
-                interaction.editReply({
-                    content: "You have successfully been verified."
-                }),
-                instance.verifySuccessChannel?.send({
-                    content: `[${instance.section.sectionName}] ${instance.member} has successfully been verified in this section.`
-                })
-            ]);
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await instance.member.roles.add(instance.section.roles.verifiedRoleId);
+            });
+            await interaction.editReply({
+                content: "You have successfully been verified."
+            });
+            await instance.verifySuccessChannel?.send({
+                content: `[${instance.section.sectionName}] ${instance.member} has successfully been verified in this section.`
+            });
         }
 
         InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
@@ -1312,12 +1308,10 @@ export namespace VerifyManager {
                     );
                 }
 
-                promises.push(
-                    GlobalFgrUtilities.sendMsg(member, { embeds: [successEmbed] }),
-                    GlobalFgrUtilities.tryExecuteAsync(async () => {
-                        await member.roles.add(section!.roles.verifiedRoleId);
-                    })
-                );
+                await GlobalFgrUtilities.sendMsg(member, { embeds: [successEmbed] });
+                await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await member.roles.add(section!.roles.verifiedRoleId);
+                });
 
                 if (section.isMainSection) {
                     promises.push(
