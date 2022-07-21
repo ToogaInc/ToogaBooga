@@ -107,7 +107,12 @@ export namespace MiscUtilities {
      * @param {string} desc The description (i.e. instructions) to post.
      * @return {Promise<ISectionInfo | null>} The section, if any. Null otherwise.
      */
-    export async function getSectionQuery(guildDb: IGuildInfo, member: GuildMember, channel: TextChannel, desc: string): Promise<[ISectionInfo, Message | null] | null> {
+    export async function getSectionQuery(
+        guildDb: IGuildInfo,
+        member: GuildMember, 
+        channel: TextChannel, 
+        desc: string
+    ): Promise<[ISectionInfo, Message | null] | null> {
         const allSections = MongoManager.getAllSections(guildDb);
         const selectOptions: MessageSelectOptionData[] = allSections
             .map(x => {
@@ -151,7 +156,9 @@ export namespace MiscUtilities {
 
         // Button = guaranteed to be a button.
         if (!result || !result.isSelectMenu()) {
-            askMsg.delete().catch();
+            if (result?.message) {
+                MessageUtilities.tryDelete(result.message as Message).then();
+            }
             return null;
         }
 
@@ -215,7 +222,6 @@ export namespace MiscUtilities {
 
         // Button = guaranteed to be a button.
         if (!result || !result.isSelectMenu()) {
-            message.delete().catch();
             return null;
         }
         return allSections.find(x => x.uniqueIdentifier === result.values[0])!;
