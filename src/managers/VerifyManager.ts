@@ -563,7 +563,7 @@ export namespace VerifyManager {
                         new MessageEmbed(baseEmbed)
                             .setTitle(`**${instance.member.guild.name}**: Guild Verification Error.`)
                             .setDescription(
-                                "Oops, an error occurred when trying to reach your RealmEye profile's basis data."
+                                "Oops, an error occurred when trying to reach your RealmEye profile's basic data."
                                 + " This error is usually caused by one of several things."
                             )
                             .addField(
