@@ -193,11 +193,7 @@ export class EditName extends BaseCommand {
                 if (proposedName.length <= 32) {
                     // Then change it.
                     const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                        await member.setNickname(
-                            proposedName === member.user.username
-                                ? proposedName + "."
-                                : proposedName
-                        );
+                        await member.setNickname(UserManager.getNameForNickname(member, proposedName));
                         return true;
                     });
 
@@ -352,11 +348,7 @@ export class EditName extends BaseCommand {
             // and the proposed name doesn't exceed the nickname character limit...
             if (newName.length <= 32) {
                 const res = await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await member.setNickname(
-                        newName === member.user.username
-                            ? newName + "."
-                            : newName
-                    );
+                    await member.setNickname(UserManager.getNameForNickname(member, newName));
                     return true;
                 });
                 updatedName = !!res;

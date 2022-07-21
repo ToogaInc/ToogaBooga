@@ -180,12 +180,14 @@ export class ManualVerifyMain extends BaseCommand {
         );
 
         await GlobalFgrUtilities.tryExecuteAsync(async () => {
-            await resMember.member.setNickname(ignToVerifyWith, "Manually verified.");
+            await resMember.member.setNickname(UserManager.getNameForNickname(resMember.member, ignToVerifyWith));
+
         });
 
         await verifySuccessChannel?.send({
-            content: `[Main] ${resMember.member} has been manually verified as **\`${ignToVerifyWith}\`** by`
-                + ` ${ctx.user}.`
+            content: `\`[Main]\` ${resMember.member} has been manually verified as **\`${ignToVerifyWith}\`** by`
+                + ` ${ctx.user}.`,
+            allowedMentions: {}
         });
 
         if (!useAlreadyVerifiedIgn) {
