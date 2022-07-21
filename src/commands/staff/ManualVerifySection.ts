@@ -178,7 +178,7 @@ export class ManualVerifySection extends BaseCommand {
 
         await secVerifSuccessChannel?.send({
             content: `\`[${section.sectionName}]\` ${resMember.member} has been manually verified by ${ctx.user}.`,
-            allowedMentions: {}
+            allowedMentions: { roles: [], users: [] }
         });
 
         const sVerifyEntry = ctx.guildDoc!.manualVerificationEntries

@@ -118,8 +118,8 @@ export namespace PrivateApiDefinitions {
         exp: number;
         rank: number;
         accountFame: number;
-        guild: string;
-        guildRank: string;
+        guild?: string;
+        guildRank?: string;
         firstSeen?: string;
         created?: string;
         lastSeen: string;

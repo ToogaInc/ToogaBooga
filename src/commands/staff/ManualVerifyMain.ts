@@ -187,7 +187,7 @@ export class ManualVerifyMain extends BaseCommand {
         await verifySuccessChannel?.send({
             content: `\`[Main]\` ${resMember.member} has been manually verified as **\`${ignToVerifyWith}\`** by`
                 + ` ${ctx.user}.`,
-            allowedMentions: {}
+            allowedMentions: { roles: [], users: [] }
         });
 
         if (!useAlreadyVerifiedIgn) {
