@@ -849,10 +849,11 @@ export namespace VerifyManager {
      */
     async function verifySection(interaction: MessageComponentInteraction, instance: IVerificationInstance): Promise<void> {
         if (!instance.section.otherMajorConfig.verificationProperties.checkRequirements) {
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await instance.member.roles.add(instance.section.roles.verifiedRoleId);
+            });
+
             await Promise.all([
-                GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await instance.member.roles.add(instance.guildDoc.roles.verifiedRoleId);
-                }),
                 instance.verifySuccessChannel?.send({
                     content: `\`[${instance.section.sectionName}]\` ${instance.member} has successfully been verified`
                         + " in this section.",
@@ -955,13 +956,17 @@ export namespace VerifyManager {
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await instance.member.roles.add(instance.section.roles.verifiedRoleId);
             });
-            await interaction.editReply({
-                content: "You have successfully been verified."
-            });
-            await instance.verifySuccessChannel?.send({
-                content: `[${instance.section.sectionName}] ${instance.member} has successfully been verified in this section.`,
-                allowedMentions: { roles: [], users: [] }
-            });
+
+            await Promise.all([
+                instance.verifySuccessChannel?.send({
+                    content: `\`[${instance.section.sectionName}]\` ${instance.member} has successfully been verified`
+                        + " in this section.",
+                    allowedMentions: { roles: [], users: [] }
+                }),
+                interaction.editReply({
+                    content: "You have been verified successfully."
+                })
+            ]);
         }
 
         InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
