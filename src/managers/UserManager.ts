@@ -171,6 +171,22 @@ export namespace UserManager {
     }
 
     /**
+     * Gets the name that should be used for the member's nickname on Discord. This will account for the possibility
+     * that the member's username is the same as the proposed IGN.
+     * @param member The member.
+     * @param ign The in-game name.
+     * @returns The in-game name to use for the member's nickname.
+     */
+    export function getNameForNickname(member: GuildMember, ign: string): string {
+        let r = ign;
+        if (member.user.username === ign) {
+            r += ".";
+        }
+
+        return r;
+    }
+
+    /**
      * Gets this person's prefixes. For example, if the name was "!test" then this would return '!'
      * @param {string} rawName The name.
      * @returns {string} The prefixes, if any.

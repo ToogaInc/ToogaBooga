@@ -180,12 +180,16 @@ export class ManualVerifyMain extends BaseCommand {
         );
 
         await GlobalFgrUtilities.tryExecuteAsync(async () => {
-            await resMember.member.setNickname(ignToVerifyWith, "Manually verified.");
+            await resMember.member.setNickname(UserManager.getNameForNickname(resMember.member, ignToVerifyWith));
+        });
+        await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            await resMember.member.roles.add(verifiedRole);
         });
 
         await verifySuccessChannel?.send({
-            content: `[Main] ${resMember.member} has been manually verified as **\`${ignToVerifyWith}\`** by`
-                + ` ${ctx.user}.`
+            content: `\`[Main]\` ${resMember.member} has been manually verified as **\`${ignToVerifyWith}\`** by`
+                + ` ${ctx.user}.`,
+            allowedMentions: { roles: [], users: [] }
         });
 
         if (!useAlreadyVerifiedIgn) {
@@ -209,10 +213,6 @@ export class ManualVerifyMain extends BaseCommand {
         }
 
         await GlobalFgrUtilities.sendMsg(resMember.member, { embeds: [finishedEmbed] });
-
-        await GlobalFgrUtilities.tryExecuteAsync(async () => {
-            return await resMember.member.roles.add(verifiedRole);
-        });
 
         // Finally, remove manual verification entry if it exists
         const mVerifyEntry = ctx.guildDoc!.manualVerificationEntries

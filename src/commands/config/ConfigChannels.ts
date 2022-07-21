@@ -287,7 +287,16 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
     /** @inheritDoc */
     public async entry(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
-        const entryRes = await entryFunction(ctx, botMsg);
+        const entryRes = await entryFunction(ctx, botMsg, {
+            embeds: [
+                MessageUtilities.generateBlankEmbed(ctx.member!, "RANDOM")
+                    .setTitle("Select Section")
+                    .setDescription(new StringBuilder("Please select the appropriate section.")
+                        .appendLine().appendLine()
+                        .append("If you wish to cancel this process, please press the `Cancel` button.").toString())
+                    .setFooter({ text: "Section Selector" })
+            ]
+        });
 
         if (!entryRes) {
             await this.dispose(ctx, botMsg);

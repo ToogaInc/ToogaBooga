@@ -295,7 +295,8 @@ export namespace VerifyManager {
             if (!r) {
                 instance.verifyFailChannel?.send({
                     content: `\`[Main]\` ${instance.member} was asked to select a name previously associated with `
-                        + "their Discord account, something went wrong when trying to edit the base embed message."
+                        + "their Discord account, something went wrong when trying to edit the base embed message.",
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
@@ -316,7 +317,8 @@ export namespace VerifyManager {
             if (!selected) {
                 instance.verifyFailChannel?.send({
                     content: `\`[Main]\` ${instance.member} was asked to select a name previously associated with `
-                        + "their Discord account, but they did not select a name within the specified time."
+                        + "their Discord account, but they did not select a name within the specified time.",
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
@@ -332,7 +334,8 @@ export namespace VerifyManager {
             else if (selected.customId === ButtonConstants.CANCEL_ID) {
                 instance.verifyFailChannel?.send({
                     content: `\`[Main]\` ${instance.member} has stopped the verification process. This occurred when `
-                        + "the person was asked to either use an existing name or provide a new name."
+                        + "the person was asked to either use an existing name or provide a new name.",
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
@@ -363,7 +366,8 @@ export namespace VerifyManager {
             if (!r) {
                 instance.verifyFailChannel?.send({
                     content: `\`[Main]\` ${instance.member} was asked to select for a name to verify with, but `
-                        + "something went wrong when trying to edit the base embed message."
+                        + "something went wrong when trying to edit the base embed message.",
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
@@ -393,7 +397,8 @@ export namespace VerifyManager {
             // Once again, if we get no response, then we can just quit.
             if (!selected) {
                 instance.verifyFailChannel?.send({
-                    content: `\`[Main]\` ${instance.member} was asked for a name, but they did not respond in time.`
+                    content: `\`[Main]\` ${instance.member} was asked for a name, but they did not respond in time.`,
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
@@ -405,7 +410,8 @@ export namespace VerifyManager {
             if (selected instanceof MessageComponentInteraction) {
                 instance.verifyFailChannel?.send({
                     content: `\`[Main]\` ${instance.member} has stopped the verification process when asked to type`
-                        + " their name."
+                        + " their name.",
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
@@ -432,7 +438,8 @@ export namespace VerifyManager {
                 const idsRegistered = matchedUserDocs.map(x => x.currentDiscordId).join(", ");
                 instance.verifyFailChannel?.send({
                     content: `\`[Main]\` ${instance.member} tried to verify with the name, **\`${selected}\`**, `
-                        + `but this name has already been registered by the following Discord ID(s): ${idsRegistered}.`
+                        + `but this name has already been registered by the following Discord ID(s): ${idsRegistered}.`,
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 await MessageUtilities.tryEdit(msg, {
@@ -445,8 +452,6 @@ export namespace VerifyManager {
                                 + " Please resolve this issue by messaging a staff member for assistance. If you want"
                                 + " to verify with another in-game name, please restart the verification process."
                             )
-                            .setFooter({ text: "This process will expire by" })
-                            .setTimestamp(Date.now() + 2 * 60 * 1000)
                     ],
                     components: []
                 });
@@ -464,10 +469,12 @@ export namespace VerifyManager {
         const verificationCode = StringUtil.generateRandomString(20);
         instance.verifyStepChannel?.send({
             content: `\`[Main]\` ${instance.member} will be trying to verify as **\`${nameToVerify}\`**. Their`
-                + ` verification code is **\`${verificationCode}\`**.`
+                + ` verification code is **\`${verificationCode}\`**.`,
+            allowedMentions: { roles: [], users: [] }
         }).catch();
 
         const timeStarted = Date.now();
+        const timeEnd = timeStarted + 8 * 60 * 1000;
         const components = AdvancedCollector.getActionRowsFromComponents([
             CHECK_PROFILE_BUTTON,
             ButtonConstants.CANCEL_BUTTON
@@ -477,17 +484,26 @@ export namespace VerifyManager {
             embeds: [
                 getVerificationEmbed(instance.member, nameToVerify, verificationCode)
                     .setFooter({ text: "This process will expire by" })
-                    .setTimestamp(timeStarted + 2 * 60 * 1000)
+                    .setTimestamp(timeEnd)
             ],
             components
         });
 
         const collector = msg.createMessageComponentCollector({
             filter: i => i.user.id === instance.member.id,
-            time: 20 * 60 * 1000
+            time: 8 * 60 * 1000
         });
 
-        collector.on("end", () => {
+        collector.on("end", async (_c, r) => {
+            if (r === "time") {
+                await MessageUtilities.tryEdit(msg, {
+                    content: "The verification process has been canceled due to time being expired. Please"
+                        + " restart the verification process.",
+                    embeds: [],
+                    components: []
+                });
+            }
+
             InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
         });
 
@@ -512,7 +528,8 @@ export namespace VerifyManager {
                 });
 
                 await instance.verifyFailChannel?.send({
-                    content: `\`[Main]\` ${instance.member} has canceled the verification process.`
+                    content: `\`[Main]\` ${instance.member} has canceled the verification process.`,
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 await i.editReply({
@@ -539,7 +556,8 @@ export namespace VerifyManager {
 
             await instance.verifyStepChannel?.send({
                 content: `\`[Main]\` ${instance.member} is now waiting for the bot to finish checking their IGN,`
-                    + ` \`${nameToVerify}\`.`
+                    + ` \`${nameToVerify}\`.`,
+                allowedMentions: { roles: [], users: [] }
             });
 
             // Request general profile data.
@@ -555,7 +573,7 @@ export namespace VerifyManager {
                         new MessageEmbed(baseEmbed)
                             .setTitle(`**${instance.member.guild.name}**: Guild Verification Error.`)
                             .setDescription(
-                                "Oops, an error occurred when trying to reach your RealmEye profile's basis data."
+                                "Oops, an error occurred when trying to reach your RealmEye profile's basic data."
                                 + " This error is usually caused by one of several things."
                             )
                             .addField(
@@ -581,7 +599,8 @@ export namespace VerifyManager {
 
                 await instance.verifyFailChannel?.send({
                     content: `\`[Main]\` ${instance.member} tried to verify as **\`${nameToVerify}\`**, but their profile`
-                        + " is either private or the API is not available."
+                        + " is either private or the API is not available.",
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 await i.editReply({
@@ -599,7 +618,7 @@ export namespace VerifyManager {
                     embeds: [
                         getVerificationEmbed(instance.member, nameToVerify!, verificationCode)
                             .setFooter({ text: "This process will expire by" })
-                            .setTimestamp(timeStarted + 2 * 60 * 1000)
+                            .setTimestamp(timeEnd)
                     ],
                     components
                 });
@@ -611,8 +630,9 @@ export namespace VerifyManager {
                 });
 
                 instance.verifyFailChannel?.send({
-                    content: `[Main] ${instance.member} tried to verify as **\`${nameToVerify}\`**, but the`
-                        + ` verification code, \`${verificationCode}\`, was not found in their description.`
+                    content: `\`[Main]\` ${instance.member} tried to verify as **\`${nameToVerify}\`**, but the`
+                        + ` verification code, \`${verificationCode}\`, was not found in their description.`,
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 return;
@@ -629,7 +649,7 @@ export namespace VerifyManager {
                     embeds: [
                         getVerificationEmbed(instance.member, nameToVerify!, verificationCode)
                             .setFooter({ text: "This process will expire by" })
-                            .setTimestamp(timeStarted + 2 * 60 * 1000)
+                            .setTimestamp(timeEnd)
                     ],
                     components
                 });
@@ -639,8 +659,9 @@ export namespace VerifyManager {
                 });
 
                 instance.verifyFailChannel?.send({
-                    content: `[Main] ${instance.member} tried to verify as **\`${nameToVerify}\`**, but an unknown error `
-                        + "occurred when trying to reach their profile's **name history**."
+                    content: `\`[Main]\` ${instance.member} tried to verify as **\`${nameToVerify}\`**, but an unknown error `
+                        + "occurred when trying to reach their profile's **name history**.",
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 return;
@@ -689,9 +710,10 @@ export namespace VerifyManager {
                 });
 
                 await instance.verifyFailChannel?.send({
-                    content: `[Main] ${instance.member} tried to verify as **\`${nameToVerify}\`**, but they are`
+                    content: `\`[Main]\` ${instance.member} tried to verify as **\`${nameToVerify}\`**, but they are`
                         + ` blacklisted from this server under the name: \`${blInfo.realmName.ign}\`. The`
-                        + ` corresponding Moderation ID is \`${blInfo.actionId}\`.`
+                        + ` corresponding Moderation ID is \`${blInfo.actionId}\`.`,
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 await i.editReply({
@@ -736,7 +758,8 @@ export namespace VerifyManager {
                 await instance.verifyFailChannel?.send({
                     content: `\`[Main]\` ${instance.member} tried to verify as **\`${nameToVerify}\`**, but they failed`
                         + " to meet one or more major requirements. The requirements are:\n"
-                        + failedReqs.map(x => `- ${x.log}`).join("\n")
+                        + failedReqs.map(x => `- ${x.log}`).join("\n"),
+                    allowedMentions: { roles: [], users: [] }
                 });
 
                 await i.editReply({
@@ -763,7 +786,7 @@ export namespace VerifyManager {
                     embeds: [
                         getVerificationEmbed(instance.member, nameToVerify!, verificationCode)
                             .setFooter({ text: "This process will expire by" })
-                            .setTimestamp(timeStarted + 2 * 60 * 1000)
+                            .setTimestamp(timeEnd)
                     ],
                     components
                 });
@@ -783,15 +806,16 @@ export namespace VerifyManager {
             }
 
             // Otherwise, they must have passed.
-            await Promise.all([
-                MongoManager.addIdNameToIdNameCollection(instance.member, generalData.name),
-                GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await instance.member.roles.add(instance.guildDoc.roles.verifiedRoleId);
-                }),
-                GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await instance.member.setNickname(generalData.name, "Verified in the main section successfully.");
-                })
-            ]);
+            await MongoManager.addIdNameToIdNameCollection(instance.member, generalData.name);
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await instance.member.roles.add(instance.guildDoc.roles.verifiedRoleId);
+            });
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await instance.member.setNickname(
+                    UserManager.getNameForNickname(instance.member, generalData.name), 
+                    "Verified in the main section successfully."
+                );
+            });
 
             // Let them know that it's done
             const successEmbed = MessageUtilities.generateBlankEmbed(instance.member.guild, "GREEN")
@@ -816,7 +840,8 @@ export namespace VerifyManager {
                     content: "Your verification was successful."
                 }),
                 instance.verifySuccessChannel?.send({
-                    content: `[Main] ${instance.member} has successfully verified as **\`${nameToVerify}\`**.`
+                    content: `\`[Main]\` ${instance.member} has successfully verified as **\`${nameToVerify}\`**.`,
+                    allowedMentions: { roles: [], users: [] }
                 })
             ]);
 
@@ -833,13 +858,18 @@ export namespace VerifyManager {
      */
     async function verifySection(interaction: MessageComponentInteraction, instance: IVerificationInstance): Promise<void> {
         if (!instance.section.otherMajorConfig.verificationProperties.checkRequirements) {
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await instance.member.roles.add(
+                    instance.section.roles.verifiedRoleId, 
+                    `Verified automatically in the ${instance.section.sectionName} section.`
+                );
+            });
+
             await Promise.all([
-                GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await instance.member.roles.add(instance.guildDoc.roles.verifiedRoleId);
-                }),
                 instance.verifySuccessChannel?.send({
-                    content: `[${instance.section.sectionName}] ${instance.member} has successfully been verified`
-                        + " in this section."
+                    content: `\`[${instance.section.sectionName}]\` ${instance.member} has successfully been verified`
+                        + " in this section.",
+                    allowedMentions: { roles: [], users: [] }
                 }),
                 interaction.editReply({
                     content: "You have been verified successfully."
@@ -862,8 +892,9 @@ export namespace VerifyManager {
                             + " member for assistance."
                     }),
                     instance.verifyFailChannel?.send({
-                        content: `[${instance.section.sectionName}] ${instance.member} does not have a name registered with`
-                            + " the bot, or a valid nickname, and thus cannot verify in this section."
+                        content: `\`[${instance.section.sectionName}]\` ${instance.member} does not have a name registered with`
+                            + " the bot, or a valid nickname, and thus cannot verify in this section.",
+                        allowedMentions: { roles: [], users: [] }
                     })
                 ]);
 
@@ -888,9 +919,10 @@ export namespace VerifyManager {
                         + " profile is **public** (anyone can see it).",
                 }),
                 instance.verifyFailChannel?.send({
-                    content: `[${instance.section.sectionName}] ${instance.member} tried to verify as **\`${nameToUse}\`**,`
+                    content: `\`[${instance.section.sectionName}]\` ${instance.member} tried to verify as **\`${nameToUse}\`**,`
                         + " but an unknown error occurred when trying to reach their RealmEye profile's basic data"
-                        + ` (https://www.realmeye.com/player/${nameToUse}). Is the profile private?`
+                        + ` (https://www.realmeye.com/player/${nameToUse}). Is the profile private?`,
+                    allowedMentions: { roles: [], users: [] }
                 })
             ]);
 
@@ -907,9 +939,10 @@ export namespace VerifyManager {
                         + checkRes.taIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n"),
                 }),
                 instance.verifyFailChannel?.send({
-                    content: `[${instance.section.sectionName}] ${instance.member} tried to verify as **\`${nameToUse}\`**,`
-                    + " but there were several minor issues with the person's profile. These issues are listed below:\n"
-                    + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                    content: `\`[${instance.section.sectionName}]\` ${instance.member} tried to verify as **\`${nameToUse}\`**,`
+                        + " but there were several minor issues with the person's profile. These issues are listed below:\n"
+                        + checkRes.taIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n"),
+                    allowedMentions: { roles: [], users: [] }
                 })
             ]);
         }
@@ -921,9 +954,10 @@ export namespace VerifyManager {
                         + checkRes.fatalIssues.map(x => `- **${x.key}**: ${x.value}`).join("\n"),
                 }),
                 instance.verifyFailChannel?.send({
-                    content: `[${instance.section.sectionName}] ${instance.member} tried to verify as **\`${nameToUse}\`**,`
+                    content: `\`[${instance.section.sectionName}]\` ${instance.member} tried to verify as **\`${nameToUse}\`**,`
                         + " but there were several fatal issues with the person's profile. These issues are listed below:\n"
-                        + checkRes.fatalIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n")
+                        + checkRes.fatalIssues.map(x => `- **[${x.key}]** ${x.log}`).join("\n"),
+                    allowedMentions: { roles: [], users: [] }
                 })
             ]);
         }
@@ -931,15 +965,21 @@ export namespace VerifyManager {
             await handleManualVerification(instance, checkRes, interaction);
         }
         else {
+            await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await instance.member.roles.add(
+                    instance.section.roles.verifiedRoleId,
+                    `Verified successfully in the ${instance.section.sectionName} section.`
+                );
+            });
+
             await Promise.all([
-                GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await instance.member.roles.add(instance.section.roles.verifiedRoleId);
+                instance.verifySuccessChannel?.send({
+                    content: `\`[${instance.section.sectionName}]\` ${instance.member} has successfully been verified`
+                        + " in this section.",
+                    allowedMentions: { roles: [], users: [] }
                 }),
                 interaction.editReply({
-                    content: "You have successfully been verified."
-                }),
-                instance.verifySuccessChannel?.send({
-                    content: `[${instance.section.sectionName}] ${instance.member} has successfully been verified in this section.`
+                    content: "You have been verified successfully."
                 })
             ]);
         }
@@ -1014,12 +1054,13 @@ export namespace VerifyManager {
             });
         }
 
-        const secGuildDisplayLog = instance.section.isMainSection ? "[Main]" : `[${instance.section.sectionName}]`;
+        const secGuildDisplayLog = "`" + (instance.section.isMainSection ? "[Main]" : `[${instance.section.sectionName}]`) + "`";
         if (!m) {
             instance.verifyFailChannel?.send({
                 content: `${secGuildDisplayLog} ${instance.member} tried to verify as **\`${checkRes.name}\`**, but failed the`
                     + " requirements. The manual verification request could not be sent to the user due to an issue on the"
-                    + " user's side."
+                    + " user's side.",
+                allowedMentions: { roles: [], users: [] }
             });
 
             return;
@@ -1028,7 +1069,8 @@ export namespace VerifyManager {
         instance.verifyStepChannel?.send({
             content: `${secGuildDisplayLog} ${instance.member} tried to verify as **\`${checkRes.name}\`**, but there were several `
                 + "minor issues with the person's profile. The user is currently being asked if they want"
-                + " to get manually verified. The outstanding issues are listed below:\n" + logStr
+                + " to get manually verified. The outstanding issues are listed below:\n" + logStr,
+            allowedMentions: { roles: [], users: [] }
         });
 
         const selected = await AdvancedCollector.startInteractionEphemeralCollector({
@@ -1041,7 +1083,8 @@ export namespace VerifyManager {
         if (!selected) {
             instance.verifyFailChannel?.send({
                 content: `${secGuildDisplayLog} ${instance.member} tried to verify as **\`${checkRes.name}\`**, and was in the process`
-                    + " of accepting/denying manual verification, but did not respond in time to the question."
+                    + " of accepting/denying manual verification, but did not respond in time to the question.",
+                allowedMentions: { roles: [], users: [] }
             });
 
             if (m instanceof Message) {
@@ -1059,7 +1102,8 @@ export namespace VerifyManager {
         if (selected.customId === noId) {
             instance.verifyFailChannel?.send({
                 content: `${secGuildDisplayLog} ${instance.member} tried to verify as **\`${checkRes.name}\`**, was in the process`
-                    + " of accepting/denying manual verification, and chose to **deny** manual verification."
+                    + " of accepting/denying manual verification, and chose to **deny** manual verification.",
+                allowedMentions: { roles: [], users: [] }
             });
 
             const rejectEmbed = MessageUtilities.generateBlankEmbed(instance.member.guild, "RED")
@@ -1091,7 +1135,8 @@ export namespace VerifyManager {
         instance.verifyStepChannel?.send({
             content: `${secGuildDisplayLog} ${instance.member} tried to verify as **\`${checkRes.name}\`**, was in the process`
                 + " of accepting/denying manual verification, and chose to **accept** manual verification. Please review their"
-                + " manual verification request."
+                + " manual verification request.",
+            allowedMentions: { roles: [], users: [] }
         });
 
         const okEmbed = MessageUtilities.generateBlankEmbed(instance.member.guild, "RED")
@@ -1312,29 +1357,36 @@ export namespace VerifyManager {
                     );
                 }
 
-                promises.push(
-                    GlobalFgrUtilities.sendMsg(member, { embeds: [successEmbed] }),
-                    GlobalFgrUtilities.tryExecuteAsync(async () => {
-                        await member.roles.add(section!.roles.verifiedRoleId);
-                    })
-                );
+                await GlobalFgrUtilities.sendMsg(member, { embeds: [successEmbed] });
+                await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    await member.roles.add(
+                        section!.roles.verifiedRoleId,
+                        `Manually verified in the ${section!.sectionName} section by ${mod.user.tag}.`
+                    );
+                });
 
                 if (section.isMainSection) {
+                    await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                        await member.setNickname(
+                            UserManager.getNameForNickname(member, entry.ign), 
+                            `Manually verified in the main section successfully by ${mod.user.tag}`
+                        );
+                    });
+                    await MongoManager.addIdNameToIdNameCollection(member, entry.ign);    
+                                    
                     promises.push(
-                        MongoManager.addIdNameToIdNameCollection(member, entry.ign),
-                        GlobalFgrUtilities.tryExecuteAsync(async () => {
-                            await member.setNickname(entry.ign, "Verified in the main section successfully.");
-                        }),
                         verifySuccessChannel?.send({
-                            content: `[Main] ${member} has successfully verified as **\`${entry.ign}\`**`
-                                + ` by ${mod}.`
+                            content: `\`[Main]\` ${member} has successfully verified as **\`${entry.ign}\`**`
+                                + ` by ${mod}.`,
+                            allowedMentions: { roles: [], users: [] }
                         })
                     );
                 }
                 else {
                     promises.push(
                         verifySuccessChannel?.send({
-                            content: `[${section.sectionName}] ${member} has been manually verified by ${mod}.`
+                            content: `\`[${section.sectionName}]\` ${member} has been manually verified by ${mod}.`,
+                            allowedMentions: { roles: [], users: [] }
                         })
                     );
                 }
@@ -1358,15 +1410,14 @@ export namespace VerifyManager {
                                 )
                         ] 
                     }),
-                    section.isMainSection
-                        ? verifyFailChannel?.send({
-                            content: `[Main] ${member} has tried to verify as **\`${entry.ign}\`**, but`
+                    verifyFailChannel?.send({
+                        content: section.isMainSection
+                            ? `\`[Main]\` ${member} has tried to verify as **\`${entry.ign}\`**, but`
                                 + ` their manual verification request was __denied__ by ${mod}.`
-                        })
-                        : verifyFailChannel?.send({
-                            content: `[${section.sectionName}] ${member} has tried to get manually verified, but`
-                                + ` was __denied__ manual verification by ${mod}.`
-                        })
+                            : `\`[${section.sectionName}]\` ${member} has tried to get manually verified, but`
+                                + ` was __denied__ manual verification by ${mod}.`,
+                        allowedMentions: { roles: [], users: [] }
+                    })
                 );
 
                 break;
@@ -1434,8 +1485,8 @@ export namespace VerifyManager {
 
         // Check guild. Failure to pass these tests will result in a fail.
         if (verifReq.guild.checkThis) {
-            if (verifReq.guild.guildName.checkThis
-                && resp.guild.toLowerCase() !== verifReq.guild.guildName.name.toLowerCase()) {
+            if (verifReq.guild.guildName.checkThis 
+                && (!resp.guild || resp.guild.toLowerCase() !== verifReq.guild.guildName.name.toLowerCase())) {
                 const guildInDisplay = `**\`${resp.guild}\`**`;
                 const guildNeededDisplay = `**\`${verifReq.guild.guildName.name}\`**`;
                 result.fatalIssues.push({
@@ -1455,7 +1506,16 @@ export namespace VerifyManager {
                 const rankHasDisplay = `**\`${resp.guildRank}\`**`;
                 const rankNeedDisplay = `**\`${verifReq.guild.guildRank.minRank}\`**`;
 
-                if (verifReq.guild.guildRank.exact) {
+                if (!resp.guildRank) {
+                    result.fatalIssues.push({
+                        key: "Invalid Guild Rank",
+                        value: "A guild rank could not be found on your profile.",
+                        log: "A guild rank could not be found on the user's profile"
+                    });
+                    result.conclusion = "FAIL";
+                    return result;
+                }
+                else if (verifReq.guild.guildRank.exact) {
                     if (verifReq.guild.guildRank.minRank !== resp.guildRank) {
                         result.fatalIssues.push({
                             key: "Not In Correct Guild",
@@ -1759,7 +1819,11 @@ export namespace VerifyManager {
             return [await dm.send({
                 embeds: [
                     new MessageEmbed()
-                        .setDescription("This is a test message to see if the bot can directly message you.")
+                        .setDescription(
+                            "This is a test message to see if the bot can directly message you."
+                            + " This should automatically update soon; if it doesn't, contact a staff"
+                            + " member."
+                        )
                         .setColor("RANDOM")
                 ]
             }), dm];
@@ -1809,8 +1873,11 @@ export namespace VerifyManager {
             )
             .addField(
                 "3. Wait.",
-                "RealmEye may take up to a minute to fully refresh your profile. This is *especially* the case if"
-                + " you just tried to verify and failed. In any case, please wait at least 30 seconds before continuing.",
+                "Please wait at least **30 seconds** after applying the above changes. In particular, if you *just* made your"
+                    + " last seen location private, updated your RealmEye description, or made parts (or all) of your profile"
+                    + " public, it is strongly recommended that you wait, since RealmEye takes time to update.\n\n"
+                    + `${EmojiConstants.WARNING_EMOJI} **Warning:** Failure to wait after making the above changes will result`
+                    + " in the bot not properly registering your changes for the next minute or so after your next attempt.",
             )
             .addField(
                 "4. Confirm",
