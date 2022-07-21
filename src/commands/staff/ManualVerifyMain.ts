@@ -181,7 +181,9 @@ export class ManualVerifyMain extends BaseCommand {
 
         await GlobalFgrUtilities.tryExecuteAsync(async () => {
             await resMember.member.setNickname(UserManager.getNameForNickname(resMember.member, ignToVerifyWith));
-
+        });
+        await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            await resMember.member.roles.add(verifiedRole);
         });
 
         await verifySuccessChannel?.send({
@@ -211,10 +213,6 @@ export class ManualVerifyMain extends BaseCommand {
         }
 
         await GlobalFgrUtilities.sendMsg(resMember.member, { embeds: [finishedEmbed] });
-
-        await GlobalFgrUtilities.tryExecuteAsync(async () => {
-            return await resMember.member.roles.add(verifiedRole);
-        });
 
         // Finally, remove manual verification entry if it exists
         const mVerifyEntry = ctx.guildDoc!.manualVerificationEntries

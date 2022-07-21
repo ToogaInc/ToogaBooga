@@ -474,6 +474,7 @@ export namespace VerifyManager {
         }).catch();
 
         const timeStarted = Date.now();
+        const timeEnd = timeStarted + 8 * 60 * 1000;
         const components = AdvancedCollector.getActionRowsFromComponents([
             CHECK_PROFILE_BUTTON,
             ButtonConstants.CANCEL_BUTTON
@@ -483,17 +484,26 @@ export namespace VerifyManager {
             embeds: [
                 getVerificationEmbed(instance.member, nameToVerify, verificationCode)
                     .setFooter({ text: "This process will expire by" })
-                    .setTimestamp(timeStarted + 2 * 60 * 1000)
+                    .setTimestamp(timeEnd)
             ],
             components
         });
 
         const collector = msg.createMessageComponentCollector({
             filter: i => i.user.id === instance.member.id,
-            time: 20 * 60 * 1000
+            time: 8 * 60 * 1000
         });
 
-        collector.on("end", () => {
+        collector.on("end", async (_c, r) => {
+            if (r === "time") {
+                await MessageUtilities.tryEdit(msg, {
+                    content: "The verification process has been canceled due to time being expired. Please"
+                        + " restart the verification process.",
+                    embeds: [],
+                    components: []
+                });
+            }
+
             InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
         });
 
@@ -608,7 +618,7 @@ export namespace VerifyManager {
                     embeds: [
                         getVerificationEmbed(instance.member, nameToVerify!, verificationCode)
                             .setFooter({ text: "This process will expire by" })
-                            .setTimestamp(timeStarted + 2 * 60 * 1000)
+                            .setTimestamp(timeEnd)
                     ],
                     components
                 });
@@ -639,7 +649,7 @@ export namespace VerifyManager {
                     embeds: [
                         getVerificationEmbed(instance.member, nameToVerify!, verificationCode)
                             .setFooter({ text: "This process will expire by" })
-                            .setTimestamp(timeStarted + 2 * 60 * 1000)
+                            .setTimestamp(timeEnd)
                     ],
                     components
                 });
@@ -776,7 +786,7 @@ export namespace VerifyManager {
                     embeds: [
                         getVerificationEmbed(instance.member, nameToVerify!, verificationCode)
                             .setFooter({ text: "This process will expire by" })
-                            .setTimestamp(timeStarted + 2 * 60 * 1000)
+                            .setTimestamp(timeEnd)
                     ],
                     components
                 });
@@ -849,7 +859,10 @@ export namespace VerifyManager {
     async function verifySection(interaction: MessageComponentInteraction, instance: IVerificationInstance): Promise<void> {
         if (!instance.section.otherMajorConfig.verificationProperties.checkRequirements) {
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                await instance.member.roles.add(instance.section.roles.verifiedRoleId);
+                await instance.member.roles.add(
+                    instance.section.roles.verifiedRoleId, 
+                    `Verified automatically in the ${instance.section.sectionName} section.`
+                );
             });
 
             await Promise.all([
@@ -953,7 +966,10 @@ export namespace VerifyManager {
         }
         else {
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                await instance.member.roles.add(instance.section.roles.verifiedRoleId);
+                await instance.member.roles.add(
+                    instance.section.roles.verifiedRoleId,
+                    `Verified successfully in the ${instance.section.sectionName} section.`
+                );
             });
 
             await Promise.all([
@@ -1343,14 +1359,17 @@ export namespace VerifyManager {
 
                 await GlobalFgrUtilities.sendMsg(member, { embeds: [successEmbed] });
                 await GlobalFgrUtilities.tryExecuteAsync(async () => {
-                    await member.roles.add(section!.roles.verifiedRoleId);
+                    await member.roles.add(
+                        section!.roles.verifiedRoleId,
+                        `Manually verified in the ${section!.sectionName} section by ${mod.user.tag}.`
+                    );
                 });
 
                 if (section.isMainSection) {
                     await GlobalFgrUtilities.tryExecuteAsync(async () => {
                         await member.setNickname(
                             UserManager.getNameForNickname(member, entry.ign), 
-                            "Verified in the main section successfully."
+                            `Manually verified in the main section successfully by ${mod.user.tag}`
                         );
                     });
                     await MongoManager.addIdNameToIdNameCollection(member, entry.ign);    
@@ -1800,7 +1819,11 @@ export namespace VerifyManager {
             return [await dm.send({
                 embeds: [
                     new MessageEmbed()
-                        .setDescription("This is a test message to see if the bot can directly message you.")
+                        .setDescription(
+                            "This is a test message to see if the bot can directly message you."
+                            + " This should automatically update soon; if it doesn't, contact a staff"
+                            + " member."
+                        )
                         .setColor("RANDOM")
                 ]
             }), dm];
@@ -1850,8 +1873,11 @@ export namespace VerifyManager {
             )
             .addField(
                 "3. Wait.",
-                "RealmEye may take up to a minute to fully refresh your profile. This is *especially* the case if"
-                + " you just tried to verify and failed. In any case, please wait at least 30 seconds before continuing.",
+                "Please wait at least **30 seconds** after applying the above changes. In particular, if you *just* made your"
+                    + " last seen location private, updated your RealmEye description, or made parts (or all) of your profile"
+                    + " public, it is strongly recommended that you wait, since RealmEye takes time to update.\n\n"
+                    + `${EmojiConstants.WARNING_EMOJI} **Warning:** Failure to wait after making the above changes will result`
+                    + " in the bot not properly registering your changes for the next minute or so after your next attempt.",
             )
             .addField(
                 "4. Confirm",
