@@ -603,7 +603,6 @@ export namespace VerifyManager {
             }
 
             // Is the verification code in their profile?
-            /*
             if (!generalData.description.some(x => x.includes(verificationCode))) {
                 await MessageUtilities.tryEdit(msg, {
                     embeds: [
@@ -627,7 +626,7 @@ export namespace VerifyManager {
                 });
 
                 return;
-            }*/
+            }
 
             // Get name history for this user.
             const nameHistory = await GlobalFgrUtilities.tryExecuteAsync(async () => {
