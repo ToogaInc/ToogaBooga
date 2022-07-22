@@ -260,7 +260,7 @@ export namespace VerifyManager {
 
         // See if they have any saved names
         const userDocs = await MongoManager.findIdInIdNameCollection(instance.member.id);
-        if (userDocs.length > 0) {
+        if (userDocs.length > 0 && userDocs[0].rotmgNames.length > 0) {
             const possNames = userDocs[0].rotmgNames.map(x => x.ign);
 
             const r = await MessageUtilities.tryEdit(msg, {
