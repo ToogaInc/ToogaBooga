@@ -22,7 +22,6 @@ export class EditName extends BaseCommand {
                 "Officer",
                 "Moderator",
                 "HeadRaidLeader",
-                "VeteranRaidLeader"
             ],
             generalPermissions: [],
             botPermissions: [],
