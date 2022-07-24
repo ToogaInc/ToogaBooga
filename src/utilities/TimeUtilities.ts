@@ -190,4 +190,15 @@ export namespace TimeUtilities {
 
         return finalDate;
     }
+
+    /** 
+     * Creates a Discord timestamp
+     * @param {string} style The style to parse
+     * @param {Date | Number} time The time to show when parsed by the client
+     * @returns {string} The Discord timestamp
+     */
+    export function getDiscordTime(style: string, time: Date | number = Date.now()): string {
+        if (typeof time === "number") return `<t:${Math.trunc(time / 1000)}:${style}>`;
+        else return `<t:${Math.trunc(time.getTime() / 1000)}:${style}>`;
+    }
 }

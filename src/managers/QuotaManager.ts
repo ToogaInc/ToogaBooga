@@ -255,8 +255,8 @@ export namespace QuotaManager {
         }
 
         const descSb = new StringBuilder()
-            .append(`- Start Time: \`${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT\``).appendLine()
-            .append(`- End Time: \`${TimeUtilities.getDateTime(Date.now())} GMT\``).appendLine()
+            .append(`- Start Time: ${TimeUtilities.getDiscordTime("f", oldQuotas.lastReset)}`).appendLine()
+            .append(`- End Time: ${TimeUtilities.getDiscordTime("f")}`).appendLine()
             .append(`- Members w/ Role: \`${role?.members.size ?? "N/A"}\``).appendLine()
             .append(`- Minimum Points Needed: \`${oldQuotas.pointsNeeded}\``).appendLine();
         if (!role) {
@@ -708,8 +708,8 @@ export namespace QuotaManager {
             .setTitle(`Active Quota: ${role.name}`)
             .setDescription(
                 new StringBuilder()
-                    .append(`- Start Time: \`${TimeUtilities.getDateTime(startTime)} GMT\``).appendLine()
-                    .append(`- End Time: \`${TimeUtilities.getDateTime(endTime)} GMT\``).appendLine()
+                    .append(`- Start Time: ${TimeUtilities.getDiscordTime("f", startTime)}`).appendLine()
+                    .append(`- End Time: ${TimeUtilities.getDiscordTime("f", endTime)}`).appendLine()
                     .append(`- Members w/ Role: \`${role.members.size}\``).appendLine()
                     .append(`- Minimum Points Needed: \`${quotaInfo.pointsNeeded}\``).appendLine()
                     .append("__**Point Values**__")
@@ -721,7 +721,8 @@ export namespace QuotaManager {
                         )
                     )
                     .append("__**Time Left**__")
-                    .append(StringUtil.codifyString(timeLeft))
+                    .appendLine()
+                    .append(`> Quota period ends ${TimeUtilities.getDiscordTime("R", endTime)}`)
                     .toString()
             )
             .setTimestamp()
