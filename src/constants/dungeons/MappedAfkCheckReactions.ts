@@ -680,7 +680,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: "1000801812045107282"
+            identifier: "1001195125734645810"
         },
         name: "Cult Key",
         isExaltKey: true
@@ -689,7 +689,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: "1000801839819792394"
+            identifier: "1001195167052742719"
         },
         name: "Void Key",
         isExaltKey: true
