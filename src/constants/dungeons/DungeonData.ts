@@ -1539,10 +1539,10 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         dungeonCategory: "Exaltation Dungeons",
         isBuiltIn: true
     },
-        {
+    {
         codeName: "LOST_HALLS",
         dungeonName: "Lost Halls",
-        portalEmojiId: "1000802214035599380",
+        portalEmojiId: "1001196975200407623",
         keyReactions: [
             {
                 mapKey: "CULT_KEY",
@@ -1609,8 +1609,8 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         },
         bossLinks: [
             {
-                url: "https://imgur.com/a/xp6EH0Y",
-                name: "Void and Malus"
+                url: "https://i.imgur.com/uhDj0M5.png",
+                name: "Lost Halls Portal"
             }
         ],
         dungeonColors: [
