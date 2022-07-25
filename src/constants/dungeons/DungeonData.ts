@@ -1539,6 +1539,86 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         dungeonCategory: "Exaltation Dungeons",
         isBuiltIn: true
     },
+        {
+        codeName: "LOST_HALLS",
+        dungeonName: "Lost Halls",
+        portalEmojiId: "1000802214035599380",
+        keyReactions: [
+            {
+                mapKey: "CULT_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "VOID_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "VIAL_OF_PURE_DARKNESS",
+                maxEarlyLocation: 2
+            }
+        ],
+        otherReactions: [
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "SAMURAI",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "BARD",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PRIEST",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            }
+        ],
+        portalLink: {
+            url: "https://i.imgur.com/uhDj0M5.png",
+            name: "Lost Halls Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://imgur.com/a/xp6EH0Y",
+                name: "Void and Malus"
+            }
+        ],
+        dungeonColors: [
+            0xCCCCCC
+        ],
+        dungeonCategory: "Exaltation Dungeons",
+        isBuiltIn: true
+    },
     {
         codeName: "FUNGAL_CAVERN",
         dungeonName: "Fungal Cavern",
