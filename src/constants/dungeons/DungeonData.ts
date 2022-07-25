@@ -1539,7 +1539,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         dungeonCategory: "Exaltation Dungeons",
         isBuiltIn: true
     },
-        {
+    {
         codeName: "LOST_HALLS",
         dungeonName: "Lost Halls",
         portalEmojiId: "1000802214035599380",
