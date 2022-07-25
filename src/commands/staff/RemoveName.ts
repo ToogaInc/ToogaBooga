@@ -20,9 +20,7 @@ export class RemoveName extends BaseCommand {
                 "Security",
                 "Officer",
                 "Moderator",
-                "RaidLeader",
                 "HeadRaidLeader",
-                "VeteranRaidLeader"
             ],
             generalPermissions: [],
             botPermissions: [],
