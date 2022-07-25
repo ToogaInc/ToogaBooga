@@ -676,6 +676,24 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Lost Halls Key",
         isExaltKey: true
     },
+    VOID_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1001201297053192312"
+        },
+        name: "Void Key",
+        isExaltKey: true
+    },
+    CULT_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1001201086503338105"
+        },
+        name: "Cult Key",
+        isExaltKey: true
+    },
     VIAL_OF_PURE_DARKNESS: {
         type: "NM_KEY",
         emojiInfo: {
