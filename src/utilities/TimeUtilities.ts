@@ -191,14 +191,20 @@ export namespace TimeUtilities {
         return finalDate;
     }
 
+    /**
+     * Options for making a Discord timestamp from the bot's side
+     * @typedef {Object} DiscordTimestampOptions
+     * @property {Date | number} time The time to show
+     * @property {string} [style] The style to show
+     */
+
     /** 
      * Creates a Discord timestamp
-     * @param {string} style The style to parse
-     * @param {Date | Number} time The time to show when parsed by the client
+     * @param {DiscordTimestampOptions} [options={}] Options to create the timestamp
      * @returns {string} The Discord timestamp
      */
-    export function getDiscordTime(style: string, time: Date | number = Date.now()): string {
-        if (typeof time === "number") return `<t:${Math.trunc(time / 1000)}:${style}>`;
-        else return `<t:${Math.trunc(time.getTime() / 1000)}:${style}>`;
+    export function getDiscordTime({ time = Date.now(), style = "R" } = {}): string {
+        // Truncate and divide by 1000 to transform  ms to seconds
+        return `<t:${Math.trunc(time / 1000)}:${style}>`; 
     }
 }
