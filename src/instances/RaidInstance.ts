@@ -1738,6 +1738,21 @@ export class RaidInstance {
             .setColor(this._embedColor);
 
         if (this._raidStatus !== RaidStatus.RUN_FINISHED && this._raidStatus !== RaidStatus.ABORTED) {
+            let status: string;
+            if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
+                status = "Pre-AFK";
+            }
+            else if (this._raidStatus === RaidStatus.AFK_CHECK) {
+                status = "AFK";
+            }
+            else if (this._raidStatus === RaidStatus.IN_RUN) {
+                status = "Raid";
+            }
+            else {
+                // fallback to whatever value this is in case we add a new enum member
+                status = this._raidStatus;
+            }
+
             const generalStatus = new StringBuilder()
                 .append(`⇨ AFK Check Started At: ${TimeUtilities.getDateTime(this._startTime)} GMT`)
                 .appendLine()
@@ -1749,7 +1764,7 @@ export class RaidInstance {
                 .appendLine()
                 .append(`⇨ Location: **\`${this._location ? this._location : "Not Set."}\`**`)
                 .appendLine()
-                .append(`⇨ Status: **\`${this._raidStatus}\`**`);
+                .append(`⇨ Status: **\`${status}\`**`);
             controlPanelEmbed.addField("General Status", generalStatus.toString());
         }
 
