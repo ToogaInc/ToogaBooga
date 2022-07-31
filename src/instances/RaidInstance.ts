@@ -94,7 +94,6 @@ export class RaidInstance {
     private static readonly END_RAID_ID: string = "end_raid";
     private static readonly LOCK_VC_ID: string = "lock_vc";
     private static readonly UNLOCK_VC_ID: string = "unlock_vc";
-    private static readonly PARSE_VC_ID: string = "parse_vc";
     private static readonly RESTART_RAID: string = "restart_raid";
 
     // 1 hour in milliseconds
@@ -158,11 +157,6 @@ export class RaidInstance {
             .setLabel("Unlock Raid VC")
             .setEmoji(EmojiConstants.UNLOCK_EMOJI)
             .setCustomId(RaidInstance.UNLOCK_VC_ID)
-            .setStyle("PRIMARY"),
-        new MessageButton()
-            .setLabel("Parse Raid VC")
-            .setEmoji(EmojiConstants.PRINTER_EMOJI)
-            .setCustomId(RaidInstance.PARSE_VC_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Start New AFK Check")
@@ -1835,10 +1829,6 @@ export class RaidInstance {
                     .appendLine()
                     .append("⇨ **Press** the **`Unlock Raid VC`** button if you want to unlock the raid voice channel.")
                     .appendLine()
-                    .append("⇨ **Press** the **`Parse Raid VC`** button if you want to parse a /who screenshot for ")
-                    .append("this run. You will be asked to provide a /who screenshot; please provide a cropped ")
-                    .append("screenshot so only the /who results are shown.")
-                    .appendLine()
                     .append(
                         "⇨ **Press** the **`Restart Raid`** button if you want to create a new AFK check in the same"
                     )
@@ -2898,62 +2888,6 @@ export class RaidInstance {
                     `${this._leaderName}'s Raid VC has been unlocked.`,
                     this._tempAlertDelay
                 ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
-                return;
-            }
-
-            if (i.customId === RaidInstance.PARSE_VC_ID) {
-                LOGGER.info(`${this._instanceInfo} ${member?.displayName} chose to parse the VC`);
-                await i.deferUpdate();
-                const res = await AdvancedCollector.startNormalCollector<MessageAttachment>(
-                    {
-                        msgOptions: {
-                            content:
-                                "Please send a **screenshot** (not a URL to a screenshot, but an actual attachment)" +
-                                " containing the results of your `/who` now. This screenshot does not need to be" +
-                                " cropped. To cancel this process, please type `cancel`.",
-                        },
-                        cancelFlag: "cancel",
-                        targetChannel: this._controlPanelChannel,
-                        targetAuthor: i.user,
-                        deleteBaseMsgAfterComplete: true,
-                        deleteResponseMessage: false,
-                        duration: 30 * 1000,
-                    },
-                    (m: Message) => {
-                        if (m.attachments.size === 0) return;
-
-                        // Images have a height property, non-images don't.
-                        const imgAttachment = m.attachments.find((x) => x.height !== null);
-                        if (!imgAttachment) return;
-
-                        return imgAttachment;
-                    }
-                );
-
-                if (!res) return;
-                const parseSummary = await RaidInstance.parseScreenshot(res.url, this._raidVc);
-                if (!this._raidVc || !this._isValid) return;
-
-                this.logEvent(`Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``, true).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
-
-                if (!parseSummary) {
-                    this.logEvent("Parse failed; the API may not be functioning at this time.", true).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
-
-                    return;
-                }
-
-                const embed = await RaidInstance.interpretParseRes(parseSummary, i.user, this._raidVc);
-                await this._controlPanelChannel.send({ embeds: [embed] }).catch();
-                if (!member) {
-                    return;
-                }
-
-                const roleId = QuotaManager.findBestQuotaToAdd(member, this._guildDoc, "Parse");
-                if (!roleId) {
-                    return;
-                }
-
-                await QuotaManager.logQuota(member, roleId, "Parse", 1);
                 return;
             }
         });
