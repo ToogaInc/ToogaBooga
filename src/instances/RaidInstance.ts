@@ -2087,7 +2087,7 @@ export class RaidInstance {
     public async logEvent(event: string, logToChannel: boolean): Promise<void> {
         const time = getFormattedTime();
 
-        if (logToChannel && this._logChan) {
+        if (logToChannel && this._logChan && this._isValid) {
             await GlobalFgrUtilities.sendMsg(this._logChan, {
                 content: `**\`[${time}]\`** ${event}`,
             });
