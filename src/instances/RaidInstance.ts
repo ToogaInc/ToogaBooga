@@ -2768,7 +2768,10 @@ export class RaidInstance {
                 await i.deferUpdate();
                 if (i.customId === RaidInstance.START_AFK_CHECK_ID) {
                     LOGGER.info(`${this._instanceInfo} Leader chose to start AFK Check`);
-                    this.startAfkCheck().then();
+                    if (this._location)
+                        this.startAfkCheck().then();
+                    else
+                        i.followUp({ content: "Please set a location prior to progressing the raid.", ephemeral: true });
                     return;
                 }
 
