@@ -44,24 +44,10 @@ export type DefinedRole = "Everyone"
 | "Moderator";
 
 /**
- * All modmail log types.
- */
-export type ModmailLogType = "ModmailReceived"
-| "ModmailThreadCreated"
-| "ModmailThreadRemoved"
-| "ModmailSent";
-
-/**
  * The verification log types.
  */
-export type VerificationLogType = "VerifySuccess"
-| "VerifyFail"
-| "VerifyStart"
-| "VerifyStep"
-| "SectionSuspend"
-| "ManualVerifyRequest"
-| "ManualVerifyAccepted"
-| "ManualVerifyDenied";
+export type VerificationLogType = "VerifyStep"
+| "SectionSuspend";
 
 /**
  * Punishments that can be issued on a section-basis.
@@ -92,5 +78,5 @@ export type MainOnlyModRevLogType = "Unsuspend"
 | "Unwarn";
 
 export type AllModLogType = MainOnlyModLogType | MainOnlyModRevLogType | SectionModLogType | SectionModRevLogType;
-export type MainLogType = MainOnlyModLogType | VerificationLogType | ModmailLogType;
+export type MainLogType = MainOnlyModLogType | VerificationLogType;
 export type SectionLogType = SectionModLogType | VerificationLogType;
