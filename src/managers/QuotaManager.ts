@@ -10,6 +10,7 @@ import {
     MessageAttachment,
     MessageEmbed,
     MessageSelectMenu,
+    TextBasedChannel,
     TextChannel
 } from "discord.js";
 import { QuotaLogType } from "../definitions/Types";
@@ -29,6 +30,7 @@ import { DungeonUtilities } from "../utilities/DungeonUtilities";
 import { MiscUtilities } from "../utilities/MiscUtilities";
 import { EmojiConstants } from "../constants/EmojiConstants";
 import { Logger } from "../utilities/Logger";
+import { Bot } from "../Bot";
 
 const LOGGER: Logger = new Logger(__filename, true);
 export namespace QuotaManager {
@@ -456,7 +458,7 @@ export namespace QuotaManager {
     export async function logQuota(member: GuildMember, roleId: string, logType: string,
                                    amt: number): Promise<void> {
         LOGGER.info(`Logging quota for ${member.displayName}, role: ${MiscUtilities.getRoleName(roleId, member.guild)}, type: ${logType}, amount: ${amt}`);
-        await MongoManager.updateAndFetchGuildDoc({
+        const guildDoc = await MongoManager.updateAndFetchGuildDoc({
             guildId: member.guild.id,
             "quotas.quotaInfo.roleId": roleId
         }, {
@@ -469,6 +471,15 @@ export namespace QuotaManager {
                 }
             }
         });
+
+        if (!guildDoc) {
+            LOGGER.error(`Couldn't update quota in the guild document for ${member.guild.name}`);
+            return;
+        }
+
+        // Dispatch an event to edit quota embeds for the guild. We can re-use the guildDoc to not waste more calls
+        // todo: should change this function to revolve around using quotaInfo. how hard is it to pick it from guildDoc with our known info in scope?
+        Bot.BotInstance.client.emit("quotaEvent", member.guild.id, guildDoc);
     }
 
     /**
@@ -770,6 +781,42 @@ export namespace QuotaManager {
         }
 
         return embed;
+    }
+
+    /**
+     * Sends or edits an existing quota leaderboard with the most recent leaderboard
+     * @param {string | null} messageId The existing message to check. If null, a new message will always be sent 
+     * @param {IQuotaInfo} quotaInfo Quota info to retrieve associated info for
+     * @param {IGuildInfo} guildDoc Guild Doc
+     * @returns {Promise<boolean>} Whether or not it was successful
+     */
+    export async function upsertLeaderboardMessage(messageId: string | null, quotaInfo: IQuotaInfo, guildDoc: IGuildInfo): Promise<boolean> {
+        // todo: prettify log, show names
+        LOGGER.info(`Attempting to update quota for ${quotaInfo.roleId} in ${guildDoc.guildId}`);
+        // todo: complain about guild id not being in quotaInfo
+
+        // Check if the leaderboard already exists
+        const channel = GlobalFgrUtilities.getCachedChannel<TextBasedChannel>(quotaInfo.channel)
+        if (!channel) {
+            LOGGER.error(`Could not find a suitable channel to upsert leaderboard in ${guildDoc.guildId}`);
+            return false;
+        }
+        const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId) as Guild; // We must know the guild exists if there is a channel
+        const quotaEmbed = await getQuotaLeaderboardEmbed(guild, guildDoc, quotaInfo) as MessageEmbed; // By proxy, we can only update a quota that exists
+
+        // Asserting just to avoid duplicating code, null id will return falsy
+        const message = await GuildFgrUtilities.fetchMessage(channel, messageId!);
+        if (!message) {
+            try {
+                await GlobalFgrUtilities.sendMsg(channel, { embeds: [quotaEmbed] });
+            } catch {
+                return false;
+            }
+        } else {
+            await message.edit({ embeds: [quotaEmbed] }).catch(() => LOGGER.error(`Couldn't edit a message in ${guildDoc.guildId}`));
+        }
+
+        return true;
     }
 }
 

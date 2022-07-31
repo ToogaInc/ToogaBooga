@@ -1,4 +1,4 @@
-import { IConfiguration } from "./definitions";
+import { IConfiguration, IGuildInfo } from "./definitions";
 import {
     Client,
     Collection,
@@ -29,7 +29,8 @@ import {
     onReadyEvent,
     onThreadArchiveEvent,
     onVoiceStateEvent,
-    onGuildMemberRemove
+    onGuildMemberRemove,
+    onQuotaEvent
 } from "./events";
 import { QuotaService } from "./managers/QuotaManager";
 import { REST } from "@discordjs/rest";
@@ -274,6 +275,7 @@ export class Bot {
 
         LOGGER.info("Starting all events");
 
+        // Discord events
         this._bot.on("ready", () => onReadyEvent());
         this._bot.on("interactionCreate", (i: Interaction) => onInteractionEvent(i));
         this._bot.on("guildCreate", (g: Guild) => onGuildCreateEvent(g));
@@ -290,6 +292,9 @@ export class Bot {
             n: GuildMember | PartialGuildMember
         ) => onGuildMemberUpdate(o, n));
         this._bot.on("guildMemberRemove", (m: GuildMember | PartialGuildMember) => onGuildMemberRemove(m));
+
+        // Custom events
+        this._bot.on("quotaEvent", (gId: string, gDoc: IGuildInfo) => onQuotaEvent(gId, gDoc));
         this._eventsIsStarted = true;
     }
 
