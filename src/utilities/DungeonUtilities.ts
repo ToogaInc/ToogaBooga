@@ -298,7 +298,7 @@ export namespace DungeonUtilities {
 
         const selectedDgn = await AdvancedCollector.startInteractionEphemeralCollector({
             targetAuthor: ctx.user,
-            acknowledgeImmediately: true,
+            acknowledgeImmediately: false,
             targetChannel: ctx.channel,
             duration: 1.5 * 60 * 1000
         }, uIdentifier);
