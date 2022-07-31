@@ -44,13 +44,7 @@ interface IChannelMongo extends IBaseDatabaseEntryInfo {
 export class ConfigChannels extends BaseCommand implements IConfigCommand {
     private static readonly SECTION_LOGGING_IDS: SectionLogType[] = [
         "SectionSuspend",
-        "VerifyFail",
-        "VerifySuccess",
-        "VerifyStep",
-        "VerifyStart",
-        "ManualVerifyAccepted",
-        "ManualVerifyDenied",
-        "ManualVerifyRequest"
+        "VerifyStep"
     ];
 
     private static readonly MAIN_LOGGING_IDS: MainLogType[] = [
@@ -59,18 +53,8 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
         "Blacklist",
         "ModmailBlacklist",
         "Warn",
-        "VerifyFail",
-        "VerifySuccess",
         "VerifyStep",
-        "VerifyStart",
-        "SectionSuspend",
-        "ManualVerifyAccepted",
-        "ManualVerifyDenied",
-        "ManualVerifyRequest",
-        "ModmailReceived",
-        "ModmailThreadCreated",
-        "ModmailThreadRemoved",
-        "ModmailSent"
+        "SectionSuspend"
     ];
 
     private static readonly NA: string = "N/A";
