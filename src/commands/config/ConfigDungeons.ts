@@ -170,6 +170,9 @@ export class ConfigDungeons extends BaseCommand {
         if (numEq !== 0)
             return false;
 
+        if (dgnOverride.locationToProgress !== origDungeon.locationToProgress)
+            return false;
+
         return dgnOverride.nitroEarlyLocationLimit === -1
             && dgnOverride.vcLimit === -1
             && dgnOverride.pointCost === 0
@@ -660,6 +663,10 @@ export class ConfigDungeons extends BaseCommand {
             .setLabel("Configure Modifiers")
             .setCustomId("config_modifiers")
             .setStyle("PRIMARY");
+        const configLocationRequirement = new MessageButton()
+            .setLabel("Require Location")
+            .setCustomId("require_loc")
+            .setStyle(cDungeon.locationToProgress ? "SUCCESS" : "DANGER");
 
         let dgnToOverrideInfo: IDungeonInfo | null = null;
 
@@ -725,6 +732,7 @@ export class ConfigDungeons extends BaseCommand {
             vcLimitButton,
             roleReqButton,
             configModifiers,
+            configLocationRequirement,
             saveButton,
             removeButton
         );
@@ -840,6 +848,10 @@ export class ConfigDungeons extends BaseCommand {
                 "Click on the `Role Requirements` button to add or remove any additional roles needed to run this"
                 + " particular dungeon. For example, for full-skip dungeons, you might require a Fullskip role. The"
                 + ` number of role(s) set is: \`${cDungeon.roleRequirement.length}\``
+            ).addField(
+                "Require Location",
+                "Click on the `Require Location` button to require a location before being able to progress an AFK-"
+                + "check to the closed stage. Green indicates that this value is required"
             );
 
             embed.addField(
@@ -1295,6 +1307,15 @@ export class ConfigDungeons extends BaseCommand {
                     }
 
                     cDungeon.allowedModifiers = res;
+                    break;
+                }
+                case "require_loc": {
+                    const newStyle = !cDungeon.locationToProgress ? "SUCCESS" : "DANGER";
+                    configLocationRequirement.setStyle(newStyle);
+
+                    await botMsg.edit({ embeds: [embed], components: AdvancedCollector.getActionRowsFromComponents(buttons) });
+
+                    cDungeon.locationToProgress = !cDungeon.locationToProgress;
                     break;
                 }
             }
