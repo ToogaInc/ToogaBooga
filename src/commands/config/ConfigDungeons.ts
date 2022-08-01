@@ -748,6 +748,8 @@ export class ConfigDungeons extends BaseCommand {
                     : false
             );
 
+            configLocationRequirement.setStyle(cDungeon.locationToProgress ? "SUCCESS" : "DANGER");
+
             const ptCostStr = (cDungeon.pointCost === 0
                 ? "Point System Not Used"
                 : cDungeon.pointCost).toString();
@@ -1310,11 +1312,6 @@ export class ConfigDungeons extends BaseCommand {
                     break;
                 }
                 case "require_loc": {
-                    const newStyle = !cDungeon.locationToProgress ? "SUCCESS" : "DANGER";
-                    configLocationRequirement.setStyle(newStyle);
-
-                    await botMsg.edit({ embeds: [embed], components: AdvancedCollector.getActionRowsFromComponents(buttons) });
-
                     cDungeon.locationToProgress = !cDungeon.locationToProgress;
                     break;
                 }
