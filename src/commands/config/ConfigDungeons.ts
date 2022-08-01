@@ -1320,6 +1320,7 @@ export class ConfigDungeons extends BaseCommand {
                 }
                 case "require_loc": {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
                     const newStyle = !cDungeon.locationToProgress ? "SUCCESS" : "DANGER";
                     configLocationRequirement.setStyle(newStyle);
@@ -1327,6 +1328,8 @@ export class ConfigDungeons extends BaseCommand {
                     await botMsg.edit({ embeds: [embed], components: AdvancedCollector.getActionRowsFromComponents(buttons) });
 
 >>>>>>> 34a093b... feat(c:afk): option to require loc per dungeon
+=======
+>>>>>>> 1fe8196... chore: move button style setting
                     cDungeon.locationToProgress = !cDungeon.locationToProgress;
                     break;
                 }
