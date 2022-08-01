@@ -70,7 +70,8 @@ export enum ArgumentType {
     Mention,
     Number,
     Role,
-    User
+    User,
+    Attachment
 }
 
 /**
@@ -155,6 +156,15 @@ function addArgument(scb: SlashCommandBuilder, argInfo: IArgumentInfo): void {
                 && restrictions.stringChoices.length > 0
                 && o.addChoices(...restrictions.stringChoices);
 
+                return o;
+            });
+            break;
+        }
+        case ArgumentType.Attachment: {
+            scb.addAttachmentOption(o => {
+                o.setName(argInfo.argName)
+                    .setRequired(argInfo.required)
+                    .setDescription(desc);
                 return o;
             });
             break;
