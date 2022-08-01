@@ -1,4 +1,4 @@
-import { BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
+import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
 import { Message, MessageAttachment, VoiceChannel } from "discord.js";
 import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
 import { RaidInstance } from "../../instances/RaidInstance";
@@ -23,7 +23,17 @@ export class Parse extends BaseCommand {
             generalPermissions: [],
             botPermissions: [],
             commandCooldown: 3 * 1000,
-            argumentInfo: [],
+            argumentInfo: [
+                {
+                    displayName: "/who Image",
+                    argName: "image",
+                    desc: "The /who in the dungeon.",
+                    type: ArgumentType.Attachment,
+                    prettyType: "Attachment",
+                    required: true,
+                    example: [""]
+                }
+            ],
             guildOnly: true,
             botOwnerOnly: false
         };
@@ -35,6 +45,8 @@ export class Parse extends BaseCommand {
      * @inheritDoc
      */
     public async run(ctx: ICommandContext): Promise<number> {
+        const res = ctx.interaction.options.getAttachment("image", true);
+
         if (!ctx.member!.voice.channel) {
             await ctx.interaction.reply({
                 content: "You need to be in a voice channel.",
@@ -53,37 +65,37 @@ export class Parse extends BaseCommand {
 
         await ctx.interaction.deferReply();
 
-        const res = await AdvancedCollector.startNormalCollector<MessageAttachment>({
-            msgOptions: {
-                content: "Please send a **screenshot** (not a URL to a screenshot, but an actual attachment)"
-                    + " containing the results of your `/who` now. This screenshot does not need to be"
-                    + " cropped. To cancel this process, please type `cancel`.",
-            },
-            cancelFlag: "cancel",
-            targetChannel: ctx.channel,
-            targetAuthor: ctx.user,
-            deleteBaseMsgAfterComplete: true,
-            deleteResponseMessage: false,
-            duration: 30 * 1000
-        }, (m: Message) => {
-            if (m.attachments.size === 0)
-                return;
+        // const res = await AdvancedCollector.startNormalCollector<MessageAttachment>({
+        //     msgOptions: {
+        //         content: "Please send a **screenshot** (not a URL to a screenshot, but an actual attachment)"
+        //             + " containing the results of your `/who` now. This screenshot does not need to be"
+        //             + " cropped. To cancel this process, please type `cancel`.",
+        //     },
+        //     cancelFlag: "cancel",
+        //     targetChannel: ctx.channel,
+        //     targetAuthor: ctx.user,
+        //     deleteBaseMsgAfterComplete: true,
+        //     deleteResponseMessage: false,
+        //     duration: 30 * 1000
+        // }, (m: Message) => {
+        //     if (m.attachments.size === 0)
+        //         return;
 
-            // Images have a height property, non-images don't.
-            const imgAttachment = m.attachments.find(x => x.height !== null);
-            if (!imgAttachment)
-                return;
+        //     // Images have a height property, non-images don't.
+        //     const imgAttachment = m.attachments.find(x => x.height !== null);
+        //     if (!imgAttachment)
+        //         return;
 
-            return imgAttachment;
-        });
+        //     return imgAttachment;
+        // });
 
-        if (!res) {
-            await ctx.interaction.editReply({
-                content: "You either canceled this process or didn't upload a screenshot in time."
-            });
+        // if (!res) {
+        //     await ctx.interaction.editReply({
+        //         content: "You either canceled this process or didn't upload a screenshot in time."
+        //     });
 
-            return 0;
-        }
+        //     return 0;
+        // }
 
         const parseSummary = await RaidInstance.parseScreenshot(res.url, ctx.member!.voice.channel);
         if (!parseSummary) {
