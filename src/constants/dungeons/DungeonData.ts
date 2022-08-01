@@ -1764,6 +1764,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             0x000000
         ],
         dungeonCategory: "Exaltation Dungeons",
-        isBuiltIn: true
+        isBuiltIn: true,
+        locationToProgress: true
     }
 ];
