@@ -1,6 +1,5 @@
 import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
-import { Message, MessageAttachment, VoiceChannel } from "discord.js";
-import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
+import { VoiceChannel } from "discord.js";
 import { RaidInstance } from "../../instances/RaidInstance";
 import { QuotaManager } from "../../managers/QuotaManager";
 
