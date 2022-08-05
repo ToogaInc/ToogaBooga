@@ -160,8 +160,11 @@ export class ConfigVerification extends BaseCommand {
             additionalVerificationInfo: section.otherMajorConfig.verificationProperties.additionalVerificationInfo
         };
 
-        // The storage channel must exist since we need it to store manual verification screenshots.
-        if (!verifConfig.useDefault && !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)) {
+        // The storage + manual verification channel must exist since we need it to store manual verification screenshots
+        // and process manual verification requests.
+        if (!verifConfig.useDefault 
+            && (!GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)
+                || !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.verification.manualVerificationChannelId))) {
             verifConfig.useDefault = true;
         }
 
@@ -220,6 +223,7 @@ export class ConfigVerification extends BaseCommand {
                     .setCustomId("send")
                     .setDisabled(
                         !GuildFgrUtilities.hasCachedChannel(ctx.guild!, section.channels.verification.verificationChannelId)
+                        || !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.verification.manualVerificationChannelId)
                     )
             );
 
@@ -230,8 +234,8 @@ export class ConfigVerification extends BaseCommand {
 
             if (verifConfig.useDefault) {
                 desc.append("- Press the **Force Manual Verify** button if you want to require everyone to go through")
-                    .append(" the manual verification process. **Note** that this requires the storage channel to be")
-                    .append(" configured for the server.")
+                    .append(" the manual verification process. **Note** that this requires the storage channel and")
+                    .append(" manual verification channels to be configured for the server.")
                     .appendLine()
                     .append("- Press the **Check Requirements** button if you want to enable or disable the checking")
                     .append(" of requirements for this section.").appendLine()
