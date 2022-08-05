@@ -1032,7 +1032,7 @@ export namespace VerifyManager {
                 components: []
             });
 
-            await instance.verifyFailChannel?.send({
+            await instance.verifyStepChannel?.send({
                 content: `\`[Main]\` ${instance.member} tried to verify as **\`${nameToUse}\`**, but they are`
                     + " blacklisted from this server under that name. The corresponding Moderation ID is"
                     + ` \`${blUserInfo.actionId}\`.`,
