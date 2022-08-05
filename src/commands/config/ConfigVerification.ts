@@ -159,7 +159,8 @@ export class ConfigVerification extends BaseCommand {
             additionalVerificationInfo: section.otherMajorConfig.verificationProperties.additionalVerificationInfo
         };
 
-        if (!verifConfig.useDefault && GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)) {
+        // The storage channel must exist since we need it to store manual verification screenshots.
+        if (!verifConfig.useDefault && !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)) {
             verifConfig.useDefault = true;
         }
 
@@ -170,7 +171,9 @@ export class ConfigVerification extends BaseCommand {
                     new MessageButton()
                         .setStyle("PRIMARY")
                         .setLabel("Force Manual Verify")
-                        .setCustomId("toggle_type"),
+                        .setCustomId("toggle_type")
+                        // Once again, the storage channel must exist.
+                        .setDisabled(!GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)),
                     new MessageButton()
                         .setStyle("PRIMARY")
                         .setCustomId("check_reqs")
@@ -226,7 +229,8 @@ export class ConfigVerification extends BaseCommand {
 
             if (verifConfig.useDefault) {
                 desc.append("- Press the **Force Manual Verify** button if you want to require everyone to go through")
-                    .append(" the manual verification process.")
+                    .append(" the manual verification process. **Note** that this requires the storage channel to be")
+                    .append(" configured for the server.")
                     .appendLine()
                     .append("- Press the **Check Requirements** button if you want to enable or disable the checking")
                     .append(" of requirements for this section.").appendLine()
@@ -514,11 +518,11 @@ export class ConfigVerification extends BaseCommand {
                                 .append("In order to get access to the section, ");
                         }
 
-                        desc.append("you will need to verify your identity with the bot and upload a screenshot that")
-                            .append(" meets the following screenshot requirements:")
-                            .append(StringUtil.codifyString(
-                                verifConfig.instructionsManualVerification
-                            ));
+                        descSb.append("you will need to verify your identity with the bot and upload a screenshot that")
+                            .append(" meets the following screenshot requirements:").appendLine()
+                            .append(
+                                verifConfig.instructionsManualVerification.split("\n").map(x => "> " + x).join("\n")
+                            );
                     }
                     
                     descSb.appendLine()

@@ -1075,7 +1075,10 @@ export namespace VerifyManager {
                     .setDescription(
                         new StringBuilder()
                             .append("Please upload **one** screenshot that satisfies the following directions:")
-                            .append(StringUtil.codifyString(instructions))
+                            .appendLine()
+                            .append(
+                                instructions.split("\n").map(x => "> " + x).join("\n")
+                            ).appendLine()
                             .append("There will be __no__ opportunity for you to confirm your screenshot, so please")
                             .append(" make sure you upload the correct screenshot.")
                             .appendLine(2)
@@ -1103,7 +1106,7 @@ export namespace VerifyManager {
         }
 
         const imageRes = await AdvancedCollector.startDoubleCollector<Buffer | Stream | string>({
-            acknowledgeImmediately: true,
+            acknowledgeImmediately: false,
             cancelFlag: null,
             clearInteractionsAfterComplete: false,
             deleteBaseMsgAfterComplete: false,
@@ -1128,6 +1131,7 @@ export namespace VerifyManager {
             return at.attachment;
         });
 
+        msg.delete().catch();
         if (!imageRes || imageRes instanceof MessageComponentInteraction) {
             instance.verifyStepChannel?.send({
                 content: `${logType} ${instance.member} has canceled the manual verification process.`,
@@ -1135,7 +1139,6 @@ export namespace VerifyManager {
             });
 
             InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
-            msg.delete().catch();
             return;
         }
 
@@ -1160,7 +1163,6 @@ export namespace VerifyManager {
             });
 
             InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
-            msg.delete().catch();
             await GlobalFgrUtilities.sendMsg(dmChan, {
                 content: "The manual verification process could not be completed due to an issue with the"
                     + " configuration channel not existing or with sending a message to said channel."
@@ -1178,8 +1180,18 @@ export namespace VerifyManager {
             .append("__**Discord Account**__").appendLine()
             .append(`- Discord Mention: ${instance.member} (${instance.member.id})`).appendLine()
             .append(`- Discord Tag: ${instance.member.user.tag}`).appendLine()
-            .append(`- Discord Created: ${TimeUtilities.getDateTime(instance.member.user.createdAt)} GMT`).appendLine();
+            .append(`- Discord Created: ${TimeUtilities.getDateTime(instance.member.user.createdAt)} GMT`)
+            .appendLine()
+            .appendLine()
+            .append("__**RotMG Account**__").appendLine()
+            .append(`- Account IGN: **\`${nameToUse}\`**`)
+            .appendLine()
+            .appendLine()
+            .append("When approving or denying this request, please make sure any information in the screenshot")
+            .append(" that is used to identify the player (e.g., in-game name, Discord tag) matches the information")
+            .append(" that is shown above.");
 
+            
         const embed = MessageUtilities.generateBlankEmbed(instance.member, "YELLOW")
             .setTitle(`[${instance.section.sectionName}] Automated Manual Verification`)
             .setDescription(descSb.toString())
@@ -1221,6 +1233,16 @@ export namespace VerifyManager {
         instance.verifyStepChannel?.send({
             content: `${logType} ${instance.member} has successfully sent a manual verification request.`,
             allowedMentions: { roles: [], users: [] }
+        });
+
+        const displaySec = instance.section.isMainSection
+            ? `the section, \`${instance.section.sectionName}\` (${guild.name})`
+            : `the guild, \`${guild.name}\``;
+        await GlobalFgrUtilities.sendMsg(dmChan, {
+            content: `You have successfully sent a manual verification in ${displaySec}. No further action is`
+                + " required from you. Please do not message server staff about the status of your manual"
+                + " verification request."
+
         });
 
         InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
@@ -1389,7 +1411,7 @@ export namespace VerifyManager {
             )
             .setDescription(
                 "You have chosen to accept getting manually verified. No further action is required from you. Please do not"
-                + " message server staff about the status of your manual verification application."
+                + " message server staff about the status of your manual verification request."
             );
 
         if (m instanceof Message) {
@@ -2219,7 +2241,7 @@ export namespace VerifyManager {
     }
 
     /**
-     * Deletes all manual verification entries for the specified user. This deletes all manual verification application
+     * Deletes all manual verification entries for the specified user. This deletes all manual verification request
      * messages and entries from the database.
      * @param guild The guild.
      * @param userId The user ID corresponding to the user to delete all manual verification entries.
