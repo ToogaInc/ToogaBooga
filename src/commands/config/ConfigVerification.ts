@@ -33,6 +33,7 @@ import { ButtonConstants } from "../../constants/ButtonConstants";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
 import { VerifyManager } from "../../managers/VerifyManager";
 import SHORT_STAT_TO_LONG = VerifyManager.SHORT_STAT_TO_LONG;
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class ConfigVerification extends BaseCommand {
     public static GUILD_RANKS: string[] = [
@@ -157,6 +158,10 @@ export class ConfigVerification extends BaseCommand {
             verificationSuccessMessage: section.otherMajorConfig.verificationProperties.verificationSuccessMessage,
             additionalVerificationInfo: section.otherMajorConfig.verificationProperties.additionalVerificationInfo
         };
+
+        if (!verifConfig.useDefault && GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)) {
+            verifConfig.useDefault = true;
+        }
 
         while (true) {
             const buttons: MessageButton[] = [];
