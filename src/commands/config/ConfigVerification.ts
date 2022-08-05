@@ -177,7 +177,9 @@ export class ConfigVerification extends BaseCommand {
                         .setLabel("Force Manual Verify")
                         .setCustomId("toggle_type")
                         // Once again, the storage channel must exist.
-                        .setDisabled(!GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)),
+                        .setDisabled(
+                            !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)
+                            || !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.verification.manualVerificationChannelId)),
                     new MessageButton()
                         .setStyle("PRIMARY")
                         .setCustomId("check_reqs")
@@ -223,7 +225,6 @@ export class ConfigVerification extends BaseCommand {
                     .setCustomId("send")
                     .setDisabled(
                         !GuildFgrUtilities.hasCachedChannel(ctx.guild!, section.channels.verification.verificationChannelId)
-                        || !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.verification.manualVerificationChannelId)
                     )
             );
 
