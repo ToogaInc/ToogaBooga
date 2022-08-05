@@ -258,6 +258,13 @@ export interface IManualVerificationEntry {
      * @type {string}
      */
     sectionId: string;
+
+    /**
+     * The URL to an image, if any.
+     * 
+     * @type {string}
+     */
+    url?: string;
 }
 
 /**

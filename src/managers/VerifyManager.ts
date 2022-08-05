@@ -1001,7 +1001,7 @@ export namespace VerifyManager {
      * @param {Message} msg The message that was initially sent to the user. Assumed to exist.
      * @param {DMChannel} dmChan The DM channel.
      * @param {IVerificationInstance} instance The verification instance.
-     * @param {string} The name to use here.
+     * @param {string} nameToUse The name to use here.
      */
     async function forcedManualVerify(
         msg: Message,
@@ -1015,10 +1015,10 @@ export namespace VerifyManager {
         
         // Make sure the storage channel exists
         const storageChannel = GlobalFgrUtilities.getCachedChannel<TextChannel>(instance.guildDoc.channels.storageChannelId);
-        if (!storageChannel) {
+        if (!storageChannel || !instance.manualVerifyChannel) {
             instance.verifyStepChannel?.send({
                 content: `${logType} ${instance.member} tried to upload an image for manual verification,`
-                    + " but the storage channel for the server is not defined or has been deleted.",
+                    + " but the storage/manual verification channel for the server is not defined or has been deleted.",
                 allowedMentions: { roles: [], users: [] }
             });
 
@@ -1026,6 +1026,7 @@ export namespace VerifyManager {
             msg.delete().catch();
             await GlobalFgrUtilities.sendMsg(dmChan, {
                 content: "The manual verification process could not be completed due to a configuation issue."
+                    + " Is the storage and/or manual verification channel configured?"
             });
 
             return;
@@ -1201,7 +1202,7 @@ export namespace VerifyManager {
                 "Required by server verification configuration."
             );
 
-        // manualVerifyChannel exists because we asserted this in the checkRequirements function.
+        InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
         const manualVerifMsg = await instance.manualVerifyChannel!.send({
             embeds: [embed],
             components: AdvancedCollector.getActionRowsFromComponents([
@@ -1225,7 +1226,8 @@ export namespace VerifyManager {
                     ign: nameToUse,
                     manualVerifyMsgId: manualVerifMsg.id,
                     manualVerifyChannelId: instance.manualVerifyChannel!.id,
-                    sectionId: instance.section.uniqueIdentifier
+                    sectionId: instance.section.uniqueIdentifier,
+                    url: attachedImage.url
                 }
             }
         });
@@ -1244,8 +1246,6 @@ export namespace VerifyManager {
                 + " verification request."
 
         });
-
-        InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
     }
 
 

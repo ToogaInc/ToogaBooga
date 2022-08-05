@@ -85,7 +85,10 @@ export class CheckManualVerifyApp extends BaseCommand {
                         .toString()
                 )
                 .setFooter({ text: `Page ${page}/${ctx.guildDoc!.manualVerificationEntries.length}` });
-
+            if (m.url) {
+                embed.setImage(m.url);
+            }
+            
             const baseId = StringUtil.generateRandomString(15);
             const accId = baseId + "accept";
             const rejId = baseId + "reject";
