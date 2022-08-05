@@ -176,7 +176,7 @@ export class ManualVerifyMain extends BaseCommand {
 
         const verifySuccessChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             ctx.guild!,
-            ctx.guildDoc!.channels.loggingChannels.find(x => x.key === "VerifySuccess")?.value ?? ""
+            ctx.guildDoc!.channels.loggingChannels.find(x => x.key === "VerifyStep")?.value ?? ""
         );
 
         await GlobalFgrUtilities.tryExecuteAsync(async () => {
