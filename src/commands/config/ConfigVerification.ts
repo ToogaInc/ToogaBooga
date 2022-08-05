@@ -152,7 +152,8 @@ export class ConfigVerification extends BaseCommand {
             useDefault: section.otherMajorConfig.verificationProperties.useDefault ?? true,
             instructionsManualVerification: section.otherMajorConfig.verificationProperties.instructionsManualVerification
                 ?? "Please send a screenshot of you in-game **in your vault** saying your"
-                + " Discord tag. This must clearly be visible as a chat bubble and in the chat box.",
+                + " Discord tag. Your Discord tag must be clearly visible in the chat bubble"
+                + " and in the chat box. Additionally, your in-game name must be clearly visible.",
             checkRequirements: section.otherMajorConfig.verificationProperties.checkRequirements,
             verifReq: { ...section.otherMajorConfig.verificationProperties.verifReq },
             verificationSuccessMessage: section.otherMajorConfig.verificationProperties.verificationSuccessMessage,
@@ -526,6 +527,7 @@ export class ConfigVerification extends BaseCommand {
                     }
                     
                     descSb.appendLine()
+                        .appendLine()
                         .append("If you meet the requirements posted above, please press the **Verify Me** button.")
                         .append(" __Make sure anyone can direct message you.__");
                 

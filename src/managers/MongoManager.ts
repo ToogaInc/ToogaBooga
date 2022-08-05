@@ -413,7 +413,8 @@ export namespace MongoManager {
             verificationProperties: {
                 useDefault: true,
                 instructionsManualVerification: "Please send a screenshot of you in-game **in your vault** saying your"
-                    + " Discord tag. This must clearly be visible as a chat bubble and in the chat box.",
+                    + " Discord tag. Your Discord tag must be clearly visible in the chat bubble"
+                    + " and in the chat box. Additionally, your in-game name must be clearly visible.",
                 checkRequirements: true,
                 additionalVerificationInfo: "",
                 verificationSuccessMessage: "",
