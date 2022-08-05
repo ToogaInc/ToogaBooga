@@ -1012,10 +1012,27 @@ export namespace VerifyManager {
         const logType = instance.section.isMainSection
             ? "`[Main]`"
             : `\`[${instance.section.sectionName}]\``;
+        
+        // Make sure the storage channel exists
+        const storageChannel = GlobalFgrUtilities.getCachedChannel<TextChannel>(instance.guildDoc.channels.storageChannelId);
+        if (!storageChannel) {
+            instance.verifyStepChannel?.send({
+                content: `${logType} ${instance.member} tried to upload an image for manual verification,`
+                    + " but the storage channel for the server is not defined or has been deleted.",
+                allowedMentions: { roles: [], users: [] }
+            });
+
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+            msg.delete().catch();
+            await GlobalFgrUtilities.sendMsg(dmChan, {
+                content: "The manual verification process could not be completed due to a configuation issue."
+            });
+
+            return;
+        }
 
         const guild = instance.member.guild;
         const baseEmbed = MessageUtilities.generateBlankEmbed(instance.member.user, "RED");
-
         const blUserInfo = instance.guildDoc.moderation.blacklistedUsers
             .find(x => x.realmName.lowercaseIgn === nameToUse.toLowerCase());
         if (blUserInfo) {
@@ -1122,31 +1139,35 @@ export namespace VerifyManager {
             return;
         }
 
-        const storageChannel = GlobalFgrUtilities.getCachedChannel<TextChannel>(instance.guildDoc.channels.storageChannelId);
-        if (!storageChannel) {
+        // Off-chance that somemone could delete the storage channel mid-way through
+        const storedMsg = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            return storageChannel.send({
+                files: [imageRes],
+                content: new StringBuilder()
+                    .append(`Upload Time: ${TimeUtilities.getDateTime()} GMT`).appendLine()
+                    .append(`Uploaded By: ${instance.member}`).appendLine()
+                    .append("Reason: Manual Verification")
+                    .toString()
+            });
+        });
+
+        if (!storedMsg) {
             instance.verifyStepChannel?.send({
                 content: `${logType} ${instance.member} tried to upload an image for manual verification,`
-                    + " but the storage channel for the server is not defined or has been deleted.",
+                    + " but the storage channel for the server has been deleted or an issue occurred while"
+                    + " trying to send a message to said channel.",
                 allowedMentions: { roles: [], users: [] }
             });
 
             InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
             msg.delete().catch();
             await GlobalFgrUtilities.sendMsg(dmChan, {
-                content: "The manual verification process could not be completed due to a configuation issue."
+                content: "The manual verification process could not be completed due to an issue with the"
+                    + " configuration channel not existing or with sending a message to said channel."
             });
 
             return;
         }
-
-        const storedMsg = await storageChannel.send({
-            files: [imageRes],
-            content: new StringBuilder()
-                .append(`Upload Time: ${TimeUtilities.getDateTime()} GMT`).appendLine()
-                .append(`Uploaded By: ${instance.member}`).appendLine()
-                .append("Reason: Manual Verification")
-                .toString()
-        });
 
         const attachedImage = storedMsg.attachments.first()!;
         const descSb = new StringBuilder()
