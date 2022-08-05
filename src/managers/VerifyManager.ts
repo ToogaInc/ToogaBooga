@@ -1306,6 +1306,7 @@ export namespace VerifyManager {
                     }
                 });
 
+                await MessageUtilities.tryDelete(manualVerifMsg);
                 return;
             }
 
@@ -1315,6 +1316,7 @@ export namespace VerifyManager {
 
         // No verified role = no point in manually verifying that person.
         if (!GuildFgrUtilities.hasCachedRole(mod.guild, section.roles.verifiedRoleId)) {
+            await MessageUtilities.tryDelete(manualVerifMsg);
             return;
         }
 
@@ -1330,9 +1332,7 @@ export namespace VerifyManager {
         );
         
         // Now, let's respond based on the response ID.
-        const promises: (Promise<unknown> | undefined)[] = [
-            MessageUtilities.tryDelete(manualVerifMsg)
-        ];
+        const promises: (Promise<unknown> | undefined)[] = [];
 
         switch (responseId) {
             case (MANUAL_VERIFY_ACCEPT_ID): {
@@ -1391,6 +1391,18 @@ export namespace VerifyManager {
                     );
                 }
 
+                if (manualVerifMsg) {
+                    const oldEmbed = manualVerifMsg.embeds[0];
+                    await MessageUtilities.tryEdit(manualVerifMsg, {
+                        embeds: [
+                            oldEmbed
+                                .setTitle(`${EmojiConstants.GREEN_CHECK_EMOJI} ${oldEmbed.title}`)
+                                .setColor("DARK_GREEN")
+                                .addField("Status", `Accepted by ${mod.toString()} (${mod.user.tag}).`)
+                        ]
+                    }); 
+                }
+
                 break;
             }
             case (MANUAL_VERIFY_DENY_ID): {
@@ -1419,6 +1431,18 @@ export namespace VerifyManager {
                         allowedMentions: { roles: [], users: [] }
                     })
                 );
+
+                if (manualVerifMsg) {
+                    const oldEmbed = manualVerifMsg.embeds[0];
+                    await MessageUtilities.tryEdit(manualVerifMsg, {
+                        embeds: [
+                            oldEmbed
+                                .setTitle(`${EmojiConstants.X_EMOJI} ${oldEmbed.title}`)
+                                .setColor("DARK_RED")
+                                .addField("Status", `Rejected by ${mod.toString()} (${mod.user.tag}).`)
+                        ]
+                    }); 
+                }
 
                 break;
             }
