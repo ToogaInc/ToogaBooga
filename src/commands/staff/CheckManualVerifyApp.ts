@@ -1,5 +1,6 @@
 import { MessageButton } from "discord.js";
 import { EmojiConstants } from "../../constants/EmojiConstants";
+import { MongoManager } from "../../managers/MongoManager";
 import { VerifyManager } from "../../managers/VerifyManager";
 import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
 import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
@@ -52,9 +53,13 @@ export class CheckManualVerifyApp extends BaseCommand {
         let page = 0;
         for await (const m of ctx.guildDoc!.manualVerificationEntries) {
             ++page;
-            const section = ctx.guildDoc!.guildSections.find(x => x.uniqueIdentifier === m.sectionId);
+            let section = ctx.guildDoc!.guildSections.find(x => x.uniqueIdentifier === m.sectionId);
             if (!section) {
-                continue;
+                if (m.sectionId !== "MAIN") {
+                    continue;
+                }
+                
+                section = MongoManager.getMainSection(ctx.guildDoc!);
             }
 
             const member = await GuildFgrUtilities.fetchGuildMember(ctx.guild!, m.userId);
