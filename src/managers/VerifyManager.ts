@@ -663,10 +663,6 @@ export namespace VerifyManager {
                 userDoc.rotmgNames.forEach(x => {
                     allBlackListedNames.set(x.lowercaseIgn, x.ign);
                 });
-
-                userDoc.pastRealmNames.forEach(x => {
-                    allBlackListedNames.set(x.lowercaseIgn, x.ign);
-                });
             }
 
             const blInfo = instance.guildDoc.moderation.blacklistedUsers
@@ -1202,7 +1198,8 @@ export namespace VerifyManager {
             .addField(
                 "Reason(s) for Manual Verification",
                 "Required by server verification configuration."
-            );
+            )
+            .setFooter({ text: "Manual Verification Request" });
 
         InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
         const manualVerifMsg = await instance.manualVerifyChannel!.send({
@@ -1246,7 +1243,6 @@ export namespace VerifyManager {
             content: `You have successfully sent a manual verification in ${displaySec}. No further action is`
                 + " required from you. Please do not message server staff about the status of your manual"
                 + " verification request."
-
         });
     }
 
@@ -1468,7 +1464,8 @@ export namespace VerifyManager {
             .addField(
                 "Reason(s) for Manual Verification",
                 checkRes.manualIssues.map(x => `- **${x.key}**: ${x.log}`).join("\n")
-            );
+            )
+            .setFooter({ text: "Manual Verification Request" });
 
         // manualVerifyChannel exists because we asserted this in the checkRequirements function.
         const manualVerifMsg = await instance.manualVerifyChannel!.send({
@@ -1592,6 +1589,31 @@ export namespace VerifyManager {
             guildDoc.channels.loggingChannels.find(x => x.key === "VerifyStep")?.value ?? ""
         );
 
+        // Update this embed first.
+        if (manualVerifMsg) {
+            const oldEmbed = manualVerifMsg.embeds[0];
+            if (responseId === MANUAL_VERIFY_ACCEPT_ID) {
+                MessageUtilities.tryEdit(manualVerifMsg, {
+                    embeds: [
+                        oldEmbed
+                            .setTitle(`${EmojiConstants.GREEN_CHECK_EMOJI} ${oldEmbed.title}`)
+                            .setColor("DARK_GREEN")
+                            .addField("Status", `Accepted by ${mod.toString()} (${mod.user.tag}).`)
+                    ]
+                }).then();
+            }
+            else {
+                MessageUtilities.tryEdit(manualVerifMsg, {
+                    embeds: [
+                        oldEmbed
+                            .setTitle(`${EmojiConstants.X_EMOJI} ${oldEmbed.title}`)
+                            .setColor("DARK_RED")
+                            .addField("Status", `Rejected by ${mod.toString()} (${mod.user.tag}).`)
+                    ]
+                }).then();
+            }
+        }
+
         // Now, let's respond based on the response ID.
         const promises: (Promise<unknown> | undefined)[] = [];
 
@@ -1652,18 +1674,6 @@ export namespace VerifyManager {
                     );
                 }
 
-                if (manualVerifMsg) {
-                    const oldEmbed = manualVerifMsg.embeds[0];
-                    await MessageUtilities.tryEdit(manualVerifMsg, {
-                        embeds: [
-                            oldEmbed
-                                .setTitle(`${EmojiConstants.GREEN_CHECK_EMOJI} ${oldEmbed.title}`)
-                                .setColor("DARK_GREEN")
-                                .addField("Status", `Accepted by ${mod.toString()} (${mod.user.tag}).`)
-                        ]
-                    });
-                }
-
                 break;
             }
             case (MANUAL_VERIFY_DENY_ID): {
@@ -1692,18 +1702,6 @@ export namespace VerifyManager {
                         allowedMentions: { roles: [], users: [] }
                     })
                 );
-
-                if (manualVerifMsg) {
-                    const oldEmbed = manualVerifMsg.embeds[0];
-                    await MessageUtilities.tryEdit(manualVerifMsg, {
-                        embeds: [
-                            oldEmbed
-                                .setTitle(`${EmojiConstants.X_EMOJI} ${oldEmbed.title}`)
-                                .setColor("DARK_RED")
-                                .addField("Status", `Rejected by ${mod.toString()} (${mod.user.tag}).`)
-                        ]
-                    });
-                }
 
                 break;
             }

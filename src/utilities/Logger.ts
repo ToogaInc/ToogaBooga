@@ -14,7 +14,7 @@ export class Logger {
      * @param {string} fileName The file using the logger. Use `__filename`.
      * @param {boolean} debug Whether to output DEBUG messages, default = false
      */
-    public constructor(fileName: string, debug = false) {
+    public constructor(fileName: string, debug: boolean = false) {
         this.path = path.basename(fileName);
         this.formattedPath = `[${this.path}]`;
         this.outputDebug = debug;

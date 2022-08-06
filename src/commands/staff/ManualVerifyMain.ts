@@ -2,7 +2,6 @@ import { ArgumentType, BaseCommand, ICommandContext, ICommandInfo } from "../Bas
 import { UserManager } from "../../managers/UserManager";
 import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import { MongoManager } from "../../managers/MongoManager";
-import { IRealmIgn } from "../../definitions";
 import { MessageSelectMenu, TextChannel } from "discord.js";
 import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
@@ -109,7 +108,7 @@ export class ManualVerifyMain extends BaseCommand {
                 return -1;
             }
 
-            const ignToUse = await new Promise<IRealmIgn | null>(async r => {
+            const ignToUse = await new Promise<string | null>(async r => {
                 if (docs.length === 0 || docs[0].rotmgNames.length === 0) {
                     await ctx.interaction.editReply({
                         content: "No IGNs could be found for this person. Please provide an IGN by re-running this"
@@ -119,7 +118,7 @@ export class ManualVerifyMain extends BaseCommand {
                 }
 
                 if (docs[0].rotmgNames.length === 1) {
-                    return r(docs[0].rotmgNames[0]);
+                    return r(docs[0].rotmgNames[0].ign);
                 }
 
                 const selectMenu = new MessageSelectMenu()
@@ -158,19 +157,20 @@ export class ManualVerifyMain extends BaseCommand {
                 });
 
                 if (!selected) {
-                    return null;
+                    return r(null);
                 }
 
-                return !selected.isSelectMenu()
-                    ? null
-                    : selected.values[0];
+                return r(!selected.isSelectMenu() ? null : selected.values[0]);
             });
 
             if (!ignToUse) {
+                await ctx.interaction.editReply({
+                    content: "The process has either timed out or has been canceled."
+                });
                 return 0;
             }
 
-            ignToVerifyWith = ignToUse.ign;
+            ignToVerifyWith = ignToUse;
             useAlreadyVerifiedIgn = true;
         }
 
