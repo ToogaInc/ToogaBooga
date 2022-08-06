@@ -19,6 +19,7 @@ import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtil
 import { DefinedRole } from "../definitions/Types";
 import { StringUtil } from "../utilities/StringUtilities";
 import { PermsConstants } from "../constants/PermsConstants";
+import { VerifyManager } from "./VerifyManager";
 
 export namespace MongoManager {
     export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();
@@ -400,9 +401,7 @@ export namespace MongoManager {
         return {
             verificationProperties: {
                 useDefault: true,
-                instructionsManualVerification: "Please send a screenshot of you in-game **in your vault** saying your"
-                    + " Discord tag. Your Discord tag must be clearly visible in the chat bubble"
-                    + " and in the chat box. Additionally, your in-game name must be clearly visible.",
+                instructionsManualVerification: VerifyManager.DEFAULT_MANUAL_INSTRUCTIONS,
                 checkRequirements: true,
                 additionalVerificationInfo: "",
                 verificationSuccessMessage: "",
