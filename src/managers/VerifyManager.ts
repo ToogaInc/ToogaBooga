@@ -448,7 +448,7 @@ export namespace VerifyManager {
             nameToVerify = selected;
         }
 
-        if (!instance.section.otherMajorConfig.verificationProperties.useDefault) {
+        if (!(instance.section.otherMajorConfig.verificationProperties.useDefault ?? true)) {
             forcedManualVerify(msg, dmChan, instance, nameToVerify).then();
             return;
         }
@@ -842,9 +842,10 @@ export namespace VerifyManager {
      * @private
      */
     async function verifySection(interaction: MessageComponentInteraction, instance: IVerificationInstance): Promise<void> {
+        const useDefault = instance.section.otherMajorConfig.verificationProperties.useDefault ?? true;
         if (!instance.section.otherMajorConfig.verificationProperties.checkRequirements
             // This conditional is required so users don't just bypass manual verification if explicitly asked for
-            && instance.section.otherMajorConfig.verificationProperties.useDefault) {
+            && useDefault) {
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await instance.member.roles.add(
                     instance.section.roles.verifiedRoleId,
@@ -895,7 +896,7 @@ export namespace VerifyManager {
             nameToUse = names[0];
         }
 
-        if (!instance.section.otherMajorConfig.verificationProperties.useDefault) {
+        if (!useDefault) {
             // First, we need to see if the person can be DMed.
             const msgDmResp = await dmMember(instance.member);
             if (!msgDmResp) {
@@ -1248,8 +1249,8 @@ export namespace VerifyManager {
         });
 
         const displaySec = instance.section.isMainSection
-            ? `the section, \`${instance.section.sectionName}\` (${guild.name})`
-            : `the guild, \`${guild.name}\``;
+            ? `the guild, \`${guild.name}\``
+            : `the section, \`${instance.section.sectionName}\` (${guild.name})`;
         await GlobalFgrUtilities.sendMsg(dmChan, {
             content: `You have successfully sent a manual verification in ${displaySec}. No further action is`
                 + " required from you. Please do not message server staff about the status of your manual"
