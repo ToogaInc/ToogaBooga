@@ -1126,9 +1126,6 @@ export namespace VerifyManager {
                 return;
             }
 
-            setTimeout(() => {
-                m.delete();
-            }, 5 * 1000);
             return at.attachment;
         });
 
@@ -1192,6 +1189,11 @@ export namespace VerifyManager {
             .append(" that is used to identify the player (e.g., in-game name, Discord tag) matches the information")
             .append(" that is shown above.");
 
+        if (instance.section.isMainSection) {
+            descSb.append(" Note that the IGN shown above (exactly as typed) will be registered into the bot's")
+                .append(" database. Thus, it's important that the IGN shown above is typed exactly as shown")
+                .append(" in-game.");
+        }
             
         const embed = MessageUtilities.generateBlankEmbed(instance.member, "YELLOW")
             .setTitle(`[${instance.section.sectionName}] Automated Manual Verification`)
