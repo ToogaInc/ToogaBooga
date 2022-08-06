@@ -32,6 +32,10 @@ import { QuotaManager } from "./QuotaManager";
 import * as Stream from "stream";
 
 export namespace VerifyManager {
+    export const DEFAULT_MANUAL_INSTRUCTIONS: string = "Please send a screenshot of you in-game **in your "
+        + " vault** saying your Discord tag. Your Discord tag must be clearly visible in the chat bubble"
+        + " and in the chat box. Additionally, your in-game name must be clearly visible.";
+
     export const NUMBER_OF_STATS: number = 8;
 
     export const SHORT_STAT_TO_LONG: { [s: string]: [string, string] } = {
@@ -1064,7 +1068,14 @@ export namespace VerifyManager {
             baseEmbed.setTitle(`${guild.name} ⇨ **${instance.section.sectionName}**: Section Verification`);
         }
 
-        const instructions = instance.section.otherMajorConfig.verificationProperties.instructionsManualVerification;
+        let instructions = instance.section.otherMajorConfig.verificationProperties.instructionsManualVerification as string | undefined;
+        if (typeof instructions === "undefined") {
+            instructions = VerifyManager.DEFAULT_MANUAL_INSTRUCTIONS;
+        }
+        else if (instructions.length === 0) {
+            instructions = "No instructions configured. Please ask staff for more information.";
+        }
+
         const r = await MessageUtilities.tryEdit(msg, {
             content: null,
             embeds: [

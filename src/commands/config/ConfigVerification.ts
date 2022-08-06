@@ -151,9 +151,7 @@ export class ConfigVerification extends BaseCommand {
         const verifConfig: IVerificationProperties = {
             useDefault: section.otherMajorConfig.verificationProperties.useDefault ?? true,
             instructionsManualVerification: section.otherMajorConfig.verificationProperties.instructionsManualVerification
-                ?? "Please send a screenshot of you in-game **in your vault** saying your"
-                + " Discord tag. Your Discord tag must be clearly visible in the chat bubble"
-                + " and in the chat box. Additionally, your in-game name must be clearly visible.",
+                ?? VerifyManager.DEFAULT_MANUAL_INSTRUCTIONS,
             checkRequirements: section.otherMajorConfig.verificationProperties.checkRequirements,
             verifReq: { ...section.otherMajorConfig.verificationProperties.verifReq },
             verificationSuccessMessage: section.otherMajorConfig.verificationProperties.verificationSuccessMessage,
