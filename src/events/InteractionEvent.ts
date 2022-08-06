@@ -1,4 +1,4 @@
-import { CommandInteraction, Interaction, Message } from "discord.js";
+import { CommandInteraction, Interaction } from "discord.js";
 import { Bot } from "../Bot";
 import { GuildFgrUtilities } from "../utilities/fetch-get-request/GuildFgrUtilities";
 import { MongoManager } from "../managers/MongoManager";
@@ -215,7 +215,9 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
         .find(x => x.manualVerifyMsgId === message.id && x.manualVerifyChannelId === channel.id);
 
     
-    if (manualVerifyChannels) {
+    if (manualVerifyChannels 
+        && message.embeds.length > 0 
+        && message.embeds[0].footer?.text === "Manual Verification Request") {
         interaction.deferUpdate().catch(LOGGER.error);
         VerifyManager.acknowledgeManualVerif(manualVerifyChannels, resolvedMember, interaction.customId, message)
             .then();
@@ -270,19 +272,18 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     // ================================================================================================ //
 
     // Check modmail
-    if (channel.id === guildDoc.channels.modmailChannelId) {
+    if (channel.id === guildDoc.channels.modmailChannelId
+        && message.embeds.length > 0
+        && message.embeds[0].title?.startsWith("Modmail")) {
         interaction.deferUpdate().catch(LOGGER.error);
-        if (!(interaction.message instanceof Message) || interaction.message.embeds.length === 0) {
-            return;
-        }
 
         switch (interaction.customId) {
             case ButtonConstants.OPEN_THREAD_ID: {
-                await ModmailManager.openModmailThread(guildDoc, interaction.message, resolvedMember);
+                await ModmailManager.openModmailThread(guildDoc, message, resolvedMember);
                 return;
             }
             case ButtonConstants.REMOVE_ID: {
-                await ModmailManager.closeModmailThread(interaction.message, guildDoc);
+                await ModmailManager.closeModmailThread(message, guildDoc);
                 return;
             }
         }
