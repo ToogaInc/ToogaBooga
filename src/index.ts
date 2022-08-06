@@ -17,7 +17,7 @@ import { MAPPED_AFK_CHECK_REACTIONS } from "./constants/dungeons/MappedAfkCheckR
         console.error(`[!] ${mapKey} not valid`);
     }
 
-    const content = fs.readFileSync(path.join(__dirname, "..", "config.test1.json"));
+    const content = fs.readFileSync(path.join(__dirname, "..", "config.production.json"));
     const config: IConfiguration = JSON.parse(content.toString());
     const bot = new Bot(config);
     bot.startAllEvents();
