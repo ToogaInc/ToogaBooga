@@ -29,8 +29,13 @@ import { DungeonUtilities } from "../utilities/DungeonUtilities";
 import { TimeUtilities } from "../utilities/TimeUtilities";
 import { UserManager } from "./UserManager";
 import { QuotaManager } from "./QuotaManager";
+import * as Stream from "stream";
 
 export namespace VerifyManager {
+    export const DEFAULT_MANUAL_INSTRUCTIONS: string = "Please send a screenshot of you in-game **in your "
+        + " vault** saying your Discord tag. Your Discord tag must be clearly visible in the chat bubble"
+        + " and in the chat box. Additionally, your in-game name must be clearly visible.";
+
     export const NUMBER_OF_STATS: number = 8;
 
     export const SHORT_STAT_TO_LONG: { [s: string]: [string, string] } = {
@@ -94,8 +99,8 @@ export namespace VerifyManager {
      * @param {ISectionInfo} section The section where verification should occur.
      */
     export async function verify(
-        i: MessageComponentInteraction, 
-        guildDoc: IGuildInfo, 
+        i: MessageComponentInteraction,
+        guildDoc: IGuildInfo,
         section: ISectionInfo
     ): Promise<void> {
         // If they're in the process of verification, don't let them start.
@@ -117,8 +122,8 @@ export namespace VerifyManager {
             return;
         }
 
-        if (guildDoc.manualVerificationEntries.some(x => x.userId === i.user.id 
-                && x.sectionId === section.uniqueIdentifier)) {
+        if (guildDoc.manualVerificationEntries.some(x => x.userId === i.user.id
+            && x.sectionId === section.uniqueIdentifier)) {
             await i.reply({
                 content: "You have a pending manual verificaton application here. Please try again later.",
                 ephemeral: true
@@ -443,6 +448,11 @@ export namespace VerifyManager {
             nameToVerify = selected;
         }
 
+        if (!(instance.section.otherMajorConfig.verificationProperties.useDefault ?? true)) {
+            forcedManualVerify(msg, dmChan, instance, nameToVerify).then();
+            return;
+        }
+
         // We have a name now. This is where we tell them to put a code into their RealmEye description and
         // all of that.
         const verificationCode = StringUtil.generateRandomString(20);
@@ -657,10 +667,6 @@ export namespace VerifyManager {
                 userDoc.rotmgNames.forEach(x => {
                     allBlackListedNames.set(x.lowercaseIgn, x.ign);
                 });
-
-                userDoc.pastRealmNames.forEach(x => {
-                    allBlackListedNames.set(x.lowercaseIgn, x.ign);
-                });
             }
 
             const blInfo = instance.guildDoc.moderation.blacklistedUsers
@@ -772,7 +778,7 @@ export namespace VerifyManager {
 
                 await i.editReply({
                     content: "Something went wrong when fully reviewing your profile. Please resolve these issues"
-                    + ` and try again.\n${checkRes.taIssues.map(x => `- ${x.value}`).join("\n")}`
+                        + ` and try again.\n${checkRes.taIssues.map(x => `- ${x.value}`).join("\n")}`
                 });
 
                 instance.verifyStepChannel?.send({
@@ -791,7 +797,7 @@ export namespace VerifyManager {
             });
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await instance.member.setNickname(
-                    UserManager.getNameForNickname(instance.member, generalData.name), 
+                    UserManager.getNameForNickname(instance.member, generalData.name),
                     "Verified in the main section successfully."
                 );
             });
@@ -836,10 +842,13 @@ export namespace VerifyManager {
      * @private
      */
     async function verifySection(interaction: MessageComponentInteraction, instance: IVerificationInstance): Promise<void> {
-        if (!instance.section.otherMajorConfig.verificationProperties.checkRequirements) {
+        const useDefault = instance.section.otherMajorConfig.verificationProperties.useDefault ?? true;
+        if (!instance.section.otherMajorConfig.verificationProperties.checkRequirements
+            // This conditional is required so users don't just bypass manual verification if explicitly asked for
+            && useDefault) {
             await GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await instance.member.roles.add(
-                    instance.section.roles.verifiedRoleId, 
+                    instance.section.roles.verifiedRoleId,
                     `Verified automatically in the ${instance.section.sectionName} section.`
                 );
             });
@@ -885,6 +894,28 @@ export namespace VerifyManager {
         }
         else {
             nameToUse = names[0];
+        }
+
+        if (!useDefault) {
+            // First, we need to see if the person can be DMed.
+            const msgDmResp = await dmMember(instance.member);
+            if (!msgDmResp) {
+                await interaction.editReply({
+                    content: "I am not able to directly message you. Please make sure anyone in this server can DM you."
+                });
+
+                InteractivityManager.IN_VERIFICATION.delete(interaction.user.id);
+                return;
+            }
+
+            await interaction.editReply({
+                content: "Please check your direct messages for further instructions."
+            });
+
+            // Okay, that person can be DMed. Let's begin the process.
+            const [msg, dmChan] = msgDmResp;
+            forcedManualVerify(msg, dmChan, instance, nameToUse).then();
+            return;
         }
 
         const requestData = await GlobalFgrUtilities.tryExecuteAsync<PAD.IPlayerData>(async () => {
@@ -966,6 +997,267 @@ export namespace VerifyManager {
         InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
     }
 
+    /**
+     * Runs the forced manual verification process.
+     * @param {Message} msg The message that was initially sent to the user. Assumed to exist.
+     * @param {DMChannel} dmChan The DM channel.
+     * @param {IVerificationInstance} instance The verification instance.
+     * @param {string} nameToUse The name to use here.
+     */
+    async function forcedManualVerify(
+        msg: Message,
+        dmChan: DMChannel,
+        instance: IVerificationInstance,
+        nameToUse: string
+    ): Promise<void> {
+        const logType = instance.section.isMainSection
+            ? "`[Main]`"
+            : `\`[${instance.section.sectionName}]\``;
+        
+        // Make sure the storage channel exists
+        const storageChannel = GlobalFgrUtilities.getCachedChannel<TextChannel>(instance.guildDoc.channels.storageChannelId);
+        if (!storageChannel || !instance.manualVerifyChannel) {
+            instance.verifyStepChannel?.send({
+                content: `${logType} ${instance.member} tried to upload an image for manual verification,`
+                    + " but the storage/manual verification channel for the server is not defined or has been deleted.",
+                allowedMentions: { roles: [], users: [] }
+            });
+
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+            msg.delete().catch();
+            await GlobalFgrUtilities.sendMsg(dmChan, {
+                content: "The manual verification process could not be completed due to a configuation issue."
+                    + " Is the storage and/or manual verification channel configured?"
+            });
+
+            return;
+        }
+
+        const guild = instance.member.guild;
+        const baseEmbed = MessageUtilities.generateBlankEmbed(instance.member.user, "RED");
+        const blUserInfo = instance.guildDoc.moderation.blacklistedUsers
+            .find(x => x.realmName.lowercaseIgn === nameToUse.toLowerCase());
+        if (blUserInfo) {
+            await MessageUtilities.tryEdit(msg, {
+                content: null,
+                embeds: [
+                    new MessageEmbed(baseEmbed)
+                        .setTitle(`**${instance.member.guild.name}**: Guild Verification Error.`)
+                        .setDescription("You are blacklisted from this server.")
+                        .addField("Blacklist Reason", blUserInfo.reason)
+                        .addField("Moderation ID", StringUtil.codifyString(blUserInfo.actionId))
+                        .setTimestamp()
+                ],
+                components: []
+            });
+
+            await instance.verifyStepChannel?.send({
+                content: `\`[Main]\` ${instance.member} tried to verify as **\`${nameToUse}\`**, but they are`
+                    + " blacklisted from this server under that name. The corresponding Moderation ID is"
+                    + ` \`${blUserInfo.actionId}\`.`,
+                allowedMentions: { roles: [], users: [] }
+            });
+
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+            return;
+        }
+
+        if (instance.section.isMainSection) {
+            baseEmbed.setTitle(`**${guild.name}**: Guild Verification`);
+        }
+        else {
+            baseEmbed.setTitle(`${guild.name} ⇨ **${instance.section.sectionName}**: Section Verification`);
+        }
+
+        let instructions = instance.section.otherMajorConfig.verificationProperties.instructionsManualVerification as string | undefined;
+        if (typeof instructions === "undefined") {
+            instructions = VerifyManager.DEFAULT_MANUAL_INSTRUCTIONS;
+        }
+        else if (instructions.length === 0) {
+            instructions = "No instructions configured. Please ask staff for more information.";
+        }
+
+        const r = await MessageUtilities.tryEdit(msg, {
+            content: null,
+            embeds: [
+                new MessageEmbed(baseEmbed)
+                    .setDescription(
+                        new StringBuilder()
+                            .append("Please upload **one** screenshot that satisfies the following directions:")
+                            .appendLine()
+                            .append(
+                                instructions.split("\n").map(x => "> " + x).join("\n")
+                            ).appendLine()
+                            .append("There will be __no__ opportunity for you to confirm your screenshot, so please")
+                            .append(" make sure you upload the correct screenshot.")
+                            .appendLine(2)
+                            .append("If you want to cancel this process, press the **Cancel** button.")
+                            .toString()
+                    )
+                    .setFooter({ text: "This process will expire by" })
+                    .setTimestamp(Date.now() + 4 * 60 * 1000)
+            ],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                ButtonConstants.CANCEL_BUTTON
+            ])
+        });
+
+        if (!r) {
+            instance.verifyStepChannel?.send({
+                content: `${logType} ${instance.member} was asked to upload a screenshot, but something went wrong`
+                    + " when trying to edit the base embed message.",
+                allowedMentions: { roles: [], users: [] }
+            });
+
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+            msg.delete().catch();
+            return;
+        }
+
+        const imageRes = await AdvancedCollector.startDoubleCollector<Buffer | Stream | string>({
+            acknowledgeImmediately: false,
+            cancelFlag: null,
+            clearInteractionsAfterComplete: false,
+            deleteBaseMsgAfterComplete: false,
+            deleteResponseMessage: false,
+            duration: 4 * 60 * 1000,
+            oldMsg: msg,
+            targetAuthor: instance.member,
+            targetChannel: dmChan
+        }, async m => {
+            if (m.attachments.size === 0) {
+                return;
+            }
+
+            const at = m.attachments.first()!;
+            if (!at.height) {
+                return;
+            }
+
+            return at.attachment;
+        });
+
+        msg.delete().catch();
+        if (!imageRes || imageRes instanceof MessageComponentInteraction) {
+            instance.verifyStepChannel?.send({
+                content: `${logType} ${instance.member} has canceled the manual verification process.`,
+                allowedMentions: { roles: [], users: [] }
+            });
+
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+            return;
+        }
+
+        // Off-chance that somemone could delete the storage channel mid-way through
+        const storedMsg = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+            return storageChannel.send({
+                files: [imageRes],
+                content: new StringBuilder()
+                    .append(`Upload Time: ${TimeUtilities.getDateTime()} GMT`).appendLine()
+                    .append(`Uploaded By: ${instance.member}`).appendLine()
+                    .append("Reason: Manual Verification")
+                    .toString()
+            });
+        });
+
+        if (!storedMsg) {
+            instance.verifyStepChannel?.send({
+                content: `${logType} ${instance.member} tried to upload an image for manual verification,`
+                    + " but the storage channel for the server has been deleted or an issue occurred while"
+                    + " trying to send a message to said channel.",
+                allowedMentions: { roles: [], users: [] }
+            });
+
+            InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+            await GlobalFgrUtilities.sendMsg(dmChan, {
+                content: "The manual verification process could not be completed due to an issue with the"
+                    + " configuration channel not existing or with sending a message to said channel."
+            });
+
+            return;
+        }
+
+        const attachedImage = storedMsg.attachments.first()!;
+        const descSb = new StringBuilder()
+            .append("The following user tried to get manually verified in the section:")
+            .append(` **\`${instance.section.sectionName}\`**.`)
+            .appendLine()
+            .appendLine()
+            .append("__**Discord Account**__").appendLine()
+            .append(`- Discord Mention: ${instance.member} (${instance.member.id})`).appendLine()
+            .append(`- Discord Tag: ${instance.member.user.tag}`).appendLine()
+            .append(`- Discord Created: ${TimeUtilities.getDateTime(instance.member.user.createdAt)} GMT`)
+            .appendLine()
+            .appendLine()
+            .append("__**RotMG Account**__").appendLine()
+            .append(`- Account IGN: **\`${nameToUse}\`**`)
+            .appendLine()
+            .appendLine()
+            .append("When approving or denying this request, please make sure any information in the screenshot")
+            .append(" that is used to identify the player (e.g., in-game name, Discord tag) matches the information")
+            .append(" that is shown above.");
+
+        if (instance.section.isMainSection) {
+            descSb.append(" Note that the IGN shown above (exactly as typed) will be registered into the bot's")
+                .append(" database. Thus, it's important that the IGN shown above is typed exactly as shown")
+                .append(" in-game.");
+        }
+            
+        const embed = MessageUtilities.generateBlankEmbed(instance.member, "YELLOW")
+            .setTitle(`[${instance.section.sectionName}] Automated Manual Verification`)
+            .setDescription(descSb.toString())
+            .setImage(attachedImage.url)
+            .addField(
+                "Reason(s) for Manual Verification",
+                "Required by server verification configuration."
+            )
+            .setFooter({ text: "Manual Verification Request" });
+
+        InteractivityManager.IN_VERIFICATION.delete(instance.member.id);
+        const manualVerifMsg = await instance.manualVerifyChannel!.send({
+            embeds: [embed],
+            components: AdvancedCollector.getActionRowsFromComponents([
+                new MessageButton()
+                    .setLabel("Accept")
+                    .setCustomId(MANUAL_VERIFY_ACCEPT_ID)
+                    .setEmoji(EmojiConstants.GREEN_CHECK_EMOJI)
+                    .setStyle("SUCCESS"),
+                new MessageButton()
+                    .setLabel("Deny")
+                    .setCustomId(MANUAL_VERIFY_DENY_ID)
+                    .setEmoji(EmojiConstants.X_EMOJI)
+                    .setStyle("DANGER")
+            ])
+        });
+
+        await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
+            $push: {
+                manualVerificationEntries: {
+                    userId: instance.member.id,
+                    ign: nameToUse,
+                    manualVerifyMsgId: manualVerifMsg.id,
+                    manualVerifyChannelId: instance.manualVerifyChannel!.id,
+                    sectionId: instance.section.uniqueIdentifier,
+                    url: attachedImage.url
+                }
+            }
+        });
+
+        instance.verifyStepChannel?.send({
+            content: `${logType} ${instance.member} has successfully sent a manual verification request.`,
+            allowedMentions: { roles: [], users: [] }
+        });
+
+        const displaySec = instance.section.isMainSection
+            ? `the guild, \`${guild.name}\``
+            : `the section, \`${instance.section.sectionName}\` (${guild.name})`;
+        await GlobalFgrUtilities.sendMsg(dmChan, {
+            content: `You have successfully sent a manual verification in ${displaySec}. No further action is`
+                + " required from you. Please do not message server staff about the status of your manual"
+                + " verification request."
+        });
+    }
+
 
     /**
      * Handles the case when manual verification is needed. Note that you need to handle the case of removing the 
@@ -978,8 +1270,11 @@ export namespace VerifyManager {
      * to already.
      * @private
      */
-    async function handleManualVerification(instance: IVerificationInstance, checkRes: IReqCheckResult,
-                                            from: TextBasedChannel | MessageComponentInteraction): Promise<void> {
+    async function handleManualVerification(
+        instance: IVerificationInstance, 
+        checkRes: IReqCheckResult,
+        from: TextBasedChannel | MessageComponentInteraction
+    ): Promise<void> {
         const guild = instance.member.guild;
         const section = instance.section;
         const logStr = checkRes.manualIssues.map(x => `- [${x.key}] ${x.log}`).join("\n");
@@ -1126,7 +1421,7 @@ export namespace VerifyManager {
             )
             .setDescription(
                 "You have chosen to accept getting manually verified. No further action is required from you. Please do not"
-                + " message server staff about the status of your manual verification application."
+                + " message server staff about the status of your manual verification request."
             );
 
         if (m instanceof Message) {
@@ -1181,7 +1476,8 @@ export namespace VerifyManager {
             .addField(
                 "Reason(s) for Manual Verification",
                 checkRes.manualIssues.map(x => `- **${x.key}**: ${x.log}`).join("\n")
-            );
+            )
+            .setFooter({ text: "Manual Verification Request" });
 
         // manualVerifyChannel exists because we asserted this in the checkRequirements function.
         const manualVerifMsg = await instance.manualVerifyChannel!.send({
@@ -1221,9 +1517,9 @@ export namespace VerifyManager {
      * @param origMsg The original message, if any.
      */
     export async function acknowledgeManualVerif(
-        entry: IManualVerificationEntry, 
-        mod: GuildMember, 
-        responseId: string, 
+        entry: IManualVerificationEntry,
+        mod: GuildMember,
+        responseId: string,
         origMsg?: Message
     ): Promise<void> {
         const manualVerifChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
@@ -1271,7 +1567,7 @@ export namespace VerifyManager {
 
         // Okay, get the section associated with the entry.
         let section = guildDoc.guildSections.find(x => x.uniqueIdentifier === entry.sectionId);
-        
+
         // If no section found, then we have two cases.
         if (!section) {
             // if the section ID isn't the main section, then we can just clear everything
@@ -1285,6 +1581,7 @@ export namespace VerifyManager {
                     }
                 });
 
+                await MessageUtilities.tryDelete(manualVerifMsg);
                 return;
             }
 
@@ -1294,6 +1591,7 @@ export namespace VerifyManager {
 
         // No verified role = no point in manually verifying that person.
         if (!GuildFgrUtilities.hasCachedRole(mod.guild, section.roles.verifiedRoleId)) {
+            await MessageUtilities.tryDelete(manualVerifMsg);
             return;
         }
 
@@ -1302,11 +1600,34 @@ export namespace VerifyManager {
             mod.guild,
             guildDoc.channels.loggingChannels.find(x => x.key === "VerifyStep")?.value ?? ""
         );
-        
+
+        // Update this embed first.
+        if (manualVerifMsg) {
+            const oldEmbed = manualVerifMsg.embeds[0];
+            if (responseId === MANUAL_VERIFY_ACCEPT_ID) {
+                MessageUtilities.tryEdit(manualVerifMsg, {
+                    embeds: [
+                        oldEmbed
+                            .setTitle(`${EmojiConstants.GREEN_CHECK_EMOJI} ${oldEmbed.title}`)
+                            .setColor("DARK_GREEN")
+                            .addField("Status", `Accepted by ${mod.toString()} (${mod.user.tag}).`)
+                    ]
+                }).then();
+            }
+            else {
+                MessageUtilities.tryEdit(manualVerifMsg, {
+                    embeds: [
+                        oldEmbed
+                            .setTitle(`${EmojiConstants.X_EMOJI} ${oldEmbed.title}`)
+                            .setColor("DARK_RED")
+                            .addField("Status", `Rejected by ${mod.toString()} (${mod.user.tag}).`)
+                    ]
+                }).then();
+            }
+        }
+
         // Now, let's respond based on the response ID.
-        const promises: (Promise<unknown> | undefined)[] = [
-            MessageUtilities.tryDelete(manualVerifMsg)
-        ];
+        const promises: (Promise<unknown> | undefined)[] = [];
 
         switch (responseId) {
             case (MANUAL_VERIFY_ACCEPT_ID): {
@@ -1342,12 +1663,12 @@ export namespace VerifyManager {
                 if (section.isMainSection) {
                     await GlobalFgrUtilities.tryExecuteAsync(async () => {
                         await member.setNickname(
-                            UserManager.getNameForNickname(member, entry.ign), 
+                            UserManager.getNameForNickname(member, entry.ign),
                             `Manually verified in the main section successfully by ${mod.user.tag}`
                         );
                     });
-                    await MongoManager.addIdNameToIdNameCollection(member, entry.ign);    
-                                    
+                    await MongoManager.addIdNameToIdNameCollection(member, entry.ign);
+
                     promises.push(
                         verifyStepChannel?.send({
                             content: `\`[Main]\` ${member} has successfully verified as **\`${entry.ign}\`**`
@@ -1369,7 +1690,7 @@ export namespace VerifyManager {
             }
             case (MANUAL_VERIFY_DENY_ID): {
                 promises.push(
-                    GlobalFgrUtilities.sendMsg(member, { 
+                    GlobalFgrUtilities.sendMsg(member, {
                         embeds: [
                             MessageUtilities.generateBlankEmbed(mod.guild, "RED")
                                 .setTitle(
@@ -1382,14 +1703,14 @@ export namespace VerifyManager {
                                     "Your manual verification request was **denied**. If you have any questions regarding"
                                     + " why your request was denied, please message a staff member or send a modmail."
                                 )
-                        ] 
+                        ]
                     }),
                     verifyStepChannel?.send({
                         content: section.isMainSection
                             ? `\`[Main]\` ${member} has tried to verify as **\`${entry.ign}\`**, but`
-                                + ` their manual verification request was __denied__ by ${mod}.`
+                            + ` their manual verification request was __denied__ by ${mod}.`
                             : `\`[${section.sectionName}]\` ${member} has tried to get manually verified, but`
-                                + ` was __denied__ manual verification by ${mod}.`,
+                            + ` was __denied__ manual verification by ${mod}.`,
                         allowedMentions: { roles: [], users: [] }
                     })
                 );
@@ -1459,7 +1780,7 @@ export namespace VerifyManager {
 
         // Check guild. Failure to pass these tests will result in a fail.
         if (verifReq.guild.checkThis) {
-            if (verifReq.guild.guildName.checkThis 
+            if (verifReq.guild.guildName.checkThis
                 && (!resp.guild || resp.guild.toLowerCase() !== verifReq.guild.guildName.name.toLowerCase())) {
                 const guildInDisplay = `**\`${resp.guild}\`**`;
                 const guildNeededDisplay = `**\`${verifReq.guild.guildName.name}\`**`;
@@ -1848,10 +2169,10 @@ export namespace VerifyManager {
             .addField(
                 "3. Wait.",
                 "Please wait at least **30 seconds** after applying the above changes. In particular, if you *just* made your"
-                    + " last seen location private, updated your RealmEye description, or made parts (or all) of your profile"
-                    + " public, it is strongly recommended that you wait, since RealmEye takes time to update.\n\n"
-                    + `${EmojiConstants.WARNING_EMOJI} **Warning:** Failure to wait after making the above changes will result`
-                    + " in the bot not properly registering your changes for the next minute or so after your next attempt.",
+                + " last seen location private, updated your RealmEye description, or made parts (or all) of your profile"
+                + " public, it is strongly recommended that you wait, since RealmEye takes time to update.\n\n"
+                + `${EmojiConstants.WARNING_EMOJI} **Warning:** Failure to wait after making the above changes will result`
+                + " in the bot not properly registering your changes for the next minute or so after your next attempt.",
             )
             .addField(
                 "4. Confirm",
@@ -1897,16 +2218,16 @@ export namespace VerifyManager {
                     .append(checkPastDeaths ? " (Past Deaths Allowed)." : ".").appendLine();
             }
         }
-    
+
         if (verifProps.verifReq.exaltations.checkThis) {
             let added = false;
             for (const stat in verifProps.verifReq.exaltations.minimum) {
                 if (!verifProps.verifReq.exaltations.minimum.hasOwnProperty(stat))
                     continue;
-    
+
                 const numNeeded = verifProps.verifReq.exaltations.minimum[stat];
                 if (numNeeded === 0) continue;
-                    // Put here so this shows up first on list
+                // Put here so this shows up first on list
                 if (!added) {
                     sb.append("- Exaltations are Public.").appendLine();
                     added = true;
@@ -1914,11 +2235,11 @@ export namespace VerifyManager {
                 const displayedVersion = SHORT_STAT_TO_LONG[stat][1];
                 sb.append(`- ${numNeeded} ${displayedVersion} Exaltations.`).appendLine();
             }
-    
+
             if (added && verifProps.verifReq.exaltations.onOneChar)
                 sb.append("- Exaltations Must Be On One Character.").appendLine();
         }
-    
+
         if ((verifProps.verifReq.dungeonCompletions?.length ?? 0) > 0) {
             for (const entry of verifProps.verifReq.dungeonCompletions ?? []) {
                 if (entry.value === 0) continue;
@@ -1927,12 +2248,12 @@ export namespace VerifyManager {
                 sb.append(`- ${entry.value} ${dgnInfo.dungeonName} Completion Logged.`).appendLine();
             }
         }
-    
+
         return sb.toString().trim();
     }
 
     /**
-     * Deletes all manual verification entries for the specified user. This deletes all manual verification application
+     * Deletes all manual verification entries for the specified user. This deletes all manual verification request
      * messages and entries from the database.
      * @param guild The guild.
      * @param userId The user ID corresponding to the user to delete all manual verification entries.
@@ -1940,7 +2261,7 @@ export namespace VerifyManager {
      */
     export async function removeAllManualVerifAppsForUser(guild: Guild, userId: string): Promise<void> {
         const guildDoc = await MongoManager.getOrCreateGuildDoc(guild, true);
-        
+
         // Delete all manual verification request messages by this person.
         await Promise.all([
             guildDoc.manualVerificationEntries
@@ -1953,12 +2274,12 @@ export namespace VerifyManager {
                     if (!channel) {
                         return;
                     }
-        
+
                     const relevantMsg = await GuildFgrUtilities.fetchMessage(channel, x.manualVerifyMsgId);
                     if (!relevantMsg) {
                         return;
                     }
-        
+
                     await MessageUtilities.tryDelete(relevantMsg);
                 })
         ]);

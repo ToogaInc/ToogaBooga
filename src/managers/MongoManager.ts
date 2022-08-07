@@ -19,6 +19,7 @@ import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtil
 import { DefinedRole } from "../definitions/Types";
 import { StringUtil } from "../utilities/StringUtilities";
 import { PermsConstants } from "../constants/PermsConstants";
+import { VerifyManager } from "./VerifyManager";
 
 export namespace MongoManager {
     export const CachedGuildCollection: DCollection<string, IGuildInfo> = new DCollection<string, IGuildInfo>();
@@ -257,12 +258,6 @@ export namespace MongoManager {
             }, {
                 $set: {
                     currentDiscordId: member.id
-                },
-                $push: {
-                    pastDiscordIds: {
-                        oldId: oldDiscordId,
-                        toDate: Date.now()
-                    }
                 }
             }, { returnDocument: "after" });
 
@@ -290,12 +285,6 @@ export namespace MongoManager {
                     ign: name.ign
                 });
             }
-
-            if (entry.currentDiscordId !== member.id)
-                newObj.pastDiscordIds.push({ oldId: entry.currentDiscordId, toDate: Date.now() });
-
-            newObj.pastRealmNames.push(...entry.pastRealmNames);
-            newObj.pastDiscordIds.push(...entry.pastDiscordIds);
         }
 
         await getIdNameCollection().deleteMany({
@@ -411,6 +400,8 @@ export namespace MongoManager {
 
         return {
             verificationProperties: {
+                useDefault: true,
+                instructionsManualVerification: VerifyManager.DEFAULT_MANUAL_INSTRUCTIONS,
                 checkRequirements: true,
                 additionalVerificationInfo: "",
                 verificationSuccessMessage: "",
@@ -579,9 +570,7 @@ export namespace MongoManager {
     export function getDefaultIdNameObj(userId: string, ign?: string): IIdNameInfo {
         return {
             rotmgNames: ign ? [{ lowercaseIgn: ign.toLowerCase(), ign: ign }] : [],
-            currentDiscordId: userId,
-            pastDiscordIds: [],
-            pastRealmNames: []
+            currentDiscordId: userId
         };
     }
 

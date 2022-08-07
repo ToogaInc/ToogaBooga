@@ -24,6 +24,21 @@ export interface IVerificationChannels {
  */
 export interface IVerificationProperties {
     /**
+     * Whether to use the default verification style (i.e., if this is `true`, then 
+     * verification will be done mostly automatically via RealmEye verification.)
+     * 
+     * @type {boolean}
+     */
+    useDefault: boolean; 
+
+    /**
+     * Instructions, to be asked to the user, for the manual verification process.
+     * 
+     * @type {string}
+     */
+    instructionsManualVerification: string;
+
+    /**
      * Any message to show on the verification embed.
      *
      * @type {string}
@@ -243,6 +258,13 @@ export interface IManualVerificationEntry {
      * @type {string}
      */
     sectionId: string;
+
+    /**
+     * The URL to an image, if any.
+     * 
+     * @type {string}
+     */
+    url?: string;
 }
 
 /**

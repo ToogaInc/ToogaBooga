@@ -160,13 +160,6 @@ export class RemoveName extends BaseCommand {
             await MongoManager.getIdNameCollection().updateOne({ currentDiscordId: member.id }, {
                 $set: {
                     rotmgNames: namesInDb
-                },
-                $push: {
-                    pastRealmNames: {
-                        ign: lowerCaseName,
-                        lowercaseIgn: origName,
-                        toDate: Date.now()
-                    }
                 }
             });
             updatedDb = true;

@@ -33,6 +33,7 @@ import { ButtonConstants } from "../../constants/ButtonConstants";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
 import { VerifyManager } from "../../managers/VerifyManager";
 import SHORT_STAT_TO_LONG = VerifyManager.SHORT_STAT_TO_LONG;
+import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 
 export class ConfigVerification extends BaseCommand {
     public static GUILD_RANKS: string[] = [
@@ -148,87 +149,147 @@ export class ConfigVerification extends BaseCommand {
      */
     public async configVerification(ctx: ICommandContext, botMsg: Message, section: ISectionInfo): Promise<void> {
         const verifConfig: IVerificationProperties = {
+            useDefault: section.otherMajorConfig.verificationProperties.useDefault ?? true,
+            instructionsManualVerification: section.otherMajorConfig.verificationProperties.instructionsManualVerification
+                ?? VerifyManager.DEFAULT_MANUAL_INSTRUCTIONS,
             checkRequirements: section.otherMajorConfig.verificationProperties.checkRequirements,
             verifReq: { ...section.otherMajorConfig.verificationProperties.verifReq },
             verificationSuccessMessage: section.otherMajorConfig.verificationProperties.verificationSuccessMessage,
             additionalVerificationInfo: section.otherMajorConfig.verificationProperties.additionalVerificationInfo
         };
 
-        const toggleCheckReqButton = new MessageButton()
-            .setStyle("PRIMARY")
-            .setCustomId("check_reqs")
-            .setDisabled(section.isMainSection);
+        // The storage + manual verification channel must exist since we need it to store manual verification screenshots
+        // and process manual verification requests.
+        if (!verifConfig.useDefault 
+            && (!GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)
+                || !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.verification.manualVerificationChannelId))) {
+            verifConfig.useDefault = true;
+        }
 
-        const configVerifButton = new MessageButton()
-            .setStyle("PRIMARY")
-            .setLabel("Configure Requirements")
-            .setCustomId("config_req");
+        while (true) {
+            const buttons: MessageButton[] = [];
+            if (verifConfig.useDefault) {
+                buttons.push(
+                    new MessageButton()
+                        .setStyle("PRIMARY")
+                        .setLabel("Force Manual Verify")
+                        .setCustomId("toggle_type")
+                        // Once again, the storage channel must exist.
+                        .setDisabled(
+                            !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.storageChannelId)
+                            || !GlobalFgrUtilities.getCachedChannel(ctx.guildDoc!.channels.verification.manualVerificationChannelId)),
+                    new MessageButton()
+                        .setStyle("PRIMARY")
+                        .setCustomId("check_reqs")
+                        .setLabel(verifConfig.checkRequirements
+                            ? "Disable Check Requirements"
+                            : "Enable Check Requirements")
+                        .setDisabled(section.isMainSection),
+                    new MessageButton()
+                        .setStyle("PRIMARY")
+                        .setLabel("Configure Requirements")
+                        .setCustomId("config_req")
+                        .setDisabled(!verifConfig.checkRequirements)
+                );
+            }
+            else {
+                buttons.push(
+                    new MessageButton()
+                        .setStyle("PRIMARY")
+                        .setLabel("Use Default Verify")
+                        .setCustomId("toggle_type"),
+                    new MessageButton()
+                        .setStyle("PRIMARY")
+                        .setCustomId("set_ins")
+                        .setLabel("Set Instructions")
+                );
+            }
 
-        const buttons: MessageButton[] = [
-            toggleCheckReqButton,
-            configVerifButton,
-            new MessageButton()
-                .setStyle("PRIMARY")
-                .setLabel("Set Verification Embed Message")
-                .setCustomId("set_verif_msg"),
-            new MessageButton()
-                .setStyle("PRIMARY")
-                .setLabel("Set Verification Success Message")
-                .setCustomId("set_verif_success_msg"),
-            ButtonConstants.SAVE_BUTTON,
-            ButtonConstants.BACK_BUTTON,
-            ButtonConstants.QUIT_BUTTON,
-            new MessageButton()
-                .setStyle("PRIMARY")
-                .setLabel("Send Verification Embed")
-                .setCustomId("send")
-                .setDisabled(
-                    !GuildFgrUtilities.hasCachedChannel(ctx.guild!, section.channels.verification.verificationChannelId)
-                )
-        ];
+            buttons.push(
+                new MessageButton()
+                    .setStyle("PRIMARY")
+                    .setLabel("Set Verification Embed Message")
+                    .setCustomId("set_verif_msg"),
+                new MessageButton()
+                    .setStyle("PRIMARY")
+                    .setLabel("Set Verification Success Message")
+                    .setCustomId("set_verif_success_msg"),
+                ButtonConstants.SAVE_BUTTON,
+                ButtonConstants.BACK_BUTTON,
+                ButtonConstants.QUIT_BUTTON,
+                new MessageButton()
+                    .setStyle("PRIMARY")
+                    .setLabel("Save & Send Verification Embed")
+                    .setCustomId("send")
+                    .setDisabled(
+                        !GuildFgrUtilities.hasCachedChannel(ctx.guild!, section.channels.verification.verificationChannelId)
+                    )
+            );
 
-        const embed = new MessageEmbed()
-            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
-            .setTitle(`Configure Verification: **${section.sectionName}**`)
-            .setDescription(
-                new StringBuilder()
-                    .append("Here, you can configure verification for this section. To do so, please press the button")
-                    .append(" that best corresponds to the action that you want to perform.")
+            const desc = new StringBuilder()
+                .append("Here, you can configure verification for this section. To do so, please press the button")
+                .append(" that best corresponds to the action that you want to perform.")
+                .appendLine();
+
+            if (verifConfig.useDefault) {
+                desc.append("- Press the **Force Manual Verify** button if you want to require everyone to go through")
+                    .append(" the manual verification process. **Note** that this requires the storage channel and")
+                    .append(" manual verification channels to be configured for the server.")
                     .appendLine()
                     .append("- Press the **Check Requirements** button if you want to enable or disable the checking")
                     .append(" of requirements for this section.").appendLine()
                     .append("- Press the **Configure Verification** button if you want to set verification")
-                    .append(" requirements for this section.").appendLine()
-                    .append("- Press the **Set Verification Embed Message** button if you want to specify a message")
-                    .append(" that will be displayed on the verification embed (where people will start the")
-                    .append(" verification process).").appendLine()
-                    .append("- Press the **Set Verification Success Message** button if you want to specify a message")
-                    .append(" that will be displayed to the user upon successful verification.")
+                    .append(" requirements for this section.").appendLine();
+            }
+            else {
+                desc
+                    .append("- Press the **Use Default Verify** button if you want the bot to automatically verify")
+                    .append(" users based on their RealmEye profile.")
                     .appendLine()
-                    .append("- Press the **Save** button if you want to save this configuration.")
-                    .appendLine()
-                    .append("- Press the **Cancel & Go Back** button if you don't want to save your changes, but want")
-                    .append(" to change something else. Otherwise, to quit, press the **Cancel & Quit** button.")
-                    .appendLine()
-                    .append("- Press the **Send Verification Embed** button if you are ready to make verification")
-                    .append(" available for this section. This will send the verification embed to the configured")
-                    .append(" verification channel.")
-                    .toString()
-            );
+                    .append("- Press the **Set Instructions** button if you want to set the instructions for the user.")
+                    .append(" These instructions will be shown to them when they are asked to upload a screenshot for")
+                    .append(" manual verification, and can include information like what the screenshot should contain.")
+                    .appendLine();
+            }
 
-        while (true) {
-            configVerifButton.setDisabled(!verifConfig.checkRequirements);
-            toggleCheckReqButton.setLabel(
-                verifConfig.checkRequirements
-                    ? "Disable Check Requirements"
-                    : "Enable Check Requirements"
-            );
+            desc.append("- Press the **Set Verification Embed Message** button if you want to specify a message")
+                .append(" that will be displayed on the verification embed (where people will start the")
+                .append(" verification process).").appendLine()
+                .append("- Press the **Set Verification Success Message** button if you want to specify a message")
+                .append(" that will be displayed to the user upon successful verification.")
+                .appendLine()
+                .append("- Press the **Save** button if you want to save this configuration.")
+                .appendLine()
+                .append("- Press the **Cancel & Go Back** button if you don't want to save your changes, but want")
+                .append(" to change something else. Otherwise, to quit, press the **Cancel & Quit** button.")
+                .appendLine()
+                .append("- Press the **Send Verification Embed** button if you are ready to make verification")
+                .append(" available for this section. This will send the verification embed to the configured")
+                .append(" verification channel.");
 
-            embed.fields = [];
+            const embed = new MessageEmbed()
+                .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
+                .setTitle(`Configure Verification: **${section.sectionName}**`)
+                .setDescription(desc.toString());
+
+            if (verifConfig.useDefault) {
+                embed.addField(
+                    "Checking Requirements?",
+                    StringUtil.codifyString(verifConfig.checkRequirements ? "Yes" : "No")
+                );
+            }
+            else {
+                embed.addField(
+                    "Manual Verification Instructions",
+                    StringUtil.codifyString(
+                        verifConfig.instructionsManualVerification.length === 0
+                            ? "Not Set."
+                            : verifConfig.instructionsManualVerification
+                    )
+                );
+            }
+
             embed.addField(
-                "Checking Requirements?",
-                StringUtil.codifyString(verifConfig.checkRequirements ? "Yes" : "No")
-            ).addField(
                 "Verification Success Message",
                 StringUtil.codifyString(
                     verifConfig.verificationSuccessMessage.length === 0
@@ -269,6 +330,10 @@ export class ConfigVerification extends BaseCommand {
             }
 
             switch (selectedButton.customId) {
+                case "toggle_type": {
+                    verifConfig.useDefault = !verifConfig.useDefault;
+                    break;
+                }
                 case "config_req": {
                     const cr = await this.configVerifReqs(ctx, botMsg, verifConfig.verifReq);
                     if (cr.status === TimedStatus.TIMED_OUT) {
@@ -284,6 +349,40 @@ export class ConfigVerification extends BaseCommand {
                 }
                 case "check_reqs": {
                     verifConfig.checkRequirements = !verifConfig.checkRequirements;
+                    break;
+                }
+                case "set_ins": {
+                    const instructions = await askInput<string>(
+                        ctx,
+                        botMsg,
+                        {
+                            embeds: [
+                                new MessageEmbed()
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
+                                    .setTitle("Set Manual Verification Instructions")
+                                    .setDescription("Please type the instructions that you want people to see when"
+                                        + " they are asked to upload a screenshot for manual verification. Here, you"
+                                        + " can specify what their screenshot should contain (e.g., Discord tag). Note"
+                                        + " that they can only upload **one** screenshot. Your instructions can be up to"
+                                        + " 900 characters in length. If you decide that you don't want to configure this"
+                                        + " right now, press the **Back** button.")
+                            ]
+                        },
+                        m => {
+                            const content = m.content.trim();
+                            return content && content.length <= 900 ? content : null;
+                        }
+                    );
+
+                    if (typeof instructions === "undefined") {
+                        await this.dispose(ctx, botMsg);
+                        return;
+                    }
+
+                    if (!instructions)
+                        break;
+
+                    verifConfig.instructionsManualVerification = instructions;
                     break;
                 }
                 case "set_verif_msg": {
@@ -397,29 +496,44 @@ export class ConfigVerification extends BaseCommand {
                         ).setFooter({ text: section.isMainSection ? "Server Verification" : "Section Verification" });
 
                     const descSb = new StringBuilder();
-                    if (section.isMainSection) {
-                        descSb.append(`Welcome to **\`${ctx.guild!.name}\`**. `)
-                            .append("In order to get access to the server, you will need to verify your identity with")
-                            .append(" the bot and meet the following requirements (if any):")
-                            .append(StringUtil.codifyString(
-                                VerifyManager.getVerificationRequirements(ctx.guildDoc!, verifConfig)
-                            ))
-                            .appendLine()
-                            .append("If you meet the requirements posted above, please press the **Verify Me** button.")
-                            .append(" __Make sure anyone can direct message you.__");
+                    if (verifConfig.useDefault) {
+                        if (section.isMainSection) {
+                            descSb.append(`Welcome to **\`${ctx.guild!.name}\`**. `)
+                                .append("In order to get access to the server, you will need to verify your identity with")
+                                .append(" the bot and meet the following requirements (if any):");
+                        }
+                        else {
+                            descSb.append(`Welcome to the **\`${section.sectionName}\`** section. `)
+                                .append("In order to get access to the section, you will need to meet the following")
+                                .append(" requirements (if any):");
+                        }
+
+                        descSb.append(StringUtil.codifyString(
+                            VerifyManager.getVerificationRequirements(ctx.guildDoc!, verifConfig)
+                        ));
                     }
                     else {
-                        descSb.append(`Welcome to the **\`${section.sectionName}\`** section. `)
-                            .append("In order to get access to the section, you will need to meet the following")
-                            .append(" requirements (if any):")
-                            .append(StringUtil.codifyString(
-                                VerifyManager.getVerificationRequirements(ctx.guildDoc!, verifConfig)
-                            ))
-                            .appendLine()
-                            .append("If you meet the requirements posted above, please press the **Verify Me** button.")
-                            .append(" __Make sure anyone can direct message you.__");
-                    }
+                        if (section.isMainSection) {
+                            descSb.append(`Welcome to **\`${ctx.guild!.name}\`**. `)
+                                .append("In order to get access to the server, ");
+                        }
+                        else {
+                            descSb.append(`Welcome to the **\`${section.sectionName}\`** section. `)
+                                .append("In order to get access to the section, ");
+                        }
 
+                        descSb.append("you will need to verify your identity with the bot and upload a screenshot that")
+                            .append(" meets the following screenshot requirements:").appendLine()
+                            .append(
+                                verifConfig.instructionsManualVerification.split("\n").map(x => "> " + x).join("\n")
+                            );
+                    }
+                    
+                    descSb.appendLine()
+                        .appendLine()
+                        .append("If you meet the requirements posted above, please press the **Verify Me** button.")
+                        .append(" __Make sure anyone can direct message you.__");
+                
                     verifEmbed.setDescription(descSb.toString());
                     if (verifConfig.additionalVerificationInfo) {
                         verifEmbed.addField(
@@ -757,7 +871,7 @@ export class ConfigVerification extends BaseCommand {
 
                     if (typeof r !== "number")
                         return { value: null, status: TimedStatus.TIMED_OUT };
-                    
+
                     newVerifReqs.rank.checkThis = r > 0;
                     newVerifReqs.rank.minRank = r;
                     break;
@@ -1177,7 +1291,7 @@ export class ConfigVerification extends BaseCommand {
         dungeonReq: IPropertyKeyValuePair<string, number>[]
     ): Promise<TimedResult<IPropertyKeyValuePair<string, number>[]>> {
         const newDungeonReq = dungeonReq.map(x => {
-            return { ... x };
+            return { ...x };
         });
 
         const [backBtn, upBtn, downButton, addBtn, removeBtn, saveBtn] = ConfigVerification.getButtons(
