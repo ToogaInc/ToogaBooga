@@ -1,5 +1,6 @@
 import { OverwriteData } from "discord.js";
 import { IBasicOverwriteData } from "../definitions";
+import { StringBuilder } from "./StringBuilder";
 
 /**
  * An interface designed to help convert some types found in discord.js's libraries
@@ -34,7 +35,12 @@ export namespace DjsToProjUtilities {
                     obj.allow = o.allow.bitfield.toString();
                 }
                 else {
-                    throw new Error(`toBasicOverwriteData '${o.allow}' invalid arg.`);
+                    console.error(
+                        new StringBuilder()
+                            .append("Invalid 'allow' object.").appendLine()
+                            .append(`\t${JSON.stringify(o)}`)
+                            .toString()
+                    );
                 }
             }
 
@@ -43,7 +49,12 @@ export namespace DjsToProjUtilities {
                     obj.deny = o.deny.bitfield.toString();
                 }
                 else {
-                    throw new Error(`toBasicOverwriteData '${o.deny}' invalid arg.`);
+                    console.error(
+                        new StringBuilder()
+                            .append("Invalid 'deny' object.").appendLine()
+                            .append(`\t${JSON.stringify(o)}`)
+                            .toString()
+                    );
                 }
             }
 
