@@ -239,13 +239,14 @@ export namespace QuotaManager {
         const storageChannel = await MongoManager.getStorageChannel(guild);
         const channelToUse = storageChannel ? storageChannel : quotaChannel;
         let urlToFile: string | null = null;
+        const fileName = (`quota_${guild.name.replaceAll(" ", "-")}_${MiscUtilities.getRoleName(roleId, guild).replaceAll(" ", "-")}_${Date.now()}.txt`);
         if (channelToUse) {
             const storageMsg = await GlobalFgrUtilities.sendMsg(
                 channelToUse,
                 {
                     files: [
                         new MessageAttachment(Buffer.from(finalSummaryStr, "utf8"),
-                            `quota_${guild.id}_${roleId}_${Date.now()}.txt`)
+                            fileName)
                     ]
                 }
             ).catch(LOGGER.error);

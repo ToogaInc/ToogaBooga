@@ -288,7 +288,7 @@ export class EditName extends BaseCommand {
         const [, newNameInDb] = names.get(newIgn.toLowerCase()) ?? [undefined, false];
 
         const oldNameLowercase = res.values[0].toLowerCase();
-        const [origName, isInDb, wasNickname] = names.get(oldNameLowercase)!;
+        const [, isInDb, wasNickname] = names.get(oldNameLowercase)!;
         let updatedDb = false;
         // If the original name is in the database AND the new name is not the same as the old name AND the new name
         // is not already in the database
@@ -310,13 +310,6 @@ export class EditName extends BaseCommand {
             await MongoManager.getIdNameCollection().updateOne({ currentDiscordId: doc[0].currentDiscordId }, {
                 $set: {
                     rotmgNames: allNames
-                },
-                $push: {
-                    pastRealmNames: {
-                        ign: oldNameLowercase,
-                        lowercaseIgn: origName,
-                        toDate: Date.now()
-                    }
                 }
             });
             updatedDb = true;

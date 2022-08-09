@@ -8,7 +8,6 @@ import { StringBuilder } from "../../utilities/StringBuilder";
 import { StringUtil } from "../../utilities/StringUtilities";
 import { Bot } from "../../Bot";
 import { TimeUtilities } from "../../utilities/TimeUtilities";
-import { ArrayUtilities } from "../../utilities/ArrayUtilities";
 import { EmojiConstants } from "../../constants/EmojiConstants";
 import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
 import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
@@ -171,31 +170,11 @@ export class Find extends BaseCommand {
             successEmbed.addField(
                 "ID Information",
                 new StringBuilder()
-                    .append(`Past Name(s): \`${id.pastRealmNames.length}\``).appendLine()
-                    .append(`Past ID(s): \`${id.pastDiscordIds.length}\``).appendLine()
                     .append(`Connected ID: \`${id.currentDiscordId}\``).appendLine()
                     .append(`Connected Name(s): ${StringUtil.codifyString(
                         `[${id.rotmgNames.map(x => x.ign).join(", ")}]`
                     )}`).toString()
             );
-
-            const pNamesDisplay = ArrayUtilities.breakArrayIntoSubsets(
-                id.pastRealmNames.map(x => `- \`${x.ign}\` (To ${getDateTime(x.toDate)} GMT)`),
-                5
-            );
-
-            const pIdDisplay = ArrayUtilities.breakArrayIntoSubsets(
-                id.pastDiscordIds.map(x => `- \`${x.oldId}\` (To ${getDateTime(x.toDate)} GMT)`),
-                5
-            );
-
-            for (const pastName of pNamesDisplay) {
-                successEmbed.addField("Past Name(s)", pastName.join("\n"), true);
-            }
-
-            for (const pastId of pIdDisplay) {
-                successEmbed.addField("Past ID(s)", pastId.join("\n"), true);
-            }
         }
 
         successEmbed.addField(

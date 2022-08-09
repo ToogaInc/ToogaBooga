@@ -563,37 +563,6 @@ export interface IIdNameInfo {
      * @type {IRealmIgn[]}
      */
     rotmgNames: IRealmIgn[];
-
-    /**
-     * Any past Discord IDs associated with the linked RotMG name(s).
-     *
-     * Essentially, any IDs taken out of `currentDiscordId`, for any reason, should be put right here.
-     *
-     * @type {({oldId: string;} & IPastEntry)[]}
-     */
-    pastDiscordIds: ({ oldId: string; } & IPastEntry)[];
-
-    /**
-     * Any past RotMG names associated with the linked IDs. This should primarily contain:
-     * - Names from name history (if the person changed his/her RotMG name).
-     * - Other names (in case the person got banned from said account or something and wants it removed).
-     *
-     * In any case, any names taken out of `rotmgNames`, for any reason, should be put right here.
-     *
-     * @type {(IRealmIgn & IPastEntry)[]}
-     */
-    pastRealmNames: (IRealmIgn & IPastEntry)[];
-}
-
-/**
- * An interface that represents a past entry. This only contains a date where the original entry was removed, and
- * should be used in conjunction with the old entry.
- */
-interface IPastEntry {
-    /**
-     * The date which the entry was removed.
-     */
-    toDate: number;
 }
 
 /**
