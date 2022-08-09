@@ -227,6 +227,8 @@ export class RaidInstance {
     private readonly _leaderName: string;
     // The cost, in points, for early location.
     private readonly _earlyLocPointCost: number;
+    // Override info concerning whether you can start without location
+    private readonly _locationToProgress: boolean;
 
     // The members that are joining this raid.
     private _membersThatJoined: GuildMember[] = [];
@@ -377,6 +379,8 @@ export class RaidInstance {
         let vcLimit: number = -2;
         // And this is the point cost.
         let costForEarlyLoc: number = 0;
+        // Override info concerning whether you can start without location
+        let locationToProgress: boolean = false;
         // Process dungeon based on whether it is custom or not.
         if (dungeon.isBuiltIn) {
             const dgnOverride = guildDoc.properties.dungeonOverride.find((x) => x.codeName === dungeon.codeName);
@@ -397,6 +401,11 @@ export class RaidInstance {
                     })
                     .filter((x) => x) as IDungeonModifier[];
             }
+
+            // If the dungeon has an override
+            if (dgnOverride && dgnOverride.locationToProgress) locationToProgress = true;
+            // In the case that there is no override, fallback to the information from constants/dungeons/DungeonData
+            else if (!dgnOverride && dungeon.locationToProgress) locationToProgress = true;
         } else {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
@@ -412,6 +421,7 @@ export class RaidInstance {
         }
 
         this._earlyLocPointCost = costForEarlyLoc;
+        this._locationToProgress = locationToProgress;
 
         if (vcLimit === -2) {
             if (section.otherMajorConfig.afkCheckProperties.vcLimit !== -1)
@@ -2768,7 +2778,10 @@ export class RaidInstance {
                 await i.deferUpdate();
                 if (i.customId === RaidInstance.START_AFK_CHECK_ID) {
                     LOGGER.info(`${this._instanceInfo} Leader chose to start AFK Check`);
-                    this.startAfkCheck().then();
+                    if (this._locationToProgress && !this._location)
+                        i.followUp({ content: "Please set a location prior to progressing the raid.", ephemeral: true });
+                    else
+                        this.startAfkCheck().then();
                     return;
                 }
 

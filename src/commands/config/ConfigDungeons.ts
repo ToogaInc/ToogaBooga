@@ -170,6 +170,9 @@ export class ConfigDungeons extends BaseCommand {
         if (numEq !== 0)
             return false;
 
+        if (dgnOverride.locationToProgress || origDungeon.locationToProgress !== undefined)
+            return false;
+
         return dgnOverride.nitroEarlyLocationLimit === -1
             && dgnOverride.vcLimit === -1
             && dgnOverride.pointCost === 0
@@ -206,7 +209,8 @@ export class ConfigDungeons extends BaseCommand {
             vcLimit: -1,
             roleRequirement: [],
             logFor: null,
-            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
+            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId),
+            locationToProgress: dgn.locationToProgress
         } as ICustomDungeonInfo;
     }
 
@@ -417,7 +421,8 @@ export class ConfigDungeons extends BaseCommand {
                     vcLimit: -1,
                     pointCost: 0,
                     roleRequirement: [],
-                    allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
+                    allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId),
+                    locationToProgress: res.locationToProgress
                 } as IDungeonOverrideInfo));
                 return;
             }
@@ -623,7 +628,8 @@ export class ConfigDungeons extends BaseCommand {
             },
             roleRequirement: [],
             vcLimit: -1,
-            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
+            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId),
+            locationToProgress: false
         };
 
         const embed = new MessageEmbed();
@@ -660,6 +666,10 @@ export class ConfigDungeons extends BaseCommand {
             .setLabel("Configure Modifiers")
             .setCustomId("config_modifiers")
             .setStyle("PRIMARY");
+        const configLocationRequirement = new MessageButton()
+            .setLabel("Require Location")
+            .setCustomId("require_loc")
+            .setStyle(cDungeon.locationToProgress ? "SUCCESS" : "DANGER");
 
         let dgnToOverrideInfo: IDungeonInfo | null = null;
 
@@ -725,6 +735,7 @@ export class ConfigDungeons extends BaseCommand {
             vcLimitButton,
             roleReqButton,
             configModifiers,
+            configLocationRequirement,
             saveButton,
             removeButton
         );
@@ -739,6 +750,8 @@ export class ConfigDungeons extends BaseCommand {
                     ? !cDungeon.dungeonName
                     : false
             );
+
+            configLocationRequirement.setStyle(cDungeon.locationToProgress ? "SUCCESS" : "DANGER");
 
             const ptCostStr = (cDungeon.pointCost === 0
                 ? "Point System Not Used"
@@ -840,6 +853,10 @@ export class ConfigDungeons extends BaseCommand {
                 "Click on the `Role Requirements` button to add or remove any additional roles needed to run this"
                 + " particular dungeon. For example, for full-skip dungeons, you might require a Fullskip role. The"
                 + ` number of role(s) set is: \`${cDungeon.roleRequirement.length}\``
+            ).addField(
+                "Require Location",
+                "Click on the `Require Location` button to require a location before being able to progress an AFK-"
+                + "check to the closed stage. Green indicates that this value is required"
             );
 
             embed.addField(
@@ -895,7 +912,6 @@ export class ConfigDungeons extends BaseCommand {
                             }
                         });
                     }
-
                     if (!isCustomDungeon(cDungeon)
                         && dgnToOverrideInfo
                         && ConfigDungeons.isDefaultOverride(cDungeon, dgnToOverrideInfo)) {
@@ -1295,6 +1311,10 @@ export class ConfigDungeons extends BaseCommand {
                     }
 
                     cDungeon.allowedModifiers = res;
+                    break;
+                }
+                case "require_loc": {
+                    cDungeon.locationToProgress = !cDungeon.locationToProgress;
                     break;
                 }
             }
