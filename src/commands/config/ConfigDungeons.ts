@@ -912,7 +912,6 @@ export class ConfigDungeons extends BaseCommand {
                             }
                         });
                     }
-                    console.log("return:" + (dgnToOverrideInfo && ConfigDungeons.isDefaultOverride(cDungeon, dgnToOverrideInfo)));
                     if (!isCustomDungeon(cDungeon)
                         && dgnToOverrideInfo
                         && ConfigDungeons.isDefaultOverride(cDungeon, dgnToOverrideInfo)) {

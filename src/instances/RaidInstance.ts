@@ -401,7 +401,10 @@ export class RaidInstance {
                     })
                     .filter((x) => x) as IDungeonModifier[];
             }
+
+            // If the dungeon has an override
             if (dgnOverride && dgnOverride.locationToProgress) locationToProgress = true;
+            // In the case that there is no override, fallback to the information from constants/dungeons/DungeonData
             else if (!dgnOverride && dungeon.locationToProgress) locationToProgress = true;
         } else {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
