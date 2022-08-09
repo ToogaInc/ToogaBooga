@@ -170,7 +170,7 @@ export class ConfigDungeons extends BaseCommand {
         if (numEq !== 0)
             return false;
 
-        if (dgnOverride.locationToProgress !== origDungeon.locationToProgress)
+        if (dgnOverride.locationToProgress || origDungeon.locationToProgress !== undefined)
             return false;
 
         return dgnOverride.nitroEarlyLocationLimit === -1
@@ -209,7 +209,8 @@ export class ConfigDungeons extends BaseCommand {
             vcLimit: -1,
             roleRequirement: [],
             logFor: null,
-            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
+            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId),
+            locationToProgress: dgn.locationToProgress
         } as ICustomDungeonInfo;
     }
 
@@ -420,7 +421,8 @@ export class ConfigDungeons extends BaseCommand {
                     vcLimit: -1,
                     pointCost: 0,
                     roleRequirement: [],
-                    allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
+                    allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId),
+                    locationToProgress: res.locationToProgress
                 } as IDungeonOverrideInfo));
                 return;
             }
@@ -626,7 +628,8 @@ export class ConfigDungeons extends BaseCommand {
             },
             roleRequirement: [],
             vcLimit: -1,
-            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId)
+            allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId),
+            locationToProgress: false
         };
 
         const embed = new MessageEmbed();
@@ -909,7 +912,7 @@ export class ConfigDungeons extends BaseCommand {
                             }
                         });
                     }
-
+                    console.log("return:" + (dgnToOverrideInfo && ConfigDungeons.isDefaultOverride(cDungeon, dgnToOverrideInfo)));
                     if (!isCustomDungeon(cDungeon)
                         && dgnToOverrideInfo
                         && ConfigDungeons.isDefaultOverride(cDungeon, dgnToOverrideInfo)) {

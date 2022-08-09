@@ -409,6 +409,7 @@ export class RaidInstance {
             }
 
             if (dgnOverride && dgnOverride.locationToProgress) locationToProgress = true;
+            else if (!dgnOverride && dungeon.locationToProgress) locationToProgress = true;
         } else {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
