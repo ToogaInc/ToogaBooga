@@ -59,7 +59,7 @@ export class Reply extends BaseCommand {
             content: sentSuccess ? "Sent!" : "The message could not be sent."
         });
 
-        if (quotaToLog) {
+        if (sentSuccess && quotaToLog) {
             await QuotaManager.logQuota(ctx.member!, quotaToLog, "ModmailRespond", 1);
         }
         return 0;
