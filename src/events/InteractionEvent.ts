@@ -283,7 +283,7 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
                 return;
             }
             case ButtonConstants.REMOVE_ID: {
-                await ModmailManager.closeModmailThread(message, guildDoc);
+                await ModmailManager.deleteModmailThread(message, guildDoc);
                 return;
             }
         }
