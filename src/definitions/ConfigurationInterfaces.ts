@@ -115,6 +115,113 @@ export interface IConfiguration {
              * @type {string}
              */
             unclaimedBlCollection: string;
+
+            /**
+             * The collection representing all role/channel settings for a guild.
+             * 
+             * @type {string}
+             */
+            guildGenColl: string;
+            
+            /**
+             * The collection representing the verification settings for a guild
+             * and/or section.
+             * 
+             * @type {string}
+             */
+            guildVerifSettingColl: string;
+            
+            /**
+             * The collection representing the AFK check settings for a guild and/or
+             * section.
+             * 
+             * @type {string}
+             */
+            guildAfkCheckSettingColl: string;
+
+            /**
+             * The collection representing all sections across all guilds.
+             * 
+             * @type {string}
+             */
+            guildSectionColl: string;
+            
+            /**
+             * The collection representing all quotas across all guilds.
+             * 
+             * @type {string}
+             */
+            guildQuotaColl: string;
+            
+            /**
+             * The collection representing all active raids across all guilds.
+             * 
+             * @type {string}
+             */
+            guildActiveRaidsColl: string;
+
+            /**
+             * The collection representing all headcounts across all guilds.
+             * 
+             * @type {string}
+             */
+            guildHeadcountColl: string;
+            
+            /**
+             * The collection representing all manual verification entries
+             * across all guilds.
+             * 
+             * @type {string}
+             */
+            guildManualVerifyColl: string;
+
+            /**
+             * The collection representing all active punishments across all
+             * guilds.
+             * 
+             * @type {string}
+             */
+            guildPunishColl: string;
+
+            /**
+             * The collection representing all reaction information across
+             * all guilds.
+             * 
+             * @type {string}
+             */
+            guildGenReactColl: string;
+
+            /**
+             * The collection representing all custom dungeons across
+             * all guilds.
+             * 
+             * @type {string}
+             */
+            guildCustomDgnColl: string;
+            
+            /**
+             * The collection representing all dungeon override settings
+             * across all guilds.
+             * 
+             * @type {string}
+             */
+            guildDgnOverrideColl: string;
+            
+            /**
+             * The collection representing all active section dungeon overrides
+             * across all sections in all guilds.
+             * 
+             * @type {string}
+             */
+            guildDgnSecOverrideColl: string;
+            
+            /**
+             * The collection representing all active modmail threads across
+             * all guilds.
+             * 
+             * @type {string}
+             */
+            guildModmailColl: string;
         };
     };
 

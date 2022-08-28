@@ -252,10 +252,10 @@ export interface IGuildDocSection extends IGuildDocBase, ISectionBase {
     isMainSection: boolean;
 
     /**
- * The section channels.
- *
- * @type {object}
- */
+     * The section channels.
+     *
+     * @type {object}
+     */
     channels: {
         /**
          * The verification channels.
@@ -353,7 +353,7 @@ export interface IGuildDocActiveRaids
  * 
  * This document contains information pertaining to verification.
  */
-export interface IGuildDocVerification
+export interface IGuildDocVerificationSetting
     extends IGuildDocBase, ISectionBase, IVerificationProperties { }
 
 /**
@@ -361,7 +361,7 @@ export interface IGuildDocVerification
  * 
  * This document contains information pertaining to AFK checks and headcounts.
  */
-export interface IGuildDocAfkCheck
+export interface IGuildDocAfkCheckSetting
     extends IGuildDocBase, ISectionBase, IAfkCheckProperties { }
 
 /**
@@ -461,10 +461,10 @@ export interface IGuildDocDungeonOverride extends IGuildDocBase, IDungeonOverrid
 /**
  * An interface that represents a guild document that is stored in MongoDB.
  * 
- * This document contains all relevant dungeon overries for the defined guild.
+ * This document contains all relevant dungeon overrides for the defined guild.
  * These dungeon overrides apply to *one* base dungeon for a specific section.
  */
-export interface IGuildDocDungeonOverride
+export interface IGuildDocSecDungeonOverride
     extends IGuildDocBase, ISectionBase {
     /**
      * The dungeon ID.
