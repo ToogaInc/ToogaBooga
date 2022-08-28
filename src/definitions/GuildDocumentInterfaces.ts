@@ -3,7 +3,7 @@ import { IPropertyKeyValuePair } from "./MiscInterfaces";
 import { IModmailThread } from "./ModmailInterfaces";
 import { IQuotaInfo, ISectionLeaderRoles } from "./MongoDocumentInterfaces";
 import { IActivePunishment } from "./PunishmentInterfaces";
-import { MainLogType } from "./Types";
+import { MainLogType, SectionLogType } from "./Types";
 import { IManualVerificationEntry, IVerificationChannels, IVerificationProperties } from "./VerificationInterfaces";
 
 /**
@@ -228,6 +228,84 @@ export interface IGuildDocGeneral extends IGuildDocBase {
          * @type {string}
          */
         storageChannelId: string;
+    };
+}
+
+/**
+ * An interface that represents a guild document that is stored in MongoDB.
+ * 
+ * This document will contain section information.
+ */
+export interface IGuildDocSection extends IGuildDocBase, ISectionBase {
+    /**
+     * The section name.
+     *
+     * @type {string}
+     */
+    sectionName: string;
+
+    /**
+     * Whether this section is the main section.
+     *
+     * @type {boolean}
+     */
+    isMainSection: boolean;
+
+    /**
+ * The section channels.
+ *
+ * @type {object}
+ */
+    channels: {
+        /**
+         * The verification channels.
+         *
+         * @type {IVerificationChannels}
+         */
+        verification: IVerificationChannels;
+
+        /**
+         * The raid channels.
+         *
+         * @type {IRaidChannels}
+         */
+        raids: Omit<IRaidChannels, "leaderFeedbackChannelId" | "raidHistChannelId">;
+
+        /**
+         * The elite location channel ID.  Locations will be sent here if not null for the section
+         *
+         * @type {string}
+         */
+        eliteLocChannelId: string;
+
+        /**
+         * Any applicable logging channels. The key is the logging type (for example, suspensions, blacklists, mutes,
+         * and more) and the value is the channel ID.
+         *
+         * @type {IPropertyKeyValuePair<SectionLogType, string>[]}
+         */
+        loggingChannels: IPropertyKeyValuePair<SectionLogType, string>[];
+    };
+
+    /**
+     * The section roles.
+     *
+     * @type {object}
+     */
+    roles: {
+        /**
+         * The section leader roles. Members with these roles will be able to lead dungeon raids in this section only.
+         *
+         * @type {ISectionLeaderRoles}
+         */
+        leaders: ISectionLeaderRoles;
+
+        /**
+         * The section member role. This role is needed to access this section (including the AFK checks and whatnot).
+         *
+         * @type {string}
+         */
+        verifiedRoleId: string;
     };
 }
 
