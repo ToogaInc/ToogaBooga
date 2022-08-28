@@ -1,5 +1,6 @@
-import { IAfkCheckProperties, IHeadcountInfo, IRaidChannels, IRaidInfo } from "./DungeonRaidInterfaces";
+import { IAfkCheckProperties, IAfkCheckReaction, ICustomDungeonInfo, IDungeonOverrideInfo, IHeadcountInfo, ImageInfo, IRaidChannels, IRaidInfo, IReactionInfo } from "./DungeonRaidInterfaces";
 import { IPropertyKeyValuePair } from "./MiscInterfaces";
+import { IModmailThread } from "./ModmailInterfaces";
 import { IQuotaInfo, ISectionLeaderRoles } from "./MongoDocumentInterfaces";
 import { IActivePunishment } from "./PunishmentInterfaces";
 import { MainLogType } from "./Types";
@@ -308,3 +309,124 @@ export interface IGuildDocManualVerify
  */
 export interface IGuildDocPunishment
     extends IGuildDocBase, ISectionBase, IActivePunishment { }
+
+/**
+ * An interface that represents a guild document that is stored in MongoDB.
+ * 
+ * This document contains general reaction/image information.
+ */
+export interface IGuildDocGenReaction extends IGuildDocBase {
+    /**
+     * Early location reactions which will apply to **all** dungeons. This can be overridden on a per-dungeon
+     * basis by selecting the reaction and setting the early location count to `0`.
+     *
+     * @type {IAfkCheckReaction[]}
+     */
+    universalEarlyLocReactions: IAfkCheckReaction[];
+
+    /**
+     * All custom reactions. The key is the map key (the reaction code name) and the value is the reaction
+     * information.
+     *
+     * This is very similar to how `MappedAfkCheckReactions` works in the sense that you have:
+     * ```
+     * IMappedAfkCheckReactions[mapKey] -> result
+     * ```
+     * Where `mapKey` is the key in this case and the `result` is the `IReactionInfo` that you get.
+     *
+     * The key will be a string of 30 random characters (since the user should never see the key). The value is
+     * defined by the user.
+     *
+     * @type {IPropertyKeyValuePair<string, IReactionInfo>[]}
+     */
+    customReactions: IPropertyKeyValuePair<string, IReactionInfo>[];
+
+    /**
+     * Any approved images. This will be an array of image URLs. The image will be stored on a private server.
+     *
+     * @type {string[]}
+     */
+    approvedCustomImages: ImageInfo[];
+
+    /**
+     * Any reactions which can give early location and priority queuing upon having the appropriate role.
+     *
+     * Here, the `roleId` is the role ID and the `mappingKey` is the ID corresponding to the emoji in which you
+     * can react to get early location.
+     *
+     * In terms of how this works:
+     * - For each dungeon, the user can specify whether this reaction will show up.
+     * - If so, then the user can specify how many times this reaction can be used (i.e. number of priorities).
+     *
+     * Nitro is automatically included.
+     *
+     * @type {IPropertyKeyValuePair<string, string>[]}
+     */
+    earlyLocRoleMapping: { roleId: string; mappingKey: string; }[];
+}
+
+/**
+ * An interface that represents a guild document that is stored in MongoDB.
+ * 
+ * This document contains all relevant custom dungeons for the defined guild.
+ */
+export interface IGuildDocCustomDungeon extends IGuildDocBase, ICustomDungeonInfo { }
+
+/**
+ * An interface that represents a guild document that is stored in MongoDB.
+ * 
+ * This document contains all relevant dungeon overries for the defined guild.
+ * These dungeon overrides apply to the *one* base dungeon and apply to all sections.
+ */
+export interface IGuildDocDungeonOverride extends IGuildDocBase, IDungeonOverrideInfo { }
+
+/**
+ * An interface that represents a guild document that is stored in MongoDB.
+ * 
+ * This document contains all relevant dungeon overries for the defined guild.
+ * These dungeon overrides apply to *one* base dungeon for a specific section.
+ */
+export interface IGuildDocDungeonOverride
+    extends IGuildDocBase, ISectionBase {
+    /**
+     * The dungeon ID.
+     * 
+     * @type {string}
+     */
+    dungeonId: string;
+
+    /**
+     * The max VC capacity.
+     * 
+     * @type {number}
+     */
+    vcLimit: number;
+
+    /**
+     * The number of points needed for priority.
+     * 
+     * @type {number}
+     */
+    pointsToEnter: number;
+
+    /**
+     * The number of people that can use points.
+     * 
+     * @type {number}
+     */
+    numPointUsers: number;
+
+    /**
+     * A link to the requirements sheet.
+     * 
+     * @type {string}
+     */
+    reqSheet: string;
+}
+
+/**
+ * An interface that represents a guild document that is stored in MongoDB.
+ * 
+ * This document contains all modmail threads.
+ */
+export interface IGuildDocModmailThread extends IGuildDocBase, IModmailThread { }
