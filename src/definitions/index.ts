@@ -5,3 +5,4 @@ export * from "./ModmailInterfaces";
 export * from "./MongoDocumentInterfaces";
 export * from "./PunishmentInterfaces";
 export * from "./VerificationInterfaces";
+export * from "./GuildDocumentInterfaces";
