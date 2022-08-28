@@ -150,3 +150,111 @@ export interface IBlacklistedUser extends Omit<IBasePunishment, "affectedUser"> 
  */
 export interface IBlacklistedModmailUser extends IBasePunishment {
 }
+
+export interface IActivePunishment {
+    /**
+     * The person that received the punishment (or got the punishment removed).
+     * 
+     * This will either be an object with an ID, tag, and name if this is a
+     * non-blacklist and a `IRealmIgn` if it is a blacklist.
+     *
+     * @type {object}
+     */
+    affectedUser: {
+        /**
+         * The person's ID.
+         *
+         * @type {string}
+         */
+        id: string;
+
+        /**
+         * The person's tag (User#0000).
+         *
+         * @type {string}
+         */
+        tag: string;
+
+        /**
+         * The person's name.
+         *
+         * @type {string}
+         */
+        name: string;
+    } | (IRealmIgn & { discordId: string; });
+
+    /**
+     * The moderator that was responsible for this moderation action.
+     *
+     * @type {object}
+     */
+    moderator: {
+        /**
+         * The moderator's ID.
+         *
+         * @type {string}
+         */
+        id: string;
+
+        /**
+         * The moderator's tag (User#0000).
+         *
+         * @type {string}
+         */
+        tag: string;
+
+        /**
+         * The moderator's name.
+         *
+         * @type {string}
+         */
+        name: string;
+    };
+
+    /**
+     * The reason for this punishment (or removal of punishment).
+     *
+     * @type {string}
+     */
+    reason: string;
+
+    /**
+     * An ID consisting of 30 letters used to identify this moderation action.
+     *
+     * @type {string}
+     */
+    actionId: string;
+
+    /**
+     * The date/time when this suspension was issued.
+     *
+     * @type {number}
+     */
+    issuedAt: number;
+
+    /**
+     * When this suspension will end. If this is an indefinite suspension, use `-1`.
+     *
+     * @type {number}
+     */
+    timeEnd: number;
+
+     /**
+      * The person's old roles, represented as an array of role IDs. This will be 
+      * given back to suspended users upon the end of suspension.
+      *
+      * @type {string[]}
+      */
+    oldRoles: string[];
+
+    /**
+     * The punishment type.
+     * 
+     * @type {string}
+     */
+    punishmentType: "MUTE"
+    | "SUSPEND"
+    | "SEC_SUSPEND"
+    | "BLACKLIST"
+    | "MODMAIL_BLACKLIST";
+}
