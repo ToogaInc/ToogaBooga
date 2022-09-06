@@ -1095,7 +1095,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         keyReactions: [
             {
                 mapKey: "HIDDEN_INTERREGUM_KEY",
-                maxEarlyLocation: 10
+                maxEarlyLocation: 3
             }
         ],
         otherReactions: [],
