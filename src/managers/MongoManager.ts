@@ -5,6 +5,20 @@ import { Collection, Collection as DCollection, Guild, GuildMember, TextChannel 
 import { DUNGEON_DATA } from "../constants/dungeons/DungeonData";
 import {
     IBotInfo,
+    IGuildDocActiveRaids,
+    IGuildDocAfkCheckSetting,
+    IGuildDocCustomDungeon,
+    IGuildDocDungeonOverride,
+    IGuildDocGeneral,
+    IGuildDocGenReaction,
+    IGuildDocHeadcounts,
+    IGuildDocManualVerify,
+    IGuildDocModmailThread,
+    IGuildDocPunishment,
+    IGuildDocQuota,
+    IGuildDocSecDungeonOverride,
+    IGuildDocSection,
+    IGuildDocVerificationSetting,
     IGuildInfo,
     IIdNameInfo,
     IOtherMajorConfig,
@@ -26,10 +40,33 @@ export namespace MongoManager {
 
     let ThisMongoClient: MongoClient | null = null;
     let UserCollection: MCollection<IUserInfo> | null = null;
+    /**
+     * @deprecated soon
+     */
     let GuildCollection: MCollection<IGuildInfo> | null = null;
     let BotCollection: MCollection<IBotInfo> | null = null;
     let IdNameCollection: MCollection<IIdNameInfo> | null = null;
     let UnclaimedBlacklistCollection: MCollection<IUnclaimedBlacklistInfo> | null = null;
+
+    // Each guild must have ONE entry in the following collections
+    let GDGeneralCollection: MCollection<IGuildDocGeneral> | null = null;
+    // Each guild must have at least ONE entry in the following collections
+    // One entry per section
+    let GDVerificationSettingCollection: MCollection<IGuildDocVerificationSetting> | null = null;
+    let GDAfkCheckSettingCollection: MCollection<IGuildDocAfkCheckSetting> | null = null;
+    // Add to the following collections as needed.
+    let GDSectionCollection: MCollection<IGuildDocSection> | null = null;
+    let GDQuotaCollection: MCollection<IGuildDocQuota> | null = null;
+    let GDActiveRaidsCollection: MCollection<IGuildDocActiveRaids> | null = null;
+    let GDHeadcountCollection: MCollection<IGuildDocHeadcounts> | null = null;
+    let GDManualVerifyCollection: MCollection<IGuildDocManualVerify> | null = null;
+    let GDPunishmentCollection: MCollection<IGuildDocPunishment> | null = null;
+    let GDGenReactionInfoCollection: MCollection<IGuildDocGenReaction> | null = null;
+    let GDCustomDungeonCollection: MCollection<IGuildDocCustomDungeon> | null = null;
+    let GDDungeonOverrideCollection: MCollection<IGuildDocDungeonOverride> | null = null;
+    let GDDungeonSecOverrideCollection: MCollection<IGuildDocSecDungeonOverride> | null = null;
+    let GDModmailCollection: MCollection<IGuildDocModmailThread> | null = null;
+
 
     interface IDbConfiguration {
         dbUrl: string;
