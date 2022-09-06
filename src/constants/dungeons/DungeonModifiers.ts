@@ -367,6 +367,13 @@ export const DUNGEON_MODIFIERS: readonly IDungeonModifier[] = [
         description: "An unknown foe will appear after the Boss is defeated with its own loot table.",
         modifierId: "THE_WANDERER",
         defaultDisplay: true
+    },
+    {
+        modifierName: "Syndicate Takeover",
+        maxLevel: 4,
+        description: "Battle a Syndicate boss after the final boss of the dungeon",
+        modifierId: "SYNDICATE_TAKEOVER",
+        defaultDisplay: false
     }
 ];
 
