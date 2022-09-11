@@ -62,7 +62,7 @@ export class EditName extends BaseCommand {
         const newIgn = ctx.interaction.options.getString("ign", true);
         if (newIgn.length > VerifyManager.MAX_IGN_LEN || !CommonRegex.ONLY_LETTERS.test(newIgn)) {
             await ctx.interaction.reply({
-                content: `Your name, \`${newIgn}\`, can only have letters and must be at most 14 letters long.`,
+                content: `Your name, \`${newIgn}\`, can only have letters and must be at most 15 letters long.`,
                 ephemeral: true
             });
 
