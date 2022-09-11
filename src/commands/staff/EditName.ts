@@ -8,6 +8,7 @@ import { ButtonConstants } from "../../constants/ButtonConstants";
 import { StringUtil } from "../../utilities/StringUtilities";
 import { QuotaManager } from "../../managers/QuotaManager";
 import { CommonRegex } from "../../constants/CommonRegex";
+import { VerifyManager } from "../../managers/VerifyManager";
 
 export class EditName extends BaseCommand {
     public constructor() {
@@ -59,7 +60,7 @@ export class EditName extends BaseCommand {
     public async run(ctx: ICommandContext): Promise<number> {
         const mStr = ctx.interaction.options.getString("member", true);
         const newIgn = ctx.interaction.options.getString("ign", true);
-        if (newIgn.length > 14 || !CommonRegex.ONLY_LETTERS.test(newIgn)) {
+        if (newIgn.length > VerifyManager.MAX_IGN_LEN || !CommonRegex.ONLY_LETTERS.test(newIgn)) {
             await ctx.interaction.reply({
                 content: `Your name, \`${newIgn}\`, can only have letters and must be at most 14 letters long.`,
                 ephemeral: true
