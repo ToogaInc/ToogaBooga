@@ -36,6 +36,7 @@ export namespace VerifyManager {
         + " vault** saying your Discord tag. Your Discord tag must be clearly visible in the chat bubble"
         + " and in the chat box. Additionally, your in-game name must be clearly visible.";
 
+    export const MAX_IGN_LEN: number = 15;
     export const NUMBER_OF_STATS: number = 8;
 
     export const SHORT_STAT_TO_LONG: { [s: string]: [string, string] } = {
@@ -371,7 +372,7 @@ export namespace VerifyManager {
                 targetChannel: dmChan
             }, AdvancedCollector.getStringPrompt(instance.member, {
                 min: 1,
-                max: 15,
+                max: MAX_IGN_LEN,
                 regexFilter: {
                     regex: CommonRegex.ONLY_LETTERS,
                     withErrorMsg: "Your name can only have letters."
