@@ -137,7 +137,6 @@ export namespace PrivateApiDefinitions {
             };
             characterType: string;
             level: number;
-            classQuestsCompleted: number;
             fame: number;
             place: number;
             equipmentData: {
