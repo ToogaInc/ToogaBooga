@@ -115,7 +115,6 @@ export namespace PrivateApiDefinitions {
         characterCount: number;
         skins: number;
         fame: number;
-        exp: number;
         rank: number;
         accountFame: number;
         guild?: string;
@@ -140,7 +139,6 @@ export namespace PrivateApiDefinitions {
             level: number;
             classQuestsCompleted: number;
             fame: number;
-            experience: number;
             place: number;
             equipmentData: {
                 name: string;
