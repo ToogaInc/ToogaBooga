@@ -711,7 +711,7 @@ export namespace QuotaManager {
             guildDoc.quotas.resetTime.dayOfWeek,
             guildDoc.quotas.resetTime.time
         );
-        const timeLeft = TimeUtilities.getDiscordTime({ time: endTime.getTime() })
+        const timeLeft = TimeUtilities.getDiscordTime({ time: endTime.getTime() });
 
         const quotaPtDisplay = getPointListAsString(guildDoc, quotaInfo);
         const embed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
@@ -732,7 +732,7 @@ export namespace QuotaManager {
                     )
                     .toString()
             )
-            .setTimestamp()
+            .setTimestamp();
 
         if (quotaInfo.quotaLog.length === 0)
             return embed.addField("**__Time left__**", `Quota period ends ${timeLeft}`);
@@ -863,7 +863,7 @@ export namespace QuotaManager {
         }
 
         if (nextReset == 86400000)
-            LOGGER.info(`Could not find a new time to check for quota resets. Defaulting to 1 week.`);
+            LOGGER.info("Could not find a new time to check for quota resets. Defaulting to 1 week.");
         
         setTimeout(checkForReset, nextReset);
     }
