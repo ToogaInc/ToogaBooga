@@ -82,7 +82,7 @@ export class CheckManualVerifyApp extends BaseCommand {
                         .append("__**Discord Account**__").appendLine()
                         .append(`- Discord Mention: ${member} (${member.id})`).appendLine()
                         .append(`- Discord Tag: ${member.user.tag}`).appendLine()
-                        .append(`- Discord Created: ${TimeUtilities.getDateTime(member.user.createdAt)} GMT`).appendLine()
+                        .append(`- Discord Created: ${TimeUtilities.getDiscordTime({ time: member.user.createdTimestamp, style: "F" })}`).appendLine()
                         .appendLine()
                         .append("__**RotMG Account**__").appendLine()
                         .append(`- Account IGN: **\`${m.ign}\`**`).appendLine()

@@ -12,7 +12,6 @@ import { EmojiConstants } from "../../constants/EmojiConstants";
 import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
 import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import { ButtonConstants } from "../../constants/ButtonConstants";
-import getDateTime = TimeUtilities.getDateTime;
 
 export class Find extends BaseCommand {
     public constructor() {
@@ -192,12 +191,12 @@ export class Find extends BaseCommand {
                 "Joined Server",
                 StringUtil.codifyString(
                     targetMember.joinedTimestamp
-                        ? `${TimeUtilities.getDateTime(targetMember.joinedTimestamp)} GMT`
+                        ? `${TimeUtilities.getDiscordTime({ time: targetMember.joinedTimestamp, style: "F" })}`
                         : "N/A"
                 )
             ).addField(
                 "Joined Discord",
-                StringUtil.codifyString(TimeUtilities.getDateTime(targetMember.user.createdTimestamp))
+                StringUtil.codifyString(TimeUtilities.getDiscordTime({ time: targetMember.user.createdTimestamp, style: "F" }))
             );
         }
 
@@ -293,7 +292,7 @@ export class Find extends BaseCommand {
 
                 let expiresAtDisplay: string = "Indefinite.";
                 if (x.expiresAt && x.expiresAt !== -1) {
-                    expiresAtDisplay = `${getDateTime(x.expiresAt)} GMT`;
+                    expiresAtDisplay = `${TimeUtilities.getDiscordTime({ time: x.expiresAt, style: "F" })}`;
                 }
 
                 if (!showExtraDetails) {
@@ -304,10 +303,10 @@ export class Find extends BaseCommand {
                         );
 
                     const time = new StringBuilder()
-                        .append(`Issued: \`${getDateTime(x.issuedAt)} GMT\``).appendLine()
+                        .append(`Issued: ${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: "F" })}`).appendLine()
                         .append(
                             x.resolved
-                                ? `Resolved: \`${getDateTime(x.resolved.issuedAt)} GMT\``
+                                ? `Resolved: ${TimeUtilities.getDiscordTime({ time: x.resolved.issuedAt, style: "F" })}`
                                 : `Expires At: \`${expiresAtDisplay}\``
                         );
 
@@ -342,7 +341,7 @@ export class Find extends BaseCommand {
                     )
                     .addField(
                         "Issued At",
-                        StringUtil.codifyString(`${getDateTime(x.issuedAt)} GMT`),
+                        `${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: "F" })}`,
                         true
                     )
                     .addField(
@@ -365,7 +364,7 @@ export class Find extends BaseCommand {
                         "Punishment Resolution",
                         new StringBuilder()
                             .append(`__Resolved By:__ ${s}`)
-                            .append(`__Time:__ ${StringUtil.codifyString(`${getDateTime(x.resolved.issuedAt)} GMT`)}`)
+                            .append(`__Time:__ ${(TimeUtilities.getDiscordTime({ time: x.resolved.issuedAt, style: "F" }))}`)
                             .append(`__Resolution Reason:__ ${StringUtil.codifyString(x.resolved.reason)}`)
                             .append(`__Resolution ID:__ ${StringUtil.codifyString(x.resolved.actionId)}`)
                             .toString()

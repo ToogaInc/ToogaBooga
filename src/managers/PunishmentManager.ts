@@ -324,7 +324,7 @@ export namespace PunishmentManager {
         const durationStr = new StringBuilder()
             .append(`- Duration: ${entry.duration! === -1 ? "N/A" : TimeUtilities.formatDuration(entry.duration!, true, false)}`)
             .appendLine()
-            .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${TimeUtilities.getDateTime(entry.expiresAt!)} GMT`}`)
+            .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${TimeUtilities.getDiscordTime({ time: entry.expiresAt!, style: "F" })}`}`)
             .toString();
 
         const logToChanEmbed = MessageUtilities.generateBlankEmbed(details.guild, isAddingPunishment ? "RED" : "GREEN")

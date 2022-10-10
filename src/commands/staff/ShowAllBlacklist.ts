@@ -32,7 +32,7 @@ export class ShowAllBlacklist extends BaseCommand {
                 .appendLine()
                 .append(`\tReason: ${x.reason}`)
                 .appendLine()
-                .append(`\tTime: ${TimeUtilities.getDateTime(x.issuedAt)} GMT`)
+                .append(`\tTime: ${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: "F" })}`)
                 .appendLine()
                 .append(`\tModerator: ${x.moderator.name} (${x.moderator.tag})`)
                 .toString();
