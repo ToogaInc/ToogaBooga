@@ -1,4 +1,4 @@
-import { IConfiguration, IGuildInfo } from "./definitions";
+import { IConfiguration, IGuildInfo, IQuotaInfo } from "./definitions";
 import {
     Client,
     Collection,
@@ -32,7 +32,7 @@ import {
     onGuildMemberRemove,
     onQuotaEvent
 } from "./events";
-import { QuotaService } from "./managers/QuotaManager";
+import { QuotaManager } from "./managers/QuotaManager";
 import { REST } from "@discordjs/rest";
 import { RESTPostAPIApplicationCommandsJSONBody, Routes } from "discord-api-types/v10";
 import { Logger } from "./utilities/Logger";
@@ -294,7 +294,7 @@ export class Bot {
         this._bot.on("guildMemberRemove", (m: GuildMember | PartialGuildMember) => onGuildMemberRemove(m));
 
         // Custom events
-        this._bot.on("quotaEvent", (gId: string, gDoc: IGuildInfo) => onQuotaEvent(gId, gDoc));
+        this._bot.on("quotaEvent", (quota: IQuotaInfo, gDoc: IGuildInfo) => onQuotaEvent(quota, gDoc));
         this._eventsIsStarted = true;
     }
 
@@ -330,7 +330,7 @@ export class Bot {
     public initServices(): boolean {
         // MuteManager + SuspensionManager started in ready event.
         LOGGER.info("Starting Quota Service");
-        QuotaService.startService().then();
+        QuotaManager.checkForReset();
 
         LOGGER.info("Caching Members of Each Guild");
         const guilds = this.client.guilds;
