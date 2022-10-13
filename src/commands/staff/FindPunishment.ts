@@ -123,7 +123,7 @@ export class FindPunishment extends BaseCommand {
                 StringUtil.codifyString(punishmentObj.actionId)
             ).addField(
                 "Issued At",
-                `${TimeUtilities.getDiscordTime({ time: punishmentObj.issuedAt, style: "F" })}`,
+                `${TimeUtilities.getDiscordTime({ time: punishmentObj.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay })}`,
                 true
             );
 
@@ -142,7 +142,7 @@ export class FindPunishment extends BaseCommand {
                     StringUtil.codifyString(
                         pInfo.expiresAt === -1
                             ? "Indefinite"
-                            : `${TimeUtilities.getDiscordTime({ time: pInfo.expiresAt, style: "F" })}`
+                            : TimeUtilities.getDiscordTime({ time: pInfo.expiresAt, style: TimeUtilities.TimestampType.FullDateNoDay })
                     )
                 );
             }

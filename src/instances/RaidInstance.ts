@@ -1764,7 +1764,7 @@ export class RaidInstance {
             }
 
             const generalStatus = new StringBuilder()
-                .append(`⇨ AFK Check Started At: ${TimeUtilities.getDiscordTime({ time: this._startTime, style: "F" })}`)
+                .append(`⇨ AFK Check Started At: ${TimeUtilities.getDiscordTime({ time: this._startTime, style: TimeUtilities.TimestampType.FullDateNoDay })}`)
                 .appendLine()
                 .append(`⇨ Elite Location Channel: ${this._eliteLocChannel ? this._eliteLocChannel : "**`Not Set.`**"}`)
                 .appendLine()
@@ -2147,7 +2147,7 @@ export class RaidInstance {
             files: [
                 new MessageAttachment(Buffer.from(sb.toString(), "utf8"), `raidHistory_${this._memberInit.id}.txt`),
             ],
-            content: `__**Report Generated: ${TimeUtilities.getDiscordTime({ style: "F" })}**__`,
+            content: `__**Report Generated: ${TimeUtilities.getDiscordTime({ style: TimeUtilities.TimestampType.FullDateNoDay })}**__`,
         });
     }
 

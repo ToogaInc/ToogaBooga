@@ -189,14 +189,12 @@ export class Find extends BaseCommand {
         if (showExtraDetails) {
             successEmbed.addField(
                 "Joined Server",
-                StringUtil.codifyString(
-                    targetMember.joinedTimestamp
-                        ? `${TimeUtilities.getDiscordTime({ time: targetMember.joinedTimestamp, style: "F" })}`
-                        : "N/A"
-                )
+                targetMember.joinedTimestamp
+                    ? `${TimeUtilities.getDiscordTime({ time: targetMember.joinedTimestamp, style: TimeUtilities.TimestampType.FullDateNoDay })}`
+                    : "N/A"
             ).addField(
                 "Joined Discord",
-                StringUtil.codifyString(TimeUtilities.getDiscordTime({ time: targetMember.user.createdTimestamp, style: "F" }))
+                TimeUtilities.getDiscordTime({ time: targetMember.user.createdTimestamp, style: TimeUtilities.TimestampType.FullDateNoDay })
             );
         }
 
@@ -292,7 +290,7 @@ export class Find extends BaseCommand {
 
                 let expiresAtDisplay: string = "Indefinite.";
                 if (x.expiresAt && x.expiresAt !== -1) {
-                    expiresAtDisplay = `${TimeUtilities.getDiscordTime({ time: x.expiresAt, style: "F" })}`;
+                    expiresAtDisplay = `${TimeUtilities.getDiscordTime({ time: x.expiresAt, style: TimeUtilities.TimestampType.FullDateNoDay })}`;
                 }
 
                 if (!showExtraDetails) {
@@ -303,10 +301,10 @@ export class Find extends BaseCommand {
                         );
 
                     const time = new StringBuilder()
-                        .append(`Issued: ${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: "F" })}`).appendLine()
+                        .append(`Issued: ${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay })}`).appendLine()
                         .append(
                             x.resolved
-                                ? `Resolved: ${TimeUtilities.getDiscordTime({ time: x.resolved.issuedAt, style: "F" })}`
+                                ? `Resolved: ${TimeUtilities.getDiscordTime({ time: x.resolved.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay })}`
                                 : `Expires At: \`${expiresAtDisplay}\``
                         );
 
@@ -341,7 +339,7 @@ export class Find extends BaseCommand {
                     )
                     .addField(
                         "Issued At",
-                        `${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: "F" })}`,
+                        `${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay })}`,
                         true
                     )
                     .addField(
@@ -364,7 +362,7 @@ export class Find extends BaseCommand {
                         "Punishment Resolution",
                         new StringBuilder()
                             .append(`__Resolved By:__ ${s}`)
-                            .append(`__Time:__ ${(TimeUtilities.getDiscordTime({ time: x.resolved.issuedAt, style: "F" }))}`)
+                            .append(`__Time:__ ${(TimeUtilities.getDiscordTime({ time: x.resolved.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay }))}`)
                             .append(`__Resolution Reason:__ ${StringUtil.codifyString(x.resolved.reason)}`)
                             .append(`__Resolution ID:__ ${StringUtil.codifyString(x.resolved.actionId)}`)
                             .toString()

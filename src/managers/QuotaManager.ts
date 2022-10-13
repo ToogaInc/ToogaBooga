@@ -258,8 +258,8 @@ export namespace QuotaManager {
         }
 
         const descSb = new StringBuilder()
-            .append(`- Start Time: ${TimeUtilities.getDiscordTime({ time: oldQuotas.lastReset, style: "f" })}`).appendLine()
-            .append(`- End Time: ${TimeUtilities.getDiscordTime({ style: "f" })}`).appendLine()
+            .append(`- Start Time: ${TimeUtilities.getDiscordTime({ time: oldQuotas.lastReset, style: TimeUtilities.TimestampType.FullDateNoDay })}`).appendLine()
+            .append(`- End Time: ${TimeUtilities.getDiscordTime({ style: TimeUtilities.TimestampType.FullDateNoDay })}`).appendLine()
             .append(`- Members w/ Role: \`${role?.members.size ?? "N/A"}\``).appendLine()
             .append(`- Minimum Points Needed: \`${oldQuotas.pointsNeeded}\``).appendLine();
         if (!role) {
@@ -719,8 +719,8 @@ export namespace QuotaManager {
             .setTitle(`Active Quota: ${role.name}`)
             .setDescription(
                 new StringBuilder()
-                    .append(`- Start Time: ${TimeUtilities.getDiscordTime({ time: startTime, style: "f" })}`).appendLine()
-                    .append(`- End Time: ${TimeUtilities.getDiscordTime({ time: endTime.getTime(), style: "f" })}`).appendLine()
+                    .append(`- Start Time: ${TimeUtilities.getDiscordTime({ time: startTime, style: TimeUtilities.TimestampType.FullDateNoDay })}`).appendLine()
+                    .append(`- End Time: ${TimeUtilities.getDiscordTime({ time: endTime.getTime(), style: TimeUtilities.TimestampType.FullDateNoDay })}`).appendLine()
                     .append(`- Members w/ Role: \`${role.members.size}\``).appendLine()
                     .append(`- Minimum Points Needed: \`${quotaInfo.pointsNeeded}\``).appendLine()
                     .append("__**Point Values**__")

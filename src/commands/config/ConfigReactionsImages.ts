@@ -371,7 +371,7 @@ export class ConfigReactionsImages extends BaseCommand {
                     const storedMsg = await storageChannel!.send({
                         files: [imageRes],
                         content: new StringBuilder()
-                            .append(`Upload Time: ${TimeUtilities.getDiscordTime({ style: "F" })}`).appendLine()
+                            .append(`Upload Time: ${TimeUtilities.getDiscordTime({ style: TimeUtilities.TimestampType.FullDateNoDay })}`).appendLine()
                             .append(`Uploaded By: ${ctx.user}`)
                             .toString()
                     });
