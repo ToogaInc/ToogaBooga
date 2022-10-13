@@ -703,7 +703,7 @@ export namespace QuotaManager {
      * could not be found.
      */
     export async function getQuotaLeaderboardEmbed(guild: Guild, guildDoc: IGuildInfo,
-                                                 quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
+                                                   quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
         LOGGER.debug(`Getting Quota Leaderboard Embed: ${MiscUtilities.getRoleName(quotaInfo.roleId, guild)}`);
         const role = GuildFgrUtilities.getCachedRole(guild, quotaInfo.roleId);
         if (!role)
