@@ -48,7 +48,7 @@ import {
     IRaidOptions,
     ISectionInfo,
 } from "../definitions";
-import { TimeUtilities } from "../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../utilities/TimeUtilities";
 import { LoggerManager } from "../managers/LoggerManager";
 import { QuotaManager } from "../managers/QuotaManager";
 import { DEFAULT_MODIFIERS, DUNGEON_MODIFIERS } from "../constants/dungeons/DungeonModifiers";
@@ -65,7 +65,6 @@ import { ButtonConstants } from "../constants/ButtonConstants";
 import { PermsConstants } from "../constants/PermsConstants";
 import { StringUtil } from "../utilities/StringUtilities";
 import { DjsToProjUtilities } from "../utilities/DJsToProjUtilities";
-import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
 
 const FOOTER_INFO_MSG: string =
@@ -1764,7 +1763,7 @@ export class RaidInstance {
             }
 
             const generalStatus = new StringBuilder()
-                .append(`⇨ AFK Check Started At: ${TimeUtilities.getDiscordTime({ time: this._startTime, style: TimeUtilities.TimestampType.FullDateNoDay })}`)
+                .append(`⇨ AFK Check Started At: ${TimeUtilities.getDiscordTime({ time: this._startTime, style: TimestampType.FullDateNoDay })}`)
                 .appendLine()
                 .append(`⇨ Elite Location Channel: ${this._eliteLocChannel ? this._eliteLocChannel : "**`Not Set.`**"}`)
                 .appendLine()
@@ -2092,7 +2091,7 @@ export class RaidInstance {
      * @param {boolean} logToChannel Whether to log this event to the logging channel.
      */
     public async logEvent(event: string, logToChannel: boolean): Promise<void> {
-        const time = getFormattedTime();
+        const time = TimeUtilities.getFormattedTime();
 
         if (logToChannel && this._logChan && this._isValid) {
             await GlobalFgrUtilities.sendMsg(this._logChan, {
@@ -2147,7 +2146,7 @@ export class RaidInstance {
             files: [
                 new MessageAttachment(Buffer.from(sb.toString(), "utf8"), `raidHistory_${this._memberInit.id}.txt`),
             ],
-            content: `__**Report Generated: ${TimeUtilities.getDiscordTime({ style: TimeUtilities.TimestampType.FullDateNoDay })}**__`,
+            content: `__**Report Generated: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}**__`,
         });
     }
 

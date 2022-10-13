@@ -1,7 +1,7 @@
 import { BaseCommand, ICommandContext, ICommandInfo } from "../BaseCommand";
 import { MessageAttachment } from "discord.js";
 import { StringBuilder } from "../../utilities/StringBuilder";
-import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../../utilities/TimeUtilities";
 
 export class ShowAllBlacklist extends BaseCommand {
     public constructor() {
@@ -32,7 +32,7 @@ export class ShowAllBlacklist extends BaseCommand {
                 .appendLine()
                 .append(`\tReason: ${x.reason}`)
                 .appendLine()
-                .append(`\tTime: ${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay })}`)
+                .append(`\tTime: ${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: TimestampType.FullDateNoDay })}`)
                 .appendLine()
                 .append(`\tModerator: ${x.moderator.name} (${x.moderator.tag})`)
                 .toString();

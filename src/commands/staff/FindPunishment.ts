@@ -4,7 +4,7 @@ import { MessageUtilities } from "../../utilities/MessageUtilities";
 import { StringBuilder } from "../../utilities/StringBuilder";
 import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import { StringUtil } from "../../utilities/StringUtilities";
-import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../../utilities/TimeUtilities";
 import { Bot } from "../../Bot";
 
 export class FindPunishment extends BaseCommand {
@@ -123,7 +123,7 @@ export class FindPunishment extends BaseCommand {
                 StringUtil.codifyString(punishmentObj.actionId)
             ).addField(
                 "Issued At",
-                TimeUtilities.getDiscordTime({ time: punishmentObj.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay }),
+                TimeUtilities.getDiscordTime({ time: punishmentObj.issuedAt, style: TimestampType.FullDateNoDay }),
                 true
             );
 
@@ -142,7 +142,7 @@ export class FindPunishment extends BaseCommand {
                     StringUtil.codifyString(
                         pInfo.expiresAt === -1
                             ? "Indefinite"
-                            : TimeUtilities.getDiscordTime({ time: pInfo.expiresAt, style: TimeUtilities.TimestampType.FullDateNoDay })
+                            : TimeUtilities.getDiscordTime({ time: pInfo.expiresAt, style: TimestampType.FullDateNoDay })
                     )
                 );
             }
