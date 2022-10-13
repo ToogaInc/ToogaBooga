@@ -359,7 +359,7 @@ export namespace QuotaManager {
      * @return {string | null} The best role ID corresponding to the quota to log, if any. `null` otherwise.
      */
     export function findBestQuotaToAdd(member: GuildMember, guildDoc: IGuildInfo, logType: QuotaLogType,
-                                       dungeonId?: string): string | null {
+        dungeonId?: string): string | null {
         LOGGER.info(`Finding best quota to add ${logType} for ${member.displayName}`);
         let resolvedLogType: string = logType;
         if (logType === "RunAssist" || logType === "RunComplete" || logType === "RunFailed") {
@@ -391,16 +391,16 @@ export namespace QuotaManager {
         const sections = MongoManager.getAllSections(guildDoc);
         sections.forEach(section => {
 
-            let bestQuotaInSection: {quota : IQuotaInfo, rank : number} | undefined;
-            const roleArr: {id: string, rank: number}[] = [];
+            let bestQuotaInSection: { quota: IQuotaInfo, rank: number } | undefined;
+            const roleArr: { id: string, rank: number }[] = [];
             roleArr.push({ id: section.roles.leaders.sectionVetLeaderRoleId, rank: 3 });
             roleArr.push({ id: section.roles.leaders.sectionLeaderRoleId, rank: 2 });
             roleArr.push({ id: section.roles.leaders.sectionAlmostLeaderRoleId, rank: 1 });
 
-            for(const leaderRole of roleArr){
+            for (const leaderRole of roleArr) {
                 const quota = availableQuotas.find(userRole => userRole.roleId === leaderRole.id);
-                if(quota){
-                    if(!bestQuotaInSection || leaderRole.rank > bestQuotaInSection.rank){
+                if (quota) {
+                    if (!bestQuotaInSection || leaderRole.rank > bestQuotaInSection.rank) {
                         bestQuotaInSection = { quota, rank: leaderRole.rank };
                     }
                 }
@@ -411,18 +411,18 @@ export namespace QuotaManager {
         });
 
         //Run a pass for moderation quota
-        const roleArr: {id: string, rank: number}[] = [];
+        const roleArr: { id: string, rank: number }[] = [];
         roleArr.push({ id: guildDoc.roles.staffRoles.moderation.moderatorRoleId, rank: 4 });
         roleArr.push({ id: guildDoc.roles.staffRoles.moderation.officerRoleId, rank: 3 });
         roleArr.push({ id: guildDoc.roles.staffRoles.moderation.securityRoleId, rank: 2 });
         roleArr.push({ id: guildDoc.roles.staffRoles.moderation.helperRoleId, rank: 1 });
 
-        let bestQuotaInModeration: {quota : IQuotaInfo, rank : number} | undefined;
+        let bestQuotaInModeration: { quota: IQuotaInfo, rank: number } | undefined;
 
-        for(const moderationRole of roleArr){
+        for (const moderationRole of roleArr) {
             const quota = availableQuotas.find(userRole => userRole.roleId === moderationRole.id);
-            if(quota){
-                if(!bestQuotaInModeration || moderationRole.rank > bestQuotaInModeration.rank){
+            if (quota) {
+                if (!bestQuotaInModeration || moderationRole.rank > bestQuotaInModeration.rank) {
                     bestQuotaInModeration = { quota, rank: moderationRole.rank };
                 }
             }
@@ -460,7 +460,7 @@ export namespace QuotaManager {
      * @param {number} amt The amount of said action to log.
      */
     export async function logQuota(member: GuildMember, roleId: string, logType: string,
-                                   amt: number): Promise<void> {
+        amt: number): Promise<void> {
         LOGGER.info(`Logging quota for ${member.displayName}, role: ${MiscUtilities.getRoleName(roleId, member.guild)}, type: ${logType}, amount: ${amt}`);
         const guildDoc = await MongoManager.updateAndFetchGuildDoc({
             guildId: member.guild.id,
@@ -529,7 +529,7 @@ export namespace QuotaManager {
      * assists, or failures.
      */
     export async function logQuotaInteractive(obj: Message | GuildMember, logType: QuotaLogType,
-                                              amt: number, dungeonId?: string): Promise<boolean> {
+        amt: number, dungeonId?: string): Promise<boolean> {
         let resolvedLogType: string = logType;
         if (logType === "RunAssist" || logType === "RunComplete" || logType === "RunFailed") {
             if (!dungeonId) return false;
@@ -703,7 +703,7 @@ export namespace QuotaManager {
      * could not be found.
      */
     export async function getQuotaLeaderboardEmbed(guild: Guild, guildDoc: IGuildInfo,
-                                                   quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
+        quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
         LOGGER.debug(`Getting Quota Leaderboard Embed: ${MiscUtilities.getRoleName(quotaInfo.roleId, guild)}`);
         const role = GuildFgrUtilities.getCachedRole(guild, quotaInfo.roleId);
         if (!role)
@@ -812,7 +812,7 @@ export namespace QuotaManager {
                 if (!message) {
                     LOGGER.error(`Couldn't send a message in ${guildDoc.guildId}`);
                     return false;
-                } 
+                }
 
                 await message?.pin();
             } catch {
@@ -872,7 +872,7 @@ export namespace QuotaManager {
 
         if (nextReset === DEFAULT_WEEK_RESET)
             LOGGER.info("Could not find a new time to check for quota resets. Defaulting to 1 week.");
-        
+
         setTimeout(checkForReset, nextReset);
     }
 }
