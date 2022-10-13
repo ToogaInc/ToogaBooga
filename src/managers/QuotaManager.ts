@@ -56,6 +56,9 @@ export namespace QuotaManager {
         "NameAdjustment"
     ];
 
+    // 1 week in ms
+    const DEFAULT_WEEK_RESET = 24 * 60 * 60 * 1000 * 7;
+
     /**
      * Checks if the string is of some quota type.
      * @param {string} str The string to test.
@@ -819,7 +822,7 @@ export namespace QuotaManager {
             await message.edit({ embeds: [quotaEmbed] }).catch(() => LOGGER.error(`Couldn't edit a message in ${guildDoc.guildId}`));
         }
 
-        if (message.id != messageId) {
+        if (message.id !== messageId) {
             await MongoManager.updateAndFetchGuildDoc({
                 guildId: guildDoc.guildId,
                 "quotas.quotaInfo.roleId": quotaInfo.roleId
@@ -833,9 +836,13 @@ export namespace QuotaManager {
         return true;
     }
 
+    /**
+     * Iterates through all quotas and checks if they should be reset.
+     * On restart the bot will iterate through again and find the lowest timeout.
+     */
     export async function checkForReset() {
         const guildDocs = await MongoManager.getGuildCollection().find().toArray();
-        let nextReset = 24 * 60 * 60 * 1000 * 7;
+        let nextReset = DEFAULT_WEEK_RESET;
 
         for (const guildDoc of guildDocs) {
             const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
@@ -863,7 +870,7 @@ export namespace QuotaManager {
             });
         }
 
-        if (nextReset == 86400000)
+        if (nextReset === DEFAULT_WEEK_RESET)
             LOGGER.info("Could not find a new time to check for quota resets. Defaulting to 1 week.");
         
         setTimeout(checkForReset, nextReset);

@@ -123,7 +123,7 @@ export class FindPunishment extends BaseCommand {
                 StringUtil.codifyString(punishmentObj.actionId)
             ).addField(
                 "Issued At",
-                `${TimeUtilities.getDiscordTime({ time: punishmentObj.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay })}`,
+                TimeUtilities.getDiscordTime({ time: punishmentObj.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay }),
                 true
             );
 

@@ -190,7 +190,7 @@ export class Find extends BaseCommand {
             successEmbed.addField(
                 "Joined Server",
                 targetMember.joinedTimestamp
-                    ? `${TimeUtilities.getDiscordTime({ time: targetMember.joinedTimestamp, style: TimeUtilities.TimestampType.FullDateNoDay })}`
+                    ? TimeUtilities.getDiscordTime({ time: targetMember.joinedTimestamp, style: TimeUtilities.TimestampType.FullDateNoDay })
                     : "N/A"
             ).addField(
                 "Joined Discord",
@@ -290,7 +290,7 @@ export class Find extends BaseCommand {
 
                 let expiresAtDisplay: string = "Indefinite.";
                 if (x.expiresAt && x.expiresAt !== -1) {
-                    expiresAtDisplay = `${TimeUtilities.getDiscordTime({ time: x.expiresAt, style: TimeUtilities.TimestampType.FullDateNoDay })}`;
+                    expiresAtDisplay = TimeUtilities.getDiscordTime({ time: x.expiresAt, style: TimeUtilities.TimestampType.FullDateNoDay });
                 }
 
                 if (!showExtraDetails) {
@@ -339,12 +339,12 @@ export class Find extends BaseCommand {
                     )
                     .addField(
                         "Issued At",
-                        `${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay })}`,
+                        TimeUtilities.getDiscordTime({ time: x.issuedAt, style: TimeUtilities.TimestampType.FullDateNoDay }),
                         true
                     )
                     .addField(
                         "Expires At",
-                        StringUtil.codifyString(expiresAtDisplay),
+                        expiresAtDisplay,
                         true
                     )
                     .addField(
