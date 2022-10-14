@@ -473,6 +473,12 @@ export namespace QuotaManager {
         await addQuotaPts(member, amt);
     }
 
+    /**
+     * Adds value to the user's quotaPoints
+     * @param {GuildMember} member The member to log for.
+     * @param {number} pts the number of poitns to add.
+     * @returns {IUserInfo | null} the updated IUserInfo
+     */
     export async function addQuotaPts(member: GuildMember, pts: number){
         const userDoc = await MongoManager.getOrCreateUserDoc(member.id);
         let newPts = pts;
@@ -490,7 +496,7 @@ export namespace QuotaManager {
         },{
             returnDocument: "after"
         });
-        return returnDoc;
+        return returnDoc?.value;
     }
 
     /**

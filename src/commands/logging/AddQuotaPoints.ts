@@ -71,7 +71,7 @@ export class AddQuotaPoints extends BaseCommand {
         const resultDoc = await QuotaManager.addQuotaPts(resMember, points);
         await ctx.interaction.reply({
             components: [],
-            content: `Added \`${points}\` point(s) to ${resMember} for a new total of ${resultDoc.value?.details.quotaPoints}.`,
+            content: `Added \`${points}\` point(s) to ${resMember} for a new total of ${resultDoc?.details.quotaPoints}.`,
             embeds: []
         });
 

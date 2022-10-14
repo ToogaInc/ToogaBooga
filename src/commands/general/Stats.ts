@@ -149,7 +149,9 @@ export class Stats extends BaseCommand {
 
         const pts = await LoggerManager.getPoints((resMember as IResolvedMember).member);
         let description = `${EmojiConstants.TICKET_EMOJI} Points: ${pts}`;
-        if(stats.quotaPoints > 0) description +=`\nQuota Points: ${stats.quotaPoints}`;
+        if(stats.quotaPoints > 0) {
+            description +=`\nQuota Points: ${stats.quotaPoints}`;
+        }
 
         if (ctx.guild && !showAll) {            
 

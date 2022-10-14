@@ -48,7 +48,8 @@ export namespace LoggerManager {
         dungeonsLed: Collection<string, DungeonLedType>;
         
         /**
-         * Total quota points, used for leader shop experience
+         * Cumulative quota points.  This property is automatically increased during quota logging, and can be 
+         * manually adjusted through the AddQuotaPoints command.
          */
         quotaPoints: number;
     }
