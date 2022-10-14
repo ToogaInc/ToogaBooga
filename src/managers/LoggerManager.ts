@@ -46,6 +46,11 @@ export namespace LoggerManager {
          * where the key is the dungeon name (not ID) and the value is the number completed/failed/assisted.
          */
         dungeonsLed: Collection<string, DungeonLedType>;
+        
+        /**
+         * Total quota points, used for leader shop experience
+         */
+        quotaPoints: number;
     }
 
     /**
@@ -247,6 +252,7 @@ export namespace LoggerManager {
 
         const stats: IUserStats = {
             keyUse: new Collection<string, Collection<string, number>>(),
+            quotaPoints: userInfo.details.quotaPoints,
             dungeonsLed: new Collection<string, Collection<string, {
                 completed: number;
                 failed: number;

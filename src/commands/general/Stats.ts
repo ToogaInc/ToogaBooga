@@ -147,10 +147,14 @@ export class Stats extends BaseCommand {
             }
         };
 
-        if (ctx.guild && !showAll) {
-            const pts = await LoggerManager.getPoints((resMember as IResolvedMember).member);
+        const pts = await LoggerManager.getPoints((resMember as IResolvedMember).member);
+        let description = `${EmojiConstants.TICKET_EMOJI} Points: ${pts}`;
+        if(stats.quotaPoints > 0) description +=`\nQuota Points: ${stats.quotaPoints}`;
+
+        if (ctx.guild && !showAll) {            
+
             embed.setTitle(`Stats for **${user.tag}** in **${ctx.guild!}**`)
-                .setDescription(`${EmojiConstants.TICKET_EMOJI} Points: ${pts}`);
+                .setDescription(description);
 
             const dungeonsLed = stats.dungeonsLed.get(ctx.guild.id);
             if (dungeonsLed) {

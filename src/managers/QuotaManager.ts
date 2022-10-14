@@ -470,6 +470,27 @@ export namespace QuotaManager {
                 }
             }
         });
+        await addQuotaPts(member, amt);
+    }
+
+    export async function addQuotaPts(member: GuildMember, pts: number){
+        const userDoc = await MongoManager.getOrCreateUserDoc(member.id);
+        let newPts = pts;
+        if(!isNaN(userDoc.details.quotaPoints)){
+            newPts += userDoc.details.quotaPoints;
+        }
+        LOGGER.info(`Adding ${pts} points to ${member.displayName} for a total of ${(newPts > 0) ? newPts : 0}`);
+        
+        const returnDoc = await MongoManager.getUserCollection().findOneAndUpdate({
+            discordId: member.id
+        },{
+            $set:{
+                "details.quotaPoints": (newPts > 0) ? newPts : 0
+            }
+        },{
+            returnDocument: "after"
+        });
+        return returnDoc;
     }
 
     /**
