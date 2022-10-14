@@ -470,7 +470,21 @@ export namespace QuotaManager {
                 }
             }
         });
-        await addQuotaPts(member, amt);
+        const guildDoc = await MongoManager.getOrCreateGuildDoc(member.guild, true);
+        const quotaInfo = guildDoc.quotas.quotaInfo.find(x => x.roleId === roleId);
+        if(!quotaInfo) return;
+
+        let quotaPoints = (quotaInfo.pointValues.find(x => x.key === logType)?.value ?? 0) * amt;
+        if (logType.startsWith("Run")) {
+            // See if we have RunComplete for all dungeons instead of specific dungeons
+            const baseLogType = logType.split(":")[0];
+            const quotaRule = quotaInfo.pointValues.find(x => x.key === baseLogType);
+            if (quotaRule) {
+                quotaPoints = quotaRule.value * amt;
+            }
+        }
+
+        await addQuotaPts(member, quotaPoints);
     }
 
     /**
