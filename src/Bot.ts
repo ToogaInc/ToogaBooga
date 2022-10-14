@@ -195,7 +195,8 @@ export class Bot {
             new Cmds.LogRun(),
             new Cmds.LogKey(),
             new Cmds.LogParse(),
-            new Cmds.GivePoints()
+            new Cmds.GivePoints(),
+            new Cmds.AddQuotaPoints()
         ]);
 
         Bot.Commands.set("Modmail", [

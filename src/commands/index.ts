@@ -48,6 +48,7 @@ export * from "./logging/LogRun";
 export * from "./logging/LogKey";
 export * from "./logging/LogParse";
 export * from "./logging/GivePoints";
+export * from "./logging/AddQuotaPoints";
 
 export * from "./owner/SetStatus";
 
