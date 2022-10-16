@@ -56,8 +56,8 @@ export namespace QuotaManager {
         "NameAdjustment"
     ];
 
-    // 1 week in ms
-    const DEFAULT_WEEK_RESET = 24 * 60 * 60 * 1000 * 7;
+    // 1 day in ms
+    const DEFAULT_CHECK_RESET = 24 * 60 * 60 * 1000;
 
     // Id to keep track of timeouts set so they don't eventually spam if the bot process isn't cleared
     export let quotaTimeoutId: NodeJS.Timeout;
@@ -872,7 +872,7 @@ export namespace QuotaManager {
      */
     export async function checkForReset() {
         const guildDocs = await MongoManager.getGuildCollection().find().toArray();
-        let nextReset = DEFAULT_WEEK_RESET;
+        let nextReset = DEFAULT_CHECK_RESET;
 
         for (const guildDoc of guildDocs) {
             const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
@@ -903,7 +903,7 @@ export namespace QuotaManager {
             });
         }
 
-        if (nextReset === DEFAULT_WEEK_RESET)
+        if (nextReset === DEFAULT_CHECK_RESET)
             LOGGER.info("Could not find a new time to check for quota resets. Defaulting to 1 week.");
 
         quotaTimeoutId = setTimeout(checkForReset, nextReset);
