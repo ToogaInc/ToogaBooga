@@ -475,7 +475,6 @@ export namespace QuotaManager {
                 }
             }
         });
-
         if (!guildDoc) {
             LOGGER.error(`Couldn't update quota in the guild document for ${member.guild.name}`);
             return;
@@ -484,6 +483,44 @@ export namespace QuotaManager {
         // Dispatch an event to edit quota embeds for the guild. We can re-use the guildDoc to not waste more calls
         const quotaInfo = guildDoc.quotas.quotaInfo.find(x => x.roleId === roleId);
         Bot.BotInstance.client.emit("quotaEvent", quotaInfo, guildDoc);
+
+//        let quotaPoints = (quotaInfo.pointValues.find(x => x.key === logType)?.value ?? 0) * amt;
+//        if (logType.startsWith("Run")) {
+//            // See if we have RunComplete for all dungeons instead of specific dungeons
+//            const baseLogType = logType.split(":")[0];
+//            const quotaRule = quotaInfo.pointValues.find(x => x.key === baseLogType);
+//            if (quotaRule) {
+//                quotaPoints = quotaRule.value * amt;
+//            }
+//        }
+//
+//        await addQuotaPts(member, quotaPoints);
+    }
+
+    /**
+     * Adds value to the user's quotaPoints
+     * @param {GuildMember} member The member to log for.
+     * @param {number} pts the number of poitns to add.
+     * @returns {IUserInfo | null} the updated IUserInfo
+     */
+    export async function addQuotaPts(member: GuildMember, pts: number){
+        const userDoc = await MongoManager.getOrCreateUserDoc(member.id);
+        let newPts = pts;
+        if(!isNaN(userDoc.details.quotaPoints)){
+            newPts += userDoc.details.quotaPoints;
+        }
+        LOGGER.info(`Adding ${pts} points to ${member.displayName} for a total of ${(newPts > 0) ? newPts : 0}`);
+        
+        const returnDoc = await MongoManager.getUserCollection().findOneAndUpdate({
+            discordId: member.id
+        },{
+            $set:{
+                "details.quotaPoints": (newPts > 0) ? newPts : 0
+            }
+        },{
+            returnDocument: "after"
+        });
+        return returnDoc?.value;
     }
 
     /**
