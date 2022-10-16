@@ -900,7 +900,7 @@ export namespace QuotaManager {
                     // Otherwise, the date has not passed. Update the embed incase there has been any changes (reset time)
                     await upsertLeaderboardMessage(quotaInfo.messageId, quotaInfo, guildDoc);
                 }
-            })
+            });
         }
 
         if (nextReset === DEFAULT_WEEK_RESET)
