@@ -59,6 +59,9 @@ export namespace QuotaManager {
     // 1 week in ms
     const DEFAULT_WEEK_RESET = 24 * 60 * 60 * 1000 * 7;
 
+    // Id to keep track of timeouts set so they don't eventually spam if the bot process isn't cleared
+    export let quotaTimeoutId: NodeJS.Timeout;
+
     /**
      * Checks if the string is of some quota type.
      * @param {string} str The string to test.
@@ -874,9 +877,9 @@ export namespace QuotaManager {
         for (const guildDoc of guildDocs) {
             const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
 
-            if (!guild) continue; // todo: No longer in guild if this ever happens, clean up from database?
+            if (!guild) continue;
 
-            guildDoc.quotas.quotaInfo.filter(quotaInfo => {
+            guildDoc.quotas.quotaInfo.forEach(async (quotaInfo) => {
                 const endTime = TimeUtilities.getNextDate(
                     quotaInfo.lastReset,
                     guildDoc.quotas.resetTime.dayOfWeek,
@@ -888,18 +891,21 @@ export namespace QuotaManager {
                     LOGGER.info(`Found a more suitable end time: ${TimeUtilities.formatDuration(nextReset, false)}`);
                 }
 
-                return endTime.getTime() - Date.now() < 0;
-            }).forEach(async (quotasToReset) => {
-                const role = await GuildFgrUtilities.fetchRole(guild, quotasToReset.roleId);
-                LOGGER.info(`Reset quota for ${role?.name} in ${guild.name}`);
-                // Do we really care about the result?
-                await QuotaManager.resetQuota(guild, quotasToReset.roleId);
-            });
+                // If the date has already passed, it needs to be reset
+                if (endTime.getTime() - Date.now() < 0) {
+                    const role = await GuildFgrUtilities.fetchRole(guild, quotaInfo.roleId);
+                    LOGGER.info(`Reset quota for ${role?.name} in ${guild.name}`);
+                    await QuotaManager.resetQuota(guild, quotaInfo.roleId);
+                } else {
+                    // Otherwise, the date has not passed. Update the embed incase there has been any changes (reset time)
+                    await upsertLeaderboardMessage(quotaInfo.messageId, quotaInfo, guildDoc);
+                }
+            })
         }
 
         if (nextReset === DEFAULT_WEEK_RESET)
             LOGGER.info("Could not find a new time to check for quota resets. Defaulting to 1 week.");
 
-        setTimeout(checkForReset, nextReset);
+        quotaTimeoutId = setTimeout(checkForReset, nextReset);
     }
 }

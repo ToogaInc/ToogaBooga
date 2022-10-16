@@ -309,7 +309,7 @@ export class ConfigQuotas extends BaseCommand {
                                     .append("- `hh` is the hour component and is between `0` and `23`").appendLine()
                                     .append("- `mm` is the minute component and is between `0` and `59`").appendLine(2)
                                     .append("For example, to represent 5:30 PM, you would type `17:30`. To represent")
-                                    .append(" 12:00 AM, you would type `0:00`.")
+                                    .append(" 12:00 AM, you would type `0:00`. (**GMT**)")
                                     .toString()
                             )
                     ],
@@ -356,6 +356,10 @@ export class ConfigQuotas extends BaseCommand {
                         "quotas.resetTime.time": resetTimePrompt
                     }
                 });
+                if (QuotaManager.quotaTimeoutId) {
+                    clearTimeout(QuotaManager.quotaTimeoutId);
+                }
+                QuotaManager.checkForReset();
 
                 break;
             }
@@ -422,6 +426,11 @@ export class ConfigQuotas extends BaseCommand {
                 }
 
                 await Promise.all(quotasToReset.value!.map(roleId => QuotaManager.resetQuota(ctx.guild!, roleId)));
+                if (QuotaManager.quotaTimeoutId) {
+                    // Clear any timeouts if they exist so they don't start recursively stacking
+                    clearTimeout(QuotaManager.quotaTimeoutId);
+                }
+                QuotaManager.checkForReset();
                 break;
             }
         }
