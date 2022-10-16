@@ -30,7 +30,8 @@ import {
     onThreadArchiveEvent,
     onVoiceStateEvent,
     onGuildMemberRemove,
-    onQuotaEvent
+    onQuotaEvent,
+    INewQuota
 } from "./events";
 import { QuotaManager } from "./managers/QuotaManager";
 import { REST } from "@discordjs/rest";
@@ -295,7 +296,7 @@ export class Bot {
         this._bot.on("guildMemberRemove", (m: GuildMember | PartialGuildMember) => onGuildMemberRemove(m));
 
         // Custom events
-        this._bot.on("quotaEvent", (quota: IQuotaInfo, gDoc: IGuildInfo) => onQuotaEvent(quota, gDoc));
+        this._bot.on("quotaEvent", (quota: IQuotaInfo, gDoc: IGuildInfo, newQ: INewQuota) => onQuotaEvent(quota, gDoc, newQ));
         this._eventsIsStarted = true;
     }
 

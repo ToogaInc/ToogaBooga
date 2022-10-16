@@ -482,19 +482,8 @@ export namespace QuotaManager {
 
         // Dispatch an event to edit quota embeds for the guild. We can re-use the guildDoc to not waste more calls
         const quotaInfo = guildDoc.quotas.quotaInfo.find(x => x.roleId === roleId);
-        Bot.BotInstance.client.emit("quotaEvent", quotaInfo, guildDoc);
-
-//        let quotaPoints = (quotaInfo.pointValues.find(x => x.key === logType)?.value ?? 0) * amt;
-//        if (logType.startsWith("Run")) {
-//            // See if we have RunComplete for all dungeons instead of specific dungeons
-//            const baseLogType = logType.split(":")[0];
-//            const quotaRule = quotaInfo.pointValues.find(x => x.key === baseLogType);
-//            if (quotaRule) {
-//                quotaPoints = quotaRule.value * amt;
-//            }
-//        }
-//
-//        await addQuotaPts(member, quotaPoints);
+        const newQuota = { member, roleId, logType, amt };
+        Bot.BotInstance.client.emit("quotaEvent", quotaInfo, guildDoc, newQuota);
     }
 
     /**
@@ -513,13 +502,14 @@ export namespace QuotaManager {
         
         const returnDoc = await MongoManager.getUserCollection().findOneAndUpdate({
             discordId: member.id
-        },{
+        }, {
             $set:{
                 "details.quotaPoints": (newPts > 0) ? newPts : 0
             }
-        },{
+        }, {
             returnDocument: "after"
         });
+
         return returnDoc?.value;
     }
 
