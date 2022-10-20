@@ -697,18 +697,14 @@ export class ConfigQuotas extends BaseCommand {
                             }
                         });
                     }
+                    let messageId = await QuotaManager.upsertLeaderboardMessage(quotaToEdit.messageId, quotaToEdit, ctx.guildDoc!);                    
+                    quotaToEdit.messageId = messageId;
 
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                         $push: {
                             "quotas.quotaInfo": quotaToEdit
                         }
                     });
-
-
-                    if (QuotaManager.quotaTimeoutId) {
-                        clearTimeout(QuotaManager.quotaTimeoutId);
-                    }
-                    QuotaManager.checkForReset();    
 
                     await this.mainMenu(ctx, botMsg);
                     return;

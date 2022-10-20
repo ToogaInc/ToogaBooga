@@ -817,15 +817,15 @@ export namespace QuotaManager {
      * @param {string | null} messageId The existing message to check. If null, a new message will always be sent 
      * @param {IQuotaInfo} quotaInfo Quota info to retrieve associated info for
      * @param {IGuildInfo} guildDoc Guild Doc
-     * @returns {Promise<boolean>} Whether or not it was successful
+     * @returns {Promise<string>} The message id
      */
-    export async function upsertLeaderboardMessage(messageId: string | null, quotaInfo: IQuotaInfo, guildDoc: IGuildInfo): Promise<boolean> {
+    export async function upsertLeaderboardMessage(messageId: string | null, quotaInfo: IQuotaInfo, guildDoc: IGuildInfo): Promise<string> {
         // Check if the leaderboard already exists
         const channel = GlobalFgrUtilities.getCachedChannel<TextBasedChannel>(quotaInfo.channel);
         if (!channel) {
             const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
             LOGGER.error(`Could not find a suitable channel to upsert leaderboard in ${guild?.name} (${guildDoc.guildId})`);
-            return false;
+            return '0';
         }
 
         const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId) as Guild; // We must know the guild exists if there is a channel
@@ -841,12 +841,12 @@ export namespace QuotaManager {
                 message = await GlobalFgrUtilities.sendMsg(channel, { embeds: [quotaEmbed] });
                 if (!message) {
                     LOGGER.error(`Couldn't send a message in ${guildDoc.guildId}`);
-                    return false;
+                    return '0';
                 }
 
                 await message?.pin();
             } catch {
-                return false;
+                return '0';
             }
         } else {
             await message.edit({ embeds: [quotaEmbed] }).catch(() => LOGGER.error(`Couldn't edit a message in ${guildDoc.guildId}`));
@@ -863,7 +863,7 @@ export namespace QuotaManager {
             });
         }
 
-        return true;
+        return message.id;
     }
 
     /**
