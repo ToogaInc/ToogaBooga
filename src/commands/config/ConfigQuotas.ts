@@ -697,7 +697,7 @@ export class ConfigQuotas extends BaseCommand {
                             }
                         });
                     }
-                    let messageId = await QuotaManager.upsertLeaderboardMessage(quotaToEdit.messageId, quotaToEdit, ctx.guildDoc!);                    
+                    const messageId = await QuotaManager.upsertLeaderboardMessage(quotaToEdit.messageId, quotaToEdit, ctx.guildDoc!);                    
                     quotaToEdit.messageId = messageId;
 
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
