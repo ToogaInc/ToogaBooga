@@ -356,11 +356,6 @@ export class ConfigQuotas extends BaseCommand {
                         "quotas.resetTime.time": resetTimePrompt
                     }
                 });
-                if (QuotaManager.quotaTimeoutId) {
-                    clearTimeout(QuotaManager.quotaTimeoutId);
-                }
-                QuotaManager.checkForReset();
-
                 break;
             }
             case ButtonConstants.ADD_ID: {
@@ -426,14 +421,15 @@ export class ConfigQuotas extends BaseCommand {
                 }
 
                 await Promise.all(quotasToReset.value!.map(roleId => QuotaManager.resetQuota(ctx.guild!, roleId)));
-                if (QuotaManager.quotaTimeoutId) {
-                    // Clear any timeouts if they exist so they don't start recursively stacking
-                    clearTimeout(QuotaManager.quotaTimeoutId);
-                }
-                QuotaManager.checkForReset();
                 break;
             }
         }
+
+        if (QuotaManager.quotaTimeoutId) {
+            // Clear any timeouts if they exist so they don't start recursively stacking
+            clearTimeout(QuotaManager.quotaTimeoutId);
+        }
+        QuotaManager.checkForReset();
 
         await this.mainMenu(ctx, botMsg);
     }
@@ -708,6 +704,12 @@ export class ConfigQuotas extends BaseCommand {
                         }
                     });
 
+
+                    if (QuotaManager.quotaTimeoutId) {
+                        clearTimeout(QuotaManager.quotaTimeoutId);
+                    }
+                    QuotaManager.checkForReset();    
+
                     await this.mainMenu(ctx, botMsg);
                     return;
                 }
@@ -929,6 +931,11 @@ export class ConfigQuotas extends BaseCommand {
                     return { value: pts, status: TimedStatus.SUCCESS };
                 }
                 case ButtonConstants.SAVE_ID: {
+                    if (QuotaManager.quotaTimeoutId) {
+                        clearTimeout(QuotaManager.quotaTimeoutId);
+                    }
+                    QuotaManager.checkForReset();
+
                     return { value: ptsToUse, status: TimedStatus.SUCCESS };
                 }
                 case ButtonConstants.QUIT_ID: {

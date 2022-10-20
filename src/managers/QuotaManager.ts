@@ -904,7 +904,7 @@ export namespace QuotaManager {
         }
 
         if (nextReset === DEFAULT_CHECK_RESET)
-            LOGGER.info("Could not find a new time to check for quota resets. Defaulting to 1 week.");
+            LOGGER.info("Could not find a new time to check for quota resets. Defaulting to 1 day.");
 
         quotaTimeoutId = setTimeout(checkForReset, nextReset);
     }
