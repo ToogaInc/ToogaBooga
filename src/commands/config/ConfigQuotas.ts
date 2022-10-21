@@ -458,7 +458,15 @@ export class ConfigQuotas extends BaseCommand {
             DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons).map(x => x.codeName)
         );
 
-        const quotaToEdit: IQuotaInfo = quotaInfo ?? {
+        const quotaToEdit: IQuotaInfo = quotaInfo ? {
+            roleId: quotaInfo.roleId,
+            lastReset: quotaInfo.lastReset,
+            quotaLog: quotaInfo.quotaLog,
+            channel: quotaInfo.channel,
+            messageId: quotaInfo.messageId,
+            pointsNeeded: quotaInfo.pointsNeeded,
+            pointValues: quotaInfo.pointValues
+        } : {
             roleId: "",
             lastReset: Date.now(),
             quotaLog: [],
