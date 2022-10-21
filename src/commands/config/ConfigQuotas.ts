@@ -5,6 +5,7 @@ import {
     MessageComponentInteraction,
     MessageEmbed,
     MessageSelectMenu,
+    Role,
     TextChannel
 } from "discord.js";
 import { EmojiConstants } from "../../constants/EmojiConstants";
@@ -495,6 +496,10 @@ export class ConfigQuotas extends BaseCommand {
         const buttons: MessageButton[] = [
             ButtonConstants.BACK_BUTTON,
             new MessageButton()
+                .setLabel("Set Role")
+                .setCustomId("set_role")
+                .setStyle("PRIMARY"),
+            new MessageButton()
                 .setLabel("Set Channel")
                 .setCustomId("set_channel")
                 .setStyle("PRIMARY"),
@@ -561,6 +566,46 @@ export class ConfigQuotas extends BaseCommand {
                 case ButtonConstants.QUIT_ID: {
                     await this.dispose(ctx, botMsg);
                     return;
+                }
+                case "set_role": {
+                    const r = await askInput<Role>(
+                        ctx,
+                        botMsg,
+                        {
+                            embeds: [
+                                new MessageEmbed()
+                                    .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
+                                    .setTitle("Set Role for Quota")
+                                    .setDescription(
+                                        `Current Role: ${role ?? "Not Set"}\n\nPlease mention, or type the ID of, the`
+                                        + " the role that you want to link with this quota. This role must __not__ be"
+                                        + " used for other quotas; specifying an already used role will result in an"
+                                        + " error. If you don't want to set a role at this time, press the **Back**"
+                                        + " button."
+                                    )
+                            ]
+                        },
+                        m => {
+                            const roleToUse = ParseUtilities.parseRole(m);
+                            if (!roleToUse)
+                                return null;
+                            return ctx.guildDoc!.quotas.quotaInfo.some(x => x.roleId === roleToUse.id)
+                                ? null
+                                : roleToUse;
+                        }
+                    );
+
+                    if (typeof r === "undefined") {
+                        await this.dispose(ctx, botMsg);
+                        return;
+                    }
+
+                    if (!r) {
+                        break;
+                    }
+
+                    quotaToEdit.roleId = r.id;
+                    break;
                 }
                 case "set_channel": {
                     const c = await askInput<TextChannel>(
@@ -643,6 +688,15 @@ export class ConfigQuotas extends BaseCommand {
                     break;
                 }
                 case ButtonConstants.SAVE_ID: {
+                    if (quotaInfo) {
+                        await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
+                            $pull: {
+                                "quotas.quotaInfo": {
+                                    roleId: quotaInfo.roleId
+                                }
+                            }
+                        });
+                    }
                     const messageId = await QuotaManager.upsertLeaderboardMessage(quotaToEdit.messageId, quotaToEdit, ctx.guildDoc!);                    
                     quotaToEdit.messageId = messageId;
 
