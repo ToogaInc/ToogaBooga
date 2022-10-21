@@ -309,7 +309,7 @@ export class ConfigQuotas extends BaseCommand {
                                     .append("- `hh` is the hour component and is between `0` and `23`").appendLine()
                                     .append("- `mm` is the minute component and is between `0` and `59`").appendLine(2)
                                     .append("For example, to represent 5:30 PM, you would type `17:30`. To represent")
-                                    .append(" 12:00 AM, you would type `0:00`.")
+                                    .append(" 12:00 AM, you would type `0:00`. (**GMT**)")
                                     .toString()
                             )
                     ],
@@ -356,7 +356,6 @@ export class ConfigQuotas extends BaseCommand {
                         "quotas.resetTime.time": resetTimePrompt
                     }
                 });
-
                 break;
             }
             case ButtonConstants.ADD_ID: {
@@ -426,6 +425,12 @@ export class ConfigQuotas extends BaseCommand {
             }
         }
 
+        if (QuotaManager.quotaTimeoutId) {
+            // Clear any timeouts if they exist so they don't start recursively stacking
+            clearTimeout(QuotaManager.quotaTimeoutId);
+        }
+        QuotaManager.checkForReset();
+
         await this.mainMenu(ctx, botMsg);
     }
 
@@ -453,7 +458,15 @@ export class ConfigQuotas extends BaseCommand {
             DUNGEON_DATA.concat(ctx.guildDoc!.properties.customDungeons).map(x => x.codeName)
         );
 
-        const quotaToEdit: IQuotaInfo = quotaInfo ?? {
+        const quotaToEdit: IQuotaInfo = quotaInfo ? {
+            roleId: quotaInfo.roleId,
+            lastReset: quotaInfo.lastReset,
+            quotaLog: quotaInfo.quotaLog,
+            channel: quotaInfo.channel,
+            messageId: quotaInfo.messageId,
+            pointsNeeded: quotaInfo.pointsNeeded,
+            pointValues: quotaInfo.pointValues
+        } : {
             roleId: "",
             lastReset: Date.now(),
             quotaLog: [],
@@ -692,6 +705,8 @@ export class ConfigQuotas extends BaseCommand {
                             }
                         });
                     }
+                    const messageId = await QuotaManager.upsertLeaderboardMessage(quotaToEdit.messageId, quotaToEdit, ctx.guildDoc!);                    
+                    quotaToEdit.messageId = messageId;
 
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                         $push: {
@@ -920,6 +935,11 @@ export class ConfigQuotas extends BaseCommand {
                     return { value: pts, status: TimedStatus.SUCCESS };
                 }
                 case ButtonConstants.SAVE_ID: {
+                    if (QuotaManager.quotaTimeoutId) {
+                        clearTimeout(QuotaManager.quotaTimeoutId);
+                    }
+                    QuotaManager.checkForReset();
+
                     return { value: ptsToUse, status: TimedStatus.SUCCESS };
                 }
                 case ButtonConstants.QUIT_ID: {

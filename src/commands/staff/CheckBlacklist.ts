@@ -3,7 +3,7 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
 import { StringBuilder } from "../../utilities/StringBuilder";
 import { StringUtil } from "../../utilities/StringUtilities";
-import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../../utilities/TimeUtilities";
 
 export class CheckBlacklist extends BaseCommand {
     public constructor() {
@@ -82,7 +82,7 @@ export class CheckBlacklist extends BaseCommand {
             )
             .addField(
                 "Issued At",
-                StringUtil.codifyString(`${TimeUtilities.getDateTime(blInfo.issuedAt)} GMT`)
+                TimeUtilities.getDiscordTime({ time: blInfo.issuedAt, style: TimestampType.FullDateNoDay })
             )
             .addField("Blacklist Reason", StringUtil.codifyString(blInfo.reason))
             .setFooter({ text: `Moderation ID: ${blInfo.actionId}` });

@@ -7,12 +7,11 @@ import { MessageUtilities } from "../../utilities/MessageUtilities";
 import { StringBuilder } from "../../utilities/StringBuilder";
 import { StringUtil } from "../../utilities/StringUtilities";
 import { Bot } from "../../Bot";
-import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../../utilities/TimeUtilities";
 import { EmojiConstants } from "../../constants/EmojiConstants";
 import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
 import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import { ButtonConstants } from "../../constants/ButtonConstants";
-import getDateTime = TimeUtilities.getDateTime;
 
 export class Find extends BaseCommand {
     public constructor() {
@@ -190,14 +189,12 @@ export class Find extends BaseCommand {
         if (showExtraDetails) {
             successEmbed.addField(
                 "Joined Server",
-                StringUtil.codifyString(
-                    targetMember.joinedTimestamp
-                        ? `${TimeUtilities.getDateTime(targetMember.joinedTimestamp)} GMT`
-                        : "N/A"
-                )
+                targetMember.joinedTimestamp
+                    ? TimeUtilities.getDiscordTime({ time: targetMember.joinedTimestamp, style: TimestampType.FullDateNoDay })
+                    : "N/A"
             ).addField(
                 "Joined Discord",
-                StringUtil.codifyString(TimeUtilities.getDateTime(targetMember.user.createdTimestamp))
+                TimeUtilities.getDiscordTime({ time: targetMember.user.createdTimestamp, style: TimestampType.FullDateNoDay })
             );
         }
 
@@ -293,7 +290,7 @@ export class Find extends BaseCommand {
 
                 let expiresAtDisplay: string = "Indefinite.";
                 if (x.expiresAt && x.expiresAt !== -1) {
-                    expiresAtDisplay = `${getDateTime(x.expiresAt)} GMT`;
+                    expiresAtDisplay = TimeUtilities.getDiscordTime({ time: x.expiresAt, style: TimestampType.FullDateNoDay });
                 }
 
                 if (!showExtraDetails) {
@@ -304,10 +301,10 @@ export class Find extends BaseCommand {
                         );
 
                     const time = new StringBuilder()
-                        .append(`Issued: \`${getDateTime(x.issuedAt)} GMT\``).appendLine()
+                        .append(`Issued: ${TimeUtilities.getDiscordTime({ time: x.issuedAt, style: TimestampType.FullDateNoDay })}`).appendLine()
                         .append(
                             x.resolved
-                                ? `Resolved: \`${getDateTime(x.resolved.issuedAt)} GMT\``
+                                ? `Resolved: ${TimeUtilities.getDiscordTime({ time: x.resolved.issuedAt, style: TimestampType.FullDateNoDay })}`
                                 : `Expires At: \`${expiresAtDisplay}\``
                         );
 
@@ -342,12 +339,12 @@ export class Find extends BaseCommand {
                     )
                     .addField(
                         "Issued At",
-                        StringUtil.codifyString(`${getDateTime(x.issuedAt)} GMT`),
+                        TimeUtilities.getDiscordTime({ time: x.issuedAt, style: TimestampType.FullDateNoDay }),
                         true
                     )
                     .addField(
                         "Expires At",
-                        StringUtil.codifyString(expiresAtDisplay),
+                        expiresAtDisplay,
                         true
                     )
                     .addField(
@@ -365,7 +362,7 @@ export class Find extends BaseCommand {
                         "Punishment Resolution",
                         new StringBuilder()
                             .append(`__Resolved By:__ ${s}`)
-                            .append(`__Time:__ ${StringUtil.codifyString(`${getDateTime(x.resolved.issuedAt)} GMT`)}`)
+                            .append(`__Time:__ ${(TimeUtilities.getDiscordTime({ time: x.resolved.issuedAt, style: TimestampType.FullDateNoDay }))}`)
                             .append(`__Resolution Reason:__ ${StringUtil.codifyString(x.resolved.reason)}`)
                             .append(`__Resolution ID:__ ${StringUtil.codifyString(x.resolved.actionId)}`)
                             .toString()
