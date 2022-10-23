@@ -26,7 +26,7 @@ import { EmojiConstants } from "../constants/EmojiConstants";
 import { PrivateApiDefinitions as PAD } from "../private-api/PrivateApiDefinitions";
 import { LoggerManager } from "./LoggerManager";
 import { DungeonUtilities } from "../utilities/DungeonUtilities";
-import { TimeUtilities } from "../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../utilities/TimeUtilities";
 import { UserManager } from "./UserManager";
 import { QuotaManager } from "./QuotaManager";
 import * as Stream from "stream";
@@ -1154,7 +1154,7 @@ export namespace VerifyManager {
             return storageChannel.send({
                 files: [imageRes],
                 content: new StringBuilder()
-                    .append(`Upload Time: ${TimeUtilities.getDateTime()} GMT`).appendLine()
+                    .append(`Upload Time: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}`).appendLine()
                     .append(`Uploaded By: ${instance.member}`).appendLine()
                     .append("Reason: Manual Verification")
                     .toString()
@@ -1187,7 +1187,7 @@ export namespace VerifyManager {
             .append("__**Discord Account**__").appendLine()
             .append(`- Discord Mention: ${instance.member} (${instance.member.id})`).appendLine()
             .append(`- Discord Tag: ${instance.member.user.tag}`).appendLine()
-            .append(`- Discord Created: ${TimeUtilities.getDateTime(instance.member.user.createdAt)} GMT`)
+            .append(`- Discord Created: ${TimeUtilities.getDiscordTime({ time: instance.member.user.createdTimestamp, style: TimestampType.FullDateNoDay })}`)
             .appendLine()
             .appendLine()
             .append("__**RotMG Account**__").appendLine()
@@ -1445,7 +1445,7 @@ export namespace VerifyManager {
             .append("__**Discord Account**__").appendLine()
             .append(`- Discord Mention: ${instance.member} (${instance.member.id})`).appendLine()
             .append(`- Discord Tag: ${instance.member.user.tag}`).appendLine()
-            .append(`- Discord Created: ${TimeUtilities.getDateTime(instance.member.user.createdAt)} GMT`).appendLine()
+            .append(`- Discord Created: ${TimeUtilities.getDiscordTime({ time: instance.member.user.createdTimestamp, style: TimestampType.FullDateNoDay })}`).appendLine()
             .appendLine()
             .append("__**RotMG Account**__").appendLine()
             .append(`- Account IGN: **\`${checkRes.orig.name}\`**`).appendLine()

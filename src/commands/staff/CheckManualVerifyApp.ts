@@ -7,7 +7,7 @@ import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUti
 import { MessageUtilities } from "../../utilities/MessageUtilities";
 import { StringBuilder } from "../../utilities/StringBuilder";
 import { StringUtil } from "../../utilities/StringUtilities";
-import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../../utilities/TimeUtilities";
 import { BaseCommand, ICommandContext } from "../BaseCommand";
 
 export class CheckManualVerifyApp extends BaseCommand {
@@ -82,7 +82,7 @@ export class CheckManualVerifyApp extends BaseCommand {
                         .append("__**Discord Account**__").appendLine()
                         .append(`- Discord Mention: ${member} (${member.id})`).appendLine()
                         .append(`- Discord Tag: ${member.user.tag}`).appendLine()
-                        .append(`- Discord Created: ${TimeUtilities.getDateTime(member.user.createdAt)} GMT`).appendLine()
+                        .append(`- Discord Created: ${TimeUtilities.getDiscordTime({ time: member.user.createdTimestamp, style: TimestampType.FullDateNoDay })}`).appendLine()
                         .appendLine()
                         .append("__**RotMG Account**__").appendLine()
                         .append(`- Account IGN: **\`${m.ign}\`**`).appendLine()

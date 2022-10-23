@@ -758,6 +758,11 @@ export interface IUserInfo {
          * @type {string}
          */
         universalNotes: string;
+
+        /**
+         * Quota points, because this is how we implement new features :)
+         */
+        quotaPoints: number;
     };
 }
 

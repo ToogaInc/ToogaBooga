@@ -1,5 +1,51 @@
 import { CommonRegex } from "../constants/CommonRegex";
 
+export enum TimestampType {
+    /**
+     * Formats the time so that it's displayed relative to the 
+     * current time. For example, `in 23 days`.
+     */
+    Relative = "R",
+
+    /**
+     * Formats the time so that the full timestamp is given.
+     * For example, `Friday, November 4, 2022 8:43 PM`
+     */
+    FullDate = "F",
+
+    /**
+     * Formats the time so that the full timestamp is given
+     * except for the day of the week. For example, 
+     * `November 4, 2022 8:43 PM`.
+     */
+    FullDateNoDay = "f",
+
+    /**
+     * Formats the time so that only the time is shown.
+     * For example, `8:43:00 PM`.
+     */
+    TimeOnly = "T",
+
+    /**
+     * Formats the time so that only the time is shown,
+     * excluding the seconds. For example, `8:43 PM`.
+     */
+    TimeOnlyMinute = "t",
+
+    /**
+     * Formats the time so that only the date is shown.
+     * For example, `November 4, 2022`.
+     */
+    DateOnly = "D",
+
+    /**
+     * Formats the time so that only the date is shown.
+     * Only the numerics will be displayed. For example,
+     * `11/04/2022`.
+     */
+    ShortenedDateOnly = "d",
+}
+
 export namespace TimeUtilities {
     type TimeUnitType = { ms: number; formatted: string; };
 
@@ -189,5 +235,22 @@ export namespace TimeUtilities {
         }
 
         return finalDate;
+    }
+
+    /**
+     * Options for making a Discord timestamp from the bot's side
+     * @typedef {Object} DiscordTimestampOptions
+     * @property {Date | number} time The time to show
+     * @property {TimestampType} [style] The style to show
+     */
+
+    /** 
+     * Creates a Discord timestamp
+     * @param {DiscordTimestampOptions} [options={}] Options to create the timestamp
+     * @returns {string} The Discord timestamp
+     */
+    export function getDiscordTime({ time = Date.now(), style = TimestampType.Relative } = {}): string {
+        // Truncate and divide by 1000 to transform  ms to seconds
+        return `<t:${Math.trunc(time / 1000)}:${style}>`; 
     }
 }

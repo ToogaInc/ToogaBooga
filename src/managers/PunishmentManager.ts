@@ -8,7 +8,7 @@ import { StringBuilder } from "../utilities/StringBuilder";
 import { AllModLogType, MainOnlyModLogType, SectionModLogType } from "../definitions/Types";
 import { Filter } from "mongodb";
 import { Queue } from "../utilities/Queue";
-import { TimeUtilities } from "../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../utilities/TimeUtilities";
 import { MessageUtilities } from "../utilities/MessageUtilities";
 import { Logger } from "../utilities/Logger";
 
@@ -324,7 +324,7 @@ export namespace PunishmentManager {
         const durationStr = new StringBuilder()
             .append(`- Duration: ${entry.duration! === -1 ? "N/A" : TimeUtilities.formatDuration(entry.duration!, true, false)}`)
             .appendLine()
-            .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : `${TimeUtilities.getDateTime(entry.expiresAt!)} GMT`}`)
+            .append(`- Ends At: ${entry.expiresAt! === -1 ? "N/A" : TimeUtilities.getDiscordTime({ time: entry.expiresAt!, style: TimestampType.FullDateNoDay })}`)
             .toString();
 
         const logToChanEmbed = MessageUtilities.generateBlankEmbed(details.guild, isAddingPunishment ? "RED" : "GREEN")

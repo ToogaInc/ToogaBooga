@@ -592,7 +592,7 @@ export namespace MongoManager {
      */
     export function getDefaultUserConfig(userId: string): IUserInfo {
         return {
-            details: { moderationHistory: [], universalNotes: "", guildNotes: [] },
+            details: { moderationHistory: [], universalNotes: "", guildNotes: [], quotaPoints: 0 },
             discordId: userId,
             loggedInfo: []
         };

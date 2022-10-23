@@ -19,7 +19,6 @@ import { EmojiConstants } from "../constants/EmojiConstants";
 import { AdvancedCollector } from "../utilities/collectors/AdvancedCollector";
 import { ButtonConstants } from "../constants/ButtonConstants";
 import { StringUtil } from "../utilities/StringUtilities";
-import {} from "../utilities/Logger";
 
 export namespace ModmailManager {
 

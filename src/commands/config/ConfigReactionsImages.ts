@@ -20,7 +20,7 @@ import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUti
 import { Bot } from "../../Bot";
 import { MiscUtilities } from "../../utilities/MiscUtilities";
 import * as Stream from "stream";
-import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../../utilities/TimeUtilities";
 import { TimedResult, TimedStatus } from "../../definitions/Types";
 import { sendOrEditBotMsg } from "./common/ConfigCommon";
 import { ButtonConstants } from "../../constants/ButtonConstants";
@@ -371,7 +371,7 @@ export class ConfigReactionsImages extends BaseCommand {
                     const storedMsg = await storageChannel!.send({
                         files: [imageRes],
                         content: new StringBuilder()
-                            .append(`Upload Time: ${TimeUtilities.getDateTime()} GMT`).appendLine()
+                            .append(`Upload Time: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}`).appendLine()
                             .append(`Uploaded By: ${ctx.user}`)
                             .toString()
                     });
