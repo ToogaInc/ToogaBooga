@@ -123,9 +123,19 @@ async function slashCommandHandler(interaction: CommandInteraction, guildDoc?: I
         foundCommand.addToCooldown(ctx.user);
 
     if (canRunInfo.canRun) {
-        foundCommand.addActiveUser(ctx.user.id, ctx.guild?.id);
-        await foundCommand.run(ctx);
-        foundCommand.removeActiveUser(ctx.user.id, ctx.guild?.id);
+        try {
+            foundCommand.addActiveUser(ctx.user.id, ctx.guild?.id);
+            await foundCommand.run(ctx);
+        }
+        catch (e) {
+            // Log any errors that we get.
+            LOGGER.error(`[${foundCommand.commandInfo.botCommandName}] ${e}`);
+        }
+        finally {
+            // Even if an error is thrown, the finally block should catch it and remove them.
+            foundCommand.removeActiveUser(ctx.user.id, ctx.guild?.id);
+        }
+
         return;
     }
 
