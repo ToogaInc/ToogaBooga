@@ -325,6 +325,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
 
 
     // Keys
+    WETLANDS_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1051546644874797078"
+        },
+        name: "Sulfurous Wetlands Key",
+        isExaltKey: false
+        },
     SNAKE_PIT_KEY: {
         type: "KEY",
         emojiInfo: {
@@ -710,6 +719,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
             identifier: "609078341529632778"
         },
         name: "Fungal Cavern Key",
+        isExaltKey: true
+    },
+    STEAMWORKS_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1051549087574544404"
+        },
+        name: "Steamworks Key",
         isExaltKey: true
     },
     MISCELLANEOUS_DUNGEON_KEY: {
