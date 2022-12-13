@@ -2,6 +2,38 @@ import { IDungeonInfo } from "../../definitions";
 
 export const DUNGEON_DATA: readonly IDungeonInfo[] = [
     {
+        codeName: "WETLANDS_KEY",
+        dungeonName: "Sulfurous Wetlands",
+        portalEmojiId: "1051564126637391872",
+        keyReactions: [
+            {
+                mapKey: "WETLANDS_KEY",
+                maxEarlyLocation: 5
+            }
+        ],
+        otherReactions: [],
+        portalLink: {
+            url: "https://i.imgur.com/s2mWQQq.png",
+            name: "Sulfurous Wetlands Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/9reqR1p.png",
+                name: "Heart of the Wetlands"
+            },
+            {
+                url: "https://i.imgur.com/kopUOQw.png",
+                name: "Warped Ent Ancient"
+            }
+        ],
+        dungeonColors: [
+            0x008000,
+            0x800000
+        ],
+        dungeonCategory: "Godland Dungeons",
+        isBuiltIn: true
+    },
+    {
         codeName: "SNAKE_PIT",
         dungeonName: "Snake Pit",
         portalEmojiId: "561248700291088386",
@@ -1131,6 +1163,82 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             0xD99BB2
         ],
         dungeonCategory: "Mini Dungeons",
+        isBuiltIn: true
+    },
+    {
+        codeName: "STEAMWORKS",
+        dungeonName: "Steamworks",
+        portalEmojiId: "1051549087574544404",
+        keyReactions: [
+            {
+                mapKey: "STEAMWORKS_KEY",
+                maxEarlyLocation: 2
+            }
+        ],
+        otherReactions: [
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "MYSTIC",
+                maxEarlyLocation: 0
+            }
+        ],
+        portalLink: {
+            url: "https://i.imgur.com/ItKUC5A.png",
+            name: "Steamworks Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/mK2gN3p.png",
+                name: "Core Form"
+            },
+            {
+                url: "https://i.imgur.com/Bvc5thY.png",
+                name: "Enforcer Form"
+            },
+            {
+                url: "https://i.imgur.com/a6SxEBx.png",
+                name: "Dragon Form"
+            }
+
+
+        ],
+        dungeonColors: [
+            0xC0C0C0,
+            0x808080,
+            0xFF00FF
+        ],
+        dungeonCategory: "Exaltation Dungeons",
         isBuiltIn: true
     },
     {
