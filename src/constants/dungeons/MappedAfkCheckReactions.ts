@@ -333,7 +333,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         },
         name: "Sulfurous Wetlands Key",
         isExaltKey: false
-        },
+    },
     SNAKE_PIT_KEY: {
         type: "KEY",
         emojiInfo: {
