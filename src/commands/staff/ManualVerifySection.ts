@@ -151,7 +151,7 @@ export class ManualVerifySection extends BaseCommand {
         const section = possSections.find(x => x.roles.verifiedRoleId === selectedOption.values[0])!;
         const secVerifSuccessChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(
             ctx.guild!,
-            section.channels.loggingChannels.find(x => x.key === "VerifySuccess")?.value ?? ""
+            section.channels.loggingChannels.find(x => x.key === "VerifyStep")?.value ?? ""
         );
 
         const secVerifEmbed = MessageUtilities.generateBlankEmbed(ctx.guild!, "GREEN")

@@ -1,12 +1,13 @@
 import { MessageButton } from "discord.js";
 import { EmojiConstants } from "../../constants/EmojiConstants";
+import { MongoManager } from "../../managers/MongoManager";
 import { VerifyManager } from "../../managers/VerifyManager";
 import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
 import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
 import { StringBuilder } from "../../utilities/StringBuilder";
 import { StringUtil } from "../../utilities/StringUtilities";
-import { TimeUtilities } from "../../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../../utilities/TimeUtilities";
 import { BaseCommand, ICommandContext } from "../BaseCommand";
 
 export class CheckManualVerifyApp extends BaseCommand {
@@ -52,9 +53,13 @@ export class CheckManualVerifyApp extends BaseCommand {
         let page = 0;
         for await (const m of ctx.guildDoc!.manualVerificationEntries) {
             ++page;
-            const section = ctx.guildDoc!.guildSections.find(x => x.uniqueIdentifier === m.sectionId);
+            let section = ctx.guildDoc!.guildSections.find(x => x.uniqueIdentifier === m.sectionId);
             if (!section) {
-                continue;
+                if (m.sectionId !== "MAIN") {
+                    continue;
+                }
+                
+                section = MongoManager.getMainSection(ctx.guildDoc!);
             }
 
             const member = await GuildFgrUtilities.fetchGuildMember(ctx.guild!, m.userId);
@@ -77,7 +82,7 @@ export class CheckManualVerifyApp extends BaseCommand {
                         .append("__**Discord Account**__").appendLine()
                         .append(`- Discord Mention: ${member} (${member.id})`).appendLine()
                         .append(`- Discord Tag: ${member.user.tag}`).appendLine()
-                        .append(`- Discord Created: ${TimeUtilities.getDateTime(member.user.createdAt)} GMT`).appendLine()
+                        .append(`- Discord Created: ${TimeUtilities.getDiscordTime({ time: member.user.createdTimestamp, style: TimestampType.FullDateNoDay })}`).appendLine()
                         .appendLine()
                         .append("__**RotMG Account**__").appendLine()
                         .append(`- Account IGN: **\`${m.ign}\`**`).appendLine()
@@ -85,7 +90,10 @@ export class CheckManualVerifyApp extends BaseCommand {
                         .toString()
                 )
                 .setFooter({ text: `Page ${page}/${ctx.guildDoc!.manualVerificationEntries.length}` });
-
+            if (m.url) {
+                embed.setImage(m.url);
+            }
+            
             const baseId = StringUtil.generateRandomString(15);
             const accId = baseId + "accept";
             const rejId = baseId + "reject";

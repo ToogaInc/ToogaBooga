@@ -103,7 +103,11 @@ export namespace EmojiConstants {
 
     export const DPS_WIZARD: string = "929851498442133554";
     export const DPS_RANGED: string = "992973584182022174";
+<<<<<<< HEAD
     export const DPS_GENERAL: string = "1001206102098190478";
+=======
+    export const DPS_GENERAL: string = "1001213630303449259";
+>>>>>>> refs/remotes/origin/SJ-branch
 
     // status effects
     export const PARALYZE: string = "678792068906352642";

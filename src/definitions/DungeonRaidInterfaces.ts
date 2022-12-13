@@ -98,6 +98,13 @@ export interface IDungeonOverrideInfo {
      * @type {string[]}
      */
     allowedModifiers: string[];
+    
+    /**
+     * Whether or not location is required to progress the afk check.
+     * 
+     * @type {boolean}
+     */
+    locationToProgress?: boolean;
 }
 
 /**
@@ -234,6 +241,13 @@ export interface IDungeonInfo {
      * @type {boolean}
      */
     isBuiltIn: boolean;
+
+    /**
+     * Whether or not a set location is required to progress the afk check.
+     * 
+     * @type {boolean}
+     */
+    locationToProgress?: boolean;
 }
 
 /**

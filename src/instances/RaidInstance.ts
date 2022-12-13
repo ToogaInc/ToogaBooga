@@ -48,7 +48,7 @@ import {
     IRaidOptions,
     ISectionInfo,
 } from "../definitions";
-import { TimeUtilities } from "../utilities/TimeUtilities";
+import { TimeUtilities, TimestampType } from "../utilities/TimeUtilities";
 import { LoggerManager } from "../managers/LoggerManager";
 import { QuotaManager } from "../managers/QuotaManager";
 import { DEFAULT_MODIFIERS, DUNGEON_MODIFIERS } from "../constants/dungeons/DungeonModifiers";
@@ -65,7 +65,6 @@ import { ButtonConstants } from "../constants/ButtonConstants";
 import { PermsConstants } from "../constants/PermsConstants";
 import { StringUtil } from "../utilities/StringUtilities";
 import { DjsToProjUtilities } from "../utilities/DJsToProjUtilities";
-import getFormattedTime = TimeUtilities.getFormattedTime;
 import RunResult = LoggerManager.RunResult;
 
 const FOOTER_INFO_MSG: string =
@@ -94,7 +93,6 @@ export class RaidInstance {
     private static readonly END_RAID_ID: string = "end_raid";
     private static readonly LOCK_VC_ID: string = "lock_vc";
     private static readonly UNLOCK_VC_ID: string = "unlock_vc";
-    private static readonly PARSE_VC_ID: string = "parse_vc";
     private static readonly RESTART_RAID: string = "restart_raid";
 
     // 1 hour in milliseconds
@@ -158,11 +156,6 @@ export class RaidInstance {
             .setLabel("Unlock Raid VC")
             .setEmoji(EmojiConstants.UNLOCK_EMOJI)
             .setCustomId(RaidInstance.UNLOCK_VC_ID)
-            .setStyle("PRIMARY"),
-        new MessageButton()
-            .setLabel("Parse Raid VC")
-            .setEmoji(EmojiConstants.PRINTER_EMOJI)
-            .setCustomId(RaidInstance.PARSE_VC_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
             .setLabel("Start New AFK Check")
@@ -233,6 +226,8 @@ export class RaidInstance {
     private readonly _leaderName: string;
     // The cost, in points, for early location.
     private readonly _earlyLocPointCost: number;
+    // Override info concerning whether you can start without location
+    private readonly _locationToProgress: boolean;
 
     // The members that are joining this raid.
     private _membersThatJoined: GuildMember[] = [];
@@ -383,6 +378,8 @@ export class RaidInstance {
         let vcLimit: number = -2;
         // And this is the point cost.
         let costForEarlyLoc: number = 0;
+        // Override info concerning whether you can start without location
+        let locationToProgress: boolean = false;
         // Process dungeon based on whether it is custom or not.
         if (dungeon.isBuiltIn) {
             const dgnOverride = guildDoc.properties.dungeonOverride.find((x) => x.codeName === dungeon.codeName);
@@ -403,6 +400,11 @@ export class RaidInstance {
                     })
                     .filter((x) => x) as IDungeonModifier[];
             }
+
+            // If the dungeon has an override
+            if (dgnOverride && dgnOverride.locationToProgress) locationToProgress = true;
+            // In the case that there is no override, fallback to the information from constants/dungeons/DungeonData
+            else if (!dgnOverride && dungeon.locationToProgress) locationToProgress = true;
         } else {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
@@ -418,6 +420,7 @@ export class RaidInstance {
         }
 
         this._earlyLocPointCost = costForEarlyLoc;
+        this._locationToProgress = locationToProgress;
 
         if (vcLimit === -2) {
             if (section.otherMajorConfig.afkCheckProperties.vcLimit !== -1)
@@ -1744,8 +1747,23 @@ export class RaidInstance {
             .setColor(this._embedColor);
 
         if (this._raidStatus !== RaidStatus.RUN_FINISHED && this._raidStatus !== RaidStatus.ABORTED) {
+            let status: string;
+            if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
+                status = "Pre-AFK";
+            }
+            else if (this._raidStatus === RaidStatus.AFK_CHECK) {
+                status = "AFK";
+            }
+            else if (this._raidStatus === RaidStatus.IN_RUN) {
+                status = "Raid";
+            }
+            else {
+                // fallback to whatever value this is in case we add a new enum member
+                status = this._raidStatus;
+            }
+
             const generalStatus = new StringBuilder()
-                .append(`⇨ AFK Check Started At: ${TimeUtilities.getDateTime(this._startTime)} GMT`)
+                .append(`⇨ AFK Check Started At: ${TimeUtilities.getDiscordTime({ time: this._startTime, style: TimestampType.FullDateNoDay })}`)
                 .appendLine()
                 .append(`⇨ Elite Location Channel: ${this._eliteLocChannel ? this._eliteLocChannel : "**`Not Set.`**"}`)
                 .appendLine()
@@ -1755,7 +1773,7 @@ export class RaidInstance {
                 .appendLine()
                 .append(`⇨ Location: **\`${this._location ? this._location : "Not Set."}\`**`)
                 .appendLine()
-                .append(`⇨ Status: **\`${this._raidStatus}\`**`);
+                .append(`⇨ Status: **\`${status}\`**`);
             controlPanelEmbed.addField("General Status", generalStatus.toString());
         }
 
@@ -1826,10 +1844,6 @@ export class RaidInstance {
                     .append("⇨ **Press** the **`Lock Raid VC`** button if you want to lock the raid voice channel.")
                     .appendLine()
                     .append("⇨ **Press** the **`Unlock Raid VC`** button if you want to unlock the raid voice channel.")
-                    .appendLine()
-                    .append("⇨ **Press** the **`Parse Raid VC`** button if you want to parse a /who screenshot for ")
-                    .append("this run. You will be asked to provide a /who screenshot; please provide a cropped ")
-                    .append("screenshot so only the /who results are shown.")
                     .appendLine()
                     .append(
                         "⇨ **Press** the **`Restart Raid`** button if you want to create a new AFK check in the same"
@@ -2077,9 +2091,9 @@ export class RaidInstance {
      * @param {boolean} logToChannel Whether to log this event to the logging channel.
      */
     public async logEvent(event: string, logToChannel: boolean): Promise<void> {
-        const time = getFormattedTime();
+        const time = TimeUtilities.getFormattedTime();
 
-        if (logToChannel && this._logChan) {
+        if (logToChannel && this._logChan && this._isValid) {
             await GlobalFgrUtilities.sendMsg(this._logChan, {
                 content: `**\`[${time}]\`** ${event}`,
             });
@@ -2132,7 +2146,7 @@ export class RaidInstance {
             files: [
                 new MessageAttachment(Buffer.from(sb.toString(), "utf8"), `raidHistory_${this._memberInit.id}.txt`),
             ],
-            content: `__**Report Generated: ${TimeUtilities.getDateTime()} GMT**__`,
+            content: `__**Report Generated: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}**__`,
         });
     }
 
@@ -2763,7 +2777,10 @@ export class RaidInstance {
                 await i.deferUpdate();
                 if (i.customId === RaidInstance.START_AFK_CHECK_ID) {
                     LOGGER.info(`${this._instanceInfo} Leader chose to start AFK Check`);
-                    this.startAfkCheck().then();
+                    if (this._locationToProgress && !this._location)
+                        i.followUp({ content: "Please set a location prior to progressing the raid.", ephemeral: true });
+                    else
+                        this.startAfkCheck().then();
                     return;
                 }
 
@@ -2887,62 +2904,6 @@ export class RaidInstance {
                     `${this._leaderName}'s Raid VC has been unlocked.`,
                     this._tempAlertDelay
                 ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
-                return;
-            }
-
-            if (i.customId === RaidInstance.PARSE_VC_ID) {
-                LOGGER.info(`${this._instanceInfo} ${member?.displayName} chose to parse the VC`);
-                await i.deferUpdate();
-                const res = await AdvancedCollector.startNormalCollector<MessageAttachment>(
-                    {
-                        msgOptions: {
-                            content:
-                                "Please send a **screenshot** (not a URL to a screenshot, but an actual attachment)" +
-                                " containing the results of your `/who` now. This screenshot does not need to be" +
-                                " cropped. To cancel this process, please type `cancel`.",
-                        },
-                        cancelFlag: "cancel",
-                        targetChannel: this._controlPanelChannel,
-                        targetAuthor: i.user,
-                        deleteBaseMsgAfterComplete: true,
-                        deleteResponseMessage: false,
-                        duration: 30 * 1000,
-                    },
-                    (m: Message) => {
-                        if (m.attachments.size === 0) return;
-
-                        // Images have a height property, non-images don't.
-                        const imgAttachment = m.attachments.find((x) => x.height !== null);
-                        if (!imgAttachment) return;
-
-                        return imgAttachment;
-                    }
-                );
-
-                if (!res) return;
-                const parseSummary = await RaidInstance.parseScreenshot(res.url, this._raidVc);
-                if (!this._raidVc || !this._isValid) return;
-
-                this.logEvent(`Parse executed by ${i.user.tag} (${i.user.id}). Link: \`${res.url}\``, true).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
-
-                if (!parseSummary) {
-                    this.logEvent("Parse failed; the API may not be functioning at this time.", true).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
-
-                    return;
-                }
-
-                const embed = await RaidInstance.interpretParseRes(parseSummary, i.user, this._raidVc);
-                await this._controlPanelChannel.send({ embeds: [embed] }).catch();
-                if (!member) {
-                    return;
-                }
-
-                const roleId = QuotaManager.findBestQuotaToAdd(member, this._guildDoc, "Parse");
-                if (!roleId) {
-                    return;
-                }
-
-                await QuotaManager.logQuota(member, roleId, "Parse", 1);
                 return;
             }
         });

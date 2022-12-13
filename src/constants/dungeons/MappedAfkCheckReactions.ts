@@ -739,6 +739,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Miscellaneous Dungeon Key",
         isExaltKey: false
     },
+    HIDDEN_INTERREGUM_KEY: {
+        type: "NM_KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1016739852659736616"
+        },
+        name: "Hidden Interregnum Key",
+        isExaltKey: false
+    },
     WC_INC: {
         type: "NM_KEY",
         emojiInfo: {

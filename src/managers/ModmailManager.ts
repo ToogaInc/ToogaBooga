@@ -19,7 +19,6 @@ import { EmojiConstants } from "../constants/EmojiConstants";
 import { AdvancedCollector } from "../utilities/collectors/AdvancedCollector";
 import { ButtonConstants } from "../constants/ButtonConstants";
 import { StringUtil } from "../utilities/StringUtilities";
-import {} from "../utilities/Logger";
 
 export namespace ModmailManager {
 
@@ -159,6 +158,7 @@ export namespace ModmailManager {
             if (moderator) {
                 await acknowledgeModmailThreadCreation(modmailMsg, t, moderator, true);
             }
+
             await MongoManager.updateAndFetchGuildDoc({ guildId: modmailMsg.guild!.id }, {
                 $push: {
                     "properties.modmailThreads": {
@@ -168,7 +168,7 @@ export namespace ModmailManager {
                     } as IModmailThread
                 }
             });
-
+            
             const baseMsg = await t.fetchStarterMessage();
             baseMsg.embeds[0].spliceFields(baseMsg.embeds[0].fields.findIndex(x => x.name === "Directions"), 1);
             baseMsg.embeds[0].addField("Directions", OPEN_MODMAIL_INSTRUCTIONS);
@@ -207,14 +207,12 @@ export namespace ModmailManager {
     // Purple
     const GENERAL_THREAD_COLOR: number = 0xb31772;
 
-    const NEW_MODMAIL_INSTRUCTIONS: string = "The modmail thread has either not been responded to or has been"
-        + " archived. To (re)open this modmail thread, allowing you to reply to this modmail message, press the **Open"
-        + " Thread** button. More instructions will be provided once the thread is opened. To delete this modmail"
-        + " message, press the **Remove** button. To delete this message and blacklist the author, press the"
-        + " **Blacklist** button.";
+    const NEW_MODMAIL_INSTRUCTIONS: string = "The modmail thread is not active. To (re)open this thread,"
+        + " allowing you to reply to this modmail message, press the **Open Thread** button. To delete"
+        + " the modmail message, press the **Remove** button.";
 
     const OPEN_MODMAIL_INSTRUCTIONS: string = "The modmail thread is currently opened. To send a message to the"
-        + " author of this modmail, use the `/reply` command. To close (i.e. archive) the modmail thread, use the"
+        + " author of this modmail, use the `/reply` command. To close (i.e., archive) the modmail thread, use the"
         + " `/archive` command or manually archive the thread yourself.";
 
     /**
@@ -287,6 +285,41 @@ export namespace ModmailManager {
                 }
             }),
             MessageUtilities.tryEdit(origMsg, { embeds: [origMsg.embeds[0]] })
+        ]);
+
+        return true;
+    }
+
+
+    /**
+     * Deletes the modmail thread.
+     * @param {Message} origMsg The original message.
+     * @param {IGuildInfo} guildDoc The guild document.
+     * @returns {Promise<boolean>} Whether the thread was deleted successfully.
+     */
+    export async function deleteModmailThread(
+        origMsg: Message, 
+        guildDoc: IGuildInfo
+    ): Promise<boolean> {
+        if (!satisfiesPrecondition(origMsg, guildDoc)) {
+            return false;
+        }
+
+        if (origMsg.hasThread) {
+            GlobalFgrUtilities.tryExecuteAsync(async () => {
+                await origMsg.thread?.delete();
+            });
+        }
+
+        await Promise.all([
+            MongoManager.updateAndFetchGuildDoc({ guildId: origMsg.guild!.id }, {
+                $pull: {
+                    "properties.modmailThreads": {
+                        baseMsg: origMsg.id
+                    }
+                }
+            }),
+            MessageUtilities.tryDelete(origMsg)
         ]);
 
         return true;
@@ -517,8 +550,7 @@ export namespace ModmailManager {
             ],
             components: AdvancedCollector.getActionRowsFromComponents([
                 ButtonConstants.OPEN_THREAD_BUTTON,
-                ButtonConstants.REMOVE_BUTTON,
-                // ButtonConstants.BLACKLIST_BUTTON
+                ButtonConstants.REMOVE_BUTTON
             ])
         });
 
