@@ -1121,7 +1121,51 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         isBuiltIn: true
     },
     {
-<<<<<<< HEAD
+        codeName: "HIDDEN_INTERREGNUM",
+        dungeonName: "Hidden Interregnum",
+        portalEmojiId: "1016739853913829426",
+        keyReactions: [
+            {
+                mapKey: "HIDDEN_INTERREGUM_KEY",
+                maxEarlyLocation: 3
+            }
+        ],
+        otherReactions: [],
+        portalLink: {
+            url: "https://i.imgur.com/vTtkvcA.png",
+            name: "Hidden Interregnum Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/dse9vAy.png",
+                name: "Pirate Queen Ramm"
+            },
+            {
+                url: "https://i.imgur.com/kTQHzyu.png",
+                name: "Izel the Grand Shaman"
+            },
+            {
+                url: "https://i.imgur.com/8tpVkAk.png",
+                name: "Nefret the Pharaoh"
+            },
+            {
+                url: "https://i.imgur.com/8D4cdlg.png",
+                name: "Black Blade Ozuchi"
+            },
+            {
+                url: "https://i.imgur.com/8WVZSV1.png",
+                name: "The Wanderer"
+            }
+        ],
+        dungeonColors: [
+            0xBD6592,
+            0x943B71,
+            0xD99BB2
+        ],
+        dungeonCategory: "Mini Dungeons",
+        isBuiltIn: true
+    },
+    {
         codeName: "STEAMWORKS",
         dungeonName: "Steamworks",
         portalEmojiId: "1051549087574544404",
@@ -1195,50 +1239,6 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             0xFF00FF
         ],
         dungeonCategory: "Exaltation Dungeons",
-=======
-        codeName: "HIDDEN_INTERREGNUM",
-        dungeonName: "Hidden Interregnum",
-        portalEmojiId: "1016739853913829426",
-        keyReactions: [
-            {
-                mapKey: "HIDDEN_INTERREGUM_KEY",
-                maxEarlyLocation: 3
-            }
-        ],
-        otherReactions: [],
-        portalLink: {
-            url: "https://i.imgur.com/vTtkvcA.png",
-            name: "Hidden Interregnum Portal"
-        },
-        bossLinks: [
-            {
-                url: "https://i.imgur.com/dse9vAy.png",
-                name: "Pirate Queen Ramm"
-            },
-            {
-                url: "https://i.imgur.com/kTQHzyu.png",
-                name: "Izel the Grand Shaman"
-            },
-            {
-                url: "https://i.imgur.com/8tpVkAk.png",
-                name: "Nefret the Pharaoh"
-            },
-            {
-                url: "https://i.imgur.com/8D4cdlg.png",
-                name: "Black Blade Ozuchi"
-            },
-            {
-                url: "https://i.imgur.com/8WVZSV1.png",
-                name: "The Wanderer"
-            }
-        ],
-        dungeonColors: [
-            0xBD6592,
-            0x943B71,
-            0xD99BB2
-        ],
-        dungeonCategory: "Mini Dungeons",
->>>>>>> refs/remotes/origin/SJ-branch
         isBuiltIn: true
     },
     {

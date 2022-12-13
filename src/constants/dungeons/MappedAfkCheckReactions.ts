@@ -640,6 +640,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Mad God Mayhem Key",
         isExaltKey: false
     },
+    STEAMWORKS_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1051549087574544404"
+        },
+        name: "Steamworks Key",
+        isExaltKey: true
+    },
     SHATTERS_KEY: {
         type: "KEY",
         emojiInfo: {
@@ -719,15 +728,6 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
             identifier: "609078341529632778"
         },
         name: "Fungal Cavern Key",
-        isExaltKey: true
-    },
-    STEAMWORKS_KEY: {
-        type: "KEY",
-        emojiInfo: {
-            isCustom: true,
-            identifier: "1051549087574544404"
-        },
-        name: "Steamworks Key",
         isExaltKey: true
     },
     MISCELLANEOUS_DUNGEON_KEY: {
