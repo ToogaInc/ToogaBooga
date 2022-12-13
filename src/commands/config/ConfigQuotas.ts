@@ -38,7 +38,7 @@ type QuotaName = {
 };
 
 export class ConfigQuotas extends BaseCommand {
-    public static MAX_QUOTAS_ALLOWED: number = 10;
+    public static MAX_QUOTAS_ALLOWED: number = 20;
 
     public static DAYS_OF_WEEK: [string, number][] = [
         ["Sunday", 0],
