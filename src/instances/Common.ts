@@ -678,7 +678,7 @@ export function controlPanelCollectorFilter(
  * @return {boolean} Whether the person can run a raid in this dungeon.
  */
 export function hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMember,
-    roleCol: Collection<DefinedRole, string[]>): boolean {
+                               roleCol: Collection<DefinedRole, string[]>): boolean {
     if (!roleReqs || roleReqs.length === 0)
         return true;
 
