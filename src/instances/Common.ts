@@ -217,7 +217,7 @@ export async function confirmReaction(
                     return { react: { mapKey, modifiers: [], accidentCt: 0 }, success: true };
                 }
                 case noneListedId: {
-                    return { react: { mapKey, modifiers: ["Other Modifier(s)"], accidentCt: 0 }, success: true };
+                    return { react: { mapKey, modifiers: ["None Listed"], accidentCt: 0 }, success: true };
                 }
                 default: {
                     LOGGER.info(`Reaction for ${member.displayName} cancelled`);
@@ -629,8 +629,8 @@ export function getItemDisplay(reactInfo: ReactionInfoMore): string {
  * @returns {CollectorFilter} The collector filter to use.
  */
 export function controlPanelCollectorFilter(
-    guildDoc: IGuildInfo, 
-    section: ISectionInfo, 
+    guildDoc: IGuildInfo,
+    section: ISectionInfo,
     guild: Guild
 ): CollectorFilter<[MessageComponentInteraction]> {
     return async (i) => {
@@ -678,7 +678,7 @@ export function controlPanelCollectorFilter(
  * @return {boolean} Whether the person can run a raid in this dungeon.
  */
 export function hasPermsToRaid(roleReqs: string[] | undefined, member: GuildMember,
-                               roleCol: Collection<DefinedRole, string[]>): boolean {
+    roleCol: Collection<DefinedRole, string[]>): boolean {
     if (!roleReqs || roleReqs.length === 0)
         return true;
 
