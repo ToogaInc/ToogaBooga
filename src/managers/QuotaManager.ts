@@ -362,7 +362,7 @@ export namespace QuotaManager {
      * @return {string | null} The best role ID corresponding to the quota to log, if any. `null` otherwise.
      */
     export function findBestQuotaToAdd(member: GuildMember, guildDoc: IGuildInfo, logType: QuotaLogType,
-                                       dungeonId?: string): string | null {
+        dungeonId?: string): string | null {
         LOGGER.info(`Finding best quota to add ${logType} for ${member.displayName}`);
         let resolvedLogType: string = logType;
         if (logType === "RunAssist" || logType === "RunComplete" || logType === "RunFailed") {
@@ -463,7 +463,7 @@ export namespace QuotaManager {
      * @param {number} amt The amount of said action to log.
      */
     export async function logQuota(member: GuildMember, roleId: string, logType: string,
-                                   amt: number): Promise<void> {
+        amt: number): Promise<void> {
         LOGGER.info(`Logging quota for ${member.displayName}, role: ${MiscUtilities.getRoleName(roleId, member.guild)}, type: ${logType}, amount: ${amt}`);
         const guildDoc = await MongoManager.updateAndFetchGuildDoc({
             guildId: member.guild.id,
@@ -495,18 +495,18 @@ export namespace QuotaManager {
      * @param {number} pts the number of poitns to add.
      * @returns {IUserInfo | null} the updated IUserInfo
      */
-    export async function addQuotaPts(member: GuildMember, pts: number){
+    export async function addQuotaPts(member: GuildMember, pts: number) {
         const userDoc = await MongoManager.getOrCreateUserDoc(member.id);
         let newPts = pts;
-        if(!isNaN(userDoc.details.quotaPoints)){
+        if (!isNaN(userDoc.details.quotaPoints)) {
             newPts += userDoc.details.quotaPoints;
         }
         LOGGER.info(`Adding ${pts} points to ${member.displayName} for a total of ${(newPts > 0) ? newPts : 0}`);
-        
+
         const returnDoc = await MongoManager.getUserCollection().findOneAndUpdate({
             discordId: member.id
         }, {
-            $set:{
+            $set: {
                 "details.quotaPoints": (newPts > 0) ? newPts : 0
             }
         }, {
@@ -559,7 +559,7 @@ export namespace QuotaManager {
      * assists, or failures.
      */
     export async function logQuotaInteractive(obj: Message | GuildMember, logType: QuotaLogType,
-                                              amt: number, dungeonId?: string): Promise<boolean> {
+        amt: number, dungeonId?: string): Promise<boolean> {
         let resolvedLogType: string = logType;
         if (logType === "RunAssist" || logType === "RunComplete" || logType === "RunFailed") {
             if (!dungeonId) return false;
@@ -733,7 +733,7 @@ export namespace QuotaManager {
      * could not be found.
      */
     export async function getQuotaLeaderboardEmbed(guild: Guild, guildDoc: IGuildInfo,
-                                                   quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
+        quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
         LOGGER.debug(`Getting Quota Leaderboard Embed: ${MiscUtilities.getRoleName(quotaInfo.roleId, guild)}`);
         const role = GuildFgrUtilities.getCachedRole(guild, quotaInfo.roleId);
         if (!role)
@@ -778,7 +778,8 @@ export namespace QuotaManager {
                 continue;
             memberIdSeen.add(userId);
             const member = await GuildFgrUtilities.fetchGuildMember(guild, userId);
-            points.push([member ?? userId, calcTotalQuotaPtsForMember(userId, role.id, guildDoc)]);
+            if (member && member.roles.cache.has(role.id))
+                points.push([member ?? userId, calcTotalQuotaPtsForMember(userId, role.id, guildDoc)]);
         }
 
         const leaderboard = ArrayUtilities.generateLeaderboardArray(
