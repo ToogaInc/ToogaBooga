@@ -1,7 +1,7 @@
 import { Collection, GuildMember, User } from "discord.js";
 import { MongoManager } from "./MongoManager";
 import { Filter, UpdateFilter } from "mongodb";
-import { IGuildInfo, IUserInfo } from "../definitions";
+import { IGuildInfo, IPropertyKeyValuePair, IUserInfo } from "../definitions";
 import { MAPPED_AFK_CHECK_REACTIONS } from "../constants/dungeons/MappedAfkCheckReactions";
 import { DungeonUtilities } from "../utilities/DungeonUtilities";
 
@@ -46,12 +46,12 @@ export namespace LoggerManager {
          * where the key is the dungeon name (not ID) and the value is the number completed/failed/assisted.
          */
         dungeonsLed: Collection<string, DungeonLedType>;
-        
+
         /**
          * Cumulative quota points.  This property is automatically increased during quota logging, and can be 
          * manually adjusted through the AddQuotaPoints command.
          */
-        quotaPoints: number;
+        quotaPoints: IPropertyKeyValuePair<string, number>[];
     }
 
     /**
@@ -78,7 +78,7 @@ export namespace LoggerManager {
      * @private
      */
     async function internalUpdateLoggedInfo(member: GuildMember, id: string, amt: number,
-                                            userDoc?: IUserInfo): Promise<void> {
+        userDoc?: IUserInfo): Promise<void> {
         const userDocToUse = userDoc ?? await MongoManager.getOrCreateUserDoc(member.id);
         if (userDocToUse.discordId !== member.id)
             return;
@@ -147,7 +147,7 @@ export namespace LoggerManager {
      * @param {number} [amt] The number of this dungeon that was either completed or failed.
      */
     export async function logDungeonRun(member: GuildMember, dungeonId: string, completed: boolean,
-                                        amt: number = 1): Promise<void> {
+        amt: number = 1): Promise<void> {
         // Format:      R:GUILD_ID:DUNGEON_ID:COMPLETED(1/0)
         const dgnId = getDungeonIdToLog(await MongoManager.getOrCreateGuildDoc(member.guild, true), dungeonId);
         if (!dgnId)
@@ -163,7 +163,7 @@ export namespace LoggerManager {
      * @param {number} [amt] The number of this dungeon, with the specified result, that was done.
      */
     export async function logDungeonLead(member: GuildMember, dungeonId: string, result: RunResult,
-                                         amt: number = 1): Promise<void> {
+        amt: number = 1): Promise<void> {
         // Format:      L:GUILD_ID:DUNGEON_ID:RESULT
         const dgnId = getDungeonIdToLog(await MongoManager.getOrCreateGuildDoc(member.guild, true), dungeonId);
         if (!dgnId)
@@ -224,10 +224,10 @@ export namespace LoggerManager {
      */
     export async function getStats(user: User | null, guildId?: string, userId?: string): Promise<IUserStats | null> {
         let dId = userId;
-        if(user){
+        if (user) {
             dId = user.id;
         }
-        if(!dId){
+        if (!dId) {
             return null;
         }
         const userDoc = await MongoManager.getUserCollection().findOne({ discordId: dId });
@@ -249,7 +249,7 @@ export namespace LoggerManager {
      * @param {string} guildDoc The guild doc.
      * @returns {Promise<LoggerManager.IUserStats | null>} The result, if any.
      */
-    export async function getStatsWithDoc(userInfo: IUserInfo, guildDoc : IGuildInfo | null): Promise<IUserStats | null> {
+    export async function getStatsWithDoc(userInfo: IUserInfo, guildDoc: IGuildInfo | null): Promise<IUserStats | null> {
 
         const stats: IUserStats = {
             keyUse: new Collection<string, Collection<string, number>>(),
@@ -265,7 +265,7 @@ export namespace LoggerManager {
             }>>()
         };
 
-        const logInfoToProcess = guildDoc 
+        const logInfoToProcess = guildDoc
             ? userInfo.loggedInfo.filter(x => x.key.includes(guildDoc.guildId))
             : userInfo.loggedInfo;
 

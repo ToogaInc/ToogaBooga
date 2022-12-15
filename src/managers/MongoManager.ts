@@ -555,7 +555,7 @@ export namespace MongoManager {
      */
     export function getDefaultUserConfig(userId: string): IUserInfo {
         return {
-            details: { moderationHistory: [], universalNotes: "", guildNotes: [], quotaPoints: 0 },
+            details: { moderationHistory: [], universalNotes: "", guildNotes: [], quotaPoints: [] },
             discordId: userId,
             loggedInfo: []
         };

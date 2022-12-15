@@ -13,7 +13,7 @@ export interface INewQuota {
 export async function onQuotaEvent(quotaInfo: IQuotaInfo, guildDoc: IGuildInfo, newQuota: INewQuota): Promise<void> {
     // Update the quota embed in the leaderboard channel
     QuotaManager.upsertLeaderboardMessage(quotaInfo.messageId, quotaInfo, guildDoc);
-    
+
     // Add quota pts for leaderboard-shop
     let quotaPoints = (quotaInfo.pointValues.find(x => x.key === newQuota.logType)?.value ?? 0) * newQuota.amt;
     if (newQuota.logType.startsWith("Run")) {
@@ -25,6 +25,6 @@ export async function onQuotaEvent(quotaInfo: IQuotaInfo, guildDoc: IGuildInfo, 
         }
     }
 
-    await QuotaManager.addQuotaPts(newQuota.member, quotaPoints);
+    await QuotaManager.addQuotaPts(newQuota.member, guildDoc.guildId, quotaPoints);
     return;
 }

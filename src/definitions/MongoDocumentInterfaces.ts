@@ -367,7 +367,7 @@ export interface IGuildInfo {
          *
          * @type {IPropertyKeyValuePair<string, string>[]}
          */
-        genEarlyLocReactions: {roleId: string; mappingKey: string;}[];
+        genEarlyLocReactions: { roleId: string; mappingKey: string; }[];
 
         /**
          * An array that represents the number of points you can get for reacting to certain things. This is
@@ -762,7 +762,7 @@ export interface IUserInfo {
         /**
          * Quota points, because this is how we implement new features :)
          */
-        quotaPoints: number;
+        quotaPoints: IPropertyKeyValuePair<string, number>[];
     };
 }
 
