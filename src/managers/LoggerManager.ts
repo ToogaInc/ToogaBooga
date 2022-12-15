@@ -78,7 +78,7 @@ export namespace LoggerManager {
      * @private
      */
     async function internalUpdateLoggedInfo(member: GuildMember, id: string, amt: number,
-        userDoc?: IUserInfo): Promise<void> {
+                                            userDoc?: IUserInfo): Promise<void> {
         const userDocToUse = userDoc ?? await MongoManager.getOrCreateUserDoc(member.id);
         if (userDocToUse.discordId !== member.id)
             return;
@@ -147,7 +147,7 @@ export namespace LoggerManager {
      * @param {number} [amt] The number of this dungeon that was either completed or failed.
      */
     export async function logDungeonRun(member: GuildMember, dungeonId: string, completed: boolean,
-        amt: number = 1): Promise<void> {
+                                        amt: number = 1): Promise<void> {
         // Format:      R:GUILD_ID:DUNGEON_ID:COMPLETED(1/0)
         const dgnId = getDungeonIdToLog(await MongoManager.getOrCreateGuildDoc(member.guild, true), dungeonId);
         if (!dgnId)
@@ -163,7 +163,7 @@ export namespace LoggerManager {
      * @param {number} [amt] The number of this dungeon, with the specified result, that was done.
      */
     export async function logDungeonLead(member: GuildMember, dungeonId: string, result: RunResult,
-        amt: number = 1): Promise<void> {
+                                         amt: number = 1): Promise<void> {
         // Format:      L:GUILD_ID:DUNGEON_ID:RESULT
         const dgnId = getDungeonIdToLog(await MongoManager.getOrCreateGuildDoc(member.guild, true), dungeonId);
         if (!dgnId)
