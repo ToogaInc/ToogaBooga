@@ -58,6 +58,8 @@ export namespace QuotaManager {
 
     // 1 day in ms
     const DEFAULT_CHECK_RESET = 24 * 60 * 60 * 1000;
+    // 100 seconds to ignore small times that result from checking while the loop still goes on
+    const IGNORE_RESET_TIME = 100_000;
 
     // Id to keep track of timeouts set so they don't eventually spam if the bot process isn't cleared
     export let quotaTimeoutId: NodeJS.Timeout;
@@ -495,18 +497,18 @@ export namespace QuotaManager {
      * @param {number} pts the number of poitns to add.
      * @returns {IUserInfo | null} the updated IUserInfo
      */
-    export async function addQuotaPts(member: GuildMember, pts: number){
+    export async function addQuotaPts(member: GuildMember, pts: number) {
         const userDoc = await MongoManager.getOrCreateUserDoc(member.id);
         let newPts = pts;
-        if(!isNaN(userDoc.details.quotaPoints)){
+        if (!isNaN(userDoc.details.quotaPoints)) {
             newPts += userDoc.details.quotaPoints;
         }
         LOGGER.info(`Adding ${pts} points to ${member.displayName} for a total of ${(newPts > 0) ? newPts : 0}`);
-        
+
         const returnDoc = await MongoManager.getUserCollection().findOneAndUpdate({
             discordId: member.id
         }, {
-            $set:{
+            $set: {
                 "details.quotaPoints": (newPts > 0) ? newPts : 0
             }
         }, {
@@ -886,13 +888,11 @@ export namespace QuotaManager {
                     guildDoc.quotas.resetTime.time
                 );
 
-                if (endTime.getTime() > Date.now() && (endTime.getTime() - Date.now() < nextReset)) {
+                if (endTime.getTime() > Date.now() && (endTime.getTime() - Date.now() < nextReset) && (endTime.getTime() - Date.now() > IGNORE_RESET_TIME)) {
                     nextReset = endTime.getTime() - Date.now();
                     LOGGER.info(`Found a more suitable end time: ${TimeUtilities.formatDuration(nextReset, false)}`);
-                }
-
-                // If the date has already passed, it needs to be reset
-                if (endTime.getTime() - Date.now() < 0) {
+                } else if (endTime.getTime() - Date.now() < 0) {
+                    // If the date has already passed, it needs to be reset
                     const role = await GuildFgrUtilities.fetchRole(guild, quotaInfo.roleId);
                     LOGGER.info(`Reset quota for ${role?.name} in ${guild.name}`);
                     await QuotaManager.resetQuota(guild, quotaInfo.roleId);
