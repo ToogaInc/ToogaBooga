@@ -780,7 +780,8 @@ export namespace QuotaManager {
                 continue;
             memberIdSeen.add(userId);
             const member = await GuildFgrUtilities.fetchGuildMember(guild, userId);
-            points.push([member ?? userId, calcTotalQuotaPtsForMember(userId, role.id, guildDoc)]);
+            if (member && member.roles.cache.has(role.id))
+                points.push([member ?? userId, calcTotalQuotaPtsForMember(userId, role.id, guildDoc)]);
         }
 
         const leaderboard = ArrayUtilities.generateLeaderboardArray(
