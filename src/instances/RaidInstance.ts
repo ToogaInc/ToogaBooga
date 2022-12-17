@@ -2326,7 +2326,7 @@ export class RaidInstance {
 
         await this._eliteLocChannel.send({
             content: `Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${this._location ? this._location : "Not Set"
-                }\``,
+            }\``,
         });
         sendTemporaryAlert(this._controlPanelChannel, `Location sent to ${this._eliteLocChannel.name}`, 5 * 1000);
         return true;
