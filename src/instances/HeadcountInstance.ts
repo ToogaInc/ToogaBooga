@@ -926,7 +926,7 @@ export class HeadcountInstance {
         ]);
 
         const confirmationMessage = await i.followUp({
-            content: `**__This is not your headcount__**.\nAre you sure you want to abort ${this._memberInit}'s headcount!?`,
+            content: `**__This is not your headcount__**.\nAre you sure you want to ${type} ${this._memberInit}'s headcount?`,
             components: wrongLeaderButtons,
             ephemeral: true
         });
