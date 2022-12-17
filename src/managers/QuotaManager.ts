@@ -498,23 +498,11 @@ export namespace QuotaManager {
      */
     export async function addQuotaPts(member: GuildMember, serverId: string, pts: number) {
         const userDoc = await MongoManager.getOrCreateUserDoc(member.id);
+        const index = userDoc.details.quotaPoints.findIndex(x => x.key === serverId);
 
         let newPts = pts;
         let filterQuery: Filter<IUserInfo>;
         let updateQuery: UpdateFilter<IUserInfo>;
-        let index;
-
-        // because saved info is currently not the right type!
-        // @ts-ignore
-        if (!isNaN(userDoc.details.quotaPoints)) {
-            index = -1;
-            // @ts-ignore
-            newPts = pts + userDoc.details.quotaPoints;
-        }
-        else {
-            index = userDoc.details.quotaPoints.findIndex(x => x.key === serverId);
-        }
-
         if (newPts < 0) newPts = 0;
 
         if (index >= 0) {
