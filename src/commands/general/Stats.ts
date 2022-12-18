@@ -151,7 +151,7 @@ export class Stats extends BaseCommand {
         let description = `${EmojiConstants.TICKET_EMOJI} Points: ${pts}`;
         const serverQuotaPoints = stats.quotaPoints.find(x => x.key === ctx.guild?.id);
         if (serverQuotaPoints) {
-            description += `\nQuota Points: ${stats.quotaPoints}`;
+            description += `\nQuota Points for ${ctx.guild!.name}: ${serverQuotaPoints.value}`;
         }
 
         if (ctx.guild && !showAll) {
