@@ -1,4 +1,5 @@
 import {
+    ButtonInteraction,
     Collection,
     EmojiIdentifierResolvable,
     Guild,
@@ -584,7 +585,7 @@ export class HeadcountInstance {
             return;
 
         // This is for the purposes of not having to edit getHeadcountEmbed, letting users know it's in progress.
-        this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTING; 
+        this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTING;
 
         // Stop 0: Stop all collectors
         await this.stopAllIntervalsAndCollectors("Headcount converted.");
@@ -600,7 +601,7 @@ export class HeadcountInstance {
         ]);
 
         // Edit the headcount message
-        await this._headcountMsg.edit({ 
+        await this._headcountMsg.edit({
             embeds: [this.getHeadcountEmbed()!],
             content: "@here",
             components: [],
@@ -909,6 +910,50 @@ export class HeadcountInstance {
     }
 
     /**
+     * Button collector to confirm whether or not someone wants to clear another person's headcount
+     * @private
+     */
+    private async showWrongLeaderbuttons(i: ButtonInteraction, type: "abort" | "end" = "abort") {
+        const wrongLeaderButtons: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
+            new MessageButton()
+                .setCustomId("CONFIRM")
+                .setStyle("SUCCESS")
+                .setLabel("Yes"),
+            new MessageButton()
+                .setCustomId("ABORT")
+                .setStyle("DANGER")
+                .setLabel("No")
+        ]);
+
+        const confirmationMessage = await i.followUp({
+            content: `**__This is not your headcount__**.\nAre you sure you want to ${type} ${this._memberInit}'s headcount?`,
+            components: wrongLeaderButtons,
+            ephemeral: true
+        });
+
+        const collector = i.channel!.createMessageComponentCollector({
+            componentType: "BUTTON", // enum is outdated?
+            time: 30_000,
+            filter: (int) => int.user.id === i.user.id && int.message.id === confirmationMessage.id
+        });
+
+        collector.on("collect", button => {
+            if (button.customId === "ABORT") {
+                return button.update({ content: `Did not ${type} headcount.`, components: [] });
+            } else if (button.customId === "CONFIRM") {
+                LOGGER.info(`${(button.member as GuildMember).nickname || button.user.username} ${type}ed ${this._memberInit.nickname}'s ${this._dungeon.dungeonName} headcount.`);
+                if (type === "abort") this.abortHeadcount().then();
+                else this.endHeadcount().then();
+                return button.update({ content: `${type}ed headcount.`, components: [] });
+            }
+        });
+
+        collector.on("end", (collected) => {
+            if (collected.size === 0) i.editReply({ content: "Ran out of time.", components: [] });
+        });
+    }
+
+    /**
      * Starts a control panel collector.
      * @returns {boolean} Whether the collector started successfully.
      * @private
@@ -932,10 +977,10 @@ export class HeadcountInstance {
             this.abortHeadcount().then();
         });
 
-        this._controlPanelReactionCollector.on("collect", async i => {
-            await i.deferUpdate();
+        this._controlPanelReactionCollector.on("collect", async (i: ButtonInteraction) => {
             switch (i.customId) {
                 case HeadcountInstance.CONVERT_TO_AFK_CHECK_ID: {
+                    await i.deferUpdate();
                     // Prematurely ending this collector since this interferes with the collector used in the
                     // selectVc function. The other collectors will be ended in the convertHeadcount method.
                     this._controlPanelReactionCollector?.stop("No longer needed");
@@ -961,19 +1006,34 @@ export class HeadcountInstance {
                     return;
                 }
                 case HeadcountInstance.ABORT_HEADCOUNT_ID: {
-                    LOGGER.info(`${this._leaderName} aborted ${this._dungeon.dungeonName} headcount.`);
-                    this.abortHeadcount().then();
-                    return;
+                    if (i.user.id !== this._memberInit.id) {
+                        await i.deferReply({ ephemeral: true });
+                        return this.showWrongLeaderbuttons(i);
+                    } else {
+                        await i.deferUpdate();
+                        LOGGER.info(`${(i.member as GuildMember).nickname} aborted ${this._dungeon.dungeonName} headcount.`);
+                        return this.abortHeadcount().then();
+                    }
                 }
                 case HeadcountInstance.DELETE_HEADCOUNT_ID: {
-                    LOGGER.info(`${this._leaderName} aborted ${this._dungeon.dungeonName} headcount after ending.`);
-                    this.abortHeadcount().then();
-                    return;
+                    if (i.user.id !== this._memberInit.id) {
+                        await i.deferReply({ ephemeral: true });
+                        return this.showWrongLeaderbuttons(i);
+                    } else {
+                        await i.deferUpdate();
+                        LOGGER.info(`${(i.member as GuildMember).nickname} aborted ${this._dungeon.dungeonName} headcount after ending.`);
+                        return this.abortHeadcount().then();
+                    }
                 }
                 case HeadcountInstance.END_HEADCOUNT_ID: {
-                    LOGGER.info(`${this._leaderName} ended ${this._dungeon.dungeonName} headcount.`);
-                    this.endHeadcount().then();
-                    return;
+                    if (i.user.id !== this._memberInit.id) {
+                        await i.deferReply({ ephemeral: true });
+                        return this.showWrongLeaderbuttons(i, "end");
+                    } else {
+                        await i.deferUpdate();
+                        LOGGER.info(`${(i.member as GuildMember).nickname} ended ${this._dungeon.dungeonName} headcount.`);
+                        return this.endHeadcount().then();
+                    }
                 }
             }
         });
