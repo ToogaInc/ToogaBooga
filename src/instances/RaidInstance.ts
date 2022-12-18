@@ -3,6 +3,7 @@
 import { Logger } from "../utilities/Logger";
 import { AdvancedCollector } from "../utilities/collectors/AdvancedCollector";
 import {
+    ButtonInteraction,
     Collection,
     EmojiIdentifierResolvable,
     Guild,
@@ -318,7 +319,7 @@ export class RaidInstance {
             (section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? RaidInstance.DEFAULT_RAID_DURATION);
         LOGGER.debug(
             "Timeout duration in milliseconds: " + section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ??
-                RaidInstance.DEFAULT_RAID_DURATION
+            RaidInstance.DEFAULT_RAID_DURATION
         );
 
         this._logChan = null;
@@ -980,6 +981,49 @@ export class RaidInstance {
     }
 
     /**
+     * Button collector to confirm whether or not someone wants to clear another person's headcount
+     * @private
+     */
+    private async showWrongLeaderbuttons(i: ButtonInteraction) {
+        const wrongLeaderButtons: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
+            new MessageButton()
+                .setCustomId("CONFIRM-RAID")
+                .setStyle("SUCCESS")
+                .setLabel("Yes"),
+            new MessageButton()
+                .setCustomId("ABORT-RAID")
+                .setStyle("DANGER")
+                .setLabel("No")
+        ]);
+
+        const confirmationMessage = await i.followUp({
+            content: `**__This is not your AFK-Check__**.\nAre you sure you want to abort ${this._memberInit}'s AFK-Check?`,
+            components: wrongLeaderButtons,
+            ephemeral: true
+        });
+
+        const collector = i.channel!.createMessageComponentCollector({
+            componentType: "BUTTON", // enum is outdated?
+            time: 30_000,
+            filter: (int) => int.user.id === i.user.id && int.message.id === confirmationMessage.id
+        });
+
+        collector.on("collect", (button: ButtonInteraction<"cached">) => {
+            if (button.customId === "ABORT-RAID") {
+                return button.update({ content: "Did not end afk check.", components: [] });
+            } else if (button.customId === "CONFIRM-RAID") {
+                LOGGER.info(`${button.member.nickname || button.user.username} ended ${this._memberInit.nickname}'s ${this._dungeon.dungeonName} afk check.`);
+                this.endRaid(button.member).then();
+                return button.update({ content: "Ended afk check.", components: [] });
+            }
+        });
+
+        collector.on("end", (collected) => {
+            if (collected.size === 0) i.editReply({ content: "Ran out of time.", components: [] });
+        });
+    }
+
+    /**
      * Ends the AFK check. There will be no post-AFK check. This will create the feedback channel, if at all.
      * @param {GuildMember | null} memberEnded The member that ended the AFK check, or `null` if it was ended
      * automatically.
@@ -1622,7 +1666,7 @@ export class RaidInstance {
                     afkCheckEmbed.addField(
                         "Feedback Channel",
                         `You can give ${this._leaderName} feedback by going to the` +
-                            ` ${this._thisFeedbackChan} channel.`
+                        ` ${this._thisFeedbackChan} channel.`
                     );
                 }
                 afkCheckEmbed.setDescription(descSb.toString());
@@ -1685,7 +1729,7 @@ export class RaidInstance {
             afkCheckEmbed.addField(
                 "Other Reactions",
                 "To indicate your non-priority gear and/or class preference, please click on the corresponding" +
-                    " reactions."
+                " reactions."
             );
         }
 
@@ -1959,8 +2003,8 @@ export class RaidInstance {
             // otherwise, changed VC
             this.logEvent(
                 `${EmojiConstants.REDIRECT_EMOJI} ${member.displayName} (${member.id}) has switched voice channels.\n` +
-                    `\tFrom: ${oldState.channel!.name} (${oldState.channelId})\n` +
-                    `\tTo: ${newState.channel!.name} (${newState.channelId})`,
+                `\tFrom: ${oldState.channel!.name} (${oldState.channelId})\n` +
+                `\tTo: ${newState.channel!.name} (${newState.channelId})`,
                 true
             ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
             return;
@@ -2281,8 +2325,7 @@ export class RaidInstance {
         }
 
         await this._eliteLocChannel.send({
-            content: `Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${
-                this._location ? this._location : "Not Set"
+            content: `Current location for ${this._leaderName}'s ${this._dungeon.dungeonName} is \`${this._location ? this._location : "Not Set"
             }\``,
         });
         sendTemporaryAlert(this._controlPanelChannel, `Location sent to ${this._eliteLocChannel.name}`, 5 * 1000);
@@ -2647,7 +2690,7 @@ export class RaidInstance {
                     content:
                         reactInfo.type === "EARLY_LOCATION"
                             ? "Although you reacted with this button, you are not able to receive early location" +
-                              " because someone else beat you to the last slot."
+                            " because someone else beat you to the last slot."
                             : `Although you have a ${itemDis}, we do not need this anymore.`,
                     components: [],
                 });
@@ -2696,8 +2739,8 @@ export class RaidInstance {
 
             this.logEvent(
                 `${EmojiConstants.KEY_EMOJI} ${memberThatResponded.displayName} (${memberThatResponded.id}) confirmed` +
-                    " that they have" +
-                    ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.react!.modifiers.join(", ")}]\``,
+                " that they have" +
+                ` ${reactInfo.name} (${reactInfo.type}). Modifiers: \`[${res.react!.modifiers.join(", ")}]\``,
                 true
             ).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
 
@@ -2769,7 +2812,7 @@ export class RaidInstance {
         };
 
         if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
-            this._controlPanelReactionCollector.on("collect", async (i) => {
+            this._controlPanelReactionCollector.on("collect", async (i: ButtonInteraction<"cached">) => {
                 if (!(await validateInVc(i))) {
                     return;
                 }
@@ -2785,9 +2828,12 @@ export class RaidInstance {
                 }
 
                 if (i.customId === RaidInstance.ABORT_AFK_ID) {
-                    LOGGER.info(`${this._instanceInfo} Leader chose to abort Pre-AFK Check`);
-                    this.endRaid(i.user).then();
-                    return;
+                    if (i.user.id !== this._memberInit.id) {
+                        return this.showWrongLeaderbuttons(i);
+                    } else {
+                        LOGGER.info(`${this._instanceInfo} Leader chose to abort Pre-AFK Check`);
+                        return this.endRaid(i.user).then();
+                    }
                 }
 
                 if (i.customId === RaidInstance.SET_LOCATION_ID) {
@@ -2800,7 +2846,7 @@ export class RaidInstance {
         }
 
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
-            this._controlPanelReactionCollector.on("collect", async (i) => {
+            this._controlPanelReactionCollector.on("collect", async (i: ButtonInteraction<"cached">) => {
                 if (!(await validateInVc(i))) {
                     return;
                 }
@@ -2813,9 +2859,12 @@ export class RaidInstance {
                 }
 
                 if (i.customId === RaidInstance.ABORT_AFK_ID) {
-                    LOGGER.info(`${this._instanceInfo} ${member?.displayName} chose to abort AFK Check`);
-                    this.endRaid(i.user).then();
-                    return;
+                    if (i.user.id !== this._memberInit.id) {
+                        return this.showWrongLeaderbuttons(i);
+                    } else {
+                        LOGGER.info(`${this._instanceInfo} ${member?.displayName} chose to abort AFK Check`);
+                        return this.endRaid(i.user).then();
+                    }
                 }
 
                 if (i.customId === RaidInstance.SET_LOCATION_ID) {
@@ -2941,7 +2990,7 @@ export class RaidInstance {
                     .setTitle(`Logging Run: ${this._dungeon.dungeonName}`)
                     .setDescription(
                         "What was the run status of the __last__ dungeon that was completed? If you did a chain, you" +
-                            " will need to manually log the other runs."
+                        " will need to manually log the other runs."
                     )
                     .setFooter({ text: FOOTER_INFO_MSG }),
             ],
@@ -3009,15 +3058,15 @@ export class RaidInstance {
                         .setTitle(`Leader that Led: ${this._dungeon.dungeonName}`)
                         .setDescription(
                             "Who was the main leader in the __last__ run? Usually, the main leader is the" +
-                                " leader that led a majority of the run."
+                            " leader that led a majority of the run."
                         )
                         .addField("Selected Main Leader", `${mainLeader} - \`${mainLeader.displayName}\``)
                         .addField(
                             "Instructions",
                             "The selected main leader is shown above. To select a main leader, either type an in-game" +
-                                " name, Discord ID, or mention a person. Once you are satisfied with your choice," +
-                                " press the **Confirm** button. If you don't want to log this run with *any* main" +
-                                " leader, select the **Skip** button."
+                            " name, Discord ID, or mention a person. Once you are satisfied with your choice," +
+                            " press the **Confirm** button. If you don't want to log this run with *any* main" +
+                            " leader, select the **Skip** button."
                         )
                         .setFooter({ text: FOOTER_INFO_MSG }),
                 ],
@@ -3116,8 +3165,8 @@ export class RaidInstance {
                             .setTitle(`Logging Key Poppers: ${this._dungeon.dungeonName}`)
                             .setDescription(
                                 `You are now logging the ${getItemDisplay(reactionInfo)} popper for the __last` +
-                                    " dungeon__ that was either completed or failed. If you need to log more than one" +
-                                    " key, please manually do it by command."
+                                " dungeon__ that was either completed or failed. If you need to log more than one" +
+                                " key, please manually do it by command."
                             )
                             .addField(
                                 "Selected Popper",
@@ -3128,11 +3177,11 @@ export class RaidInstance {
                             .addField(
                                 "Instructions",
                                 "The popper for this key is shown above. To log the person that used this key for" +
-                                    " the last dungeon in this run, either send their in-game name, Discord ID, or" +
-                                    " mention them. You may alternatively select their IGN from the select menu below." +
-                                    " If no one used this key for the last dungeon in this run (excluding Bis keys)," +
-                                    " press the `Skip` button. Once you selected the correct member, press the" +
-                                    " `Confirm` button."
+                                " the last dungeon in this run, either send their in-game name, Discord ID, or" +
+                                " mention them. You may alternatively select their IGN from the select menu below." +
+                                " If no one used this key for the last dungeon in this run (excluding Bis keys)," +
+                                " press the `Skip` button. Once you selected the correct member, press the" +
+                                " `Confirm` button."
                             )
                             .setFooter({ text: FOOTER_INFO_MSG }),
                     ],
@@ -3298,7 +3347,7 @@ export class RaidInstance {
                                 .setTitle(`Logging Run: ${this._dungeon.dungeonName}`)
                                 .setDescription(
                                     "It appears that the parsing API isn't up, or the screenshot that you provided" +
-                                        " is not valid. In either case, this step has been skipped."
+                                    " is not valid. In either case, this step has been skipped."
                                 )
                                 .setFooter({ text: "This will move to the next step in 5 seconds." }),
                         ],
@@ -3384,10 +3433,10 @@ export class RaidInstance {
                     .addField(
                         "Next Step(s)",
                         "If you did more dungeons in this raid (i.e. this was a chain), you will need to manually" +
-                            " log the *other* runs that were led. Note that you also need to log assisting raid leaders" +
-                            " for all runs that were completed in this raid (including this one).\n\nAlso, be sure to" +
-                            " log any keys that were popped along with any priority reactions so those that brought" +
-                            " the key and/or priority reactions can be rewarded, if applicable."
+                        " log the *other* runs that were led. Note that you also need to log assisting raid leaders" +
+                        " for all runs that were completed in this raid (including this one).\n\nAlso, be sure to" +
+                        " log any keys that were popped along with any priority reactions so those that brought" +
+                        " the key and/or priority reactions can be rewarded, if applicable."
                     ),
             ],
         });
