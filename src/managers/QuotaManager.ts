@@ -21,7 +21,7 @@ import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtil
 import { MessageUtilities } from "../utilities/MessageUtilities";
 import { ArrayUtilities } from "../utilities/ArrayUtilities";
 import { AdvancedCollector } from "../utilities/collectors/AdvancedCollector";
-import { IGuildInfo, IQuotaInfo } from "../definitions";
+import { IGuildInfo, IQuotaInfo, IUserInfo } from "../definitions";
 import { DUNGEON_DATA } from "../constants/dungeons/DungeonData";
 import { TimeUtilities, TimestampType } from "../utilities/TimeUtilities";
 import { StringUtil } from "../utilities/StringUtilities";
@@ -31,6 +31,7 @@ import { MiscUtilities } from "../utilities/MiscUtilities";
 import { EmojiConstants } from "../constants/EmojiConstants";
 import { Logger } from "../utilities/Logger";
 import { Bot } from "../Bot";
+import { Filter, UpdateFilter } from "mongodb";
 
 const LOGGER: Logger = new Logger(__filename, true);
 export namespace QuotaManager {
@@ -497,23 +498,49 @@ export namespace QuotaManager {
      * @param {number} pts the number of poitns to add.
      * @returns {IUserInfo | null} the updated IUserInfo
      */
-    export async function addQuotaPts(member: GuildMember, pts: number) {
+    export async function addQuotaPts(member: GuildMember, serverId: string, pts: number) {
         const userDoc = await MongoManager.getOrCreateUserDoc(member.id);
+        const index = userDoc.details.quotaPoints.findIndex(x => x.key === serverId);
+
         let newPts = pts;
-        if (!isNaN(userDoc.details.quotaPoints)) {
-            newPts += userDoc.details.quotaPoints;
+        let filterQuery: Filter<IUserInfo>;
+        let updateQuery: UpdateFilter<IUserInfo>;
+        if (newPts < 0) newPts = 0;
+
+        if (index >= 0) {
+            if (!isNaN(userDoc.details.quotaPoints[index]?.value)) {
+                newPts += Number(userDoc.details.quotaPoints[index].value);
+            }
+
+            filterQuery = {
+                discordId: member.id,
+                "details.quotaPoints.key": serverId
+            };
+            updateQuery = {
+                $set: {
+                    "details.quotaPoints.$.value": newPts
+                }
+            };
+        } else {
+            filterQuery = { discordId: member.id };
+            updateQuery = {
+                $push: {
+                    "details.quotaPoints": {
+                        key: serverId,
+                        value: newPts
+                    }
+                }
+            };
         }
+
+
         LOGGER.info(`Adding ${pts} points to ${member.displayName} for a total of ${(newPts > 0) ? newPts : 0}`);
 
-        const returnDoc = await MongoManager.getUserCollection().findOneAndUpdate({
-            discordId: member.id
-        }, {
-            $set: {
-                "details.quotaPoints": (newPts > 0) ? newPts : 0
-            }
-        }, {
-            returnDocument: "after"
-        });
+        const returnDoc = await MongoManager.getUserCollection().findOneAndUpdate(
+            filterQuery,
+            updateQuery,
+            { returnDocument: "after" }
+        );
 
         return returnDoc?.value;
     }

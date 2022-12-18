@@ -50,16 +50,7 @@ export class AddQuotaPoints extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const mStr = ctx.interaction.options.getString("member", false);
-        const points = ctx.interaction.options.getInteger("points", false) ?? 20;
-
-        if (points === 0) {
-            await ctx.interaction.reply({
-                ephemeral: true,
-                content: "You aren't logging anything."
-            });
-
-            return 0;
-        }
+        const points = ctx.interaction.options.getInteger("points", true);
 
         // See if there is another member to log as. We also need to make sure
         // there is a database entry available
@@ -68,10 +59,12 @@ export class AddQuotaPoints extends BaseCommand {
             : ctx.member!;
         await MongoManager.addIdNameToIdNameCollection(resMember);
         await MongoManager.getOrCreateUserDoc(resMember.id);
-        const resultDoc = await QuotaManager.addQuotaPts(resMember, points);
+
+        const resultDoc = await QuotaManager.addQuotaPts(resMember, ctx.guild!.id, points);
+        const newPoints = resultDoc?.details.quotaPoints.find(x => x.key === ctx.guild!.id)?.value;
         await ctx.interaction.reply({
             components: [],
-            content: `Added \`${points}\` point(s) to ${resMember} for a new total of ${resultDoc?.details.quotaPoints}.`,
+            content: `Added \`${points}\` point(s) to ${resMember} for a new total of ${newPoints}.`,
             embeds: []
         });
 
