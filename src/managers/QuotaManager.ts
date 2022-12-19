@@ -505,11 +505,11 @@ export namespace QuotaManager {
         let newPts = pts;
         let filterQuery: Filter<IUserInfo>;
         let updateQuery: UpdateFilter<IUserInfo>;
-        if (newPts < 0) newPts = 0;
 
         if (index >= 0) {
             if (!isNaN(userDoc.details.quotaPoints[index]?.value)) {
                 newPts += Number(userDoc.details.quotaPoints[index].value);
+                if (newPts < 0) newPts = 0;
             }
 
             filterQuery = {
@@ -522,6 +522,7 @@ export namespace QuotaManager {
                 }
             };
         } else {
+            if (newPts < 0) newPts = 0;
             filterQuery = { discordId: member.id };
             updateQuery = {
                 $push: {
@@ -534,7 +535,7 @@ export namespace QuotaManager {
         }
 
 
-        LOGGER.info(`Adding ${pts} points to ${member.displayName} for a total of ${(newPts > 0) ? newPts : 0}`);
+        LOGGER.info(`Adding ${pts} points to ${member.displayName} for a total of ${newPts}`);
 
         const returnDoc = await MongoManager.getUserCollection().findOneAndUpdate(
             filterQuery,
