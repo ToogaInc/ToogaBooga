@@ -1230,8 +1230,6 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 url: "https://i.imgur.com/a6SxEBx.png",
                 name: "Dragon Form"
             }
-
-
         ],
         dungeonColors: [
             0xC0C0C0,
