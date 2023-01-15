@@ -455,6 +455,7 @@ export namespace MongoManager {
                 createLogChannel: true,
                 pointUserLimit: 5,
                 allowUsingExistingVcs: false,
+                allowVcless: false,
                 vcLimit: 60,
                 nitroEarlyLocationLimit: 5,
                 customMsg: {
