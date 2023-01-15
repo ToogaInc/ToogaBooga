@@ -432,8 +432,7 @@ export class VclessRaidInstance {
             numEarlyLoc = Math.max(Math.floor(raidLimit * 0.1), 1);
         }
 
-        //this._raidLimit = raidLimit;
-        this._raidLimit = 1;
+        this._raidLimit = raidLimit;
         this._numNitroEarlyLoc = numEarlyLoc;
 
         if (numEarlyLoc !== 0 && this._guild.roles.premiumSubscriberRole) {
