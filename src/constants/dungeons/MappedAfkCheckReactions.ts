@@ -644,7 +644,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         type: "KEY",
         emojiInfo: {
             isCustom: true,
-            identifier: "1051549087574544404"
+            identifier: "1063931036653867009"
         },
         name: "Steamworks Key",
         isExaltKey: true
