@@ -22,7 +22,6 @@ import {
     Snowflake,
     TextChannel,
     User,
-    VoiceChannel
 } from "discord.js";
 import { StringBuilder } from "../utilities/StringBuilder";
 import { ArrayUtilities } from "../utilities/ArrayUtilities";
@@ -751,7 +750,7 @@ export class VclessRaidInstance {
      * @param {User} initiatedBy The user that initiated this.
      * @returns {Promise<MessageEmbed>} The embed.
      */
-    public static async interpretParseRes(
+    public static async interpretVclessParseRes(
         parseSummary: IParseResponse,
         initiatedBy: User,
     ): Promise<MessageEmbed> {
@@ -797,10 +796,21 @@ export class VclessRaidInstance {
      * @param {VoiceChannel | null} vc The voice channel to check against.
      * @return {Promise<IParseResponse>} An object containing the parse results.
      */
-    public static async parseScreenshot(url: string, vc: VoiceChannel | null): Promise<IParseResponse | null> {
+    public static async parseVclessRaid(url: string, raidId: string | null, guildDoc: IGuildInfo, guild: Guild): Promise<IParseResponse | null> {
         const toReturn: IParseResponse = { inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false, whoRes: [] };
-        // No raid VC = no parse.
-        if (!vc) return toReturn;
+
+        if (!raidId) return toReturn;
+        const raidInfo = guildDoc.activeRaids.find(raidInfo => raidInfo.raidId === raidId);
+        if(!raidInfo) return toReturn;
+
+        const idsInRaid = raidInfo.membersThatJoined;
+        const membersInRaid : GuildMember[] = [];
+        for await (const id of idsInRaid){
+            const member = await UserManager.resolveMember(guild, id);
+            if(!member) continue;
+            membersInRaid.push(member.member);
+        }
+
         // Make sure the image exists.
         try {
             // Make a request to see if this URL points to the right place.
@@ -829,7 +839,7 @@ export class VclessRaidInstance {
         toReturn.isValid = true;
         // Begin parsing.
         // Get people in raid VC but not in the raid itself. Could be alts.
-        vc.members.forEach((member) => {
+        membersInRaid.forEach((member) => {
             const igns = UserManager.getAllNames(member.displayName).map((x) => x.toLowerCase());
             //If vc member's name is not in parsed names, add them to InVcButNotInRaid
             if (!parsedNames.find((name) => igns.includes(name.toLowerCase()))) {
@@ -839,7 +849,7 @@ export class VclessRaidInstance {
         });
 
         // Get people in raid but not in the VC. Could be crashers.
-        const allIgnsInVc = vc.members.map((x) => UserManager.getAllNames(x.displayName.toLowerCase())).flat();
+        const allIgnsInVc = membersInRaid.map((x) => UserManager.getAllNames(x.displayName.toLowerCase())).flat();
         parsedNames.forEach((name) => {
             if (allIgnsInVc.includes(name.toLowerCase())) return;
             toReturn.inRaidButNotInVC.push(name);
@@ -1348,6 +1358,7 @@ export class VclessRaidInstance {
             startTime: this._startTime,
             expirationTime: this._expTime,
             memberInit: this._memberInit.id,
+            memberInitName: this._memberInit.displayName,
             raidChannels: this._raidSection.channels.raids,
             afkCheckMessageId: this._afkCheckMsg.id,
             controlPanelMessageId: this._controlPanelMsg.id,
@@ -1793,7 +1804,7 @@ export class VclessRaidInstance {
                 name: `${this._leaderName}'s Control Panel`,
                 iconURL: this._memberInit.user.displayAvatarURL(),
             })
-            .setTitle(`**${this._dungeon.dungeonName}** Raid.`) //TITLE
+            .setTitle(`**${this._dungeon.dungeonName}** VC-less Raid.`)
             .setFooter({
                 text:
                     `${this._memberInit.guild.name} ⇨ ${this._raidSection.sectionName} Control Panel.  Expires in ` +
@@ -2705,9 +2716,9 @@ export class VclessRaidInstance {
 
                 await i.deferUpdate();
                 if (i.customId === VclessRaidInstance.START_AFK_CHECK_ID) {
-                    LOGGER.info(`${this._instanceInfo} Leader chose to start AFK Check`);
+                    LOGGER.info(`${this._instanceInfo} Leader chose to start VC-less AFK Check`);
                     if (this._locationToProgress && !this._location)
-                        i.followUp({ content: "Please set a location prior to progressing the raid.", ephemeral: true });
+                        i.followUp({ content: "Please set a location prior to progressing a VC-less raid.", ephemeral: true });
                     else
                         this.startAfkCheck().then();
                     return;
@@ -3158,8 +3169,7 @@ export class VclessRaidInstance {
                         .setTitle(`Logging Run: ${this._dungeon.dungeonName}`)
                         .setDescription(
                             "Please send a screenshot containing the `/who` results from the completion of the"
-                            + " dungeon. If you don't have a `/who` screenshot, press the `Skip` button or the"
-                            + " `Users in VC` button to log for everyone who was still in the voice channel."
+                            + " dungeon. If you don't have a `/who` screenshot, press the `Skip` button"
                             + " Your screenshot should be an image, not a link to one."
                         )
                         .addField(
@@ -3169,11 +3179,6 @@ export class VclessRaidInstance {
                         .setFooter({ text: FOOTER_INFO_MSG }),
                 ],
                 components: AdvancedCollector.getActionRowsFromComponents([
-                    new MessageButton()
-                        .setLabel("Users in VC")
-                        .setEmoji("🎙️")
-                        .setStyle("PRIMARY")
-                        .setCustomId("parse-vc"),
                     skipButton
                 ])
             });
@@ -3244,17 +3249,6 @@ export class VclessRaidInstance {
                     await MiscUtilities.stopFor(5 * 1000);
                 }
             }
-
-            // // Giving completes to those who were in VC instead of asking for a /who
-            // if (!(resObj instanceof Message) && resObj.customId) {
-            //     if (resObj.customId === "parse-vc") { // Else, it is the "skip" button    
-            //         // Filter against those who originally joined VC to remove those who left.
-            //         const lastInVC = this._membersThatJoined.filter(member => !this._membersThatLeftChannel.includes(member) && mainLeader?.id !== member.id);
-
-            //         membersAtEnd.push(...lastInVC.values());
-            //         membersThatLeft.push(...this._membersThatLeftChannel);
-            //     }
-            // }
         }
         else {
             membersThatLeft.push(...this._membersThatJoined);

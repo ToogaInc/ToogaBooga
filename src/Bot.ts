@@ -148,6 +148,7 @@ export class Bot {
             new Cmds.Purge(),
             new Cmds.Poll(),
             new Cmds.Parse(),
+            new Cmds.ParseVcless(),
             new Cmds.EditName(),
             new Cmds.RemoveName(),
             new Cmds.CheckBlacklist(),

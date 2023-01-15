@@ -1344,6 +1344,7 @@ export class RaidInstance {
             startTime: this._startTime,
             expirationTime: this._expTime,
             memberInit: this._memberInit.id,
+            memberInitName: this._memberInit.displayName,
             raidChannels: this._raidSection.channels.raids,
             afkCheckMessageId: this._afkCheckMsg.id,
             controlPanelMessageId: this._controlPanelMsg.id,

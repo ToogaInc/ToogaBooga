@@ -25,6 +25,7 @@ export * from "./staff/EditName";
 export * from "./staff/RemoveName";
 export * from "./staff/ShowAllBlacklist";
 export * from "./staff/Parse";
+export * from "./staff/ParseVcless";
 export * from "./staff/Yoink";
 export * from "./staff/Clean";
 export * from "./staff/Poll";

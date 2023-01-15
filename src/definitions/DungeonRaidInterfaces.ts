@@ -584,6 +584,13 @@ export interface IRaidInfo {
     memberInit: string;
 
     /**
+    * The member that started this headcount.
+    *
+    * @type {string}
+    */
+    memberInitName: string;
+
+    /**
      * The time the raid was started.
      *
      * @type {number}

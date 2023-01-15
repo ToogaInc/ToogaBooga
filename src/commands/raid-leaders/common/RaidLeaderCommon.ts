@@ -181,7 +181,8 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
     guildDoc: IGuildInfo,
     controlPanelChannel: TextChannel,
     targetChannel: TextChannel,
-    from: GuildMember
+    from: GuildMember,
+    vcless: boolean = false
 ): Promise<VoiceChannel | null> {
     // All valid VCs must start with some word and end with a number
     // For example, "Raid 1" is a valid name but "Staff Lounge" is not
@@ -247,18 +248,29 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
         )
         .setFooter({ text: "You have 1 minute and 30 seconds to select a dungeon." })
         .setTimestamp();
+    
+    const askVCButtons = [
+        new MessageButton()
+            .setLabel("Temporary VC")
+            .setCustomId(uIdentifier)
+            .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("First Available VC")
+            .setCustomId(`${uIdentifier}_first`)
+            .setStyle("PRIMARY"),
+    ];
+
+    if(vcless) askVCButtons.push(
+        new MessageButton()
+            .setLabel("VC-less")
+            .setCustomId(`${uIdentifier}_vcless`)
+            .setStyle("PRIMARY"),
+    );
 
     await interaction.editReply({
         embeds: [askDgnEmbed],
         components: AdvancedCollector.getActionRowsFromComponents([
-            new MessageButton()
-                .setLabel("Temporary VC")
-                .setCustomId(uIdentifier)
-                .setStyle("PRIMARY"),
-            new MessageButton()
-                .setLabel("First Available VC")
-                .setCustomId(`${uIdentifier}_first`)
-                .setStyle("PRIMARY"),
+            ...askVCButtons,
             ...selectMenus
         ])
     });
@@ -271,6 +283,10 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
     }, uIdentifier);
 
     if (!selected) {
+        return null;
+    }
+
+    if(selected.customId.endsWith("vcless")){
         return null;
     }
 
