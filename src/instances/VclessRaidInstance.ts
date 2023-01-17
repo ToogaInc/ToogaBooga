@@ -185,6 +185,8 @@ export class VclessRaidInstance {
     private readonly _afkCheckButtons: MessageButton[];
     // Join Buttons to display on the AFK check for vcless raids.
     private readonly _joinButton: MessageButton;
+    // Whether intervals are running.
+    private _raidLocked: boolean = true;
     // All essential options (options that give early location). Equivalent to _afkCheckButtons but as raw data
     // instead of buttons. The key is the mapping key.
     private readonly _allEssentialOptions: Collection<string, ReactionInfoMore>;
@@ -301,15 +303,6 @@ export class VclessRaidInstance {
         this._location = raidOptions?.location ?? "";
         this._raidStatus = RaidStatus.NOTHING;
         this._raidId = uuidv4();
-
-        // if (raidOptions?.existingVc) {
-        //     this._raidVc = raidOptions.existingVc.vc;
-        //     this._oldVcPerms = raidOptions.existingVc.oldPerms;
-        // } else {
-        //     this._raidVc = null;
-        //     this._oldVcPerms = null;
-        // }
-
         this._isValid = true;
         this._afkCheckMsg = null;
         this._controlPanelMsg = null;
@@ -319,7 +312,6 @@ export class VclessRaidInstance {
         this._modifiersToUse = DEFAULT_MODIFIERS;
         this._embedColor = VclessRaidInstance.DEFAULT_EMBED_COLOR;
         this._startTime = Date.now();
-        //this._expTime = this._startTime + 1000*20; //Testing
         this._expTime =
             this._startTime +
             (section.otherMajorConfig.afkCheckProperties.afkCheckTimeout ?? VclessRaidInstance.DEFAULT_RAID_DURATION);
@@ -534,14 +526,6 @@ export class VclessRaidInstance {
         }
     }
 
-    // /**
-    //  * Gets the raid voice channel, if any.
-    //  * @returns {VoiceChannel | null} The raid voice channel.
-    //  */
-    // public get raidVc(): VoiceChannel | null {
-    //     return this._raidVc;
-    // }
-
     public get afkCheckMsg(): Message | null {
         return this._afkCheckMsg;
     }
@@ -670,19 +654,6 @@ export class VclessRaidInstance {
         });
         LOGGER.info(`${rm._instanceInfo} VclessRaidInstance created`);
 
-        // rm._raidVc = raidVc;
-        // if (raidInfo.oldVcPerms) {
-        //     rm._oldVcPerms = raidInfo.oldVcPerms.map((x) => {
-        //         return {
-        //             allow: BigInt(x.allow),
-        //             deny: BigInt(x.deny),
-        //             id: x.id,
-        //             type: x.type,
-        //         };
-        //     });
-        // } else {
-        //     rm._oldVcPerms = null;
-        // }
         rm._raidId = raidInfo.raidId;
 
         rm._afkCheckMsg = afkCheckMsg;
@@ -713,12 +684,13 @@ export class VclessRaidInstance {
             const member = await GuildFgrUtilities.fetchGuildMember(guild, entry.userId);
             if (!member) continue;
             await rm.addEarlyLocationReaction(member, entry.reactCodeName, entry.modifiers, false);
-            //rm._peopleToAddToVc.add(member.id);
         }
 
         rm._afkCheckButtons.forEach((btn) => {
             if (btn.customId === "join") {
                 if (rm._raidStatus === RaidStatus.AFK_CHECK) {
+                    btn.setDisabled(false);
+                } else if(rm._raidStatus === RaidStatus.IN_RUN) {
                     btn.setDisabled(false);
                 } else {
                     btn.setDisabled(true);
@@ -735,6 +707,7 @@ export class VclessRaidInstance {
             rm.startIntervals();
             rm.startAfkCheckCollector();
         } else if (rm._raidStatus === RaidStatus.IN_RUN) {
+            rm.startRaidRejoinCollector();
             rm.startControlPanelCollector();
             rm.startIntervals();
         }
@@ -790,7 +763,7 @@ export class VclessRaidInstance {
     }
 
     /**
-     * Parses a screenshot.
+     * Parses a screenshot for a vcless raid.
      * @param {string} url The url to the screenshot.
      * @param {VoiceChannel | null} vc The voice channel to check against.
      * @return {Promise<IParseResponse>} An object containing the parse results.
@@ -837,17 +810,17 @@ export class VclessRaidInstance {
         // Parse results means the picture must be valid.
         toReturn.isValid = true;
         // Begin parsing.
-        // Get people in raid VC but not in the raid itself. Could be alts.
+        // Get people in raid but not in the screenshot itself. Could be alts.
         membersInRaid.forEach((member) => {
             const igns = UserManager.getAllNames(member.displayName).map((x) => x.toLowerCase());
-            //If vc member's name is not in parsed names, add them to InVcButNotInRaid
+            //If raid member's name is not in parsed names, add them to InVcButNotInRaid
             if (!parsedNames.find((name) => igns.includes(name.toLowerCase()))) {
                 toReturn.inVcButNotInRaid.push(member.displayName);
             }
-            //Otherwise, they are in the VC and the raid.
+            //Otherwise, they are in the raid and the screenshot.
         });
 
-        // Get people in raid but not in the VC. Could be crashers.
+        // Get people in screenshot but not in the raid. Could be crashers.
         const allIgnsInVc = membersInRaid.map((x) => UserManager.getAllNames(x.displayName.toLowerCase())).flat();
         parsedNames.forEach((name) => {
             if (allIgnsInVc.includes(name.toLowerCase())) return;
@@ -876,25 +849,6 @@ export class VclessRaidInstance {
 
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
         const [logChannel] = await Promise.all([
-            // (async () => {
-            //     // if (this._raidVc) {
-            //     //     await this._raidVc.edit({
-            //     //         userLimit: this._vcLimit,
-            //     //         permissionOverwrites: this.getPermissionsForRaidVc(false),
-            //     //     });
-
-            //     //     return this._raidVc;
-            //     // }
-
-            //     // const v = await this._guild.channels.create(`${this._leaderName}'s Raid`, {
-            //     //     type: "GUILD_VOICE",
-            //     //     userLimit: this._vcLimit,
-            //     //     permissionOverwrites: this.getPermissionsForRaidVc(false),
-            //     //     parent: this._afkCheckChannel!.parent!,
-            //     // });
-
-            //     return v as VoiceChannel;
-            // })(),
             new Promise<TextChannel | null>(async (resolve) => {
                 if (!this._raidSection.otherMajorConfig.afkCheckProperties.createLogChannel) return resolve(null);
 
@@ -921,13 +875,6 @@ export class VclessRaidInstance {
             }),
         ]);
 
-        // if (!vc) return;
-
-        // if (!this._oldVcPerms) {
-        //     vc.setPosition(this._raidSection.otherMajorConfig.afkCheckProperties.defaultPosition ?? 0).then();
-        // }
-
-        // this._raidVc = vc as VoiceChannel;
         this._logChan = logChannel;
 
         // Create our initial control panel message.
@@ -981,12 +928,6 @@ export class VclessRaidInstance {
         // We do NOT start the intervals OR collector since pre-AFK and AFK have the exact same collectors/intervals.
         await this.setRaidStatus(RaidStatus.AFK_CHECK);
         await this.sendLocToElite();
-        // Only happens if someone deleted the raid vc
-        // if (!this.raidVc) {
-        //     return;
-        // }
-        // await this._raidVc.permissionOverwrites.set(this.getPermissionsForRaidVc(true));
-
         await this.stopAllIntervalsAndCollectors();
         this.startIntervals();
         this.startControlPanelCollector();
@@ -1083,27 +1024,7 @@ export class VclessRaidInstance {
 
         // Lock the VC as well.
         LOGGER.info(`${this._instanceInfo} Locking Raid`);  //TODO: apply this to the join button
-        this._joinButton.setDisabled(true);
-            // await Promise.all([
-            //     this._raidVc.edit({
-            //         permissionOverwrites: this.getPermissionsForRaidVc(false),
-            //     }),
-            //     (async () => {
-            //         if (this._oldVcPerms) {
-            //             return;
-            //         }
-
-            //         await this._raidVc?.edit({
-            //             position:
-            //                 this._raidVc?.parent?.children
-            //                     .filter((x) => x.type === "GUILD_VOICE")
-            //                     .map((x) => x.position)
-            //                     .sort((a, b) => b - a)[0] ?? 0,
-            //         });
-            //     })(),
-            // ]);
-
-            // Add all members that were in the VC at the time.
+        this._raidLocked = true;
         await this.updateMembersArr();
 
         // End the collector since it's useless. We'll use it again though.
@@ -1445,21 +1366,7 @@ export class VclessRaidInstance {
                 await MessageUtilities.tryDelete(this.afkCheckMsg);
                 return;
             }),
-            // Step 5: Delete the raid VC
-            // GlobalFgrUtilities.tryExecuteAsync(async () => {
-            //     if (keepVc && !force) {
-            //         return;
-            //     }
-
-            //     if (this._oldVcPerms) {
-            //         await this._raidVc?.permissionOverwrites.set(this._oldVcPerms);
-            //         return;
-            //     }
-
-            //     await this._raidVc?.delete();
-            //     this._raidVc = null;
-            // }),
-            // Step 6: Delete the logging channel
+            // Step 5: Delete the logging channel
             GlobalFgrUtilities.tryExecuteAsync(async () => {
                 await this._logChan?.delete();
                 this._logChan = null;
@@ -1688,6 +1595,7 @@ export class VclessRaidInstance {
                         ` ${this._thisFeedbackChan} channel.`
                     );
                 }
+                afkCheckEmbed.addField(`Raid is ${(this._raidLocked) ? "Locked :lock:" : "Unlocked :unlock:"}`, "Even if the run is locked, raiders who already joined can press the Join button to get loc again!");
                 afkCheckEmbed.setDescription(descSb.toString());
                 return afkCheckEmbed;
             case RaidStatus.RUN_FINISHED:
@@ -1796,7 +1704,6 @@ export class VclessRaidInstance {
         if (this._raidStatus === RaidStatus.NOTHING) return null;
 
         const descSb = new StringBuilder();
-        //const maxVc = `${this._raidVc.userLimit === 0 ? "Unlimited" : this._raidVc.userLimit}`;
 
         const controlPanelEmbed = new MessageEmbed()
             .setAuthor({
@@ -1833,10 +1740,6 @@ export class VclessRaidInstance {
                 .appendLine()
                 .append(`⇨ Elite Location Channel: ${this._eliteLocChannel ? this._eliteLocChannel : "**`Not Set.`**"}`)
                 .appendLine()
-                // .append(`⇨ Voice Channel: ${this._raidVc.toString()}`)
-                // .appendLine()
-                // .append(`⇨ VC Capacity: ${this._raidVc.members.size} / ${maxVc}`)
-                // .appendLine()
                 .append(`⇨ Location: **\`${this._location ? this._location : "Not Set."}\`**`)
                 .appendLine()
                 .append(`⇨ Status: **\`${status}\`**`);
@@ -1855,10 +1758,7 @@ export class VclessRaidInstance {
                         "This instance is currently in **PRE-AFK CHECK** mode. Only priority reactions can join the "
                     )
                     .append("raid VC. Use this opportunity to verify all priority reactions.")
-                    // .appendLine(2)
-                    // .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice `)
-                    // .append("channel.")
-                    // .appendLine(2)
+                    .appendLine(2)
                     .append("⇨ **Press** the **`Start AFK Check`** button if you want to start the AFK check. This ")
                     .append(
                         "will allow any raiders to join your raid VC. __Make sure__ all priority reactions have been "
@@ -1877,9 +1777,6 @@ export class VclessRaidInstance {
                 descSb
                     .append("This instance is currently in **AFK CHECK** mode. Any raiders can join this VC.")
                     .appendLine(2)
-                    // .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc.name}\`** voice `)
-                    // .append("channel.")
-                    // .appendLine(2)
                     .append("⇨ **Press** the **`Start Raid`** button if you want to end the AFK check and start the ")
                     .append("raid.")
                     .appendLine()
@@ -1898,11 +1795,6 @@ export class VclessRaidInstance {
                     )
                     .append("join the raid VC.")
                     .appendLine(2)
-                    // .append(
-                    //     `To use __this__ control panel, you **must** be in the **${this._raidVc.toString()}** voice `
-                    // )
-                    // .append("channel.")
-                    // .appendLine(2)
                     .append("⇨ **Press** the **`End Raid`** button if you want to end this raid.")
                     .appendLine()
                     .append("⇨ **Press** the **`Set Location`** button if you want to change this raid's location.")
@@ -2468,6 +2360,14 @@ export class VclessRaidInstance {
             return;
         }
 
+        if(this._raidStatus === RaidStatus.IN_RUN && this._raidLocked){
+            i.reply({
+                content: "The run has already started and is not accepting additional raiders.",
+                ephemeral: true,
+            }).catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+            return;
+        }
+
         const raidSize = this._membersThatJoined.length;
         if (raidSize >= this._raidLimit) {
             i.reply({
@@ -2709,9 +2609,6 @@ export class VclessRaidInstance {
 
         if (this._raidStatus === RaidStatus.PRE_AFK_CHECK) {
             this._controlPanelReactionCollector.on("collect", async (i: ButtonInteraction<"cached">) => {
-                // if (!(await validateInVc(i))) {
-                //     return;
-                // }
 
                 await i.deferUpdate();
                 if (i.customId === VclessRaidInstance.START_AFK_CHECK_ID) {
@@ -2743,9 +2640,6 @@ export class VclessRaidInstance {
 
         if (this._raidStatus === RaidStatus.AFK_CHECK) {
             this._controlPanelReactionCollector.on("collect", async (i: ButtonInteraction<"cached">) => {
-                // if (!(await validateInVc(i))) {
-                //     return;
-                // }
                 const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
                 await i.deferUpdate();
                 if (i.customId === VclessRaidInstance.START_RAID_ID) {
@@ -2775,9 +2669,6 @@ export class VclessRaidInstance {
 
         // Is in raid
         this._controlPanelReactionCollector.on("collect", async (i) => {
-            // if (!(await validateInVc(i))) {
-            //     return;
-            // }
             const member = await GuildFgrUtilities.fetchGuildMember(this._guild, i.user.id);
 
             if (i.customId === VclessRaidInstance.END_RAID_ID) {
@@ -2794,12 +2685,6 @@ export class VclessRaidInstance {
                     await MongoManager.getOrCreateGuildDoc(this._guild.id, true),
                     this._raidSection,
                     this._dungeon,
-                    // {
-                    //     existingVc: {
-                    //         vc: this._raidVc!,
-                    //         oldPerms: this._oldVcPerms,
-                    //     },
-                    // }
                 );
                 rm.startPreAfkCheck().then();
                 return;
@@ -2814,11 +2699,8 @@ export class VclessRaidInstance {
 
             if (i.customId === VclessRaidInstance.LOCK_RAID_ID) {
                 LOGGER.info(`${this._instanceInfo} ${member?.displayName} chose to lock the VC`);
-                this._joinButton.setDisabled(true);
+                this._raidLocked = true;
                 await Promise.all([
-                    // this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
-                    //     CONNECT: false,
-                    // }), TODO
                     i.reply({
                         content: "Locked Raid.",
                         ephemeral: true,
@@ -2835,11 +2717,8 @@ export class VclessRaidInstance {
 
             if (i.customId === VclessRaidInstance.UNLOCK_RAID_ID) {
                 LOGGER.info(`${this._instanceInfo} ${member?.displayName} chose to unlock the raid`);
-                this._joinButton.setDisabled(false);
+                this._raidLocked = false;
                 await Promise.all([
-                    // this._raidVc?.permissionOverwrites.edit(this._guild.roles.everyone.id, {
-                    //     CONNECT: null,
-                    // }), TODO
                     i.reply({
                         content: "Unlocked Raid.",
                         ephemeral: true,
