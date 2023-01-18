@@ -520,7 +520,7 @@ export class HeadcountInstance {
         await this.stopAllIntervalsAndCollectors("Headcount ended.");
 
         HeadcountInstance.VCLessConvertButton.setDisabled(!this._raidSection.otherMajorConfig.afkCheckProperties.allowVcless);
-        
+
         // Edit the control panel accordingly and re-react and start collector + intervals again.
         LOGGER.debug(`${this._instanceInfo} Replacing the headcount control panel`);
         await this._controlPanelMsg.edit({
@@ -600,6 +600,10 @@ export class HeadcountInstance {
             //If vcToUse is a vc, then vcless is false.  Otherwise, vcToUse is a boolean representing vcless
         const isVcless : boolean = (vcSelect instanceof VoiceChannel) ? false : vcSelect as boolean;
         const selectedVc : VoiceChannel | null = (vcSelect instanceof VoiceChannel) ? vcSelect as VoiceChannel : null;
+
+        //Log leader, dungeon, and (vc name / Vc-less / Temporary)
+        const vcLog = `${(vcSelect instanceof VoiceChannel) ? `${(vcSelect as VoiceChannel).name}` : (isVcless) ? "VC-less": "Temporary"}`; 
+        LOGGER.info(`${member.displayName} is starting a ${this._dungeon.dungeonName} with vc: ${vcLog}`);
 
         // This is for the purposes of not having to edit getHeadcountEmbed, letting users know it's in progress.
         this._headcountStatus = (isVcless) ? HeadcountStatus.HEADCOUNT_CONVERTING_VCLESS : HeadcountStatus.HEADCOUNT_CONVERTING;

@@ -12,6 +12,9 @@ import {
 } from "./common/RaidLeaderCommon";
 import { IRaidOptions } from "../../definitions";
 import { TextChannel, VoiceChannel } from "discord.js";
+import { Logger } from "../../utilities/Logger";
+
+const LOGGER: Logger = new Logger(__filename, false);
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
@@ -151,6 +154,10 @@ export class StartAfkCheck extends BaseCommand {
             });
             return 0;
         }
+        
+        //Log leader, dungeon, and (vc name / Vc-less / Temporary)
+        const vcLog = `${(vcSelect instanceof VoiceChannel) ? `${(vcSelect as VoiceChannel).name}` : (isVcless) ? "VC-less": "Temporary"}`; 
+        LOGGER.info(`${ctx.member!.displayName} is starting a ${dungeonToUse.dungeonName} with vc: ${vcLog}`);
 
         // Step 5: Check if there are any headcounts active and abort them.
 
