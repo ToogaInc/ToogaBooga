@@ -68,7 +68,6 @@ import { StringUtil } from "../utilities/StringUtilities";
 import { v4 as uuidv4 } from "uuid";
 import { DjsToProjUtilities } from "../utilities/DJsToProjUtilities";
 import RunResult = LoggerManager.RunResult;
-import { timeStamp } from "console";
 
 const FOOTER_INFO_MSG: string =
     "If you don't want to log this run, press the \"Cancel Logging\" button. Note that" +
