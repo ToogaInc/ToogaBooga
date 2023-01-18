@@ -1834,12 +1834,12 @@ export class RaidInstance {
                 });
                 if (this._vcless) {
                     descSb
-                        .append(`Only priority reactions can join the raid VC, ${this._raidVc?.toString()}, at this time.`)
+                        .append("Only priority reactions can join the raid at this time.")
                         .append(" You will be able to join the raid once all players with priority reactions have been")
                         .append(" confirmed.");
                 } else {
                     descSb
-                        .append("Only priority reactions can join the raid at this time.")
+                        .append(`Only priority reactions can join the raid VC, ${this._raidVc}, at this time.`)
                         .append(" You will be able to join the raid once all players with priority reactions have been")
                         .append(" confirmed.");
                 }
@@ -1853,7 +1853,7 @@ export class RaidInstance {
                 if (this._vcless) {
                     descSb.append("To participate in this raid, press the Join button.");
                 } else {
-                    descSb.append(`To participate in this raid, join ${this._raidVc?.toString()} channel.`);
+                    descSb.append(`To participate in this raid, join ${this._raidVc} channel.`);
                 }
                 break;
             case RaidStatus.IN_RUN:
@@ -1892,9 +1892,6 @@ export class RaidInstance {
                     name: `${this._leaderName}'s ${this._dungeon.dungeonName} raid is finished.`,
                     iconURL: this._memberInit.user.displayAvatarURL(),
                 });
-                if (this._vcless) {
-                    afkCheckEmbed.addField(`Raiders: (${this._membersThatJoined.length}/${this._raidLimit})`, " ");
-                }
                 descSb.append("Thanks for participating! Keep an eye out for new headcounts.");
                 afkCheckEmbed.setDescription(descSb.toString());
                 return afkCheckEmbed;
@@ -1909,6 +1906,10 @@ export class RaidInstance {
         }
 
         afkCheckEmbed.setDescription(descSb.toString());
+
+        if (this._vcless) {
+            afkCheckEmbed.addField(`Raiders: (${this._membersThatJoined.length}/${this._raidLimit})`, " ");
+        }
 
         const prioritySb = new StringBuilder();
         // Account for the general early location roles.
@@ -2039,7 +2040,7 @@ export class RaidInstance {
                     .appendLine();
             } else {
                 generalStatus
-                    .append(`⇨ Voice Channel: ${this._raidVc?.toString()}`)
+                    .append(`⇨ Voice Channel: ${this._raidVc}`)
                     .appendLine()
                     .append(`⇨ VC Capacity: ${this._raidVc?.members.size} / ${this._raidVc?.userLimit === 0 ? "Unlimited" : this._raidVc?.userLimit}`)
                     .appendLine();
@@ -2066,7 +2067,7 @@ export class RaidInstance {
                     .appendLine(2);
                 if (!this._vcless) {
                     descSb
-                        .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc?.toString()}\`** voice `)
+                        .append(`To use __this__ control panel, you **must** be in the ${this._raidVc} voice `)
                         .append("channel.")
                         .appendLine(2);
                 }
@@ -2091,7 +2092,7 @@ export class RaidInstance {
                     .appendLine(2);
                 if (!this._vcless) {
                     descSb
-                        .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc?.toString()}\`** voice `)
+                        .append(`To use __this__ control panel, you **must** be in the ${this._raidVc} voice `)
                         .append("channel.")
                         .appendLine(2);
                 }
@@ -2116,7 +2117,7 @@ export class RaidInstance {
                     .appendLine(2);
                 if (!this._vcless) {
                     descSb
-                        .append(`To use __this__ control panel, you **must** be in the **\`${this._raidVc?.toString()}\`** voice `)
+                        .append(`To use __this__ control panel, you **must** be in the ${this._raidVc} voice `)
                         .append("channel.")
                         .appendLine(2);
                 }
