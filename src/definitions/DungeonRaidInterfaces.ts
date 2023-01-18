@@ -860,6 +860,13 @@ export interface IRaidOptions {
     location?: string;
 
     /**
+     * Whether raid is vcless
+     * 
+     * @type {boolean}
+     */
+    vcless: boolean;
+
+    /**
      * Options to use a pre-existing voice channel.
      *
      * @type {object}

@@ -6,7 +6,7 @@ import { ArrayUtilities } from "../../utilities/ArrayUtilities";
 import { StringBuilder } from "../../utilities/StringBuilder";
 import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
 import { QuotaManager } from "../../managers/QuotaManager";
-import { VclessRaidInstance } from "../../instances/VclessRaidInstance";
+import { RaidInstance } from "../../instances/RaidInstance";
 import { IRaidInfo } from "../../definitions";
 import { ButtonConstants } from "../../constants/ButtonConstants";
 
@@ -141,7 +141,7 @@ export class ParseVcless extends BaseCommand {
             return -1;
         }
 
-        const parseSummary = await VclessRaidInstance.parseVclessRaid(image.url, raidInfo.raidId, ctx.guildDoc!, ctx.guild!);
+        const parseSummary = await RaidInstance.parseVclessRaid(image.url, raidInfo.raidId, ctx.guildDoc!, ctx.guild!);
         if (!parseSummary) {
             await ctx.interaction.editReply({
                 content: "Something went wrong when trying to parse this screenshot. Try again later."
@@ -150,7 +150,7 @@ export class ParseVcless extends BaseCommand {
             return -1;
         }
 
-        const embed = await VclessRaidInstance.interpretVclessParseRes(parseSummary, ctx.user);
+        const embed = await RaidInstance.interpretVclessParseRes(parseSummary, ctx.user);
         await ctx.interaction.editReply({
             content: null,
             embeds: [embed]

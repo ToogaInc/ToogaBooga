@@ -10,7 +10,6 @@ import {
 } from "./common/RaidLeaderCommon";
 import { IRaidOptions } from "../../definitions";
 import { TextChannel, VoiceChannel } from "discord.js";
-import { VclessRaidInstance } from "../../instances/VclessRaidInstance";
 
 export class StartAfkCheck extends BaseCommand {
     public static readonly START_AFK_CMD_CODE: string = "AFK_CHECK_START";
@@ -101,11 +100,12 @@ export class StartAfkCheck extends BaseCommand {
         }
 
         const vclessAllowed = sectionToUse.section.otherMajorConfig.afkCheckProperties.allowVcless ?? false;
-        let vcless = false;
+        let isVcless = false;
 
         // Step 3: Get the VC
         let vcToUse: VoiceChannel | null = null;
         const raidOptions: IRaidOptions = {
+            vcless: isVcless,
             location: location ?? ""
         };
 
@@ -115,7 +115,7 @@ export class StartAfkCheck extends BaseCommand {
                 ctx.guildDoc!,
                 sectionToUse.cpChan,
                 ctx.channel as TextChannel,
-                ctx.member!, 
+                ctx.member!,
                 vclessAllowed
             );
 
@@ -125,7 +125,8 @@ export class StartAfkCheck extends BaseCommand {
                     oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
                 };
             } else if (vclessAllowed) {
-                vcless = true;
+                isVcless = true;
+                raidOptions.vcless = true;
             }
         }
 
@@ -140,44 +141,30 @@ export class StartAfkCheck extends BaseCommand {
             });
             return 0;
         }
-        
+
         // Step 5: Check if there are any headcounts active and abort them.
-        
+
         HeadcountInstance.ActiveHeadcounts.each(async (headcount: HeadcountInstance) => {
             if (headcount.getHeadcountInfoObject()!.memberInit === ctx.interaction.user.id) {
                 await headcount.abortHeadcount();
             }
         });
-        
+
         // Step 6: Start it
-        if(vcless){
-            const rm = VclessRaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, raidOptions);
 
-            if (!rm) {
-                await ctx.interaction.editReply({
-                    components: [],
-                    content: "An unknown error occurred when trying to create a VC-less AFK Check instance. Please try again"
-                        + " later or report this issue to a developer.",
-                    embeds: []
-                });
-                return 0;
-            }
-            rm.startPreAfkCheck().then();
+        const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, raidOptions);
 
-        } else {
-            const rm = RaidInstance.new(ctx.member!, ctx.guildDoc!, sectionToUse.section, dungeonToUse, raidOptions);
-
-            if (!rm) {
-                await ctx.interaction.editReply({
-                    components: [],
-                    content: "An unknown error occurred when trying to create an AFK Check instance. Please try again"
-                        + " later or report this issue to a developer.",
-                    embeds: []
-                });
-                return 0;
-            }
-            rm.startPreAfkCheck().then();
+        if (!rm) {
+            await ctx.interaction.editReply({
+                components: [],
+                content: "An unknown error occurred when trying to create an AFK Check instance. Please try again"
+                    + " later or report this issue to a developer.",
+                embeds: []
+            });
+            return 0;
         }
+        rm.startPreAfkCheck().then();
+
         await ctx.interaction.editReply({
             components: [],
             content: `An AFK Check has been started. See ${sectionToUse.afkCheckChan} and ${sectionToUse.cpChan}`,

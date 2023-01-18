@@ -3,7 +3,6 @@ import { MongoManager } from "../managers/MongoManager";
 import { IBotInfo } from "../definitions";
 import { MuteManager, SuspensionManager } from "../managers/PunishmentManager";
 import { RaidInstance } from "../instances/RaidInstance";
-import { VclessRaidInstance } from "../instances/VclessRaidInstance";
 import { HeadcountInstance } from "../instances/HeadcountInstance";
 import { Logger } from "../utilities/Logger";
 import getMongoClient = MongoManager.getMongoClient;
@@ -59,11 +58,7 @@ export async function onReadyEvent(): Promise<void> {
             }
 
             guildDoc.activeRaids.forEach(async raid => {
-                if(raid.vcless){
-                    await VclessRaidInstance.createNewVclessLivingInstance(guildDoc, raid);
-                } else {
-                    await RaidInstance.createNewLivingInstance(guildDoc, raid);
-                }
+                await RaidInstance.createNewLivingInstance(guildDoc, raid);
             });
         })
     ]);

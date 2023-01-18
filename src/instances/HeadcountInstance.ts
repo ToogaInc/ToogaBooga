@@ -38,7 +38,6 @@ import { MessageUtilities } from "../utilities/MessageUtilities";
 import { Logger } from "../utilities/Logger";
 import { TimeUtilities } from "../utilities/TimeUtilities";
 import { selectVc } from "../commands/raid-leaders/common/RaidLeaderCommon";
-import { VclessRaidInstance } from "./VclessRaidInstance";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -589,7 +588,7 @@ export class HeadcountInstance {
         await this._headcountMsg.reactions.removeAll().catch();
         LOGGER.info(`${this._instanceInfo} Headcount aborted`);
     }
-    
+
     /**
      * Converts a headcount.
      * @param {GuildMember} member The person that converted this.
@@ -633,30 +632,21 @@ export class HeadcountInstance {
         await this._headcountMsg.reactions.removeAll().catch();
         LOGGER.info(`${this._instanceInfo} Headcount converted`);
 
-        if (vcless) {
-            const rm = await VclessRaidInstance.new(
-                member,
-                this._guildDoc,
-                this._raidSection,
-                this._dungeon,
-            );
-            await rm?.startPreAfkCheck();
-        }
-        else {
-            const rm = await RaidInstance.new(
-                member,
-                this._guildDoc,
-                this._raidSection,
-                this._dungeon,
-                {
-                    existingVc: vcToUse ? {
-                        vc: vcToUse,
-                        oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
-                    } : undefined
-                }
-            );
-            await rm?.startPreAfkCheck();
-        }
+
+        const rm = await RaidInstance.new(
+            member,
+            this._guildDoc,
+            this._raidSection,
+            this._dungeon,
+            {
+                vcless: vcless,
+                existingVc: vcToUse ? {
+                    vc: vcToUse,
+                    oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
+                } : undefined
+            }
+        );
+        await rm?.startPreAfkCheck();
 
         this._headcountStatus = (vcless) ? HeadcountStatus.HEADCOUNT_CONVERTED_VCLESS : HeadcountStatus.HEADCOUNT_CONVERTED;
 
@@ -763,7 +753,7 @@ export class HeadcountInstance {
                     })
                     .setDescription("Good luck, and have a great raid!");
                 return headcountEmbed;
-    
+
 
             case HeadcountStatus.HEADCOUNT_ABORTED:
                 headcountEmbed
