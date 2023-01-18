@@ -593,15 +593,18 @@ export class HeadcountInstance {
      * Converts a headcount.
      * @param {GuildMember} member The person that converted this.
      * @param {VoiceChannel | boolean} vcToUse The voice channel to use, or true if vcless, false otherwise.
-     * @param {boolean} vcless Whether to use a vcless or vc-based afk check.
      */
-    public async convertHeadcount(member: GuildMember, vcSelect: VoiceChannel | boolean, vcless: boolean = false): Promise<void> {
+    public async convertHeadcount(member: GuildMember, vcSelect: VoiceChannel | boolean): Promise<void> {
         LOGGER.info(`${this._instanceInfo} Converting headcount`);
         if (!this._headcountMsg || !this._controlPanelMsg)
             return;
+        
+            //If vcToUse is a vc, then vcless is false.  Otherwise, vcToUse is a boolean representing vcless
+        const isVcless : boolean = (vcSelect instanceof VoiceChannel) ? false : vcSelect as boolean;
+        const selectedVc : VoiceChannel | null = (vcSelect instanceof VoiceChannel) ? vcSelect as VoiceChannel : null;
 
         // This is for the purposes of not having to edit getHeadcountEmbed, letting users know it's in progress.
-        this._headcountStatus = (vcless) ? HeadcountStatus.HEADCOUNT_CONVERTING_VCLESS : HeadcountStatus.HEADCOUNT_CONVERTING;
+        this._headcountStatus = (isVcless) ? HeadcountStatus.HEADCOUNT_CONVERTING_VCLESS : HeadcountStatus.HEADCOUNT_CONVERTING;
 
         // Stop 0: Stop all collectors
         await this.stopAllIntervalsAndCollectors("Headcount converted.");
@@ -632,10 +635,6 @@ export class HeadcountInstance {
         await this._headcountMsg.reactions.removeAll().catch();
         LOGGER.info(`${this._instanceInfo} Headcount converted`);
 
-        //If vcToUse is a vc, then vcless is false.  Otherwise, vcToUse is a boolean representing vcless
-        const isVcless : boolean = (typeof vcSelect === typeof VoiceChannel) ? false : vcSelect as boolean;
-        const selectedVc : VoiceChannel | null = (typeof vcSelect === typeof VoiceChannel) ? vcSelect as VoiceChannel : null;
-
         const rm = await RaidInstance.new(
             member,
             this._guildDoc,
@@ -651,7 +650,7 @@ export class HeadcountInstance {
         );
         await rm?.startPreAfkCheck();
 
-        this._headcountStatus = (vcless) ? HeadcountStatus.HEADCOUNT_CONVERTED_VCLESS : HeadcountStatus.HEADCOUNT_CONVERTED;
+        this._headcountStatus = (isVcless) ? HeadcountStatus.HEADCOUNT_CONVERTED_VCLESS : HeadcountStatus.HEADCOUNT_CONVERTED;
 
         // Update the headcount message to say it has been converted
         await this._headcountMsg.edit({
@@ -1035,7 +1034,8 @@ export class HeadcountInstance {
                             newGuildDoc,
                             this._controlPanelChannel,
                             this._controlPanelChannel,
-                            i.member! as GuildMember
+                            i.member! as GuildMember,
+                            false
                         );
                     }
 
@@ -1043,7 +1043,7 @@ export class HeadcountInstance {
                         `${this._leaderName} converted ${this._dungeon.dungeonName} headcount to AFKCheck.`
                     );
 
-                    this.convertHeadcount(i.member as GuildMember, vcSelect, false).then();
+                    this.convertHeadcount(i.member as GuildMember, vcSelect).then();
                     return;
                 }
                 case HeadcountInstance.CONVERT_TO_VCLESS_AFK_CHECK_ID: {
@@ -1055,7 +1055,7 @@ export class HeadcountInstance {
                         `${this._leaderName} converted ${this._dungeon.dungeonName} headcount to vcless AFKCheck.`
                     );
 
-                    this.convertHeadcount(i.member as GuildMember, true, true).then();
+                    this.convertHeadcount(i.member as GuildMember, true).then();
                     return;
                 }
                 case HeadcountInstance.ABORT_HEADCOUNT_ID: {

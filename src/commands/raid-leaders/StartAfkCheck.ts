@@ -119,7 +119,7 @@ export class StartAfkCheck extends BaseCommand {
                 vclessAllowed
             );
 
-            if (typeof vcSelect === typeof VoiceChannel) { //Vc returned, use the vc
+            if (vcSelect instanceof VoiceChannel) { //Vc returned, use the vc
                 const vcToUse = vcSelect as VoiceChannel;
                 raidOptions.existingVc = {
                     vc: vcToUse,
