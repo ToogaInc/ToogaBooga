@@ -519,10 +519,8 @@ export class HeadcountInstance {
         // End the collector since it's useless. We'll use it again though.
         await this.stopAllIntervalsAndCollectors("Headcount ended.");
 
-        if (this._raidSection.otherMajorConfig.afkCheckProperties.allowVcless) {
-            HeadcountInstance.VCLessConvertButton.setDisabled(false);
-        }
-
+        HeadcountInstance.VCLessConvertButton.setDisabled(!this._raidSection.otherMajorConfig.afkCheckProperties.allowVcless);
+        
         // Edit the control panel accordingly and re-react and start collector + intervals again.
         LOGGER.debug(`${this._instanceInfo} Replacing the headcount control panel`);
         await this._controlPanelMsg.edit({

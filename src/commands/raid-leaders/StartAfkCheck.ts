@@ -6,7 +6,9 @@ import { DungeonUtilities } from "../../utilities/DungeonUtilities";
 import {
     DungeonSelectionType,
     getAvailableSections,
-    getSelectedSection, selectVc
+    getSelectedSection, 
+    selectVc,
+    selectVcless
 } from "./common/RaidLeaderCommon";
 import { IRaidOptions } from "../../definitions";
 import { TextChannel, VoiceChannel } from "discord.js";
@@ -98,7 +100,8 @@ export class StartAfkCheck extends BaseCommand {
             });
             return 0;
         }
-
+        
+        const existingVcsAllowed = sectionToUse.section.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs ?? false;
         const vclessAllowed = sectionToUse.section.otherMajorConfig.afkCheckProperties.allowVcless ?? false;
         let isVcless = false;
 
@@ -109,7 +112,7 @@ export class StartAfkCheck extends BaseCommand {
             location: location ?? ""
         };
 
-        if (sectionToUse.section.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs) {
+        if (existingVcsAllowed) {
             vcSelect = await selectVc(
                 ctx.interaction,
                 ctx.guildDoc!,
@@ -132,6 +135,9 @@ export class StartAfkCheck extends BaseCommand {
                 isVcless = false;
                 raidOptions.vcless = false;
             }
+        } else if (vclessAllowed){
+            isVcless = await selectVcless(ctx.interaction, ctx.channel as TextChannel, ctx.member!);
+            raidOptions.vcless = isVcless;
         }
 
         // Step 4: Ask for the appropriate dungeon

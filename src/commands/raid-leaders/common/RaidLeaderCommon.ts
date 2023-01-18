@@ -167,6 +167,62 @@ export async function getSelectedSection(
 }
 
 /**
+ * Gives the user the ability to select vcless raid (without providing other vc options)
+ * @param interaction The interaction.
+ * @param targetChannel The channel where the selection of the VC should be asked in.
+ * @param from the member that initiated this.
+ * @returns {boolean} true if VC-less raid is chosen, false otherwise
+ */
+export async function selectVcless<T extends BaseCommandInteraction | MessageComponentInteraction>(
+    interaction: T,
+    targetChannel: TextChannel,
+    from: GuildMember
+): Promise<boolean>{
+
+    const uIdentifier = StringUtil.generateRandomString(10);
+
+    const askVclessEmbed = MessageUtilities.generateBlankEmbed(from, "GOLD")
+        .setTitle("Choose Raid Type")
+        .setFooter({ text: "You have 1 minute and 30 seconds to select a dungeon." })
+        .setTimestamp();
+    
+    const askVClessButtons = [
+        new MessageButton()
+            .setLabel("VC")
+            .setCustomId(`${uIdentifier}`)
+            .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("VC-less")
+            .setCustomId(`${uIdentifier}_vcless`)
+            .setStyle("PRIMARY"),
+    ];
+
+    await interaction.editReply({
+        embeds: [askVclessEmbed],
+        components: AdvancedCollector.getActionRowsFromComponents([
+            ...askVClessButtons,
+        ])
+    });
+
+    const selected = await AdvancedCollector.startInteractionEphemeralCollector({
+        targetAuthor: from.user,
+        acknowledgeImmediately: true,
+        targetChannel: targetChannel,
+        duration: 30 * 1000
+    }, uIdentifier);
+
+    if (!selected) {
+        return false; // Default value, signalling to create a temporary vc
+    }
+
+    if(selected.customId.endsWith("vcless")){
+        return true; // vcless chosen, return true
+    }
+
+    return false;
+}
+
+/**
  * Gives the user the ability to select a voice channel for their raid, assuming the VC is valid.
  * @param {BaseCommandInteraction} interaction The interaction.
  * @param {IGuildInfo} guildDoc The guild document.
