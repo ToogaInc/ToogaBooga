@@ -592,10 +592,10 @@ export class HeadcountInstance {
     /**
      * Converts a headcount.
      * @param {GuildMember} member The person that converted this.
-     * @param {VoiceChannel | null} vcToUse The voice channel to use, if any.
+     * @param {VoiceChannel | boolean} vcToUse The voice channel to use, or true if vcless, false otherwise.
      * @param {boolean} vcless Whether to use a vcless or vc-based afk check.
      */
-    public async convertHeadcount(member: GuildMember, vcToUse: VoiceChannel | null, vcless: boolean = false): Promise<void> {
+    public async convertHeadcount(member: GuildMember, vcSelect: VoiceChannel | boolean, vcless: boolean = false): Promise<void> {
         LOGGER.info(`${this._instanceInfo} Converting headcount`);
         if (!this._headcountMsg || !this._controlPanelMsg)
             return;
@@ -632,6 +632,9 @@ export class HeadcountInstance {
         await this._headcountMsg.reactions.removeAll().catch();
         LOGGER.info(`${this._instanceInfo} Headcount converted`);
 
+        //If vcToUse is a vc, then vcless is false.  Otherwise, vcToUse is a boolean representing vcless
+        const isVcless : boolean = (typeof vcSelect === typeof VoiceChannel) ? false : vcSelect as boolean;
+        const selectedVc : VoiceChannel | null = (typeof vcSelect === typeof VoiceChannel) ? vcSelect as VoiceChannel : null;
 
         const rm = await RaidInstance.new(
             member,
@@ -639,10 +642,10 @@ export class HeadcountInstance {
             this._raidSection,
             this._dungeon,
             {
-                vcless: vcless,
-                existingVc: vcToUse ? {
-                    vc: vcToUse,
-                    oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
+                vcless: isVcless,
+                existingVc: selectedVc ? {
+                    vc: selectedVc,
+                    oldPerms: Array.from(selectedVc.permissionOverwrites.cache.values())
                 } : undefined
             }
         );
@@ -1025,9 +1028,9 @@ export class HeadcountInstance {
                     this._controlPanelReactionCollector?.stop("No longer needed");
                     // Ask for VC
                     const newGuildDoc = await MongoManager.getOrCreateGuildDoc(this._guild.id, true);
-                    let vcToUse: VoiceChannel | null = null;
+                    let vcSelect: VoiceChannel | boolean = false;
                     if (this._raidSection.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs) {
-                        vcToUse = await selectVc(
+                        vcSelect = await selectVc(
                             i,
                             newGuildDoc,
                             this._controlPanelChannel,
@@ -1040,7 +1043,7 @@ export class HeadcountInstance {
                         `${this._leaderName} converted ${this._dungeon.dungeonName} headcount to AFKCheck.`
                     );
 
-                    this.convertHeadcount(i.member as GuildMember, vcToUse, false).then();
+                    this.convertHeadcount(i.member as GuildMember, vcSelect, false).then();
                     return;
                 }
                 case HeadcountInstance.CONVERT_TO_VCLESS_AFK_CHECK_ID: {
@@ -1052,7 +1055,7 @@ export class HeadcountInstance {
                         `${this._leaderName} converted ${this._dungeon.dungeonName} headcount to vcless AFKCheck.`
                     );
 
-                    this.convertHeadcount(i.member as GuildMember, null, true).then();
+                    this.convertHeadcount(i.member as GuildMember, true, true).then();
                     return;
                 }
                 case HeadcountInstance.ABORT_HEADCOUNT_ID: {

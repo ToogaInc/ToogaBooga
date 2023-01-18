@@ -173,7 +173,7 @@ export async function getSelectedSection(
  * @param {TextChannel} controlPanelChannel The control panel channel.
  * @param {TextChannel} targetChannel The channel where the selection of the VC should be asked in.
  * @param {GuildMember} from The member that initiated this.
- * @returns {Promise<VoiceChannel | null>} The voice channel if one is selected, or `null` otherwise if one should be
+ * @returns {Promise<VoiceChannel | boolean>} The voice channel if one is selected, or `true` if vcless is selected, or `false` otherwise if one should be
  * created for temporary purposes.
  */
 export async function selectVc<T extends BaseCommandInteraction | MessageComponentInteraction>(
@@ -182,8 +182,8 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
     controlPanelChannel: TextChannel,
     targetChannel: TextChannel,
     from: GuildMember,
-    vcless: boolean = false
-): Promise<VoiceChannel | null> {
+    vclessAllowed: boolean = false
+): Promise<VoiceChannel | boolean> {
     // All valid VCs must start with some word and end with a number
     // For example, "Raid 1" is a valid name but "Staff Lounge" is not
     // A valid VC must also not be used
@@ -207,7 +207,7 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
         });
 
     if (validVcs.size === 0) {
-        return null;
+        return false;
     }
 
     validVcs.sort((a, b) => a.position - b.position);
@@ -260,7 +260,7 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
             .setStyle("PRIMARY"),
     ];
 
-    if(vcless) {
+    if(vclessAllowed) {
         askVCButtons.push(
             new MessageButton()
                 .setLabel("VC-less")
@@ -285,21 +285,21 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
     }, uIdentifier);
 
     if (!selected) {
-        return null;
+        return false; // Default value, signalling to create a temporary vc
     }
 
     if(selected.customId.endsWith("vcless")){
-        return null;
+        return true; // vcless chosen, return true
     }
 
     if (selected.isSelectMenu()) {
-        return validVcs.get(selected.values[0])! as VoiceChannel;
+        return validVcs.get(selected.values[0])! as VoiceChannel; //A vc is returned
     }
 
     if (selected.customId.endsWith("first")) {
-        return validVcs.first() as VoiceChannel;
+        return validVcs.first() as VoiceChannel; //A vc is returned
     }
 
-    // Default value
-    return null;
+    // Default value, signalling to create a temporary vc
+    return false;
 }

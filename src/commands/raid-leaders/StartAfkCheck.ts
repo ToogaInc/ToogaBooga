@@ -103,14 +103,14 @@ export class StartAfkCheck extends BaseCommand {
         let isVcless = false;
 
         // Step 3: Get the VC
-        let vcToUse: VoiceChannel | null = null;
+        let vcSelect: VoiceChannel | boolean = false; //Default: create a temporary vc
         const raidOptions: IRaidOptions = {
             vcless: isVcless,
             location: location ?? ""
         };
 
         if (sectionToUse.section.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs) {
-            vcToUse = await selectVc(
+            vcSelect = await selectVc(
                 ctx.interaction,
                 ctx.guildDoc!,
                 sectionToUse.cpChan,
@@ -119,14 +119,18 @@ export class StartAfkCheck extends BaseCommand {
                 vclessAllowed
             );
 
-            if (vcToUse) {
+            if (typeof vcSelect === typeof VoiceChannel) { //Vc returned, use the vc
+                const vcToUse = vcSelect as VoiceChannel;
                 raidOptions.existingVc = {
                     vc: vcToUse,
                     oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
                 };
-            } else if (vclessAllowed) {
+            } else if (vclessAllowed && vcSelect) { //Vcless selected and allowed, use vcless
                 isVcless = true;
                 raidOptions.vcless = true;
+            } else { //Vcless not selected, create temporary vc
+                isVcless = false;
+                raidOptions.vcless = false;
             }
         }
 
