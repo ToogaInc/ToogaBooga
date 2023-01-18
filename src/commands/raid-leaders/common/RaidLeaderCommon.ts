@@ -260,12 +260,14 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
             .setStyle("PRIMARY"),
     ];
 
-    if(vcless) askVCButtons.push(
-        new MessageButton()
-            .setLabel("VC-less")
-            .setCustomId(`${uIdentifier}_vcless`)
-            .setStyle("PRIMARY"),
-    );
+    if(vcless) {
+        askVCButtons.push(
+            new MessageButton()
+                .setLabel("VC-less")
+                .setCustomId(`${uIdentifier}_vcless`)
+                .setStyle("PRIMARY"),
+        );
+    }
 
     await interaction.editReply({
         embeds: [askDgnEmbed],

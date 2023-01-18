@@ -65,11 +65,9 @@ export class ParseVcless extends BaseCommand {
         }
 
         //Find raid
-        const allVclessRaids = ctx.guildDoc!.activeRaids.filter(raid => {
-            if (raid.vcless === true) return raid;
-        });
+        const allVclessRaids = ctx.guildDoc!.activeRaids.filter(raid => raid.vcless);
 
-        if (!allVclessRaids) {
+        if (allVclessRaids.length === 0) {
             await ctx.interaction.reply({
                 content: "No vcless raids to parse!",
                 ephemeral: true
