@@ -215,6 +215,7 @@ export class RaidInstance {
     // The old VC perms.
     private _oldVcPerms: OverwriteResolvable[] | null;
 
+    // Whether the raid is vc or vcless
     private _vcless: boolean = false;
     // The AFK check message.
     private _afkCheckMsg: Message | null;
@@ -900,11 +901,11 @@ export class RaidInstance {
         }
 
         for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
-            embed.addField("In /who, Not In Raid VC.", field.join(", "));
+            embed.addField("In /who, Not In Raid.", field.join(", "));
         }
 
         for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
-            embed.addField("In Raid VC, Not In /who.", field.join(", "));
+            embed.addField("In Raid, Not In /who.", field.join(", "));
         }
 
         return embed;
