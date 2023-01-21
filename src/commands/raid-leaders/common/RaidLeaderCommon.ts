@@ -167,13 +167,69 @@ export async function getSelectedSection(
 }
 
 /**
+ * Gives the user the ability to select vcless raid (without providing other vc options)
+ * @param interaction The interaction.
+ * @param targetChannel The channel where the selection of the VC should be asked in.
+ * @param from the member that initiated this.
+ * @returns {boolean} true if VC-less raid is chosen, false otherwise
+ */
+export async function selectVcless<T extends BaseCommandInteraction | MessageComponentInteraction>(
+    interaction: T,
+    targetChannel: TextChannel,
+    from: GuildMember
+): Promise<boolean>{
+
+    const uIdentifier = StringUtil.generateRandomString(10);
+
+    const askVclessEmbed = MessageUtilities.generateBlankEmbed(from, "GOLD")
+        .setTitle("Choose Raid Type")
+        .setFooter({ text: "You have 1 minute and 30 seconds to select a dungeon." })
+        .setTimestamp();
+    
+    const askVClessButtons = [
+        new MessageButton()
+            .setLabel("VC")
+            .setCustomId(`${uIdentifier}`)
+            .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("VC-less")
+            .setCustomId(`${uIdentifier}_vcless`)
+            .setStyle("PRIMARY"),
+    ];
+
+    await interaction.editReply({
+        embeds: [askVclessEmbed],
+        components: AdvancedCollector.getActionRowsFromComponents([
+            ...askVClessButtons,
+        ])
+    });
+
+    const selected = await AdvancedCollector.startInteractionEphemeralCollector({
+        targetAuthor: from.user,
+        acknowledgeImmediately: true,
+        targetChannel: targetChannel,
+        duration: 30 * 1000
+    }, uIdentifier);
+
+    if (!selected) {
+        return false; // Default value, signalling to create a temporary vc
+    }
+
+    if(selected.customId.endsWith("vcless")){
+        return true; // vcless chosen, return true
+    }
+
+    return false;
+}
+
+/**
  * Gives the user the ability to select a voice channel for their raid, assuming the VC is valid.
  * @param {BaseCommandInteraction} interaction The interaction.
  * @param {IGuildInfo} guildDoc The guild document.
  * @param {TextChannel} controlPanelChannel The control panel channel.
  * @param {TextChannel} targetChannel The channel where the selection of the VC should be asked in.
  * @param {GuildMember} from The member that initiated this.
- * @returns {Promise<VoiceChannel | null>} The voice channel if one is selected, or `null` otherwise if one should be
+ * @returns {Promise<VoiceChannel | boolean>} The voice channel if one is selected, or `true` if vcless is selected, or `false` otherwise if one should be
  * created for temporary purposes.
  */
 export async function selectVc<T extends BaseCommandInteraction | MessageComponentInteraction>(
@@ -181,8 +237,9 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
     guildDoc: IGuildInfo,
     controlPanelChannel: TextChannel,
     targetChannel: TextChannel,
-    from: GuildMember
-): Promise<VoiceChannel | null> {
+    from: GuildMember,
+    vclessAllowed: boolean = false
+): Promise<VoiceChannel | boolean> {
     // All valid VCs must start with some word and end with a number
     // For example, "Raid 1" is a valid name but "Staff Lounge" is not
     // A valid VC must also not be used
@@ -206,7 +263,7 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
         });
 
     if (validVcs.size === 0) {
-        return null;
+        return false;
     }
 
     validVcs.sort((a, b) => a.position - b.position);
@@ -247,18 +304,31 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
         )
         .setFooter({ text: "You have 1 minute and 30 seconds to select a dungeon." })
         .setTimestamp();
+    
+    const askVCButtons = [
+        new MessageButton()
+            .setLabel("Temporary VC")
+            .setCustomId(uIdentifier)
+            .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("First Available VC")
+            .setCustomId(`${uIdentifier}_first`)
+            .setStyle("PRIMARY"),
+    ];
+
+    if(vclessAllowed) {
+        askVCButtons.push(
+            new MessageButton()
+                .setLabel("VC-less")
+                .setCustomId(`${uIdentifier}_vcless`)
+                .setStyle("PRIMARY"),
+        );
+    }
 
     await interaction.editReply({
         embeds: [askDgnEmbed],
         components: AdvancedCollector.getActionRowsFromComponents([
-            new MessageButton()
-                .setLabel("Temporary VC")
-                .setCustomId(uIdentifier)
-                .setStyle("PRIMARY"),
-            new MessageButton()
-                .setLabel("First Available VC")
-                .setCustomId(`${uIdentifier}_first`)
-                .setStyle("PRIMARY"),
+            ...askVCButtons,
             ...selectMenus
         ])
     });
@@ -271,17 +341,21 @@ export async function selectVc<T extends BaseCommandInteraction | MessageCompone
     }, uIdentifier);
 
     if (!selected) {
-        return null;
+        return false; // Default value, signalling to create a temporary vc
+    }
+
+    if(selected.customId.endsWith("vcless")){
+        return true; // vcless chosen, return true
     }
 
     if (selected.isSelectMenu()) {
-        return validVcs.get(selected.values[0])! as VoiceChannel;
+        return validVcs.get(selected.values[0])! as VoiceChannel; //A vc is returned
     }
 
     if (selected.customId.endsWith("first")) {
-        return validVcs.first() as VoiceChannel;
+        return validVcs.first() as VoiceChannel; //A vc is returned
     }
 
-    // Default value
-    return null;
+    // Default value, signalling to create a temporary vc
+    return false;
 }

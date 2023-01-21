@@ -53,6 +53,7 @@ export class HeadcountInstance {
     private static readonly END_HEADCOUNT_ID: string = "end_headcount";
     private static readonly ABORT_HEADCOUNT_ID: string = "abort_headcount";
     private static readonly CONVERT_TO_AFK_CHECK_ID: string = "convert_afk_check";
+    private static readonly CONVERT_TO_VCLESS_AFK_CHECK_ID: string = "convert_vcless_afk_check";
     private static readonly DELETE_HEADCOUNT_ID: string = "delete_headcount_id";
     // 1 hour in milliseconds
     private static readonly DEFAULT_HEADCOUNT_DURATION: number = 60 * 60 * 1000;
@@ -72,18 +73,28 @@ export class HeadcountInstance {
             .setStyle("DANGER")
     ]);
 
+    private static VCLessConvertButton: MessageButton = new MessageButton()
+        .setLabel("Convert to Vcless AFK Check")
+        .setEmoji(EmojiConstants.RIGHT_TRIANGLE_EMOJI)
+        .setCustomId(HeadcountInstance.CONVERT_TO_VCLESS_AFK_CHECK_ID)
+        .setDisabled(true)
+        .setStyle("PRIMARY");
+
     private static readonly END_HEADCOUNT_BUTTONS: MessageActionRow[] = AdvancedCollector.getActionRowsFromComponents([
         new MessageButton()
             .setLabel("Convert to AFK Check")
             .setEmoji(EmojiConstants.RIGHT_TRIANGLE_EMOJI)
             .setCustomId(HeadcountInstance.CONVERT_TO_AFK_CHECK_ID)
             .setStyle("PRIMARY"),
+        HeadcountInstance.VCLessConvertButton,
         new MessageButton()
             .setLabel("Delete Headcount")
             .setEmoji(EmojiConstants.WASTEBIN_EMOJI)
             .setCustomId(HeadcountInstance.DELETE_HEADCOUNT_ID)
             .setStyle("DANGER")
     ]);
+
+
 
     // The guild that this AFK check is in.
     private readonly _guild: Guild;
@@ -508,6 +519,8 @@ export class HeadcountInstance {
         // End the collector since it's useless. We'll use it again though.
         await this.stopAllIntervalsAndCollectors("Headcount ended.");
 
+        HeadcountInstance.VCLessConvertButton.setDisabled(!this._raidSection.otherMajorConfig.afkCheckProperties.allowVcless);
+
         // Edit the control panel accordingly and re-react and start collector + intervals again.
         LOGGER.debug(`${this._instanceInfo} Replacing the headcount control panel`);
         await this._controlPanelMsg.edit({
@@ -577,15 +590,23 @@ export class HeadcountInstance {
     /**
      * Converts a headcount.
      * @param {GuildMember} member The person that converted this.
-     * @param {VoiceChannel | null} vcToUse The voice channel to use, if any.
+     * @param {VoiceChannel | boolean} vcToUse The voice channel to use, or true if vcless, false otherwise.
      */
-    public async convertHeadcount(member: GuildMember, vcToUse: VoiceChannel | null): Promise<void> {
+    public async convertHeadcount(member: GuildMember, vcSelect: VoiceChannel | boolean): Promise<void> {
         LOGGER.info(`${this._instanceInfo} Converting headcount`);
         if (!this._headcountMsg || !this._controlPanelMsg)
             return;
+        
+            //If vcToUse is a vc, then vcless is false.  Otherwise, vcToUse is a boolean representing vcless
+        const isVcless : boolean = (vcSelect instanceof VoiceChannel) ? false : vcSelect as boolean;
+        const selectedVc : VoiceChannel | null = (vcSelect instanceof VoiceChannel) ? vcSelect as VoiceChannel : null;
+
+        //Log leader, dungeon, and (vc name / Vc-less / Temporary)
+        const vcLog = `${(vcSelect instanceof VoiceChannel) ? `${(vcSelect as VoiceChannel).name}` : (isVcless) ? "VC-less": "Temporary"}`; 
+        LOGGER.info(`${member.displayName} is starting a ${this._dungeon.dungeonName} with vc: ${vcLog}`);
 
         // This is for the purposes of not having to edit getHeadcountEmbed, letting users know it's in progress.
-        this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTING;
+        this._headcountStatus = (isVcless) ? HeadcountStatus.HEADCOUNT_CONVERTING_VCLESS : HeadcountStatus.HEADCOUNT_CONVERTING;
 
         // Stop 0: Stop all collectors
         await this.stopAllIntervalsAndCollectors("Headcount converted.");
@@ -622,15 +643,16 @@ export class HeadcountInstance {
             this._raidSection,
             this._dungeon,
             {
-                existingVc: vcToUse ? {
-                    vc: vcToUse,
-                    oldPerms: Array.from(vcToUse.permissionOverwrites.cache.values())
+                vcless: isVcless,
+                existingVc: selectedVc ? {
+                    vc: selectedVc,
+                    oldPerms: Array.from(selectedVc.permissionOverwrites.cache.values())
                 } : undefined
             }
         );
-
         await rm?.startPreAfkCheck();
-        this._headcountStatus = HeadcountStatus.HEADCOUNT_CONVERTED;
+
+        this._headcountStatus = (isVcless) ? HeadcountStatus.HEADCOUNT_CONVERTED_VCLESS : HeadcountStatus.HEADCOUNT_CONVERTED;
 
         // Update the headcount message to say it has been converted
         await this._headcountMsg.edit({
@@ -685,7 +707,9 @@ export class HeadcountInstance {
         //Do not include react information for aborted or converted headcounts
         if (earlyReactInfo.length > 0 && this._headcountStatus !== HeadcountStatus.HEADCOUNT_ABORTED
             && this._headcountStatus !== HeadcountStatus.HEADCOUNT_CONVERTED
-            && this._headcountStatus !== HeadcountStatus.HEADCOUNT_CONVERTING) {
+            && this._headcountStatus !== HeadcountStatus.HEADCOUNT_CONVERTING
+            && this._headcountStatus !== HeadcountStatus.HEADCOUNT_CONVERTED_VCLESS
+            && this._headcountStatus !== HeadcountStatus.HEADCOUNT_CONVERTING_VCLESS) {
             headcountEmbed.addField("Reaction Status", earlyReactInfo.join("\n"));
         }
         switch (this._headcountStatus) {
@@ -715,6 +739,25 @@ export class HeadcountInstance {
                     })
                     .setDescription("Good luck, and have a great raid!");
                 return headcountEmbed;
+
+            case HeadcountStatus.HEADCOUNT_CONVERTING_VCLESS:
+                headcountEmbed
+                    .setAuthor({
+                        name: `The ${this._dungeon.dungeonName} headcount is currently being converted to a VC-less AFK check.`,
+                        iconURL: this._memberInit.user.displayAvatarURL()
+                    })
+                    .setDescription("Converting to an AFK check, please be patient.");
+                return headcountEmbed;
+
+            case HeadcountStatus.HEADCOUNT_CONVERTED_VCLESS:
+                headcountEmbed
+                    .setAuthor({
+                        name: `The ${this._dungeon.dungeonName} headcount has been converted to a VC-less AFK check.`,
+                        iconURL: this._memberInit.user.displayAvatarURL()
+                    })
+                    .setDescription("Good luck, and have a great raid!");
+                return headcountEmbed;
+
 
             case HeadcountStatus.HEADCOUNT_ABORTED:
                 headcountEmbed
@@ -986,15 +1029,15 @@ export class HeadcountInstance {
                     this._controlPanelReactionCollector?.stop("No longer needed");
                     // Ask for VC
                     const newGuildDoc = await MongoManager.getOrCreateGuildDoc(this._guild.id, true);
-                    let vcToUse: VoiceChannel | null = null;
-
+                    let vcSelect: VoiceChannel | boolean = false;
                     if (this._raidSection.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs) {
-                        vcToUse = await selectVc(
+                        vcSelect = await selectVc(
                             i,
                             newGuildDoc,
                             this._controlPanelChannel,
                             this._controlPanelChannel,
-                            i.member! as GuildMember
+                            i.member! as GuildMember,
+                            false
                         );
                     }
 
@@ -1002,7 +1045,19 @@ export class HeadcountInstance {
                         `${this._leaderName} converted ${this._dungeon.dungeonName} headcount to AFKCheck.`
                     );
 
-                    this.convertHeadcount(i.member as GuildMember, vcToUse).then();
+                    this.convertHeadcount(i.member as GuildMember, vcSelect).then();
+                    return;
+                }
+                case HeadcountInstance.CONVERT_TO_VCLESS_AFK_CHECK_ID: {
+                    await i.deferUpdate();
+                    // Prematurely ending this collector since this interferes with the collector used in the
+                    // selectVc function. The other collectors will be ended in the convertHeadcount method.
+                    this._controlPanelReactionCollector?.stop("No longer needed");
+                    LOGGER.info(
+                        `${this._leaderName} converted ${this._dungeon.dungeonName} headcount to vcless AFKCheck.`
+                    );
+
+                    this.convertHeadcount(i.member as GuildMember, true).then();
                     return;
                 }
                 case HeadcountInstance.ABORT_HEADCOUNT_ID: {
@@ -1356,5 +1411,8 @@ enum HeadcountStatus {
     HEADCOUNT_FINISHED,
     HEADCOUNT_ABORTED,
     HEADCOUNT_CONVERTED,
-    HEADCOUNT_CONVERTING
+    HEADCOUNT_CONVERTING,
+    HEADCOUNT_CONVERTING_VCLESS,
+    HEADCOUNT_CONVERTED_VCLESS,
+
 }

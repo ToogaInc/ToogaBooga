@@ -425,6 +425,13 @@ export interface IAfkCheckProperties {
     allowUsingExistingVcs: boolean;
 
     /**
+     * Whether to allow the use of no voice channels for AFK checks.
+     *
+     * @type {boolean}
+     */
+    allowVcless: boolean;
+
+    /**
      * The default number of people that can get early location by reacting to the Nitro button.
      *
      * Use `-1` to default to 8% of the VC limit.
@@ -577,6 +584,13 @@ export interface IRaidInfo {
     memberInit: string;
 
     /**
+    * The member that started this headcount.
+    *
+    * @type {string}
+    */
+    memberInitName: string;
+
+    /**
      * The time the raid was started.
      *
      * @type {number}
@@ -644,7 +658,19 @@ export interface IRaidInfo {
      *
      * @type {string}
      */
-    vcId: string;
+    vcId: string | null;
+
+    /**
+     * The raid ID
+     */
+    raidId: string;
+
+    /**
+     * Whether the raid is vcless
+     *
+     * @type {boolean}
+     */
+    vcless: boolean;
 
     /**
      * The old VC permissions. If this VC is being used once (i.e. it will be deleted after this raid), then this
@@ -832,6 +858,13 @@ export interface IRaidOptions {
      * @type {string}
      */
     location?: string;
+
+    /**
+     * Whether raid is vcless
+     * 
+     * @type {boolean}
+     */
+    vcless: boolean;
 
     /**
      * Options to use a pre-existing voice channel.

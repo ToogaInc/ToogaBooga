@@ -135,6 +135,7 @@ export class ConfigAfkCheck extends BaseCommand {
                     return { ...x };
                 }),
             allowUsingExistingVcs: section.otherMajorConfig.afkCheckProperties.allowUsingExistingVcs,
+            allowVcless: section.otherMajorConfig.afkCheckProperties.allowVcless,
             afkCheckTimeout: section.otherMajorConfig.afkCheckProperties.afkCheckTimeout,
             allowedDungeons: section.otherMajorConfig.afkCheckProperties.allowedDungeons.slice(),
             createLogChannel: section.otherMajorConfig.afkCheckProperties.createLogChannel,
@@ -155,6 +156,10 @@ export class ConfigAfkCheck extends BaseCommand {
 
         const existingVcButton = new MessageButton()
             .setCustomId("existing_vc")
+            .setStyle("PRIMARY");
+
+        const vclessButton = new MessageButton()
+            .setCustomId("vcless")
             .setStyle("PRIMARY");
 
         const buttons: MessageButton[] = [
@@ -185,6 +190,7 @@ export class ConfigAfkCheck extends BaseCommand {
                 .setStyle("PRIMARY"),
             logChannelButton,
             existingVcButton,
+            vclessButton,
             new MessageButton()
                 .setLabel("Set Default Position")
                 .setCustomId("set_default_pos")
@@ -250,6 +256,12 @@ export class ConfigAfkCheck extends BaseCommand {
                     : "Enable VC Selection"
             );
 
+            vclessButton.setLabel(
+                newAfkCheckProps.allowVcless
+                    ? "Disallow VCless"
+                    : "Enable VCless"
+            );
+
             embed.fields = [];
             embed.addField("VC Limit", StringUtil.codifyString(newAfkCheckProps.vcLimit), true)
                 .addField("Max Point Users", StringUtil.codifyString(newAfkCheckProps.pointUserLimit), true)
@@ -266,6 +278,11 @@ export class ConfigAfkCheck extends BaseCommand {
                 .addField(
                     "Allow VC Selection?",
                     StringUtil.codifyString(newAfkCheckProps.allowUsingExistingVcs ? "Yes" : "No"),
+                    true
+                )
+                .addField(
+                    "Allow Vcless?",
+                    StringUtil.codifyString(newAfkCheckProps.allowVcless ? "Yes" : "No"),
                     true
                 )
                 .addField(
@@ -663,6 +680,10 @@ export class ConfigAfkCheck extends BaseCommand {
                 }
                 case "existing_vc": {
                     newAfkCheckProps.allowUsingExistingVcs = !newAfkCheckProps.allowUsingExistingVcs;
+                    break;
+                }
+                case "vcless": {
+                    newAfkCheckProps.allowVcless = !newAfkCheckProps.allowVcless;
                     break;
                 }
             }
