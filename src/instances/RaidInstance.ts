@@ -869,17 +869,19 @@ export class RaidInstance {
      * Interprets the parse result, returning an embed with the relevant information.
      * @param {IParseResponse} parseSummary The parse summary.
      * @param {User} initiatedBy The user that initiated this.
+     * @param {string} organizerName The user who initialized the raid.
      * @returns {Promise<MessageEmbed>} The embed.
      */
     public static async interpretVclessParseRes(
         parseSummary: IParseResponse,
         initiatedBy: User,
+        organizerName: string,
     ): Promise<MessageEmbed> {
         const inVcNotInRaidFields = parseSummary.isValid ? parseSummary.inVcButNotInRaid : [];
         const inRaidNotInVcFields = parseSummary.isValid ? parseSummary.inRaidButNotInVC : [];
 
         const embed = MessageUtilities.generateBlankEmbed(initiatedBy, "RANDOM")
-            .setTitle("Parse Results for: TEMPVCRAID")
+            .setTitle(`Parse Results for ${organizerName}'s Raid`)
             .setFooter({ text: "Completed Time:" })
             .setTimestamp();
 

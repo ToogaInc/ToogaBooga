@@ -150,7 +150,7 @@ export class ParseVcless extends BaseCommand {
             return -1;
         }
 
-        const embed = await RaidInstance.interpretVclessParseRes(parseSummary, ctx.user);
+        const embed = await RaidInstance.interpretVclessParseRes(parseSummary, ctx.user, raidInfo.memberInitName);
         await ctx.interaction.editReply({
             content: null,
             embeds: [embed]
