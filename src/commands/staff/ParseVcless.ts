@@ -52,10 +52,6 @@ export class ParseVcless extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const image = ctx.interaction.options.getAttachment("image", true);
-
-
-        await ctx.interaction.deferReply();
-
         if (!image.height) {
             await ctx.interaction.reply({
                 content: "Could not find an image in your attachment. Please try again.",
@@ -91,7 +87,7 @@ export class ParseVcless extends BaseCommand {
                     }))
                     .setMaxValues(1)
                     .setMinValues(1)
-                    .setPlaceholder("Select an Existing VC")
+                    .setPlaceholder("Select an Active Raid")
             );
         }
 
@@ -106,30 +102,39 @@ export class ParseVcless extends BaseCommand {
             .setFooter({ text: "You have 1 minute and 30 seconds to select a raid." })
             .setTimestamp();
 
-        await ctx.interaction.editReply({
+        await ctx.interaction.reply({
             embeds: [askRaidEmbed],
             components: AdvancedCollector.getActionRowsFromComponents([
                 AdvancedCollector.cloneButton(ButtonConstants.CANCEL_BUTTON)
                     .setCustomId(`${uIdentifier}_cancel`),
                 ...selectMenus
-            ])
+            ]),
+            ephemeral: true,
         });
 
         let raidInfo: IRaidInfo | null;
 
         const selectedRaid = await AdvancedCollector.startInteractionEphemeralCollector({
             targetAuthor: ctx.user,
-            acknowledgeImmediately: false,
+            acknowledgeImmediately: true,
             targetChannel: ctx.channel,
             duration: 1.5 * 60 * 1000
         }, uIdentifier);
 
         if (!selectedRaid) {
             raidInfo = null;
-        }
-        else if (selectedRaid.isSelectMenu()) {
+        } else if (selectedRaid.isSelectMenu()) {
             const raidInfoId = selectedRaid.values[0]!;
             raidInfo = allVclessRaids.find(raid => raid.raidId === raidInfoId) ?? null;
+
+        } else if (selectedRaid.customId.endsWith("cancel")) {
+            await ctx.interaction.editReply({
+                content: "You have cancelled this process.",
+                embeds: [],
+                components: [],
+            });
+            return -1;
+
         } else {
             raidInfo = null;
         }
@@ -137,6 +142,8 @@ export class ParseVcless extends BaseCommand {
         if (!raidInfo) {
             await ctx.interaction.editReply({
                 content: "Unable to identify the raid. Please try again.",
+                embeds: [],
+                components: [],
             });
             return -1;
         }
@@ -144,7 +151,9 @@ export class ParseVcless extends BaseCommand {
         const parseSummary = await RaidInstance.parseVclessRaid(image.url, raidInfo.raidId, ctx.guildDoc!, ctx.guild!);
         if (!parseSummary) {
             await ctx.interaction.editReply({
-                content: "Something went wrong when trying to parse this screenshot. Try again later."
+                content: "Something went wrong when trying to parse this screenshot. Try again later.",
+                embeds: [],
+                components: [],
             });
 
             return -1;
@@ -153,6 +162,7 @@ export class ParseVcless extends BaseCommand {
         const embed = await RaidInstance.interpretVclessParseRes(parseSummary, ctx.user, raidInfo.memberInitName);
         await ctx.interaction.editReply({
             content: null,
+            components: [],
             embeds: [embed]
         });
 
