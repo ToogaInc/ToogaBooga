@@ -191,7 +191,7 @@ export class ConfigDungeons extends BaseCommand {
             bossLinks: dgn.bossLinks.map(x => {
                 return { ...x };
             }),
-            codeName: `[[${dgn.codeName}:${Date.now()}:${StringUtil.generateRandomString(5)}]]`,
+            codeName: `[[${dgn.codeName}-${Date.now()}-${StringUtil.generateRandomString(5)}]]`,
             dungeonCategory: dgn.dungeonCategory,
             dungeonColors: dgn.dungeonColors.slice(),
             dungeonName: dgn.dungeonName,
