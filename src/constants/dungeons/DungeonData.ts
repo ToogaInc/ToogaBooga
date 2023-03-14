@@ -1273,10 +1273,6 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             {
                 mapKey: "CURSE",
                 maxEarlyLocation: 1
-            },
-            {
-                mapKey: "CRYSTAL_SHIELD",
-                maxEarlyLocation: 2
             }
         ],
         portalLink: {
@@ -1933,10 +1929,6 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             },
             {
                 mapKey: "ARMOR_BREAK",
-                maxEarlyLocation: 2
-            },
-            {
-                mapKey: "CRYSTAL_SHIELD",
                 maxEarlyLocation: 2
             },
             {
