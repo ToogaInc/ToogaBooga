@@ -98,13 +98,18 @@ export interface IDungeonOverrideInfo {
      * @type {string[]}
      */
     allowedModifiers: string[];
-    
+
     /**
      * Whether or not location is required to progress the afk check.
      * 
      * @type {boolean}
      */
     locationToProgress?: boolean;
+
+    /**
+     * A list of roles to ping when a raid starts. These are stored as snowflakes in an array.
+     */
+    mentionRoles: string[];
 }
 
 /**
@@ -317,6 +322,11 @@ export interface ICustomDungeonInfo extends IDungeonInfo {
      * @type {string | null}
      */
     logFor: string | null;
+
+    /**
+     * A list of roles to ping when a raid starts. These are stored as snowflakes in an array.
+     */
+    mentionRoles: string[];
 }
 
 /**
@@ -523,7 +533,7 @@ export interface IAfkCheckProperties {
      * @type {boolean}
      */
     createLogChannel: boolean;
-    
+
     /**
      * Default position for the voice channel to avoid confusing staff.
      * 
