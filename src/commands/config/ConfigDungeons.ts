@@ -656,7 +656,7 @@ export class ConfigDungeons extends BaseCommand {
             .setCustomId("points_enter")
             .setStyle("PRIMARY");
         const mentionRolesButton = new MessageButton()
-            .setLabel("Roles to Mention")
+            .setLabel("Roles to mention")
             .setCustomId("mention_roles")
             .setStyle("PRIMARY");
         const nitroLimitButton = new MessageButton()
@@ -1232,7 +1232,6 @@ export class ConfigDungeons extends BaseCommand {
                     break;
                 }
                 case "mention_roles": {
-                    if (!cDungeon.mentionRoles) cDungeon.mentionRoles = [];
                     const mentionRoles = await this.configSetting<Role>(
                         ctx,
                         botMsg,
