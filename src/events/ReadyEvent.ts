@@ -6,7 +6,7 @@ import { RaidInstance } from "../instances/RaidInstance";
 import { HeadcountInstance } from "../instances/HeadcountInstance";
 import { Logger } from "../utilities/Logger";
 import getMongoClient = MongoManager.getMongoClient;
-import { BaseGuildTextChannel, CategoryChannel, GuildTextBasedChannel, TextChannel } from "discord.js";
+import { CategoryChannel, GuildTextBasedChannel, TextChannel } from "discord.js";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
