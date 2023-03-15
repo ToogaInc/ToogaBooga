@@ -422,6 +422,10 @@ export class RaidInstance {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
             numEarlyLoc = (dungeon as ICustomDungeonInfo).nitroEarlyLocationLimit;
+            if (numEarlyLoc === -1) {
+                numEarlyLoc = section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit;
+            }
+
             costForEarlyLoc = (dungeon as ICustomDungeonInfo).pointCost;
             if ((dungeon as ICustomDungeonInfo).allowedModifiers) {
                 this._modifiersToUse = (dungeon as ICustomDungeonInfo).allowedModifiers
@@ -441,7 +445,8 @@ export class RaidInstance {
             else raidLimit = 45;
         }
 
-        if (numEarlyLoc === -2) {
+        // If numEarlyLoc is still -1 (or -2), then default to 10% of the VC cap. 
+        if (numEarlyLoc < 0) {
             numEarlyLoc = Math.max(Math.floor(raidLimit * 0.1), 1);
         }
 

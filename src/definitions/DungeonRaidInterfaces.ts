@@ -434,7 +434,7 @@ export interface IAfkCheckProperties {
     /**
      * The default number of people that can get early location by reacting to the Nitro button.
      *
-     * Use `-1` to default to 8% of the VC limit.
+     * Use `-1` to default to 10% of the VC limit.
      *
      * This does not apply to priority reactions (key, class, etc.).
      *
