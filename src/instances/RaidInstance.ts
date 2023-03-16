@@ -71,6 +71,8 @@ import { StringUtil } from "../utilities/StringUtilities";
 import { v4 as uuidv4 } from "uuid";
 import { DjsToProjUtilities } from "../utilities/DJsToProjUtilities";
 import RunResult = LoggerManager.RunResult;
+import { ActionRowBuilder, ModalBuilder, TextInputBuilder } from "@discordjs/builders";
+import { TextInputStyle } from "discord-api-types/v10";
 import { InteractionTypes } from "discord.js/typings/enums";
 
 const FOOTER_INFO_MSG: string =
@@ -1524,7 +1526,7 @@ export class RaidInstance {
                 this.compileHistory(this._raidStorageChan, sb.toString()),
                 this._thisFeedbackChan.delete(),
             ]);
-        }, 5 * 60 * 1000);
+        }, , 5 * 60 * 1000);
     }
 
     private async provideChainLogModal(i: ButtonInteraction<"cached">): Promise<void> {
