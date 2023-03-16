@@ -18,10 +18,13 @@ import {
     MessageEmbed,
     MessageOptions,
     MessageSelectMenu,
+    Modal,
+    ModalSubmitInteraction,
     OverwriteResolvable,
     Role,
     Snowflake,
     TextChannel,
+    TextInputComponent,
     User,
     VoiceChannel,
     VoiceState,
@@ -68,6 +71,9 @@ import { StringUtil } from "../utilities/StringUtilities";
 import { v4 as uuidv4 } from "uuid";
 import { DjsToProjUtilities } from "../utilities/DJsToProjUtilities";
 import RunResult = LoggerManager.RunResult;
+import { ActionRowBuilder, ModalBuilder, TextInputBuilder } from "@discordjs/builders";
+import { TextInputStyle } from "discord-api-types/v10";
+import { InteractionTypes } from "discord.js/typings/enums";
 
 const FOOTER_INFO_MSG: string =
     "If you don't want to log this run, press the \"Cancel Logging\" button. Note that" +
@@ -93,6 +99,7 @@ export class RaidInstance {
     private static readonly ABORT_AFK_ID: string = "abort_afk";
     private static readonly SET_LOCATION_ID: string = "set_location";
     private static readonly END_RAID_ID: string = "end_raid";
+    private static readonly CHAIN_LOG_ID: string = "chain_log";
     private static readonly LOCK_RAID_ID: string = "lock_raid";
     private static readonly UNLOCK_RAID_ID: string = "unlock_raid";
     private static readonly RESTART_RAID: string = "restart_raid";
@@ -159,6 +166,11 @@ export class RaidInstance {
             .setEmoji(EmojiConstants.UNLOCK_EMOJI)
             .setCustomId(RaidInstance.UNLOCK_RAID_ID)
             .setStyle("PRIMARY"),
+        new MessageButton()
+            .setLabel("Chain log")
+            .setEmoji("⛓️")
+            .setCustomId(RaidInstance.CHAIN_LOG_ID)
+            .setStyle("SUCCESS"),
         new MessageButton()
             .setLabel("Start New AFK Check")
             .setEmoji(EmojiConstants.REDIRECT_EMOJI)
@@ -1515,6 +1527,95 @@ export class RaidInstance {
                 this._thisFeedbackChan.delete(),
             ]);
         }, 5 * 60 * 1000);
+    }
+
+    private async provideChainLogModal(i: ButtonInteraction<"cached">): Promise<void> {
+        let trackedUser: GuildMember | null = null;
+        let trackedDungeonKey: string | null = null;
+        // Pop a modal and show the user information
+        const chainLogModal = new Modal()
+            .setCustomId("chain_log_modal")
+            .setTitle("Chain Logging");
+
+        const nameInput = new TextInputComponent()
+            .setCustomId("chain_log_name")
+            .setLabel("In-game name of the user")
+            .setStyle("SHORT")
+            .setRequired(true);
+
+        const allKeys = this._allEssentialOptions.filter((x) => x.type === "KEY" || x.type === "NM_KEY");
+        if (allKeys.first()) {
+            const probablePoppers = this._pplWithEarlyLoc.get(allKeys.firstKey()!);
+            if (probablePoppers && probablePoppers.length > 0) {
+                const probablePopper = probablePoppers[0];
+                nameInput.setRequired(false)
+                    .setPlaceholder(`LEAVE BLANK FOR ${probablePopper.member.displayName}`);
+
+                trackedUser = probablePopper.member;
+                trackedDungeonKey = allKeys.firstKey()!;
+            }
+        }
+
+
+        const amountInput = new TextInputComponent()
+            .setCustomId("chain_log_amount")
+            .setLabel("Amount of popped dungeon")
+            .setStyle("SHORT")
+            .setPlaceholder("LEAVE BLANK FOR 1");
+
+        const actionRows = [
+            new MessageActionRow<TextInputComponent>().addComponents(nameInput),
+            new MessageActionRow<TextInputComponent>().addComponents(amountInput)
+        ];
+        chainLogModal.addComponents(...actionRows);
+
+        await i.showModal(chainLogModal);
+        // Collect inputs
+
+        // Sorry but I am NOT using the interactioncollector we have
+        const collector = new InteractionCollector(Bot.BotInstance.client, {
+            channel: i.channelId,
+            interactionType: InteractionTypes.MODAL_SUBMIT,
+            time: 30_000,
+            filter: (modalInteraction: ModalSubmitInteraction) => {
+                const correctUser = i.user.id === modalInteraction.user.id;
+                if (!correctUser) modalInteraction.reply({ content: "You are not the leader of this raid.", ephemeral: true });
+                // should other raid leaders be able to chain log?
+                return correctUser;
+            }
+        });
+
+        collector.on("collect", async (modalInteraction: ModalSubmitInteraction) => {
+            // Log chain pops for the key user here.
+            const keyPopper = modalInteraction.fields.getTextInputValue("chain_log_name");
+            let amountPopped = Number.parseInt(modalInteraction.fields.getTextInputValue("chain_log_amount"));
+            if (Number.isNaN(amountPopped)) {
+                amountPopped = 1;
+            }
+
+            if (!trackedUser) {
+                const findResult = await UserManager.resolveMember(modalInteraction.guild!, keyPopper);
+                if (!findResult || !findResult?.member) {
+                    modalInteraction.reply({ content: "Couldn't find that user in this server.", ephemeral: true });
+                    return;
+                }
+                trackedUser = findResult.member;
+            }
+
+            if (!trackedDungeonKey) {
+                if (this._dungeon.keyReactions.length > 1) {
+                    modalInteraction.reply({ content: "This dungeon is too complex for now.", ephemeral: true });
+                    return;
+                }
+
+                trackedDungeonKey = this._dungeon.keyReactions[0].mapKey;
+            }
+
+            LOGGER.info(`${modalInteraction.member} just logged ${amountPopped} ${trackedDungeonKey}s for ${trackedUser.displayName}`);
+            LoggerManager.logKeyUse(trackedUser!, trackedDungeonKey!, amountPopped);
+
+            modalInteraction.reply("ligma");
+        });
     }
 
     /**
@@ -3309,6 +3410,11 @@ export class RaidInstance {
             if (i.customId === RaidInstance.END_RAID_ID) {
                 LOGGER.info(`${this._instanceInfo} ${member?.displayName} chose to end raid`);
                 this.endRaid(i.user).then();
+                return;
+            }
+
+            if (i.customId === RaidInstance.CHAIN_LOG_ID) {
+                this.provideChainLogModal(i as ButtonInteraction<"cached">);
                 return;
             }
 
