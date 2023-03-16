@@ -1532,6 +1532,7 @@ export class RaidInstance {
     private async provideChainLogModal(i: ButtonInteraction<"cached">): Promise<void> {
         let trackedUser: GuildMember | null = null;
         let trackedDungeonKey: string | null = null;
+
         // Pop a modal and show the user information
         const chainLogModal = new Modal()
             .setCustomId("chain_log_modal")
@@ -1577,6 +1578,7 @@ export class RaidInstance {
             channel: i.channelId,
             interactionType: InteractionTypes.MODAL_SUBMIT,
             time: 30_000,
+            max: 1,
             filter: (modalInteraction: ModalSubmitInteraction) => {
                 const correctUser = i.user.id === modalInteraction.user.id;
                 if (!correctUser) modalInteraction.reply({ content: "You are not the leader of this raid.", ephemeral: true });
@@ -1614,7 +1616,139 @@ export class RaidInstance {
             LOGGER.info(`${modalInteraction.member} just logged ${amountPopped} ${trackedDungeonKey}s for ${trackedUser.displayName}`);
             LoggerManager.logKeyUse(trackedUser!, trackedDungeonKey!, amountPopped);
 
-            modalInteraction.reply("ligma");
+            // Try to get completes for members
+            const membersAtEnd: GuildMember[] = [];
+            const membersThatLeft: GuildMember[] = [];
+
+            const BUTTONS = new MessageActionRow();
+            if (!this._vcless) {
+                const VC_USERS_BUTTON = new MessageButton()
+                    .setCustomId("chain_log_use_vc")
+                    .setLabel("Users in VC")
+                    .setEmoji("🎙️")
+                    .setStyle("PRIMARY");
+
+                BUTTONS.addComponents(VC_USERS_BUTTON);
+            }
+            const SKIP_BUTTON = new MessageButton()
+                .setCustomId("chain_log_skip_completes")
+                .setLabel("SKIP")
+                .setEmoji(EmojiConstants.LONG_RIGHT_TRIANGLE_EMOJI)
+                .setStyle("DANGER");
+
+            BUTTONS.addComponents(SKIP_BUTTON);
+
+            const originalMessage = modalInteraction.reply({
+                content: `Collected and logged key pop for ${trackedUser.displayName}. Please upload a screenshot`
+                    + " of the members that completed the run or click the `SKIP` button.",
+                components: [BUTTONS],
+                fetchReply: true,
+            });
+
+            let attachment: MessageAttachment | null = null;
+            const resObj = await AdvancedCollector.startDoubleCollector<Message>(
+                {
+                    oldMsg: originalMessage as unknown as Message<true>, // it can't be apimessage because bot isn't http only
+                    cancelFlag: "cancel",
+                    targetChannel: this._controlPanelChannel,
+                    targetAuthor: modalInteraction.user,
+                    deleteBaseMsgAfterComplete: false,
+                    deleteResponseMessage: false,
+                    duration: 5 * 60 * 1000,
+                    acknowledgeImmediately: true,
+                    clearInteractionsAfterComplete: false,
+                },
+                (m: Message) => {
+                    if (m.attachments.size === 0) return;
+
+                    // Images have a height property, non-images don't.
+                    const imgAttachment = m.attachments.find((x) => x.height !== null);
+                    if (!imgAttachment) {
+                        m.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+                        return;
+                    }
+
+                    attachment = imgAttachment;
+                    return m;
+                }
+            );
+
+            if (!resObj) {
+                (originalMessage as unknown as Message<true>).delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+                return;
+            }
+
+            if (resObj instanceof Message && attachment) {
+                const data = await GlobalFgrUtilities.tryExecuteAsync(async () => {
+                    const res = await RealmSharperWrapper.parseWhoScreenshotOnly(attachment!.url);
+                    return res ? res : null;
+                });
+                LOGGER.info(`${this._instanceInfo} Names found in completion: ${data?.names}`);
+                resObj.delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
+                if (data && data.names.length > 0) {
+                    for (const memberThatJoined of this._membersThatJoined) {
+                        const names = UserManager.getAllNames(memberThatJoined.displayName, true);
+                        // If we can find at least one name (in the person's display name) that is also in the
+                        // /who, then give them credit
+                        if (data.names.some((x) => names.includes(x.toLowerCase()))) {
+                            membersAtEnd.push(memberThatJoined);
+                        }
+                        else if (memberThatJoined.id !== modalInteraction.user.id) membersThatLeft.push(memberThatJoined);
+                    }
+                }
+            }
+
+            let dungeonId = this._dungeon.codeName;
+            if (!this._dungeon.isBuiltIn) {
+                const otherId = (this._dungeon as ICustomDungeonInfo).logFor;
+                if (otherId) {
+                    dungeonId = otherId;
+                }
+            }
+
+            // Giving completes to those who were in VC instead of asking for a /who
+            if (!(resObj instanceof Message) && resObj.customId) {
+                if (resObj.customId === "chain_log_use_vc") { // Else, it is the "skip" button    
+                    // Filter against those who originally joined VC to remove those who left.
+                    const lastInVC = this._membersThatJoined.filter(member => !this._membersThatLeftChannel.includes(member) && modalInteraction.user.id !== member.id);
+
+                    membersAtEnd.push(...lastInVC.values());
+                    membersThatLeft.push(...this._membersThatLeftChannel);
+
+                    await Promise.all(membersThatLeft.map((x) => LoggerManager.logDungeonRun(x, dungeonId, false, 1)));
+                    await Promise.all(membersAtEnd.map((x) => LoggerManager.logDungeonRun(x, dungeonId, true, 1)));
+                }
+
+                modalInteraction.editReply({
+                    content: `Logged chain. Key: \`${trackedUser.displayName}\`. Dungeon: \`${trackedDungeonKey}\`.`,
+                    components: []
+                });
+
+                // log quota for the leader
+                await LoggerManager.logDungeonLead(
+                    modalInteraction.member as GuildMember,
+                    dungeonId,
+                    RunResult.Complete,
+                    1
+                );
+
+                const quotaToUse = QuotaManager.findBestQuotaToAdd(
+                    modalInteraction.member as GuildMember,
+                    this._guildDoc,
+                    "RunComplete",
+                    dungeonId
+                );
+
+                if (quotaToUse) {
+                    await QuotaManager.logQuota(
+                        modalInteraction.member as GuildMember,
+                        quotaToUse,
+                        `RunComplete:${dungeonId}`,
+                        1
+                    );
+                }
+            }
+
         });
     }
 
