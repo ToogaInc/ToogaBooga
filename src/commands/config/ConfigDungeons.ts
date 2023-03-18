@@ -41,6 +41,7 @@ import { DungeonUtilities } from "../../utilities/DungeonUtilities";
 import { DEFAULT_MODIFIERS, DUNGEON_MODIFIERS } from "../../constants/dungeons/DungeonModifiers";
 import { ButtonConstants } from "../../constants/ButtonConstants";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { ConfigChannels } from "./ConfigChannels";
 
 enum ValidatorResult {
     // Success = ValidationReturnType#res is not null
@@ -176,7 +177,8 @@ export class ConfigDungeons extends BaseCommand {
         return dgnOverride.nitroEarlyLocationLimit === -1
             && dgnOverride.vcLimit === -1
             && dgnOverride.pointCost === 0
-            && dgnOverride.roleRequirement.length === 0;
+            && dgnOverride.roleRequirement.length === 0
+            && dgnOverride.mentionRoles.length === 0;
     }
 
     /**
@@ -915,7 +917,9 @@ export class ConfigDungeons extends BaseCommand {
                     return;
                 }
                 case ButtonConstants.SAVE_ID: {
+                    let oldDungeonData;
                     if (dungeon) {
+                        oldDungeonData = ctx.guildDoc?.properties.dungeonOverride.find(x => x.codeName === cDungeon.codeName);
                         ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                             $pull: {
                                 [operationOnStr]: {
@@ -936,6 +940,10 @@ export class ConfigDungeons extends BaseCommand {
                             [operationOnStr]: cDungeon
                         }
                     });
+
+                    if (oldDungeonData?.mentionRoles.sort().join(" ") !== cDungeon.mentionRoles.sort().join(" ")) {
+                        ConfigChannels.createNewRolePingMessage(ctx.channel.client, ctx.guildDoc!);
+                    }
 
                     await this.mainMenu(ctx, botMsg);
                     return;
