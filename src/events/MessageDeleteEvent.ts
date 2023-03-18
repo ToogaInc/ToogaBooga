@@ -2,6 +2,7 @@ import { Message, PartialMessage } from "discord.js";
 import { MongoManager } from "../managers/MongoManager";
 import { HeadcountInstance } from "../instances/HeadcountInstance";
 import { RaidInstance } from "../instances/RaidInstance";
+import { ConfigChannels } from "../commands";
 
 export async function onMessageDeleteEvent(msg: Message | PartialMessage): Promise<void> {
     if (!msg.guild) {
@@ -38,6 +39,12 @@ export async function onMessageDeleteEvent(msg: Message | PartialMessage): Promi
             }
         });
         return;
+    }
+
+    if (msg.id === guildDoc.properties.rolePingMessageId) {
+        if (guildDoc.channels.rolePingChannelId) {
+            ConfigChannels.createNewRolePingMessage(msg.client, guildDoc);
+        }
     }
 
     // ...

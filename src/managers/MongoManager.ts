@@ -499,7 +499,8 @@ export namespace MongoManager {
                     verificationChannelId: "",
                     manualVerificationChannelId: ""
                 },
-                loggingChannels: []
+                loggingChannels: [],
+                rolePingChannelId: ""
             },
             guildId: guildId,
             guildSections: [],
@@ -515,7 +516,8 @@ export namespace MongoManager {
                 approvedCustomImages: [],
                 genEarlyLocReactions: [],
                 reactionPoints: [],
-                universalEarlyLocReactions: []
+                universalEarlyLocReactions: [],
+                rolePingMessageId: ""
             },
             roles: {
                 mutedRoleId: "",

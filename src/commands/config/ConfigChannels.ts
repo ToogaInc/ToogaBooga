@@ -7,7 +7,7 @@ import {
     IBaseDatabaseEntryInfo,
     IConfigCommand
 } from "./common/ConfigCommon";
-import { Guild, Message, MessageButton, MessageEmbed, TextChannel } from "discord.js";
+import { ButtonInteraction, Client, Guild, GuildMember, Message, MessageButton, MessageEmbed, TextChannel } from "discord.js";
 import { AdvancedCollector } from "../../utilities/collectors/AdvancedCollector";
 import { StringBuilder } from "../../utilities/StringBuilder";
 import { GuildFgrUtilities } from "../../utilities/fetch-get-request/GuildFgrUtilities";
@@ -21,6 +21,7 @@ import { MainLogType, SectionLogType } from "../../definitions/Types";
 import { ButtonConstants } from "../../constants/ButtonConstants";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
 import getCachedChannel = GuildFgrUtilities.getCachedChannel;
+import { DUNGEON_DATA } from "../../constants/dungeons/DungeonData";
 
 enum ChannelCategoryType {
     Raiding,
@@ -215,6 +216,19 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
             getCurrentValue: (guildDoc, section) => {
                 if (!section.isMainSection) throw new Error("storage channel is main-only.");
                 return guildDoc.channels.storageChannelId;
+            }
+        },
+        {
+            name: "Role Ping Channel",
+            description: "This channel will allow users to assign roles to be pinged when a headcount or AFK-check"
+                + " for a specific dungeon begins.",
+            guildDocPath: "channels.rolePingChannelId",
+            sectionPath: "",
+            channelType: ChannelCategoryType.Other,
+            configTypeOrInstructions: ConfigType.Channel,
+            getCurrentValue: (guildDoc, section) => {
+                if (!section.isMainSection) throw new Error("role ping channel is main-only");
+                return guildDoc.channels.rolePingChannelId;
             }
         }
     ];
@@ -725,7 +739,7 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
                     section,
                     botMsg,
                     ConfigChannels.CHANNEL_MONGO.filter(x => x.channelType === ChannelCategoryType.Raiding
-                    && section.isMainSection ? true : !!x.sectionPath),
+                        && section.isMainSection ? true : !!x.sectionPath),
                     "Raids"
                 );
                 break;
@@ -737,7 +751,7 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
                     botMsg,
                     ConfigChannels.CHANNEL_MONGO
                         .filter(x => x.channelType === ChannelCategoryType.Verification
-                        && section.isMainSection ? true : !!x.sectionPath),
+                            && section.isMainSection ? true : !!x.sectionPath),
                     "Verification"
                 );
                 break;
@@ -757,6 +771,116 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
                 await this.dispose(ctx, botMsg);
                 return;
             }
+        }
+    }
+
+    /**
+     * Pushes new roles to the role-pings channel. Creates a message from saved ping-roles in each dungeon config.
+     * Giving roles is not handled here.
+     * 
+     * @param {Client} client The bot client. Necessary for getting channels from the client cache
+     * @param {IGuildInfo} guildDoc The guild document. Necessary for getting each dungeon's roles
+     */
+    public static async createNewRolePingMessage(client: Client, guildDoc: IGuildInfo): Promise<void> {
+        // store dungeon name, emoji react to make buttons look fancy
+        const dungeonRoles = new Map<string, Record<string, unknown>>();
+
+        for (const dungeon of guildDoc.properties.dungeonOverride) {
+            if (dungeon.mentionRoles && dungeon.mentionRoles.length > 0) {
+                const dungeonBase = DUNGEON_DATA.find(d => d.codeName === dungeon.codeName);
+                if (dungeonBase) {
+                    const dungeonName = dungeonBase.dungeonName;
+                    const dungeonEmoji = dungeonBase.portalEmojiId;
+
+                    dungeonRoles.set(dungeonName, { dungeonEmoji, codeName: dungeon.codeName });
+                }
+            }
+        }
+
+        const buttons: MessageButton[] = [];
+        dungeonRoles.forEach((dungeonInfo, name) => {
+            const button = new MessageButton()
+                .setLabel(name)
+                // do not use _, it's used in codenames
+                .setCustomId(`ping-${dungeonInfo.codeName as string}`)
+                .setStyle("PRIMARY")
+                .setEmoji(dungeonInfo.dungeonEmoji as string);
+
+            buttons.push(button);
+        });
+
+        const rows = AdvancedCollector.getActionRowsFromComponents(buttons);
+        const embed = new MessageEmbed()
+            .setTitle("Assign Role Pings")
+            .setDescription("Click a button **to be pinged for the corresponding dungeon**."
+                + " This role will be pinged for __every headcount and AFK-check__.");
+
+        const roleChannel = client.channels.cache.get(guildDoc.channels.rolePingChannelId) as TextChannel;
+        let roleMessage = await roleChannel.messages.fetch(guildDoc.properties.rolePingMessageId).catch(() => null);
+        if (roleMessage) {
+            roleMessage = await roleChannel.messages.edit(guildDoc.properties.rolePingMessageId, {
+                embeds: [embed],
+                components: rows
+            });
+        } else {
+            roleMessage = await roleChannel.send({
+                embeds: [embed],
+                components: rows
+            });
+        }
+
+        await MongoManager.updateAndFetchGuildDoc({
+            guildId: roleChannel.guildId,
+        }, {
+            $set: {
+                "properties.rolePingMessageId": roleMessage.id,
+            }
+        });
+    }
+
+    /**
+     * Handles the role ping message button interactions.
+     * 
+     * @param {ButtonInteraction} interaction The button interaction
+     * @param {IGuildInfo} guildDoc The guild document, necessary to obtain override information
+     */
+    public static async handleRolePingInteraction(interaction: ButtonInteraction, guildDoc: IGuildInfo): Promise<void> {
+        const codeNameToCheck = interaction.customId.split("-")[1];
+
+        if (!codeNameToCheck) return;
+        // we know this is a GuildMember -- we do not use http only interactions
+        const member = interaction.member as GuildMember;
+        // get the dungeon override data
+        const dungeonOverride = guildDoc.properties.dungeonOverride.find(d => d.codeName === codeNameToCheck);
+
+        if (dungeonOverride) {
+            // get roles that are associated with this dungeon
+            const roles = dungeonOverride.mentionRoles;
+
+            // check if the member already has the roles
+            const hasRoles = member.roles.cache.hasAll(...roles);
+            if (hasRoles) {
+                // remove them
+                member.roles.remove(roles);
+
+                interaction.reply({
+                    content: "Removed the ping roles for that dungeon from you.",
+                    ephemeral: true
+                });
+            } else {
+                // add them
+                member.roles.add(roles);
+
+                interaction.reply({
+                    content: "Gave the ping roles for that dungeon to you.",
+                    ephemeral: true
+                });
+            }
+        } else {
+            interaction.reply({
+                content: "How did you get here? There are no roles to ping for that dungeon.",
+                ephemeral: true,
+            });
         }
     }
 
@@ -833,6 +957,10 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
                 : entries[selected].sectionPath;
 
             if (result instanceof TextChannel) {
+                // sorry, this is lazy, but it's the only channel that i want to have an action performed
+                // when the value changes.
+                const previousRolePingChannel = ctx.guildDoc?.channels.rolePingChannelId;
+
                 ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(query, {
                     $set: {
                         [keySetter]: result.id
@@ -840,6 +968,10 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
                 });
                 section = MongoManager.getAllSections(ctx.guildDoc!)
                     .find(x => x.uniqueIdentifier === section.uniqueIdentifier)!;
+
+                if (previousRolePingChannel !== ctx.guildDoc?.channels.rolePingChannelId) {
+                    ConfigChannels.createNewRolePingMessage(ctx.channel.client, ctx.guildDoc!);
+                }
                 continue;
             }
 

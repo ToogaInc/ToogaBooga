@@ -230,6 +230,13 @@ export interface IGuildInfo {
          * @type {string}
          */
         storageChannelId: string;
+
+        /**
+         * A channel where users can assign themselves roles to be pinged when a headcount or AFK-check begins.
+         * 
+         * @type {string}
+         */
+        rolePingChannelId: string;
     };
 
     /**
@@ -376,6 +383,14 @@ export interface IGuildInfo {
          * @type {IPropertyKeyValuePair<string, number>[]}
          */
         reactionPoints: IPropertyKeyValuePair<string, number>[];
+
+        /**
+         * The stored message of the assign role-pings channel. This is saved so updating the roles obtainable
+         * is not messy. If this is not set, a new message will be sent and this will be overwritten.
+         * 
+         * @type {string}
+         */
+        rolePingMessageId: string;
     };
 
     /**
