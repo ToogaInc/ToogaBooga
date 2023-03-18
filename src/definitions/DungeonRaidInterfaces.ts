@@ -108,6 +108,8 @@ export interface IDungeonOverrideInfo {
 
     /**
      * A list of roles to ping when a raid starts. These are stored as snowflakes in an array.
+     * 
+     * @type {string[]}
      */
     mentionRoles: string[];
 }
