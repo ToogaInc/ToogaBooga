@@ -1611,7 +1611,9 @@ export class RaidInstance {
                 trackedDungeonKey = this._dungeon.keyReactions[0].mapKey;
             }
 
-            LOGGER.info(`${modalInteraction.member} just logged ${amountPopped} ${trackedDungeonKey}s for ${trackedUser.displayName}`);
+            // this should probably be logged in a channel somewhere for admins to see
+            LOGGER.info(`[${modalInteraction.guild?.name}] ${(modalInteraction.member as GuildMember).displayName}`
+                + ` just logged ${amountPopped} ${trackedDungeonKey}s for ${trackedUser.displayName}`);
             LoggerManager.logKeyUse(trackedUser!, trackedDungeonKey!, amountPopped);
 
             // Try to get completes for members
@@ -1642,6 +1644,14 @@ export class RaidInstance {
                 components: [BUTTONS],
                 fetchReply: true,
             });
+
+            let dungeonId = this._dungeon.codeName;
+            if (!this._dungeon.isBuiltIn) {
+                const otherId = (this._dungeon as ICustomDungeonInfo).logFor;
+                if (otherId) {
+                    dungeonId = otherId;
+                }
+            }
 
             let attachment: MessageAttachment | null = null;
             const resObj = await AdvancedCollector.startDoubleCollector<Message>(
@@ -1693,15 +1703,34 @@ export class RaidInstance {
                         }
                         else if (memberThatJoined.id !== modalInteraction.user.id) membersThatLeft.push(memberThatJoined);
                     }
+
+                    await Promise.all(membersThatLeft.map((x) => LoggerManager.logDungeonRun(x, dungeonId, false, amountPopped)));
+                    await Promise.all(membersAtEnd.map((x) => LoggerManager.logDungeonRun(x, dungeonId, true, amountPopped)));
                 }
             }
 
-            let dungeonId = this._dungeon.codeName;
-            if (!this._dungeon.isBuiltIn) {
-                const otherId = (this._dungeon as ICustomDungeonInfo).logFor;
-                if (otherId) {
-                    dungeonId = otherId;
-                }
+            // log quota for the leader
+            await LoggerManager.logDungeonLead(
+                modalInteraction.member as GuildMember,
+                dungeonId,
+                RunResult.Complete,
+                amountPopped
+            );
+
+            const quotaToUse = QuotaManager.findBestQuotaToAdd(
+                modalInteraction.member as GuildMember,
+                this._guildDoc,
+                "RunComplete",
+                dungeonId
+            );
+
+            if (quotaToUse) {
+                await QuotaManager.logQuota(
+                    modalInteraction.member as GuildMember,
+                    quotaToUse,
+                    `RunComplete:${dungeonId}`,
+                    amountPopped
+                );
             }
 
             // Giving completes to those who were in VC instead of asking for a /who
@@ -1713,39 +1742,15 @@ export class RaidInstance {
                     membersAtEnd.push(...lastInVC.values());
                     membersThatLeft.push(...this._membersThatLeftChannel);
 
-                    await Promise.all(membersThatLeft.map((x) => LoggerManager.logDungeonRun(x, dungeonId, false, 1)));
-                    await Promise.all(membersAtEnd.map((x) => LoggerManager.logDungeonRun(x, dungeonId, true, 1)));
-                }
-
-                modalInteraction.editReply({
-                    content: `Logged chain. Key: \`${trackedUser.displayName}\`. Dungeon: \`${trackedDungeonKey}\`.`,
-                    components: []
-                });
-
-                // log quota for the leader
-                await LoggerManager.logDungeonLead(
-                    modalInteraction.member as GuildMember,
-                    dungeonId,
-                    RunResult.Complete,
-                    1
-                );
-
-                const quotaToUse = QuotaManager.findBestQuotaToAdd(
-                    modalInteraction.member as GuildMember,
-                    this._guildDoc,
-                    "RunComplete",
-                    dungeonId
-                );
-
-                if (quotaToUse) {
-                    await QuotaManager.logQuota(
-                        modalInteraction.member as GuildMember,
-                        quotaToUse,
-                        `RunComplete:${dungeonId}`,
-                        1
-                    );
+                    await Promise.all(membersThatLeft.map((x) => LoggerManager.logDungeonRun(x, dungeonId, false, amountPopped)));
+                    await Promise.all(membersAtEnd.map((x) => LoggerManager.logDungeonRun(x, dungeonId, true, amountPopped)));
                 }
             }
+
+            modalInteraction.editReply({
+                content: `Logged chain. Key: \`${trackedUser.displayName}\`. Dungeon: \`${trackedDungeonKey}\`.`,
+                components: []
+            });
 
         });
     }
