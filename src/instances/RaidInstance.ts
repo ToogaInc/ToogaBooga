@@ -1344,6 +1344,7 @@ export class RaidInstance {
             });
         }
         if (!feedbackChannel) return;
+        this._thisFeedbackChan = feedbackChannel;
 
         const feedbackMsg = await feedbackChannel.send({
             embeds: [
@@ -1456,7 +1457,7 @@ export class RaidInstance {
 
         await this._thisFeedbackChan.send({
             content:
-                "You have **ten** minutes remaining to submit your feedback. If you can't submit your feedback" +
+                "You have **five** minutes remaining to submit your feedback. If you can't submit your feedback" +
                 " in time, you can still submit your feedback via modmail.",
         });
 
@@ -1513,7 +1514,7 @@ export class RaidInstance {
                 this.compileHistory(this._raidStorageChan, sb.toString()),
                 this._thisFeedbackChan.delete(),
             ]);
-        }, 10 * 60 * 1000);
+        }, 5 * 60 * 1000);
     }
 
     /**
@@ -2445,6 +2446,62 @@ export class RaidInstance {
             ],
             content: `__**Report Generated: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}**__`,
         });
+    }
+
+    /**
+     * Removes any unused feedback channels that were not deleted during last session.
+     * Feedback is compiled and sent to storage channel, if one is configured.
+     * The channel is then deleted.
+     * @param feedbackChannel The channel to collect feedback from and delete
+     * @param storageChannel The channel to send the collected feedback to
+     */
+    public static async compileDeadFeedbackHistory(feedbackChannel: TextChannel, storageChannel: TextChannel): Promise<void> {
+        const [pinnedMsgs, allMsgs] = await Promise.all([
+            feedbackChannel.messages.fetchPinned(),
+            // Assuming that a lot of people won't submit feedback
+            feedbackChannel.messages.fetch({ limit: 100 }),
+        ]);
+
+        const sb = new StringBuilder()
+            .append("================= LEADER FEEDBACK INFORMATION =================")
+            .appendLine();
+
+        const botMsg = pinnedMsgs.filter((x) => x.author.bot).first();
+        if (botMsg) {
+            const m = await botMsg.fetch();
+            const [upvotes, noPref, downvotes] = await Promise.all([
+                m.reactions.cache.get(EmojiConstants.LONG_UP_ARROW_EMOJI)?.fetch(),
+                m.reactions.cache.get(EmojiConstants.LONG_SIDEWAYS_ARROW_EMOJI)?.fetch(),
+                m.reactions.cache.get(EmojiConstants.LONG_DOWN_ARROW_EMOJI)?.fetch(),
+            ]);
+
+            if (upvotes) sb.append(`- Upvotes      : ${upvotes.count - 1}`).appendLine();
+            if (noPref) sb.append(`- No Preference: ${noPref.count - 1}`).appendLine();
+            if (downvotes) sb.append(`- Downvotes    : ${downvotes.count - 1}`).appendLine();
+        }
+
+        const otherFeedbackMsgs = allMsgs.filter((x) => !x.author.bot);
+        for (const [, feedbackMsg] of otherFeedbackMsgs) {
+            sb.append(`Feedback by ${feedbackMsg.author.tag} (${feedbackMsg.author.id})`)
+                .appendLine()
+                .append("=== BEGIN ===")
+                .appendLine()
+                .append(feedbackMsg.content)
+                .appendLine()
+                .append("=== END ===")
+                .appendLine(2);
+        }
+
+        const probablyMemberInit = feedbackChannel.name.split(" ")[0];
+
+        await storageChannel.send({
+            files: [
+                new MessageAttachment(Buffer.from(sb.toString(), "utf8"), `deadFeedback_${probablyMemberInit}.txt`),
+            ],
+            content: `__**Dead feedback cleared: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}**__`
+        });
+
+        await feedbackChannel.delete();
     }
 
     /**

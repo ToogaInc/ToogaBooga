@@ -6,6 +6,8 @@ import { RaidInstance } from "../instances/RaidInstance";
 import { HeadcountInstance } from "../instances/HeadcountInstance";
 import { Logger } from "../utilities/Logger";
 import getMongoClient = MongoManager.getMongoClient;
+import { CategoryChannel, GuildTextBasedChannel, TextChannel } from "discord.js";
+import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -47,6 +49,7 @@ export async function onReadyEvent(): Promise<void> {
 
     LOGGER.info("Resuming any interrupted instances.");
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
+    const activeRaidIds: string[] = [];
     await Promise.all([
         MuteManager.startChecker(guildDocs),
         SuspensionManager.startChecker(guildDocs),
@@ -59,9 +62,38 @@ export async function onReadyEvent(): Promise<void> {
 
             guildDoc.activeRaids.forEach(async raid => {
                 await RaidInstance.createNewLivingInstance(guildDoc, raid);
+                activeRaidIds.push(raid.raidId);
             });
         })
     ]);
+
+    LOGGER.info("Clearing unused feedback channels");
+    await Promise.all(guildDocs.map(doc => {
+        const fbChannel = Bot.BotInstance.client.channels.cache.get(doc.channels.raids.leaderFeedbackChannelId);
+        const storageChannel = Bot.BotInstance.client.channels.cache.get(doc.channels.storageChannelId);
+        if (fbChannel?.isText()) {
+            // we know it's in a guild and text (see above line), and we always know parent is category type
+            const parent = (fbChannel as GuildTextBasedChannel).parent as CategoryChannel;
+            parent.children.map(channel => {
+                if (!channel.isText()) return;
+                if (channel.id === fbChannel.id) return;
+
+                const topicUuid = (channel as TextChannel).topic?.split(" ")[0];
+                if (topicUuid && !activeRaidIds.includes(topicUuid)) {
+                    // if no uuid just ignore it, it could be a channel explaining how to give feedback
+                    GlobalFgrUtilities.tryExecuteAsync(async () => {
+                        if (storageChannel && storageChannel.isText()) {
+                            // typecasting is necessary here to remove newschannel possibility. it doesn't affect anything
+                            RaidInstance.compileDeadFeedbackHistory(channel as TextChannel, storageChannel as TextChannel);
+                        } else {
+                            await channel.delete();
+                        }
+                    });
+
+                }
+            });
+        }
+    }));
 
     LOGGER.info(`${botUser.tag} events have started successfully.`);
 }
