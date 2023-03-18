@@ -49,7 +49,6 @@ export async function onReadyEvent(): Promise<void> {
 
     LOGGER.info("Resuming any interrupted instances.");
     const guildDocs = await MongoManager.getGuildCollection().find({}).toArray();
-    const activeRaidIds: string[] = [];
     await Promise.all([
         MuteManager.startChecker(guildDocs),
         SuspensionManager.startChecker(guildDocs),
@@ -62,7 +61,6 @@ export async function onReadyEvent(): Promise<void> {
 
             guildDoc.activeRaids.forEach(async raid => {
                 await RaidInstance.createNewLivingInstance(guildDoc, raid);
-                activeRaidIds.push(raid.raidId);
             });
         })
     ]);
@@ -79,7 +77,7 @@ export async function onReadyEvent(): Promise<void> {
                 if (channel.id === fbChannel.id) return;
 
                 const topicUuid = (channel as TextChannel).topic?.split(" ")[0];
-                if (topicUuid && !activeRaidIds.includes(topicUuid)) {
+                if (topicUuid && !doc.activeRaids.some(raid => raid.raidId === topicUuid)) {
                     // if no uuid just ignore it, it could be a channel explaining how to give feedback
                     GlobalFgrUtilities.tryExecuteAsync(async () => {
                         if (storageChannel && storageChannel.isText()) {
