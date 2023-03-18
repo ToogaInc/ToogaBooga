@@ -2448,7 +2448,14 @@ export class RaidInstance {
         });
     }
 
-    public static async compileDeadFeedbackHistory(feedbackChannel: TextChannel, storageChannel: TextChannel) {
+    /**
+     * Removes any unused feedback channels that were not deleted during last session.
+     * Feedback is compiled and sent to storage channel, if one is configured.
+     * The channel is then deleted.
+     * @param feedbackChannel The channel to collect feedback from and delete
+     * @param storageChannel The channel to send the collected feedback to
+     */
+    public static async compileDeadFeedbackHistory(feedbackChannel: TextChannel, storageChannel: TextChannel): Promise<void> {
         const [pinnedMsgs, allMsgs] = await Promise.all([
             feedbackChannel.messages.fetchPinned(),
             // Assuming that a lot of people won't submit feedback
