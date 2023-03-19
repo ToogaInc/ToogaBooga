@@ -22,6 +22,7 @@ import {
     Role,
     Snowflake,
     TextChannel,
+    ThreadChannel,
     User,
     VoiceChannel,
     VoiceState,
@@ -253,7 +254,7 @@ export class RaidInstance {
 
     // Channels created specifically for this raid; these will be deleted once the raid is over
     private _thisFeedbackChan: TextChannel | null;
-    private _logChan: TextChannel | null;
+    private _logChan: ThreadChannel | null;
 
     // Whether this has already been added to the database
     private _addedToDb: boolean = false;
@@ -720,7 +721,7 @@ export class RaidInstance {
             guild,
             raidInfo.otherChannels.feedbackChannelId
         );
-        rm._logChan = GuildFgrUtilities.getCachedChannel<TextChannel>(guild, raidInfo.otherChannels.logChannelId);
+        rm._logChan = GuildFgrUtilities.getCachedChannel<ThreadChannel>(guild, raidInfo.otherChannels.logChannelId);
         rm._membersThatJoined = raidInfo.membersThatJoined
             .map((x) => GuildFgrUtilities.getCachedMember(guild, x))
             .filter((x) => x !== null) as GuildMember[];
@@ -881,6 +882,7 @@ export class RaidInstance {
         parseSummary: IParseResponse,
         initiatedBy: User,
         organizerName: string,
+        intensive: boolean
     ): Promise<MessageEmbed> {
         const inVcNotInRaidFields = parseSummary.isValid ? parseSummary.inVcButNotInRaid : [];
         const inRaidNotInVcFields = parseSummary.isValid ? parseSummary.inRaidButNotInVC : [];
@@ -900,15 +902,22 @@ export class RaidInstance {
                     .appendLine(2)
                     .append(`__${parseSummary.whoRes.length} Names Parsed__`)
                     .appendLine()
-                    .append(StringUtil.codifyString(parseSummary.whoRes.join(", ")))
                     .toString()
             );
         } else {
             embed.setDescription("An error occurred when trying to parse this screenshot. Please try again later.");
         }
 
-        for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
-            embed.addField("In /who, Not In Raid.", field.join(", "));
+        if (intensive) {
+            const inRaidNotInVcMembers = parseSummary.inRaidButNotInVcMembers!;
+            for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcMembers!, 25)) {
+                // todo: check verified?
+                embed.addField("In /who, Not in Raid", field.map((m: GuildMember) => `${m} (\`${m.displayName}\`)`).join("\n"), true);
+            }
+        } else {
+            for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
+                embed.addField("In /who, Not In Raid.", field.join(", "));
+            }
         }
 
         for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
@@ -921,11 +930,14 @@ export class RaidInstance {
     /**
      * Parses a screenshot for a vcless raid.
      * @param {string} url The url to the screenshot.
-     * @param {VoiceChannel | null} vc The voice channel to check against.
+     * @param {string | null} raidId The raid to check against.
+     * @param {IGuildInfo} guildDoc The guild doc (Necessary to get the raidInfo)
+     * @param {Guild} guild The guild to check (Necessary for fetching members)
+     * @param {boolean} intensive Whether or not to check the entire discord for members
      * @return {Promise<IParseResponse>} An object containing the parse results.
      */
-    public static async parseVclessRaid(url: string, raidId: string | null, guildDoc: IGuildInfo, guild: Guild): Promise<IParseResponse | null> {
-        const toReturn: IParseResponse = { inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false, whoRes: [] };
+    public static async parseVclessRaid(url: string, raidId: string | null, guildDoc: IGuildInfo, guild: Guild, intensive: boolean): Promise<IParseResponse | null> {
+        const toReturn: IParseResponse = { inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false, whoRes: [], inRaidButNotInVcMembers: [] };
 
         if (!raidId) return toReturn;
         const raidInfo = guildDoc.activeRaids.find(raidInfo => raidInfo.raidId === raidId);
@@ -966,6 +978,10 @@ export class RaidInstance {
         // Parse results means the picture must be valid.
         toReturn.isValid = true;
         // Begin parsing.
+
+        // doesn't seem to be that slow. test dungeoneer & other servers please.
+        if (intensive && guild.memberCount > guild.members.cache.size) await guild.members.fetch({ force: true });
+
         // Get people in raid but not in the screenshot itself. Could be alts.
         membersInRaid.forEach((member) => {
             const igns = UserManager.getAllNames(member.displayName).map((x) => x.toLowerCase());
@@ -978,10 +994,17 @@ export class RaidInstance {
 
         // Get people in screenshot but not in the raid. Could be crashers.
         const allIgnsInVc = membersInRaid.map((x) => UserManager.getAllNames(x.displayName.toLowerCase())).flat();
-        parsedNames.forEach((name) => {
+        const notVcButMember: GuildMember[] = [];
+        parsedNames.forEach(async (name) => {
+            if (intensive) {
+                const member = guild.members.cache.find(member => member.displayName.toLowerCase().replace(/\W/g, "") === name.toLowerCase());
+                if (member) notVcButMember.push(member);
+            }
             if (allIgnsInVc.includes(name.toLowerCase())) return;
             toReturn.inRaidButNotInVC.push(name);
         });
+
+        if (notVcButMember.length > 0) toReturn.inRaidButNotInVcMembers = notVcButMember;
 
         return toReturn;
     }
@@ -1015,52 +1038,26 @@ export class RaidInstance {
         }
 
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
-        const [vc, logChannel] = await Promise.all([
-            (async () => {
-                if (this._raidVc) {
-                    await this._raidVc.edit({
-                        userLimit: this._raidLimit,
-                        permissionOverwrites: this.getPermissionsForRaidVc(false),
-                    });
-
-                    return this._raidVc;
-                }
-                if (this._vcless) return null;
-
-                const v = await this._guild.channels.create(`${this._leaderName}'s Raid`, {
-                    type: "GUILD_VOICE",
+        const vc = await new Promise<VoiceChannel | null>(async (resolve) => {
+            if (this._raidVc) {
+                await this._raidVc.edit({
                     userLimit: this._raidLimit,
                     permissionOverwrites: this.getPermissionsForRaidVc(false),
-                    parent: this._afkCheckChannel!.parent!,
                 });
 
-                return v as VoiceChannel;
-            })(),
-            new Promise<TextChannel | null>(async (resolve) => {
-                if (!this._raidSection.otherMajorConfig.afkCheckProperties.createLogChannel) return resolve(null);
+                return resolve(this._raidVc);
+            }
+            if (this._vcless) return resolve(null);
 
-                const logChan = await this._guild.channels.create(`${this._leaderName}-raid-logs`, {
-                    type: "GUILD_TEXT",
-                    parent: this._afkCheckChannel!.parent!,
-                    permissionOverwrites: [
-                        {
-                            id: this._guild.roles.everyone,
-                            deny: ["VIEW_CHANNEL"],
-                        },
-                        {
-                            id: Bot.BotInstance.client.user!.id,
-                            allow: ["ADD_REACTIONS", "VIEW_CHANNEL"],
-                        },
-                        {
-                            id: this._guildDoc.roles.staffRoles.teamRoleId,
-                            allow: ["VIEW_CHANNEL"],
-                        },
-                    ],
-                });
+            const v = await this._guild.channels.create(`${this._leaderName}'s Raid`, {
+                type: "GUILD_VOICE",
+                userLimit: this._raidLimit,
+                permissionOverwrites: this.getPermissionsForRaidVc(false),
+                parent: this._afkCheckChannel!.parent!,
+            });
 
-                return resolve(logChan as TextChannel);
-            }),
-        ]);
+            return resolve(v as VoiceChannel);
+        });
 
         if (!this._vcless) {
             if (!vc) return;
@@ -1071,7 +1068,6 @@ export class RaidInstance {
 
             this._raidVc = vc as VoiceChannel;
         }
-        this._logChan = logChannel;
 
         // Create our initial control panel message.
         this._controlPanelMsg = await this._controlPanelChannel.send({
@@ -1080,9 +1076,25 @@ export class RaidInstance {
         });
         this.startControlPanelCollector();
 
+        const logChannel = await new Promise<ThreadChannel | null>(async (resolve) => {
+            if (!this._raidSection.otherMajorConfig.afkCheckProperties.createLogChannel) return resolve(null);
+
+            const logChan = await this.controlPanelMsg?.startThread({
+                name: `${this._leaderName}-raid-logs`,
+                autoArchiveDuration: 1440
+            });
+
+            if (!logChan) return resolve(null);
+
+            return resolve(logChan);
+        });
+
+        this._logChan = logChannel;
+
+
         // Create our initial AFK check message.
         this._afkCheckMsg = await this._afkCheckChannel.send({
-            content: "@here",
+            content: " a ",
             embeds: [this.getAfkCheckEmbed()!],
             components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons),
         });
@@ -1639,7 +1651,8 @@ export class RaidInstance {
             }),
             // Step 6: Delete the logging channel
             GlobalFgrUtilities.tryExecuteAsync(async () => {
-                await this._logChan?.delete();
+                await this._logChan?.send("Logging has ended. No further messages will be sent.");
+                await this._logChan?.setArchived(true, "Raid ended");
                 this._logChan = null;
             }),
         ]);
@@ -3896,4 +3909,5 @@ interface IParseResponse {
     inRaidButNotInVC: string[];
     isValid: boolean;
     whoRes: string[];
+    inRaidButNotInVcMembers?: GuildMember[]
 }

@@ -38,6 +38,15 @@ export class ParseVcless extends BaseCommand {
                     prettyType: "Attachment",
                     required: true,
                     example: [""]
+                },
+                {
+                    displayName: "intensive",
+                    argName: "intensive",
+                    desc: "Whether or not to check the whole discord for members",
+                    type: ArgumentType.Boolean,
+                    prettyType: "Boolean",
+                    required: false,
+                    example: ["false", "true"]
                 }
             ],
             guildOnly: true,
@@ -52,6 +61,8 @@ export class ParseVcless extends BaseCommand {
      */
     public async run(ctx: ICommandContext): Promise<number> {
         const image = ctx.interaction.options.getAttachment("image", true);
+        const intensive = ctx.interaction.options.getBoolean("intensive", false) ?? false;
+
         if (!image.height) {
             await ctx.interaction.reply({
                 content: "Could not find an image in your attachment. Please try again.",
@@ -148,7 +159,7 @@ export class ParseVcless extends BaseCommand {
             return -1;
         }
 
-        const parseSummary = await RaidInstance.parseVclessRaid(image.url, raidInfo.raidId, ctx.guildDoc!, ctx.guild!);
+        const parseSummary = await RaidInstance.parseVclessRaid(image.url, raidInfo.raidId, ctx.guildDoc!, ctx.guild!, intensive);
         if (!parseSummary) {
             await ctx.interaction.editReply({
                 content: "Something went wrong when trying to parse this screenshot. Try again later.",
@@ -159,7 +170,7 @@ export class ParseVcless extends BaseCommand {
             return -1;
         }
 
-        const embed = await RaidInstance.interpretVclessParseRes(parseSummary, ctx.user, raidInfo.memberInitName);
+        const embed = await RaidInstance.interpretVclessParseRes(parseSummary, ctx.user, raidInfo.memberInitName, intensive);
         await ctx.interaction.editReply({
             content: null,
             components: [],
