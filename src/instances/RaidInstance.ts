@@ -882,6 +882,7 @@ export class RaidInstance {
         parseSummary: IParseResponse,
         initiatedBy: User,
         organizerName: string,
+        intensive: boolean
     ): Promise<MessageEmbed> {
         const inVcNotInRaidFields = parseSummary.isValid ? parseSummary.inVcButNotInRaid : [];
         const inRaidNotInVcFields = parseSummary.isValid ? parseSummary.inRaidButNotInVC : [];
@@ -901,15 +902,22 @@ export class RaidInstance {
                     .appendLine(2)
                     .append(`__${parseSummary.whoRes.length} Names Parsed__`)
                     .appendLine()
-                    .append(StringUtil.codifyString(parseSummary.whoRes.join(", ")))
                     .toString()
             );
         } else {
             embed.setDescription("An error occurred when trying to parse this screenshot. Please try again later.");
         }
 
-        for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
-            embed.addField("In /who, Not In Raid.", field.join(", "));
+        if (intensive) {
+            const inRaidNotInVcMembers = parseSummary.inRaidButNotInVcMembers!;
+            for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcMembers!, 25)) {
+                // todo: check verified?
+                embed.addField("In /who, Not in Raid", field.map((m: GuildMember) => `${m} (\`${m.displayName}\`)`).join("\n"), true);
+            }
+        } else {
+            for (const field of ArrayUtilities.breakArrayIntoSubsets(inRaidNotInVcFields, 70)) {
+                embed.addField("In /who, Not In Raid.", field.join(", "));
+            }
         }
 
         for (const field of ArrayUtilities.breakArrayIntoSubsets(inVcNotInRaidFields, 70)) {
@@ -922,11 +930,14 @@ export class RaidInstance {
     /**
      * Parses a screenshot for a vcless raid.
      * @param {string} url The url to the screenshot.
-     * @param {VoiceChannel | null} vc The voice channel to check against.
+     * @param {string | null} raidId The raid to check against.
+     * @param {IGuildInfo} guildDoc The guild doc (Necessary to get the raidInfo)
+     * @param {Guild} guild The guild to check (Necessary for fetching members)
+     * @param {boolean} intensive Whether or not to check the entire discord for members
      * @return {Promise<IParseResponse>} An object containing the parse results.
      */
-    public static async parseVclessRaid(url: string, raidId: string | null, guildDoc: IGuildInfo, guild: Guild): Promise<IParseResponse | null> {
-        const toReturn: IParseResponse = { inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false, whoRes: [] };
+    public static async parseVclessRaid(url: string, raidId: string | null, guildDoc: IGuildInfo, guild: Guild, intensive: boolean): Promise<IParseResponse | null> {
+        const toReturn: IParseResponse = { inRaidButNotInVC: [], inVcButNotInRaid: [], isValid: false, whoRes: [], inRaidButNotInVcMembers: [] };
 
         if (!raidId) return toReturn;
         const raidInfo = guildDoc.activeRaids.find(raidInfo => raidInfo.raidId === raidId);
@@ -967,6 +978,10 @@ export class RaidInstance {
         // Parse results means the picture must be valid.
         toReturn.isValid = true;
         // Begin parsing.
+
+        // doesn't seem to be that slow. test dungeoneer & other servers please.
+        if (intensive && guild.memberCount > guild.members.cache.size) await guild.members.fetch({ force: true });
+
         // Get people in raid but not in the screenshot itself. Could be alts.
         membersInRaid.forEach((member) => {
             const igns = UserManager.getAllNames(member.displayName).map((x) => x.toLowerCase());
@@ -979,10 +994,17 @@ export class RaidInstance {
 
         // Get people in screenshot but not in the raid. Could be crashers.
         const allIgnsInVc = membersInRaid.map((x) => UserManager.getAllNames(x.displayName.toLowerCase())).flat();
-        parsedNames.forEach((name) => {
+        const notVcButMember: GuildMember[] = [];
+        parsedNames.forEach(async (name) => {
+            if (intensive) {
+                const member = guild.members.cache.find(member => member.displayName.toLowerCase().replace(/\W/g, "") === name.toLowerCase());
+                if (member) notVcButMember.push(member);
+            }
             if (allIgnsInVc.includes(name.toLowerCase())) return;
             toReturn.inRaidButNotInVC.push(name);
         });
+
+        if (notVcButMember.length > 0) toReturn.inRaidButNotInVcMembers = notVcButMember;
 
         return toReturn;
     }
@@ -1060,7 +1082,7 @@ export class RaidInstance {
             const logChan = await this.controlPanelMsg?.startThread({
                 name: `${this._leaderName}-raid-logs`,
                 autoArchiveDuration: 1440
-            }).catch(console.log);
+            });
 
             if (!logChan) return resolve(null);
 
@@ -1072,7 +1094,7 @@ export class RaidInstance {
 
         // Create our initial AFK check message.
         this._afkCheckMsg = await this._afkCheckChannel.send({
-            content: "@here",
+            content: " a ",
             embeds: [this.getAfkCheckEmbed()!],
             components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons),
         });
@@ -3887,4 +3909,5 @@ interface IParseResponse {
     inRaidButNotInVC: string[];
     isValid: boolean;
     whoRes: string[];
+    inRaidButNotInVcMembers?: GuildMember[]
 }
