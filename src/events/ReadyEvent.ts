@@ -8,6 +8,7 @@ import { Logger } from "../utilities/Logger";
 import getMongoClient = MongoManager.getMongoClient;
 import { CategoryChannel, GuildTextBasedChannel, TextChannel } from "discord.js";
 import { GlobalFgrUtilities } from "../utilities/fetch-get-request/GlobalFgrUtilities";
+import { validate } from "uuid";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -77,7 +78,7 @@ export async function onReadyEvent(): Promise<void> {
                 if (channel.id === fbChannel.id) return;
 
                 const topicUuid = (channel as TextChannel).topic?.split(" ")[0];
-                if (topicUuid && !doc.activeRaids.some(raid => raid.raidId === topicUuid)) {
+                if (validate(topicUuid) && !doc.activeRaids.some(raid => raid.raidId === topicUuid)) {
                     // if no uuid just ignore it, it could be a channel explaining how to give feedback
                     GlobalFgrUtilities.tryExecuteAsync(async () => {
                         if (storageChannel && storageChannel.isText()) {
