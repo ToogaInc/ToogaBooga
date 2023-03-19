@@ -78,7 +78,7 @@ export async function onReadyEvent(): Promise<void> {
                 if (channel.id === fbChannel.id) return;
 
                 const topicUuid = (channel as TextChannel).topic?.split(" ")[0];
-                if (validate(topicUuid) && !doc.activeRaids.some(raid => raid.raidId === topicUuid)) {
+                if (topicUuid && validate(topicUuid) && !doc.activeRaids.some(raid => raid.raidId === topicUuid)) {
                     // if no uuid just ignore it, it could be a channel explaining how to give feedback
                     GlobalFgrUtilities.tryExecuteAsync(async () => {
                         if (storageChannel && storageChannel.isText()) {
