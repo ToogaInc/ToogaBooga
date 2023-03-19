@@ -22,6 +22,7 @@ import {
     Role,
     Snowflake,
     TextChannel,
+    ThreadChannel,
     User,
     VoiceChannel,
     VoiceState,
@@ -253,7 +254,7 @@ export class RaidInstance {
 
     // Channels created specifically for this raid; these will be deleted once the raid is over
     private _thisFeedbackChan: TextChannel | null;
-    private _logChan: TextChannel | null;
+    private _logChan: ThreadChannel | null;
 
     // Whether this has already been added to the database
     private _addedToDb: boolean = false;
@@ -720,7 +721,7 @@ export class RaidInstance {
             guild,
             raidInfo.otherChannels.feedbackChannelId
         );
-        rm._logChan = GuildFgrUtilities.getCachedChannel<TextChannel>(guild, raidInfo.otherChannels.logChannelId);
+        rm._logChan = GuildFgrUtilities.getCachedChannel<ThreadChannel>(guild, raidInfo.otherChannels.logChannelId);
         rm._membersThatJoined = raidInfo.membersThatJoined
             .map((x) => GuildFgrUtilities.getCachedMember(guild, x))
             .filter((x) => x !== null) as GuildMember[];
@@ -1015,52 +1016,26 @@ export class RaidInstance {
         }
 
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
-        const [vc, logChannel] = await Promise.all([
-            (async () => {
-                if (this._raidVc) {
-                    await this._raidVc.edit({
-                        userLimit: this._raidLimit,
-                        permissionOverwrites: this.getPermissionsForRaidVc(false),
-                    });
-
-                    return this._raidVc;
-                }
-                if (this._vcless) return null;
-
-                const v = await this._guild.channels.create(`${this._leaderName}'s Raid`, {
-                    type: "GUILD_VOICE",
+        const vc = await new Promise<VoiceChannel | null>(async (resolve) => {
+            if (this._raidVc) {
+                await this._raidVc.edit({
                     userLimit: this._raidLimit,
                     permissionOverwrites: this.getPermissionsForRaidVc(false),
-                    parent: this._afkCheckChannel!.parent!,
                 });
 
-                return v as VoiceChannel;
-            })(),
-            new Promise<TextChannel | null>(async (resolve) => {
-                if (!this._raidSection.otherMajorConfig.afkCheckProperties.createLogChannel) return resolve(null);
+                return resolve(this._raidVc);
+            }
+            if (this._vcless) return resolve(null);
 
-                const logChan = await this._guild.channels.create(`${this._leaderName}-raid-logs`, {
-                    type: "GUILD_TEXT",
-                    parent: this._afkCheckChannel!.parent!,
-                    permissionOverwrites: [
-                        {
-                            id: this._guild.roles.everyone,
-                            deny: ["VIEW_CHANNEL"],
-                        },
-                        {
-                            id: Bot.BotInstance.client.user!.id,
-                            allow: ["ADD_REACTIONS", "VIEW_CHANNEL"],
-                        },
-                        {
-                            id: this._guildDoc.roles.staffRoles.teamRoleId,
-                            allow: ["VIEW_CHANNEL"],
-                        },
-                    ],
-                });
+            const v = await this._guild.channels.create(`${this._leaderName}'s Raid`, {
+                type: "GUILD_VOICE",
+                userLimit: this._raidLimit,
+                permissionOverwrites: this.getPermissionsForRaidVc(false),
+                parent: this._afkCheckChannel!.parent!,
+            });
 
-                return resolve(logChan as TextChannel);
-            }),
-        ]);
+            return resolve(v as VoiceChannel);
+        });
 
         if (!this._vcless) {
             if (!vc) return;
@@ -1071,7 +1046,6 @@ export class RaidInstance {
 
             this._raidVc = vc as VoiceChannel;
         }
-        this._logChan = logChannel;
 
         // Create our initial control panel message.
         this._controlPanelMsg = await this._controlPanelChannel.send({
@@ -1079,6 +1053,22 @@ export class RaidInstance {
             components: RaidInstance.CP_PRE_AFK_BUTTONS,
         });
         this.startControlPanelCollector();
+
+        const logChannel = await new Promise<ThreadChannel | null>(async (resolve) => {
+            if (!this._raidSection.otherMajorConfig.afkCheckProperties.createLogChannel) return resolve(null);
+
+            const logChan = await this.controlPanelMsg?.startThread({
+                name: `${this._leaderName}-raid-logs`,
+                autoArchiveDuration: 1440
+            }).catch(console.log);
+
+            if (!logChan) return resolve(null);
+
+            return resolve(logChan);
+        });
+
+        this._logChan = logChannel;
+
 
         // Create our initial AFK check message.
         this._afkCheckMsg = await this._afkCheckChannel.send({
@@ -1639,7 +1629,8 @@ export class RaidInstance {
             }),
             // Step 6: Delete the logging channel
             GlobalFgrUtilities.tryExecuteAsync(async () => {
-                await this._logChan?.delete();
+                await this._logChan?.send("Logging has ended. No further messages will be sent.");
+                await this._logChan?.setArchived(true, "Raid ended");
                 this._logChan = null;
             }),
         ]);
