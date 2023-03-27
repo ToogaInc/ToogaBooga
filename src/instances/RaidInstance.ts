@@ -22,6 +22,7 @@ import {
     Role,
     Snowflake,
     TextChannel,
+    ThreadChannel,
     User,
     VoiceChannel,
     VoiceState,
@@ -253,7 +254,7 @@ export class RaidInstance {
 
     // Channels created specifically for this raid; these will be deleted once the raid is over
     private _thisFeedbackChan: TextChannel | null;
-    private _logChan: TextChannel | null;
+    private _logChan: ThreadChannel | null;
 
     // Whether this has already been added to the database
     private _addedToDb: boolean = false;
@@ -422,6 +423,10 @@ export class RaidInstance {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
             numEarlyLoc = (dungeon as ICustomDungeonInfo).nitroEarlyLocationLimit;
+            if (numEarlyLoc === -1) {
+                numEarlyLoc = section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit;
+            }
+
             costForEarlyLoc = (dungeon as ICustomDungeonInfo).pointCost;
             if ((dungeon as ICustomDungeonInfo).allowedModifiers) {
                 this._modifiersToUse = (dungeon as ICustomDungeonInfo).allowedModifiers
@@ -441,7 +446,8 @@ export class RaidInstance {
             else raidLimit = 45;
         }
 
-        if (numEarlyLoc === -2) {
+        // If numEarlyLoc is still -1 (or -2), then default to 10% of the VC cap. 
+        if (numEarlyLoc < 0) {
             numEarlyLoc = Math.max(Math.floor(raidLimit * 0.1), 1);
         }
 
@@ -715,7 +721,7 @@ export class RaidInstance {
             guild,
             raidInfo.otherChannels.feedbackChannelId
         );
-        rm._logChan = GuildFgrUtilities.getCachedChannel<TextChannel>(guild, raidInfo.otherChannels.logChannelId);
+        rm._logChan = GuildFgrUtilities.getCachedChannel<ThreadChannel>(guild, raidInfo.otherChannels.logChannelId);
         rm._membersThatJoined = raidInfo.membersThatJoined
             .map((x) => GuildFgrUtilities.getCachedMember(guild, x))
             .filter((x) => x !== null) as GuildMember[];
@@ -1010,52 +1016,26 @@ export class RaidInstance {
         }
 
         // Raid VC MUST be initialized first before we can use a majority of the helper methods.
-        const [vc, logChannel] = await Promise.all([
-            (async () => {
-                if (this._raidVc) {
-                    await this._raidVc.edit({
-                        userLimit: this._raidLimit,
-                        permissionOverwrites: this.getPermissionsForRaidVc(false),
-                    });
-
-                    return this._raidVc;
-                }
-                if (this._vcless) return null;
-
-                const v = await this._guild.channels.create(`${this._leaderName}'s Raid`, {
-                    type: "GUILD_VOICE",
+        const vc = await new Promise<VoiceChannel | null>(async (resolve) => {
+            if (this._raidVc) {
+                await this._raidVc.edit({
                     userLimit: this._raidLimit,
                     permissionOverwrites: this.getPermissionsForRaidVc(false),
-                    parent: this._afkCheckChannel!.parent!,
                 });
 
-                return v as VoiceChannel;
-            })(),
-            new Promise<TextChannel | null>(async (resolve) => {
-                if (!this._raidSection.otherMajorConfig.afkCheckProperties.createLogChannel) return resolve(null);
+                return resolve(this._raidVc);
+            }
+            if (this._vcless) return resolve(null);
 
-                const logChan = await this._guild.channels.create(`${this._leaderName}-raid-logs`, {
-                    type: "GUILD_TEXT",
-                    parent: this._afkCheckChannel!.parent!,
-                    permissionOverwrites: [
-                        {
-                            id: this._guild.roles.everyone,
-                            deny: ["VIEW_CHANNEL"],
-                        },
-                        {
-                            id: Bot.BotInstance.client.user!.id,
-                            allow: ["ADD_REACTIONS", "VIEW_CHANNEL"],
-                        },
-                        {
-                            id: this._guildDoc.roles.staffRoles.teamRoleId,
-                            allow: ["VIEW_CHANNEL"],
-                        },
-                    ],
-                });
+            const v = await this._guild.channels.create(`${this._leaderName}'s Raid`, {
+                type: "GUILD_VOICE",
+                userLimit: this._raidLimit,
+                permissionOverwrites: this.getPermissionsForRaidVc(false),
+                parent: this._afkCheckChannel!.parent!,
+            });
 
-                return resolve(logChan as TextChannel);
-            }),
-        ]);
+            return resolve(v as VoiceChannel);
+        });
 
         if (!this._vcless) {
             if (!vc) return;
@@ -1066,7 +1046,6 @@ export class RaidInstance {
 
             this._raidVc = vc as VoiceChannel;
         }
-        this._logChan = logChannel;
 
         // Create our initial control panel message.
         this._controlPanelMsg = await this._controlPanelChannel.send({
@@ -1074,6 +1053,22 @@ export class RaidInstance {
             components: RaidInstance.CP_PRE_AFK_BUTTONS,
         });
         this.startControlPanelCollector();
+
+        const logChannel = await new Promise<ThreadChannel | null>(async (resolve) => {
+            if (!this._raidSection.otherMajorConfig.afkCheckProperties.createLogChannel) return resolve(null);
+
+            const logChan = await this.controlPanelMsg?.startThread({
+                name: `${this._leaderName}-raid-logs`,
+                autoArchiveDuration: 1440
+            }).catch(console.log);
+
+            if (!logChan) return resolve(null);
+
+            return resolve(logChan);
+        });
+
+        this._logChan = logChannel;
+
 
         // Create our initial AFK check message.
         this._afkCheckMsg = await this._afkCheckChannel.send({
@@ -1339,6 +1334,7 @@ export class RaidInstance {
             });
         }
         if (!feedbackChannel) return;
+        this._thisFeedbackChan = feedbackChannel;
 
         const feedbackMsg = await feedbackChannel.send({
             embeds: [
@@ -1451,7 +1447,7 @@ export class RaidInstance {
 
         await this._thisFeedbackChan.send({
             content:
-                "You have **ten** minutes remaining to submit your feedback. If you can't submit your feedback" +
+                "You have **five** minutes remaining to submit your feedback. If you can't submit your feedback" +
                 " in time, you can still submit your feedback via modmail.",
         });
 
@@ -1508,7 +1504,7 @@ export class RaidInstance {
                 this.compileHistory(this._raidStorageChan, sb.toString()),
                 this._thisFeedbackChan.delete(),
             ]);
-        }, 10 * 60 * 1000);
+        }, 5 * 60 * 1000);
     }
 
     /**
@@ -1633,7 +1629,8 @@ export class RaidInstance {
             }),
             // Step 6: Delete the logging channel
             GlobalFgrUtilities.tryExecuteAsync(async () => {
-                await this._logChan?.delete();
+                await this._logChan?.send("Logging has ended. No further messages will be sent.");
+                await this._logChan?.setArchived(true, "Raid ended");
                 this._logChan = null;
             }),
         ]);
@@ -2440,6 +2437,62 @@ export class RaidInstance {
             ],
             content: `__**Report Generated: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}**__`,
         });
+    }
+
+    /**
+     * Removes any unused feedback channels that were not deleted during last session.
+     * Feedback is compiled and sent to storage channel, if one is configured.
+     * The channel is then deleted.
+     * @param feedbackChannel The channel to collect feedback from and delete
+     * @param storageChannel The channel to send the collected feedback to
+     */
+    public static async compileDeadFeedbackHistory(feedbackChannel: TextChannel, storageChannel: TextChannel): Promise<void> {
+        const [pinnedMsgs, allMsgs] = await Promise.all([
+            feedbackChannel.messages.fetchPinned(),
+            // Assuming that a lot of people won't submit feedback
+            feedbackChannel.messages.fetch({ limit: 100 }),
+        ]);
+
+        const sb = new StringBuilder()
+            .append("================= LEADER FEEDBACK INFORMATION =================")
+            .appendLine();
+
+        const botMsg = pinnedMsgs.filter((x) => x.author.bot).first();
+        if (botMsg) {
+            const m = await botMsg.fetch();
+            const [upvotes, noPref, downvotes] = await Promise.all([
+                m.reactions.cache.get(EmojiConstants.LONG_UP_ARROW_EMOJI)?.fetch(),
+                m.reactions.cache.get(EmojiConstants.LONG_SIDEWAYS_ARROW_EMOJI)?.fetch(),
+                m.reactions.cache.get(EmojiConstants.LONG_DOWN_ARROW_EMOJI)?.fetch(),
+            ]);
+
+            if (upvotes) sb.append(`- Upvotes      : ${upvotes.count - 1}`).appendLine();
+            if (noPref) sb.append(`- No Preference: ${noPref.count - 1}`).appendLine();
+            if (downvotes) sb.append(`- Downvotes    : ${downvotes.count - 1}`).appendLine();
+        }
+
+        const otherFeedbackMsgs = allMsgs.filter((x) => !x.author.bot);
+        for (const [, feedbackMsg] of otherFeedbackMsgs) {
+            sb.append(`Feedback by ${feedbackMsg.author.tag} (${feedbackMsg.author.id})`)
+                .appendLine()
+                .append("=== BEGIN ===")
+                .appendLine()
+                .append(feedbackMsg.content)
+                .appendLine()
+                .append("=== END ===")
+                .appendLine(2);
+        }
+
+        const probablyMemberInit = feedbackChannel.name.split(" ")[0];
+
+        await storageChannel.send({
+            files: [
+                new MessageAttachment(Buffer.from(sb.toString(), "utf8"), `deadFeedback_${probablyMemberInit}.txt`),
+            ],
+            content: `__**Dead feedback cleared: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}**__`
+        });
+
+        await feedbackChannel.delete();
     }
 
     /**

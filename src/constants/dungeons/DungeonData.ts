@@ -1336,30 +1336,6 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             {
                 mapKey: "CURSE",
                 maxEarlyLocation: 1
-            },
-            {
-                mapKey: "FUNGAL_TOME",
-                maxEarlyLocation: 0
-            },
-            {
-                mapKey: "WARRIOR",
-                maxEarlyLocation: 0
-            },
-            {
-                mapKey: "KNIGHT",
-                maxEarlyLocation: 0
-            },
-            {
-                mapKey: "PALADIN",
-                maxEarlyLocation: 0
-            },
-            {
-                mapKey: "TRICKSTER",
-                maxEarlyLocation: 0
-            },
-            {
-                mapKey: "MYSTIC",
-                maxEarlyLocation: 0
             }
         ],
         portalLink: {
