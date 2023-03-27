@@ -1171,7 +1171,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         portalEmojiId: "1089896886963556352",
         keyReactions: [
             {
-                mapKey: "MV_KEY",
+                mapKey: "MOONLIGHT_VILLAGE_KEY",
                 maxEarlyLocation: 2
             }
         ],
