@@ -640,6 +640,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Mad God Mayhem Key",
         isExaltKey: false
     },
+    MOONLIGHT_VILLAGE_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1089897105851695204"
+        },
+        name: "Moonlight Village Key",
+        isExaltKey: true
+    },
     STEAMWORKS_KEY: {
         type: "KEY",
         emojiInfo: {
