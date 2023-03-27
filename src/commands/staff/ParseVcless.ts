@@ -109,7 +109,6 @@ export class ParseVcless extends BaseCommand {
                     .setCustomId(`${uIdentifier}_cancel`),
                 ...selectMenus
             ]),
-            ephemeral: true,
         });
 
         let raidInfo: IRaidInfo | null;
