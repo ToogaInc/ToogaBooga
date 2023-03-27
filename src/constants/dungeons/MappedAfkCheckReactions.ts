@@ -646,7 +646,7 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
             isCustom: true,
             identifier: "1089897105851695204"
         },
-        name: "MV Key",
+        name: "Moonlight Village Key",
         isExaltKey: true
     },
     STEAMWORKS_KEY: {
