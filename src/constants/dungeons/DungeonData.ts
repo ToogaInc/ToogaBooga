@@ -1166,6 +1166,73 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         isBuiltIn: true
     },
     {
+        codeName: "MOONLIGHT VILLAGE",
+        dungeonName: "Moonlight Village",
+        portalEmojiId: "1089896886963556352",
+        keyReactions: [
+            {
+                mapKey: "MV_KEY",
+                maxEarlyLocation: 2
+            }
+        ],
+        otherReactions: [
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+        ],
+        portalLink: {
+            url: "https://i.imgur.com/CHV8p21.png",
+            name: "Moonlight Village Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/yzWZCCK.png",
+                name: "Drummer Kaguya"
+            },
+            {
+                url: "https://i.imgur.com/ewZTQvE.png",
+                name: "Dancer Miko"
+            },
+            {
+                url: "https://i.imgur.com/eEbuDYs.png",
+                name: "Sage Genji"
+            },
+            {
+                url: "https://i.imgur.com/0CyBlB8.png",
+                name: "Kitsune Umi"
+            }
+        ],
+        dungeonColors: [
+            0xF39D43,
+            0xE00003,
+            0x4B91EC,
+            0xf19ab0
+        ],
+        dungeonCategory: "Exaltation Dungeons",
+        isBuiltIn: true
+    },
+    {
         codeName: "STEAMWORKS",
         dungeonName: "Steamworks",
         portalEmojiId: "1051549087574544404",
@@ -1181,16 +1248,16 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "FUNGAL_TOME",
-                maxEarlyLocation: 2
-            },
-            {
                 mapKey: "MSEAL",
                 maxEarlyLocation: 1
             },
             {
                 mapKey: "ARMOR_BREAK",
                 maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
             },
             {
                 mapKey: "WARRIOR",
@@ -1263,10 +1330,6 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "FUNGAL_TOME",
-                maxEarlyLocation: 1
-            },
-            {
                 mapKey: "SLOW",
                 maxEarlyLocation: 1
             },
@@ -1275,8 +1338,28 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "CRYSTAL_SHIELD",
-                maxEarlyLocation: 2
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "MYSTIC",
+                maxEarlyLocation: 0
             }
         ],
         portalLink: {
@@ -1348,12 +1431,12 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "FUNGAL_TOME",
+                mapKey: "ARMOR_BREAK",
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "ARMOR_BREAK",
-                maxEarlyLocation: 1
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
             },
             {
                 mapKey: "WARRIOR",
@@ -1462,12 +1545,12 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "FUNGAL_TOME",
+                mapKey: "ARMOR_BREAK",
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "ARMOR_BREAK",
-                maxEarlyLocation: 1
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
             },
             {
                 mapKey: "WARRIOR",
@@ -1554,10 +1637,6 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "FUNGAL_TOME",
-                maxEarlyLocation: 1
-            },
-            {
                 mapKey: "T2_ORB",
                 maxEarlyLocation: 2
             },
@@ -1568,6 +1647,10 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             {
                 mapKey: "ARMOR_BREAK",
                 maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
             },
             {
                 mapKey: "WARRIOR",
@@ -1638,12 +1721,12 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "FUNGAL_TOME",
+                mapKey: "ARMOR_BREAK",
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "ARMOR_BREAK",
-                maxEarlyLocation: 1
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
             },
             {
                 mapKey: "WARRIOR",
@@ -1718,12 +1801,12 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "FUNGAL_TOME",
+                mapKey: "ARMOR_BREAK",
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "ARMOR_BREAK",
-                maxEarlyLocation: 1
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
             },
             {
                 mapKey: "WARRIOR",
@@ -1794,16 +1877,16 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "FUNGAL_TOME",
-                maxEarlyLocation: 1
-            },
-            {
                 mapKey: "MSEAL",
                 maxEarlyLocation: 1
             },
             {
                 mapKey: "ARMOR_BREAK",
                 maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
             },
             {
                 mapKey: "WARRIOR",
@@ -1928,15 +2011,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "FUNGAL_TOME",
-                maxEarlyLocation: 2
-            },
-            {
                 mapKey: "ARMOR_BREAK",
-                maxEarlyLocation: 2
-            },
-            {
-                mapKey: "CRYSTAL_SHIELD",
                 maxEarlyLocation: 2
             },
             {
@@ -1946,6 +2021,10 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             {
                 mapKey: "DPS_WIZARD",
                 maxEarlyLocation: 10
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
             },
             {
                 mapKey: "WARRIOR",
