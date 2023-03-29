@@ -917,7 +917,7 @@ export class ConfigDungeons extends BaseCommand {
                     return;
                 }
                 case ButtonConstants.SAVE_ID: {
-                    let oldDungeonData;
+                    let oldDungeonData: IDungeonOverrideInfo | undefined;
                     if (dungeon) {
                         oldDungeonData = ctx.guildDoc?.properties.dungeonOverride.find(x => x.codeName === cDungeon.codeName);
                         ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
@@ -941,7 +941,9 @@ export class ConfigDungeons extends BaseCommand {
                         }
                     });
 
-                    if (oldDungeonData?.mentionRoles.sort().join(" ") !== cDungeon.mentionRoles.sort().join(" ")) {
+                    const oldRoles = oldDungeonData?.mentionRoles.every(item => cDungeon.mentionRoles.includes(item));
+                    const newRoles = cDungeon.mentionRoles.every(item => (oldDungeonData as IDungeonOverrideInfo).mentionRoles.includes(item));
+                    if (oldRoles && newRoles) {
                         ConfigChannels.createNewRolePingMessage(ctx.channel.client, ctx.guildDoc!);
                     }
 

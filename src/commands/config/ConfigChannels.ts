@@ -482,8 +482,10 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
             if (displayFilter & DisplayFilter.Other) {
                 const botUpdatesChan = getCachedChannel<TextChannel>(guild, guildDoc.channels.botUpdatesChannelId);
+                const rolePingChan = getCachedChannel<TextChannel>(guild, guildDoc.channels.rolePingChannelId);
                 currentConfiguration.append("__**Other Channels**__").appendLine()
-                    .append(`⇒ Bot Updates Channel: ${botUpdatesChan ?? ConfigChannels.NA}`).appendLine();
+                    .append(`⇒ Bot Updates Channel: ${botUpdatesChan ?? ConfigChannels.NA}`).appendLine()
+                    .append(`⇒ Role Ping Channel: ${rolePingChan ?? ConfigChannels.NA}`).appendLine();
             }
         }
 
@@ -797,11 +799,17 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
             }
         }
 
+        for (const dungeon of guildDoc.properties.customDungeons) {
+            if (dungeon.mentionRoles && dungeon.mentionRoles.length > 0) {
+                dungeonRoles.set(dungeon.dungeonName, { dungeonEmoji: dungeon.portalEmojiId, codeName: dungeon.codeName });
+            }
+        }
+
         const buttons: MessageButton[] = [];
         dungeonRoles.forEach((dungeonInfo, name) => {
             const button = new MessageButton()
                 .setLabel(name)
-                // do not use _, it's used in codenames
+                // do not use _, it's used in dungeon codenames
                 .setCustomId(`ping-${dungeonInfo.codeName as string}`)
                 .setStyle("PRIMARY")
                 .setEmoji(dungeonInfo.dungeonEmoji as string);
@@ -816,7 +824,7 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
                 + " This role will be pinged for __every headcount and AFK-check__.");
 
         const roleChannel = client.channels.cache.get(guildDoc.channels.rolePingChannelId) as TextChannel;
-        let roleMessage = await roleChannel.messages.fetch(guildDoc.properties.rolePingMessageId).catch(() => null);
+        let roleMessage = await GuildFgrUtilities.fetchMessage(roleChannel, guildDoc.properties.rolePingMessageId);
         if (roleMessage) {
             roleMessage = await roleChannel.messages.edit(guildDoc.properties.rolePingMessageId, {
                 embeds: [embed],
@@ -851,37 +859,38 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
         // we know this is a GuildMember -- we do not use http only interactions
         const member = interaction.member as GuildMember;
         // get the dungeon override data
-        const dungeonOverride = guildDoc.properties.dungeonOverride.find(d => d.codeName === codeNameToCheck);
+        const dungeonBase = guildDoc.properties.dungeonOverride.find(d => d.codeName === codeNameToCheck)
+            ?? guildDoc.properties.customDungeons.find(d => d.codeName === codeNameToCheck);
 
-        if (dungeonOverride) {
+        if (dungeonBase) {
             // get roles that are associated with this dungeon
-            const roles = dungeonOverride.mentionRoles;
+            const roles = dungeonBase.mentionRoles;
 
             // check if the member already has the roles
             const hasRoles = member.roles.cache.hasAll(...roles);
-            if (hasRoles) {
+            if (hasRoles && roles.length > 0) {
                 // remove them
                 member.roles.remove(roles);
 
-                interaction.reply({
+                return interaction.reply({
                     content: "Removed the ping roles for that dungeon from you.",
                     ephemeral: true
                 });
-            } else {
+            } else if (!hasRoles && roles.length > 0) {
                 // add them
                 member.roles.add(roles);
 
-                interaction.reply({
+                return interaction.reply({
                     content: "Gave the ping roles for that dungeon to you.",
                     ephemeral: true
                 });
             }
-        } else {
-            interaction.reply({
-                content: "How did you get here? There are no roles to ping for that dungeon.",
-                ephemeral: true,
-            });
         }
+
+        return interaction.reply({
+            content: "How did you get here? There are no roles to ping for that dungeon.",
+            ephemeral: true,
+        });
     }
 
     /**

@@ -2,13 +2,13 @@ import { IBasicOverwriteData, IPermAllowDeny, IPropertyKeyValuePair } from "./Mi
 import { OverwriteData, VoiceChannel } from "discord.js";
 
 export type DungeonType = "Uncategorized"
-    | "Basic Dungeons"
-    | "Godland Dungeons"
-    | "Exaltation Dungeons"
-    | "Event Dungeons"
-    | "Mini Dungeons"
-    | "Heroic Dungeons"
-    | "Epic Dungeons";
+| "Basic Dungeons"
+| "Godland Dungeons"
+| "Exaltation Dungeons"
+| "Event Dungeons"
+| "Mini Dungeons"
+| "Heroic Dungeons"
+| "Epic Dungeons";
 
 export type ImageInfo = {
     url: string;
