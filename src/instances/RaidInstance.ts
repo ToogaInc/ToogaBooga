@@ -165,7 +165,7 @@ export class RaidInstance {
             .setCustomId(RaidInstance.UNLOCK_RAID_ID)
             .setStyle("PRIMARY"),
         new MessageButton()
-            .setLabel("Chain log")
+            .setLabel("Chain Log")
             .setEmoji("⛓️")
             .setCustomId(RaidInstance.CHAIN_LOG_ID)
             .setStyle("SUCCESS"),
@@ -1524,9 +1524,13 @@ export class RaidInstance {
                 this.compileHistory(this._raidStorageChan, sb.toString()),
                 this._thisFeedbackChan.delete(),
             ]);
-        }, , 5 * 60 * 1000);
+        }, 5 * 60 * 1000);
     }
 
+    /**
+     * A reusable function to show a modal to collect information about a key popper, completes and amount popped to log chains
+     * @param {ButtonInteraction} i The button interaction initiating a modal 
+     */
     private async provideChainLogModal(i: ButtonInteraction<"cached">): Promise<void> {
         let trackedUser: GuildMember | null = null;
         let trackedDungeonKey: string | null = null;
@@ -1534,11 +1538,11 @@ export class RaidInstance {
         // Pop a modal and show the user information
         const chainLogModal = new Modal()
             .setCustomId("chain_log_modal")
-            .setTitle("Chain Logging");
+            .setTitle("Chain Logging - Same type as raid panel!");
 
         const nameInput = new TextInputComponent()
             .setCustomId("chain_log_name")
-            .setLabel("In-game name of the user")
+            .setLabel("In-game name of key-popper")
             .setStyle("SHORT")
             .setRequired(true);
 
@@ -1548,7 +1552,7 @@ export class RaidInstance {
             if (probablePoppers && probablePoppers.length > 0) {
                 const probablePopper = probablePoppers[0];
                 nameInput.setRequired(false)
-                    .setPlaceholder(`LEAVE BLANK FOR ${probablePopper.member.displayName}`);
+                    .setPlaceholder(`Leave blank for ${probablePopper.member.displayName}`);
 
                 trackedUser = probablePopper.member;
                 trackedDungeonKey = allKeys.firstKey()!;
@@ -1560,7 +1564,7 @@ export class RaidInstance {
             .setCustomId("chain_log_amount")
             .setLabel("Amount of popped dungeon")
             .setStyle("SHORT")
-            .setPlaceholder("LEAVE BLANK FOR 1");
+            .setPlaceholder("Leave blank for 1");
 
         const actionRows = [
             new MessageActionRow<TextInputComponent>().addComponents(nameInput),
@@ -1620,28 +1624,28 @@ export class RaidInstance {
             const membersAtEnd: GuildMember[] = [];
             const membersThatLeft: GuildMember[] = [];
 
-            const BUTTONS = new MessageActionRow();
+            const chainLogButtons = new MessageActionRow();
             if (!this._vcless) {
-                const VC_USERS_BUTTON = new MessageButton()
+                const voiceUsersButton = new MessageButton()
                     .setCustomId("chain_log_use_vc")
                     .setLabel("Users in VC")
-                    .setEmoji("🎙️")
+                    .setEmoji(EmojiConstants.MICROPHONE_EMOJI)
                     .setStyle("PRIMARY");
 
-                BUTTONS.addComponents(VC_USERS_BUTTON);
+                chainLogButtons.addComponents(voiceUsersButton);
             }
-            const SKIP_BUTTON = new MessageButton()
+            const skipButton = new MessageButton()
                 .setCustomId("chain_log_skip_completes")
                 .setLabel("SKIP")
                 .setEmoji(EmojiConstants.LONG_RIGHT_TRIANGLE_EMOJI)
                 .setStyle("DANGER");
 
-            BUTTONS.addComponents(SKIP_BUTTON);
+            chainLogButtons.addComponents(skipButton);
 
             const originalMessage = modalInteraction.reply({
                 content: `Collected and logged key pop for ${trackedUser.displayName}. Please upload a screenshot`
                     + " of the members that completed the run or click the `SKIP` button.",
-                components: [BUTTONS],
+                components: [chainLogButtons],
                 fetchReply: true,
             });
 
@@ -1682,6 +1686,7 @@ export class RaidInstance {
             );
 
             if (!resObj) {
+                // can't simply cast to Message because type overlaps -> we know it CANT be APIMessage because we aren't HTTP only
                 (originalMessage as unknown as Message<true>).delete().catch(e => LOGGER.error(`${this._instanceInfo} ${e}`));
                 return;
             }
@@ -1751,7 +1756,7 @@ export class RaidInstance {
                 content: `Logged chain. Key: \`${trackedUser.displayName}\`. Dungeon: \`${trackedDungeonKey}\`.`,
                 components: []
             });
-
+            return;
         });
     }
 
@@ -2381,7 +2386,11 @@ export class RaidInstance {
                         "⇨ **Press** the **`Restart Raid`** button if you want to create a new AFK check in the same"
                     )
                     .append(" raid VC. This will reset all priorities and clear the log channel, but the VC and its")
-                    .append(" members will remain.");
+                    .append(" members will remain.")
+                    .appendLine()
+                    .append("⇨ **Press** the **`Chain Log`** button if you want to log a chain. This will show a modal")
+                    .append(" where the leader for that dungeon will provide the key-popper name and amount of keys.")
+                    .append(" Completes and quota are automatically logged with respect of how many keys are popped.");
                 break;
             case RaidStatus.RUN_FINISHED:
                 descSb.append("This instance is **FINISHED**.").appendLine().append("This panel will remain behind.");
