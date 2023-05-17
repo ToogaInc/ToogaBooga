@@ -1048,10 +1048,10 @@ export class RaidInstance {
         }
 
         // Create our initial control panel message.
-        this._controlPanelMsg = await this._controlPanelChannel.send({
+        this._controlPanelMsg = await (this._controlPanelChannel.send({
             embeds: [this.getControlPanelEmbed()!],
             components: RaidInstance.CP_PRE_AFK_BUTTONS,
-        });
+        }).then(m => m.edit({ content: this._memberInit.toString() })));
         this.startControlPanelCollector();
 
         const logChannel = await new Promise<ThreadChannel | null>(async (resolve) => {
@@ -1096,6 +1096,7 @@ export class RaidInstance {
         LOGGER.info(`${this._instanceInfo} Starting AFK Check`);
 
         await this._controlPanelMsg.edit({
+            content: this._memberInit.toString(),
             embeds: [this.getControlPanelEmbed()!],
             components: [],
         });
@@ -1146,6 +1147,7 @@ export class RaidInstance {
                 components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons),
             }),
             this._controlPanelMsg.edit({
+                content: this._memberInit.toString(),
                 embeds: [this.getControlPanelEmbed()!],
                 components: RaidInstance.CP_AFK_BUTTONS,
             }),
@@ -1269,6 +1271,7 @@ export class RaidInstance {
         // Edit the control panel accordingly and re-react and start collector + intervals again.
         await this._controlPanelMsg
             .edit({
+                content: this._memberInit.toString(),
                 embeds: [this.getControlPanelEmbed()!],
                 components: RaidInstance.CP_RAID_BUTTONS,
             })
@@ -1585,6 +1588,7 @@ export class RaidInstance {
                 if (!force) {
                     await this._controlPanelMsg
                         .edit({
+                            content: this._memberInit.toString(),
                             embeds: [this.getControlPanelEmbed()!],
                             components: [],
                         })
@@ -2826,6 +2830,7 @@ export class RaidInstance {
         }
 
         const editMessage = this._controlPanelMsg.edit({
+            content: this._memberInit.toString(),
             embeds: [this.getControlPanelEmbed()!],
         });
 
