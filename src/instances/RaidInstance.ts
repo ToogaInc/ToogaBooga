@@ -25,6 +25,7 @@ import {
     Snowflake,
     TextChannel,
     TextInputComponent,
+    ThreadChannel,
     User,
     VoiceChannel,
     VoiceState,
