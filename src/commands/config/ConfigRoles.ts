@@ -832,7 +832,7 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
             if (result instanceof Role) {
                 ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(query, {
                     $set: {
-                        [keySetter]: result.id
+                        [keySetter]: result.id as never
                     }
                 });
                 section = MongoManager.getAllSections(ctx.guildDoc!)
@@ -858,7 +858,7 @@ export class ConfigRoles extends BaseCommand implements IConfigCommand {
                 case ButtonConstants.RESET_ID: {
                     ctx.guildDoc = (await MongoManager.updateAndFetchGuildDoc(query, {
                         $set: {
-                            [keySetter]: ""
+                            [keySetter]: "" as never
                         }
                     }))!;
                     section = MongoManager.getAllSections(ctx.guildDoc!)

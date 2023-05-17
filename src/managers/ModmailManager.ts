@@ -170,9 +170,11 @@ export namespace ModmailManager {
             });
             
             const baseMsg = await t.fetchStarterMessage();
-            baseMsg.embeds[0].spliceFields(baseMsg.embeds[0].fields.findIndex(x => x.name === "Directions"), 1);
-            baseMsg.embeds[0].addField("Directions", OPEN_MODMAIL_INSTRUCTIONS);
-            await MessageUtilities.tryEdit(baseMsg, { embeds: [baseMsg.embeds[0]] });
+            if (baseMsg) {
+                baseMsg.embeds[0].spliceFields(baseMsg.embeds[0].fields.findIndex(x => x.name === "Directions"), 1);
+                baseMsg.embeds[0].addField("Directions", OPEN_MODMAIL_INSTRUCTIONS);
+                await MessageUtilities.tryEdit(baseMsg, { embeds: [baseMsg.embeds[0]] });
+            }
         };
 
         if (modmailMsg.hasThread) {
