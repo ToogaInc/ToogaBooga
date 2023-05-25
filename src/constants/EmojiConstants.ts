@@ -113,6 +113,7 @@ export namespace EmojiConstants {
     export const ARMOR_BREAK: string = "678792068889444397";
     export const CURSE: string = "929850982374989905";
     export const EXPOSE: string = "963536541567840346";
+    export const SPEEDY: string = "1111082594877063198";
 
     // util/generic
     export const RUSHING_CLASS: string = "585616161878835220";
