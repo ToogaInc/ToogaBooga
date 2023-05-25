@@ -47,7 +47,7 @@ export class StartAfkCheck extends BaseCommand {
                             { name: "void", value: "THE_VOID" },
                             { name: "lost halls", value: "LOST_HALLS" },
                             { name: "exalt", value: "EXALT_DUNGEON" },
-                            { name: "misc", value: "MISCELLANEOUS_DUNGEON"}
+                            { name: "misc", value: "MISCELLANEOUS_DUNGEON" }
                         ]
                     },
                     prettyType: "Dungeon name (one word: o3, shatts, cult)",
