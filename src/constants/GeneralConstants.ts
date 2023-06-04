@@ -19,7 +19,7 @@ export namespace GeneralConstants {
         { name: "void", value: "THE_VOID" },
         { name: "lost halls", value: "LOST_HALLS" },
         { name: "exalt", value: "EXALT_DUNGEON" },
-        { name: "misc", value: "MISCELLANEOUS_DUNGEON"}
+        { name: "misc", value: "MISCELLANEOUS_DUNGEON" }
     ];
 
     export const GITHUB_URL: string = "https://github.com/ewang2002/ToogaBooga";
