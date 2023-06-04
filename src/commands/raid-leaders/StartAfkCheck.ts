@@ -13,6 +13,7 @@ import {
 import { IRaidOptions } from "../../definitions";
 import { TextChannel, VoiceChannel } from "discord.js";
 import { Logger } from "../../utilities/Logger";
+import { GeneralConstants } from "../../constants/GeneralConstants";
 
 const LOGGER: Logger = new Logger(__filename, false);
 
@@ -36,19 +37,7 @@ export class StartAfkCheck extends BaseCommand {
                     desc: "The dungeon for this raid.",
                     type: ArgumentType.String,
                     restrictions: {
-                        stringChoices: [
-                            { name: "o3", value: "ORYX_3" },
-                            { name: "shatts", value: "SHATTERS" },
-                            { name: "moonlight", value: "MOONLIGHT_VILLAGE" },
-                            { name: "nest", value: "NEST" },
-                            { name: "fungal", value: "FUNGAL_CAVERN" },
-                            { name: "steamworks", value: "STEAMWORKS" },
-                            { name: "cult", value: "CULTIST_HIDEOUT" },
-                            { name: "void", value: "THE_VOID" },
-                            { name: "lost halls", value: "LOST_HALLS" },
-                            { name: "exalt", value: "EXALT_DUNGEON" },
-                            { name: "misc", value: "MISCELLANEOUS_DUNGEON"}
-                        ]
+                        stringChoices: GeneralConstants.DUNGEON_SHORTCUTS
                     },
                     prettyType: "Dungeon name (one word: o3, shatts, cult)",
                     required: false,

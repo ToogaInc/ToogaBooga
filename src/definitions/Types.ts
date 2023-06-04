@@ -13,6 +13,11 @@ export type TimedResult<R> = {
     value: R | null;
 };
 
+export type DungeonShortcuts = {
+    name: string;
+    value: string;
+};
+
 export type QuotaLogType = QuotaRunLogType
 | "Parse"
 | "ManualVerify"
