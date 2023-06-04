@@ -29,7 +29,19 @@ export class StartHeadcount extends BaseCommand {
                     desc: "The dungeon for this headcount.",
                     type: ArgumentType.String,
                     restrictions: {
-                        stringChoices: GeneralConstants.DUNGEON_SHORTCUTS
+                        stringChoices: [
+                            { name: "o3", value: "ORYX_3" },
+                            { name: "shatts", value: "SHATTERS" },
+                            { name: "moonlight", value: "MOONLIGHT_VILLAGE" },
+                            { name: "nest", value: "NEST" },
+                            { name: "fungal", value: "FUNGAL_CAVERN" },
+                            { name: "steamworks", value: "STEAMWORKS" },
+                            { name: "cult", value: "CULTIST_HIDEOUT" },
+                            { name: "void", value: "THE_VOID" },
+                            { name: "lost halls", value: "LOST_HALLS" },
+                            { name: "exalt", value: "EXALT_DUNGEON" },
+                            { name: "misc", value: "MISCELLANEOUS_DUNGEON"}
+                        ]
                     },
                     prettyType: "Dungeon name (one word: o3, oryx, shatts, shatters)",
                     required: false,
