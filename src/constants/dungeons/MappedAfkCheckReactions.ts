@@ -239,6 +239,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Armor Break",
         isExaltKey: false
     },
+    SPEEDY: {
+        type: "STATUS_EFFECT",
+        emojiInfo: {
+            isCustom: true,
+            identifier: EmojiConstants.SPEEDY
+        },
+        name: "Speedy",
+        isExaltKey: false
+    },
     Expose: {
         type: "STATUS_EFFECT",
         emojiInfo: {

@@ -12,6 +12,7 @@ import { QuotaManager } from "../../managers/QuotaManager";
 import { QuotaLogType } from "../../definitions/Types";
 import { ButtonConstants } from "../../constants/ButtonConstants";
 import { DungeonUtilities } from "../../utilities/DungeonUtilities";
+import { GeneralConstants } from "../../constants/GeneralConstants";
 
 export class LogRun extends BaseCommand {
     public constructor() {
@@ -65,14 +66,7 @@ export class LogRun extends BaseCommand {
                     desc: "The dungeon to log as a complete/assist/fail.",
                     type: ArgumentType.String,
                     restrictions: {
-                        stringChoices: [
-                            { name: "o3", value: "ORYX_3" },
-                            { name: "shatts", value: "SHATTERS" },
-                            { name: "nest", value: "NEST" },
-                            { name: "cult", value: "CULTIST_HIDEOUT" },
-                            { name: "fungal", value: "FUNGAL_CAVERN" },
-                            { name: "void", value: "THE_VOID" },
-                        ]
+                        stringChoices: GeneralConstants.DUNGEON_SHORTCUTS
                     },
                     prettyType: "Dungeon name (one word: o3, shatts, nest)",
                     required: false,

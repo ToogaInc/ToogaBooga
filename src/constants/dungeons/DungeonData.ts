@@ -1883,7 +1883,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             {
                 mapKey: "MYSTIC",
                 maxEarlyLocation: 0
-            },
+            }
         ],
         portalLink: {
             url: "https://i.imgur.com/CLzxdEM.png",
@@ -1953,6 +1953,121 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             0x1dbfaa
         ],
         dungeonCategory: "Basic Dungeons",
+        isBuiltIn: true
+    },
+    {
+        codeName: "REALM_CLEARING",
+        dungeonName: "Realm Clearing",
+        portalEmojiId: "1111077858803200144",
+        keyReactions: [
+            {
+                mapKey: "SHIELD_RUNE",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "SWORD_RUNE",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "HELM_RUNE",
+                maxEarlyLocation: 2
+            }
+        ],
+        otherReactions: [
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 3
+            },
+            {
+                mapKey: "SPEEDY",
+                maxEarlyLocation: 3
+            }
+        ],
+        portalLink: {
+            url: "https://i.imgur.com/oR1wqQ3.png",
+            name: "Realm Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/HGmFZAA.png",
+                name: "Skull Shrine"
+            },
+            {
+                url: "https://i.imgur.com/NERHSHK.png",
+                name: "Hermit God"
+            },
+            {
+                url: "https://i.imgur.com/TLZfnSb.png",
+                name: "Cube God"
+            }
+        ],
+        dungeonColors: [
+            0x1dbfaa
+        ],
+        dungeonCategory: "Basic Dungeons",
+        isBuiltIn: true
+    },
+    {
+        codeName: "EXALT_DUNGEON",
+        dungeonName: "Exalt Dungeon",
+        portalEmojiId: "1110284783541559347",
+        keyReactions: [
+            {
+                mapKey: "SHIELD_RUNE",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "SWORD_RUNE",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "HELM_RUNE",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "CULT_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "VOID_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "SHATTERS_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "MOONLIGHT_VILLAGE_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "STEAMWORKS_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "FUNGAL_CAVERN_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "NEST_KEY",
+                maxEarlyLocation: 2
+            }
+        ],
+        otherReactions: [],
+        portalLink: {
+            url: "https://i.imgur.com/8eDjmCe.png",
+            name: "Oryx the Mad Beachcake"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/8eDjmCe.png",
+                name: "Oryx the Mad Beachcake"
+            }
+        ],
+        dungeonColors: [
+            0x1dbfaa
+        ],
+        dungeonCategory: "Exaltation Dungeons",
         isBuiltIn: true
     },
     {
