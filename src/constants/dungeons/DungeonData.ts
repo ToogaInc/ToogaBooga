@@ -1995,7 +1995,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 1
             },
             {
-                mapKey: "DPS_WIZARD",
+                mapKey: "DPS_RANGED",
                 maxEarlyLocation: 10
             },
             {
