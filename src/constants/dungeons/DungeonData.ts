@@ -1358,20 +1358,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             url: "https://i.imgur.com/8WyDft8.png",
             name: "Advanced Steamworks Portal"
         },
-        bossLinks: [
-            {
-                url: "https://i.imgur.com/mK2gN3p.png",
-                name: "Core Form"
-            },
-            {
-                url: "https://i.imgur.com/Bvc5thY.png",
-                name: "Enforcer Form"
-            },
-            {
-                url: "https://i.imgur.com/a6SxEBx.png",
-                name: "Dragon Form"
-            }
-        ],
+        bossLinks: [],
         dungeonColors: [
             0xC0C0C0,
             0x808080,
@@ -1590,13 +1577,9 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         },
         bossLinks: [
             {
-                url: "https://i.imgur.com/hUWc3IV.png",
-                name: "Killer Queen Bee"
+                url: "https://i.imgur.com/PKYrWvX.png",
+                name: "Green Beehemoth"
             },
-            {
-                url: "https://i.imgur.com/Hn5Ugix.png",
-                name: "The Beekeeper"
-            }
         ],
         dungeonColors: [
             0xed9121,
