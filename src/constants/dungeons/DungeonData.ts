@@ -1281,7 +1281,7 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             }
         ],
         portalLink: {
-            url: "https://i.imgur.com/8WyDft8.png",
+            url: "https://i.imgur.com/ItKUC5A.png",
             name: "Steamworks Portal"
         },
         bossLinks: [
