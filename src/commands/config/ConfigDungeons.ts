@@ -941,8 +941,8 @@ export class ConfigDungeons extends BaseCommand {
                         }
                     });
 
-                    const oldRoles = oldDungeonData?.mentionRoles.every(item => cDungeon.mentionRoles.includes(item));
-                    const newRoles = cDungeon.mentionRoles.every(item => (oldDungeonData as IDungeonOverrideInfo).mentionRoles.includes(item));
+                    const oldRoles = oldDungeonData?.mentionRoles?.every(item => cDungeon.mentionRoles.includes(item));
+                    const newRoles = cDungeon.mentionRoles?.every(item => (oldDungeonData as IDungeonOverrideInfo).mentionRoles.includes(item));
                     if (oldRoles && newRoles) {
                         ConfigChannels.createNewRolePingMessage(ctx.channel.client, ctx.guildDoc!);
                     }
