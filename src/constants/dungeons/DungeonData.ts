@@ -1307,6 +1307,80 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         isBuiltIn: true
     },
     {
+        codeName: "ADVANCED STEAMWORKS",
+        dungeonName: "Advanced Steamworks",
+        portalEmojiId: "1158160675105935440",
+        keyReactions: [
+            {
+                mapKey: "ADVANCED_STEAMWORKS_KEY",
+                maxEarlyLocation: 2
+            }
+        ],
+        otherReactions: [
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "MYSTIC",
+                maxEarlyLocation: 0
+            }
+        ],
+        portalLink: {
+            url: "https://i.imgur.com/8WyDft8.png",
+            name: "Advanced Steamworks Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/mK2gN3p.png",
+                name: "Core Form"
+            },
+            {
+                url: "https://i.imgur.com/Bvc5thY.png",
+                name: "Enforcer Form"
+            },
+            {
+                url: "https://i.imgur.com/a6SxEBx.png",
+                name: "Dragon Form"
+            }
+        ],
+        dungeonColors: [
+            0xC0C0C0,
+            0x808080,
+            0xFF00FF
+        ],
+        dungeonCategory: "Exaltation Dungeons",
+        isBuiltIn: true
+    },
+    {
         codeName: "SHATTERS",
         dungeonName: "Shatters",
         portalEmojiId: "561744041532719115",
@@ -1442,6 +1516,77 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         portalLink: {
             url: "https://i.imgur.com/WQ95Y0j.png",
             name: "Nest Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/hUWc3IV.png",
+                name: "Killer Queen Bee"
+            },
+            {
+                url: "https://i.imgur.com/Hn5Ugix.png",
+                name: "The Beekeeper"
+            }
+        ],
+        dungeonColors: [
+            0xed9121,
+            0x18c7db,
+            0xe3e019,
+            0xbd0d30
+        ],
+        dungeonCategory: "Exaltation Dungeons",
+        isBuiltIn: true
+    },
+    {
+        codeName: "ADVANCED_NEST",
+        dungeonName: "Advanced Nest",
+        portalEmojiId: "1158159293657399356",
+        keyReactions: [
+            {
+                mapKey: "ADVANCED_NEST_KEY",
+                maxEarlyLocation: 3
+            }
+        ],
+        otherReactions: [
+            {
+                mapKey: "QUIVER_THUNDER",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PRIEST",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "MYSTIC",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "SLOW",
+                maxEarlyLocation: 0
+            }
+        ],
+        portalLink: {
+            url: "https://i.imgur.com/oieOJGo.png",
+            name: "Advanced Nest Portal"
         },
         bossLinks: [
             {

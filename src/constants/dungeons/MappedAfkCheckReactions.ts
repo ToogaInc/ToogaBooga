@@ -667,6 +667,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Steamworks Key",
         isExaltKey: true
     },
+    ADVANCED_STEAMWORKS_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1158160722535129159"
+        },
+        name: "Advanced Steamworks Key",
+        isExaltKey: true
+    },
     SHATTERS_KEY: {
         type: "KEY",
         emojiInfo: {
@@ -692,6 +701,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
             identifier: "585617056192266240"
         },
         name: "Nest Key",
+        isExaltKey: true
+    },
+    ADVANCED_NEST_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1158159649619595384"
+        },
+        name: "Advanced Nest Key",
         isExaltKey: true
     },
     CURSED_LIBRARY_KEY: {
