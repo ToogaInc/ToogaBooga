@@ -1358,7 +1358,20 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             url: "https://i.imgur.com/8WyDft8.png",
             name: "Advanced Steamworks Portal"
         },
-        bossLinks: [],
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/mK2gN3p.png",
+                name: "Core Form"
+            },
+            {
+                url: "https://i.imgur.com/Bvc5thY.png",
+                name: "Enforcer Form"
+            },
+            {
+                url: "https://i.imgur.com/a6SxEBx.png",
+                name: "Dragon Form"
+            }
+        ],
         dungeonColors: [
             0xC0C0C0,
             0x808080,
