@@ -8,7 +8,7 @@ import { RaidInstance } from "../instances/RaidInstance";
 import { IGuildInfo } from "../definitions";
 import { MessageUtilities } from "../utilities/MessageUtilities";
 import { StringUtil } from "../utilities/StringUtilities";
-import { ICommandContext } from "../commands";
+import { ConfigChannels, ICommandContext } from "../commands";
 import { TimeUtilities } from "../utilities/TimeUtilities";
 import { MessageConstants } from "../constants/MessageConstants";
 import { StringBuilder } from "../utilities/StringBuilder";
@@ -224,9 +224,9 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
     const manualVerifyChannels = guildDoc.manualVerificationEntries
         .find(x => x.manualVerifyMsgId === message.id && x.manualVerifyChannelId === channel.id);
 
-    
-    if (manualVerifyChannels 
-        && message.embeds.length > 0 
+
+    if (manualVerifyChannels
+        && message.embeds.length > 0
         && message.embeds[0].footer?.text === "Manual Verification Request") {
         interaction.deferUpdate().catch(LOGGER.error);
         VerifyManager.acknowledgeManualVerif(manualVerifyChannels, resolvedMember, interaction.customId, message)
@@ -296,6 +296,18 @@ export async function onInteractionEvent(interaction: Interaction): Promise<void
                 await ModmailManager.deleteModmailThread(message, guildDoc);
                 return;
             }
+        }
+    }
+
+    // ================================================================================================ //
+
+    // Handle role pings
+
+    if (interaction.channelId === guildDoc.channels.rolePingChannelId) {
+        // This must be a button in the role ping channel.
+        // Check if it starts with `ping-` and then handle it.
+        if (interaction.customId.startsWith("ping-")) {
+            ConfigChannels.handleRolePingInteraction(interaction, guildDoc);
         }
     }
 }

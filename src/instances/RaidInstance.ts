@@ -222,6 +222,8 @@ export class RaidInstance {
     private _afkCheckMsg: Message | null;
     // The control panel message.
     private _controlPanelMsg: Message | null;
+    // The roles to ping when the pre-AFK check starts
+    private _mentionRoles: string | null;
 
     // Whether intervals are running.
     private _intervalsAreRunning: boolean = false;
@@ -309,6 +311,7 @@ export class RaidInstance {
         this._raidStatus = RaidStatus.NOTHING;
         this._raidId = uuidv4();
         this._vcless = raidOptions?.vcless ?? false;
+        this._mentionRoles = null;
 
         if (raidOptions?.existingVc) {
             this._raidVc = raidOptions.existingVc.vc;
@@ -419,6 +422,12 @@ export class RaidInstance {
             if (dgnOverride && dgnOverride.locationToProgress) locationToProgress = true;
             // In the case that there is no override, fallback to the information from constants/dungeons/DungeonData
             else if (!dgnOverride && dungeon.locationToProgress) locationToProgress = true;
+
+            if (dgnOverride && dgnOverride.mentionRoles) {
+                this._mentionRoles = dgnOverride.mentionRoles.map(mention => {
+                    return `<@&${mention}>`;
+                }).join(" ");
+            }
         } else {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
@@ -434,6 +443,12 @@ export class RaidInstance {
                         return DUNGEON_MODIFIERS.find((modifier) => modifier.modifierId === x);
                     })
                     .filter((x) => x) as IDungeonModifier[];
+            }
+
+            if ((dungeon as ICustomDungeonInfo).mentionRoles) {
+                this._mentionRoles = (dungeon as ICustomDungeonInfo).mentionRoles.map(mention => {
+                    return `<@&${mention}>`;
+                }).join(" ");
             }
         }
 
@@ -1072,7 +1087,7 @@ export class RaidInstance {
 
         // Create our initial AFK check message.
         this._afkCheckMsg = await this._afkCheckChannel.send({
-            content: "@here",
+            content: `@here ${this._mentionRoles}`,
             embeds: [this.getAfkCheckEmbed()!],
             components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons),
         });

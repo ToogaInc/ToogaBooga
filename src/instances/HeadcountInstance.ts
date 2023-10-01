@@ -151,6 +151,9 @@ export class HeadcountInstance {
     // All modifiers that we should be referring to.
     private readonly _modifiersToUse: readonly IDungeonModifier[];
 
+    // Roles to ping when the headcount starts
+    private readonly _mentionRoles: string | null;
+
     // The headcount embed color.
     private _embedColor: number;
 
@@ -184,6 +187,7 @@ export class HeadcountInstance {
         this._guildDoc = guildDoc;
         this._raidSection = section;
         this._modifiersToUse = DEFAULT_MODIFIERS;
+        this._mentionRoles = null;
         this._headcountButtonCollector = null;
         this._controlPanelReactionCollector = null;
         this._embedColor = HeadcountInstance.DEFAULT_EMBED_COLOR;
@@ -223,6 +227,12 @@ export class HeadcountInstance {
                     return DUNGEON_MODIFIERS.find(modifier => modifier.modifierId === x);
                 }).filter(x => x) as IDungeonModifier[];
             }
+
+            if (dgnOverride?.mentionRoles) {
+                this._mentionRoles = dgnOverride.mentionRoles.map(mention => {
+                    return `<@&${mention}>`;
+                }).join(" ");
+            }
         }
         else {
             // Custom dungeon
@@ -230,6 +240,12 @@ export class HeadcountInstance {
                 this._modifiersToUse = (dungeon as ICustomDungeonInfo).allowedModifiers.map(x => {
                     return DUNGEON_MODIFIERS.find(modifier => modifier.modifierId === x);
                 }).filter(x => x) as IDungeonModifier[];
+            }
+
+            if ((dungeon as ICustomDungeonInfo).mentionRoles) {
+                this._mentionRoles = (dungeon as ICustomDungeonInfo).mentionRoles.map(mention => {
+                    return `<@&${mention}>`;
+                }).join(" ");
             }
         }
 
@@ -459,7 +475,7 @@ export class HeadcountInstance {
 
         // Create our initial AFK check message.
         this._headcountMsg = await this._headcountChannel.send({
-            content: `@here A ${this._dungeon.dungeonName} headcount has started.`,
+            content: `@here ${this._mentionRoles} A ${this._dungeon.dungeonName} headcount has started.`,
             embeds: [this.getHeadcountEmbed()!],
             components: AdvancedCollector.getActionRowsFromComponents(this._afkCheckButtons)
         });
@@ -596,13 +612,13 @@ export class HeadcountInstance {
         LOGGER.info(`${this._instanceInfo} Converting headcount`);
         if (!this._headcountMsg || !this._controlPanelMsg)
             return;
-        
-            //If vcToUse is a vc, then vcless is false.  Otherwise, vcToUse is a boolean representing vcless
-        const isVcless : boolean = (vcSelect instanceof VoiceChannel) ? false : vcSelect as boolean;
-        const selectedVc : VoiceChannel | null = (vcSelect instanceof VoiceChannel) ? vcSelect as VoiceChannel : null;
+
+        //If vcToUse is a vc, then vcless is false.  Otherwise, vcToUse is a boolean representing vcless
+        const isVcless: boolean = (vcSelect instanceof VoiceChannel) ? false : vcSelect as boolean;
+        const selectedVc: VoiceChannel | null = (vcSelect instanceof VoiceChannel) ? vcSelect as VoiceChannel : null;
 
         //Log leader, dungeon, and (vc name / Vc-less / Temporary)
-        const vcLog = `${(vcSelect instanceof VoiceChannel) ? `${(vcSelect as VoiceChannel).name}` : (isVcless) ? "VC-less": "Temporary"}`; 
+        const vcLog = `${(vcSelect instanceof VoiceChannel) ? `${(vcSelect as VoiceChannel).name}` : (isVcless) ? "VC-less" : "Temporary"}`;
         LOGGER.info(`${member.displayName} is starting a ${this._dungeon.dungeonName} with vc: ${vcLog}`);
 
         // This is for the purposes of not having to edit getHeadcountEmbed, letting users know it's in progress.

@@ -41,6 +41,7 @@ import { DungeonUtilities } from "../../utilities/DungeonUtilities";
 import { DEFAULT_MODIFIERS, DUNGEON_MODIFIERS } from "../../constants/dungeons/DungeonModifiers";
 import { ButtonConstants } from "../../constants/ButtonConstants";
 import { MessageUtilities } from "../../utilities/MessageUtilities";
+import { ConfigChannels } from "./ConfigChannels";
 
 enum ValidatorResult {
     // Success = ValidationReturnType#res is not null
@@ -176,7 +177,8 @@ export class ConfigDungeons extends BaseCommand {
         return dgnOverride.nitroEarlyLocationLimit === -1
             && dgnOverride.vcLimit === -1
             && dgnOverride.pointCost === 0
-            && dgnOverride.roleRequirement.length === 0;
+            && dgnOverride.roleRequirement.length === 0
+            && dgnOverride.mentionRoles.length === 0;
     }
 
     /**
@@ -210,7 +212,8 @@ export class ConfigDungeons extends BaseCommand {
             roleRequirement: [],
             logFor: null,
             allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId),
-            locationToProgress: dgn.locationToProgress
+            locationToProgress: dgn.locationToProgress,
+            mentionRoles: [],
         } as ICustomDungeonInfo;
     }
 
@@ -422,7 +425,8 @@ export class ConfigDungeons extends BaseCommand {
                     pointCost: 0,
                     roleRequirement: [],
                     allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId),
-                    locationToProgress: res.locationToProgress
+                    locationToProgress: res.locationToProgress,
+                    mentionRoles: []
                 } as IDungeonOverrideInfo));
                 return;
             }
@@ -629,7 +633,8 @@ export class ConfigDungeons extends BaseCommand {
             roleRequirement: [],
             vcLimit: -1,
             allowedModifiers: DEFAULT_MODIFIERS.map(x => x.modifierId),
-            locationToProgress: false
+            locationToProgress: false,
+            mentionRoles: [],
         };
 
         const embed = new MessageEmbed();
@@ -649,6 +654,10 @@ export class ConfigDungeons extends BaseCommand {
         const pointsToEnterButton = new MessageButton()
             .setLabel("Points to Enter")
             .setCustomId("points_enter")
+            .setStyle("PRIMARY");
+        const mentionRolesButton = new MessageButton()
+            .setLabel("Roles to Mention")
+            .setCustomId("mention_roles")
             .setStyle("PRIMARY");
         const nitroLimitButton = new MessageButton()
             .setLabel("Nitro Limit")
@@ -731,6 +740,7 @@ export class ConfigDungeons extends BaseCommand {
 
         buttons.push(
             pointsToEnterButton,
+            mentionRolesButton,
             nitroLimitButton,
             vcLimitButton,
             roleReqButton,
@@ -838,6 +848,10 @@ export class ConfigDungeons extends BaseCommand {
                 + " join the VC and gain early location. This is currently set to: "
                 + StringUtil.codifyString(ptCostStr)
             ).addField(
+                "Mention Roles",
+                "Roles to mention. Click on the button to edit the roles mentioned when a headcount or raid for this"
+                + " dungeon starts."
+            ).addField(
                 "Number of Nitro Early Location",
                 "Click on the `Nitro Limit` button to set how many people can join the VC and gain early"
                 + " location via the Nitro reaction. This is currently set to: "
@@ -903,7 +917,9 @@ export class ConfigDungeons extends BaseCommand {
                     return;
                 }
                 case ButtonConstants.SAVE_ID: {
+                    let oldDungeonData: IDungeonOverrideInfo | undefined;
                     if (dungeon) {
+                        oldDungeonData = ctx.guildDoc?.properties.dungeonOverride.find(x => x.codeName === cDungeon.codeName);
                         ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                             $pull: {
                                 [operationOnStr]: {
@@ -924,6 +940,12 @@ export class ConfigDungeons extends BaseCommand {
                             [operationOnStr]: cDungeon
                         }
                     });
+
+                    const oldRoles = oldDungeonData?.mentionRoles?.every(item => cDungeon.mentionRoles.includes(item));
+                    const newRoles = cDungeon.mentionRoles?.every(item => (oldDungeonData as IDungeonOverrideInfo).mentionRoles.includes(item));
+                    if (oldRoles && newRoles) {
+                        ConfigChannels.createNewRolePingMessage(ctx.channel.client, ctx.guildDoc!);
+                    }
 
                     await this.mainMenu(ctx, botMsg);
                     return;
@@ -1209,6 +1231,35 @@ export class ConfigDungeons extends BaseCommand {
                         await this.dispose(ctx, botMsg);
                         return;
                     }
+                    break;
+                }
+                case "mention_roles": {
+                    if (!cDungeon.mentionRoles) cDungeon.mentionRoles = [];
+                    const mentionRoles = await this.configSetting<Role>(
+                        ctx,
+                        botMsg,
+                        cDungeon.mentionRoles.map(x => GuildFgrUtilities.getCachedRole(ctx.guild!, x))
+                            .filter(x => !!x) as Role[],
+                        {
+                            nameOfPrompt: "Roles to mention",
+                            descOfPrompt: "Pick the roles that will be mentioned in a headcount or AFK check",
+                            expectedType: "Role Mention or ID",
+                            itemName: "Role",
+                            embedDescResolver: input => `Role ID: ${input.id}`,
+                            embedTitleResolver: input => input.name,
+                            validator: msg => {
+                                const role = ParseUtilities.parseRole(msg);
+                                return role ? role : null;
+                            }
+                        }
+                    );
+
+                    if (!mentionRoles) {
+                        await this.dispose(ctx, botMsg);
+                        return;
+                    }
+
+                    cDungeon.mentionRoles = mentionRoles.map(x => x.id);
                     break;
                 }
                 case "nitro_limit": {
