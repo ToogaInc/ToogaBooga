@@ -688,27 +688,6 @@ export namespace MongoManager {
     }
 
     /**
-     * Validates that a field exists in a guild document. If the field does exist, nothing happens. Otherwise, the
-     * field is set with the specified default value. Make sure to update the cache manually.
-     * @typedef T The default value type.
-     * @param {string} guildId The guild ID.
-     * @param {string} property The field, or property, to check.
-     * @param {T} defaultValue The default value if the field doesn't exist.
-     */
-    export async function validateGuildField<T>(guildId: string, property: string, defaultValue: T): Promise<void> {
-        await getGuildCollection().updateOne({
-            guildId: guildId,
-            [property]: {
-                $exists: true
-            }
-        }, {
-            $set: {
-                [property]: defaultValue
-            }
-        });
-    }
-
-    /**
      * Returns a section object representing the main section.
      * @param {IGuildInfo} guildDoc The guild document.
      * @returns {ISectionInfo} The section.

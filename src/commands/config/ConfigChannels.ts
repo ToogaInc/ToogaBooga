@@ -585,7 +585,7 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
                 ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(query, {
                     $set: {
-                        [keySetter]: newArr
+                        [keySetter]: newArr as never
                     }
                 });
                 section = MongoManager.getAllSections(ctx.guildDoc!)
@@ -972,7 +972,10 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
 
                 ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(query, {
                     $set: {
-                        [keySetter]: result.id
+                        // hacky fix since the possible properties that our query has
+                        // has many different types, and typescript doesn't like it if 
+                        // we assert that it's only one type.
+                        [keySetter]: result.id as never 
                     }
                 });
                 section = MongoManager.getAllSections(ctx.guildDoc!)
@@ -1002,7 +1005,7 @@ export class ConfigChannels extends BaseCommand implements IConfigCommand {
                 case ButtonConstants.RESET_ID: {
                     ctx.guildDoc = (await MongoManager.updateAndFetchGuildDoc(query, {
                         $set: {
-                            [keySetter]: ""
+                            [keySetter]: "" as never
                         }
                     }))!;
                     section = MongoManager.getAllSections(ctx.guildDoc!)
