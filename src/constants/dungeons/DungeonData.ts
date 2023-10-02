@@ -1590,13 +1590,9 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         },
         bossLinks: [
             {
-                url: "https://i.imgur.com/hUWc3IV.png",
-                name: "Killer Queen Bee"
+                url: "https://i.imgur.com/PKYrWvX.png",
+                name: "Green Beehemoth"
             },
-            {
-                url: "https://i.imgur.com/Hn5Ugix.png",
-                name: "The Beekeeper"
-            }
         ],
         dungeonColors: [
             0xed9121,
