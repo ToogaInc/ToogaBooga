@@ -54,6 +54,7 @@ export class LogKey extends BaseCommand {
                             { name: "shatts", value: "SHATTERS_KEY" },
                             { name: "halls", value: "LOST_HALLS_KEY" },
                             { name: "fungal", value: "FUNGAL_CAVERN_KEY" },
+                            { name: "steamworks", value: "STEAMWORKS_KEY" },
                             { name: "vial", value: "VIAL_OF_PURE_DARKNESS" },
                         ]
                     },
