@@ -2070,6 +2070,81 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         isBuiltIn: true
     },
     {
+        codeName: "SPECTRAL_PENITENTIARY",
+        dungeonName: "Spectral Penitentiary",
+        portalEmojiId: "1289937244307853384",
+        keyReactions: [
+            {
+                mapKey: "SPECTRAL_KEY",
+                maxEarlyLocation: 2
+            }
+        ],
+        otherReactions: [
+            {
+                mapKey: "QUIVER_THUNDER",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "SLOW",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "MYSTIC",
+                maxEarlyLocation: 0
+            }
+        ],
+        portalLink: {
+            url: "https://i.imgur.com/RVWq9ua.png",
+            name: "Spectral Penitentiary Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/jrcY9jC.png",
+                name: "Soulwarden Murcian"
+            }
+        ],
+        dungeonColors: [
+            0x001e28,
+            0x58dd85,
+            0x30b2aa,
+            0x124a69
+        ],
+        dungeonCategory: "Exaltation Dungeons",
+        isBuiltIn: true
+    },
+    {
         codeName: "MISCELLANEOUS_DUNGEON",
         dungeonName: "Miscellaneous Dungeon",
         portalEmojiId: "574080648000569353",
@@ -2191,6 +2266,10 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             },
             {
                 mapKey: "NEST_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "SPECTRAL_KEY",
                 maxEarlyLocation: 2
             }
         ],

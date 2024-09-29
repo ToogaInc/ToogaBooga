@@ -676,6 +676,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Advanced Steamworks Key",
         isExaltKey: true
     },
+    SPECTRAL_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1289920551674056716"
+        },
+        name: "Spectral Penitentiary Key",
+        isExaltKey: true
+    },
     SHATTERS_KEY: {
         type: "KEY",
         emojiInfo: {
