@@ -20,7 +20,9 @@ export namespace LoggerManager {
         "LOST_HALLS_KEY",
         "NEST_KEY",
         "SHATTERS_KEY",
-        "FUNGAL_CAVERN_KEY"
+        "FUNGAL_CAVERN_KEY",
+        "STEAMWORKS_KEY",
+        "SPECTRAL_KEY"
     ];
 
     export type DungeonLedType = Collection<string, { completed: number; failed: number; assisted: number; }>;
