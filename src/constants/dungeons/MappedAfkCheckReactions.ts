@@ -766,6 +766,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Fungal Cavern Key",
         isExaltKey: true
     },
+    SPECTRAL_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1290096084395495454"
+        },
+        name: "Spectral Penitentiary Key",
+        isExaltKey: true
+    },
     MISCELLANEOUS_DUNGEON_KEY: {
         type: "KEY",
         emojiInfo: {

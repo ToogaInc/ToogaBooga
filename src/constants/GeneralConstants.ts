@@ -15,6 +15,7 @@ export namespace GeneralConstants {
         { name: "nest", value: "NEST" },
         { name: "fungal", value: "FUNGAL_CAVERN" },
         { name: "steamworks", value: "STEAMWORKS" },
+        { name: "spectral", value: "SPECTRAL_PENITENTIARY" },
         { name: "cult", value: "CULTIST_HIDEOUT" },
         { name: "void", value: "THE_VOID" },
         { name: "lost halls", value: "LOST_HALLS" },
