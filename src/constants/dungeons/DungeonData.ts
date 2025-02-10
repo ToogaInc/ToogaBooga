@@ -2261,11 +2261,19 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
                 maxEarlyLocation: 2
             },
             {
+                mapKey: "ADVANCED_STEAMWORKS_KEY",
+                maxEarlyLocation: 2
+            },
+            {
                 mapKey: "FUNGAL_CAVERN_KEY",
                 maxEarlyLocation: 2
             },
             {
                 mapKey: "NEST_KEY",
+                maxEarlyLocation: 2
+            },
+            {
+                mapKey: "ADVANCED_NEST_KEY",
                 maxEarlyLocation: 2
             },
             {
