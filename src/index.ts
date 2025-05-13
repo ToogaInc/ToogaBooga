@@ -8,8 +8,6 @@ import { DUNGEON_DATA } from "./constants/dungeons/DungeonData";
 import { MAPPED_AFK_CHECK_REACTIONS } from "./constants/dungeons/MappedAfkCheckReactions";
 
 (async () => {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
     const allEmojis = DUNGEON_DATA.flatMap(x => x.keyReactions.concat(x.otherReactions));
     for (const { mapKey } of allEmojis) {
         if (mapKey in MAPPED_AFK_CHECK_REACTIONS) {
