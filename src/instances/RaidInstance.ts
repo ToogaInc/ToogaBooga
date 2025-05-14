@@ -431,6 +431,13 @@ export class RaidInstance {
         } else {
             // If this is not a base or derived dungeon (i.e. it's a custom dungeon), then it must specify the nitro
             // limit.
+
+            // respect a custom dungeon’s own VC cap if set
+            const custom = dungeon as ICustomDungeonInfo;
+
+            const vc = custom.vcLimit ?? -1;
+            if (vc !== -1) raidLimit = vc;
+
             numEarlyLoc = (dungeon as ICustomDungeonInfo).nitroEarlyLocationLimit;
             if (numEarlyLoc === -1) {
                 numEarlyLoc = section.otherMajorConfig.afkCheckProperties.nitroEarlyLocationLimit;
