@@ -2145,6 +2145,81 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
         isBuiltIn: true
     },
     {
+        codeName: "ICE_CITADEL",
+        dungeonName: "Ice Citadel",
+        portalEmojiId: "1394830571431137362",
+        keyReactions: [
+            {
+                mapKey: "CITADEL_KEY",
+                maxEarlyLocation: 2
+            }
+        ],
+        otherReactions: [
+            {
+                mapKey: "QUIVER_THUNDER",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "SLOW",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "CURSE",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "MSEAL",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "ARMOR_BREAK",
+                maxEarlyLocation: 1
+            },
+            {
+                mapKey: "FUNGAL_TOME",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "WARRIOR",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "KNIGHT",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "PALADIN",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "TRICKSTER",
+                maxEarlyLocation: 0
+            },
+            {
+                mapKey: "MYSTIC",
+                maxEarlyLocation: 0
+            }
+        ],
+        portalLink: {
+            url: "https://i.imgur.com/Ma5cQyB.png",
+            name: "Ice Citadel Portal"
+        },
+        bossLinks: [
+            {
+                url: "https://i.imgur.com/cbOogNc.png",
+                name: "Esben the Neurotic"
+            }
+        ],
+        dungeonColors: [
+            0x1b5a74,
+            0xb7e1f6,
+            0xbab294,
+            0xffffff
+        ],
+        dungeonCategory: "Exaltation Dungeons",
+        isBuiltIn: true
+    },
+    {
         codeName: "MISCELLANEOUS_DUNGEON",
         dungeonName: "Miscellaneous Dungeon",
         portalEmojiId: "574080648000569353",
@@ -2279,7 +2354,12 @@ export const DUNGEON_DATA: readonly IDungeonInfo[] = [
             {
                 mapKey: "SPECTRAL_KEY",
                 maxEarlyLocation: 2
+            },
+            {
+                mapKey: "CITADEL_KEY",
+                maxEarlyLocation: 2
             }
+
         ],
         otherReactions: [],
         portalLink: {

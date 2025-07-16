@@ -775,6 +775,15 @@ export const MAPPED_AFK_CHECK_REACTIONS: IMappedAfkCheckReactions = {
         name: "Spectral Penitentiary Key",
         isExaltKey: true
     },
+    CITADEL_KEY: {
+        type: "KEY",
+        emojiInfo: {
+            isCustom: true,
+            identifier: "1394830554515374193"
+        },
+        name: "Ice Citadel Key",
+        isExaltKey: true
+    },
     MISCELLANEOUS_DUNGEON_KEY: {
         type: "KEY",
         emojiInfo: {
