@@ -349,7 +349,7 @@ export namespace QuotaManager {
      * @return {string | null} The best role ID corresponding to the quota to log, if any. `null` otherwise.
      */
     export function findBestQuotaToAdd(member: GuildMember, guildDoc: IGuildInfo, logType: QuotaLogType,
-        dungeonId?: string): string | null {
+                                       dungeonId?: string): string | null {
         LOGGER.info(`Finding best quota to add ${logType} for ${member.displayName}`);
         let resolvedLogType: string = logType;
         if (logType === "RunAssist" || logType === "RunComplete" || logType === "RunFailed") {
@@ -450,7 +450,7 @@ export namespace QuotaManager {
      * @param {number} amt The amount of said action to log.
      */
     export async function logQuota(member: GuildMember, roleId: string, logType: string,
-        amt: number): Promise<void> {
+                                   amt: number): Promise<void> {
         LOGGER.info(`Logging quota for ${member.displayName}, role: ${MiscUtilities.getRoleName(roleId, member.guild)}, type: ${logType}, amount: ${amt}`);
         const guildDoc = await MongoManager.updateAndFetchGuildDoc({
             guildId: member.guild.id,
@@ -573,7 +573,7 @@ export namespace QuotaManager {
      * assists, or failures.
      */
     export async function logQuotaInteractive(obj: Message | GuildMember, logType: QuotaLogType,
-        amt: number, dungeonId?: string): Promise<boolean> {
+                                              amt: number, dungeonId?: string): Promise<boolean> {
         let resolvedLogType: string = logType;
         if (logType === "RunAssist" || logType === "RunComplete" || logType === "RunFailed") {
             if (!dungeonId) return false;
@@ -813,7 +813,7 @@ export namespace QuotaManager {
                 );
             } else {
                 embed.setDescription(
-                    embed.description + `\n- End Time: Manual reset only`
+                    embed.description + "\n- End Time: Manual reset only"
                 );
             }
         }

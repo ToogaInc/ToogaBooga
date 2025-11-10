@@ -409,87 +409,112 @@ export class ConfigQuotas extends BaseCommand {
             }
 
             case "panel_end": {
-                await botMsg!.edit({
-                    embeds: [
-                        new MessageEmbed()
-                            .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
-                            .setTitle("Set Panel End Date (Display Only)")
-                            .setDescription(
-                                new StringBuilder()
-                                    .append("This sets a **display-only** end date used on all quota panels when using manual resets.")
-                                    .append(" It does **not** automatically reset quotas.")
-                                    .appendLine(2)
-                                    .append("Send a date/time in one of these formats (UTC/GMT):").appendLine()
-                                    .append("- `YYYY-MM-DD`").appendLine()
-                                    .append("- `YYYY-MM-DD HH:MM` (24-hour)").appendLine(2)
-                                    .append("Type `clear` to remove the panel end date.")
-                                    .toString()
-                            )
-                    ],
-                    components: AdvancedCollector.getActionRowsFromComponents([
-                        ButtonConstants.CANCEL_BUTTON
-                    ])
-                });
+                // We'll reuse the button interaction to send ephemeral followups.
+                const baseInt = selectedButton;
 
-                const res = await AdvancedCollector.startDoubleCollector<string>({
-                    cancelFlag: null,
-                    acknowledgeImmediately: true,
-                    clearInteractionsAfterComplete: false,
-                    deleteBaseMsgAfterComplete: false,
-                    deleteResponseMessage: true,
-                    duration: 2 * 60 * 1000,
-                    oldMsg: botMsg!,
-                    targetAuthor: ctx.user,
-                    targetChannel: botMsg!.channel as TextChannel
-                }, m => m.content.trim());
+                while (true) {
+                    await botMsg!.edit({
+                        embeds: [
+                            new MessageEmbed()
+                                .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
+                                .setTitle("Set Panel End Date (Display Only)")
+                                .setDescription(
+                                    new StringBuilder()
+                                        .append("This sets a **display-only** end date used on all quota panels when using manual resets.")
+                                        .append(" It does **not** automatically reset quotas.")
+                                        .appendLine(2)
+                                        .append("Send a date/time in one of these formats (UTC/GMT):").appendLine()
+                                        .append("- `YYYY-MM-DD`").appendLine()
+                                        .append("- `YYYY-MM-DD HH:MM` (24-hour)").appendLine(2)
+                                        .append("Type `clear` to remove the panel end date.")
+                                        .toString()
+                                )
+                        ],
+                        components: AdvancedCollector.getActionRowsFromComponents([
+                            ButtonConstants.CANCEL_BUTTON
+                        ])
+                    });
 
-                if (!res) {
-                    await this.dispose(ctx, botMsg);
-                    return;
-                }
+                    const res = await AdvancedCollector.startDoubleCollector<string>({
+                        cancelFlag: null,
+                        acknowledgeImmediately: true,
+                        clearInteractionsAfterComplete: false,
+                        deleteBaseMsgAfterComplete: false,
+                        deleteResponseMessage: true,
+                        duration: 2 * 60 * 1000,
+                        oldMsg: botMsg!,
+                        targetAuthor: ctx.user,
+                        targetChannel: botMsg!.channel as TextChannel
+                    }, m => m.content.trim());
 
-                if (res instanceof MessageComponentInteraction) {
-                    // Cancel button pressed.
-                    break;
-                }
-
-                const input = res.trim();
-
-                if (input.toLowerCase() === "clear") {
-                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(
-                        { guildId: ctx.guild!.id },
-                        { $set: { "quotas.panelEndTime": null } }
-                    );
-                    break;
-                }
-
-                let parsed: number = NaN;
-
-                // YYYY-MM-DD
-                if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
-                    parsed = Date.parse(input + "T00:00:00Z");
-                }
-                // YYYY-MM-DD HH:MM
-                else if (/^\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}$/.test(input)) {
-                    const [datePart, timePart] = input.split(/\s+/);
-                    const [hhStr, mmStr] = timePart.split(":");
-                    const hh = parseInt(hhStr, 10);
-                    const mm = parseInt(mmStr, 10);
-                    if (hh >= 0 && hh < 24 && mm >= 0 && mm < 60) {
-                        parsed = Date.parse(`${datePart}T${timePart}:00Z`);
+                    if (!res) {
+                        await this.dispose(ctx, botMsg);
+                        return;
                     }
-                }
 
-                if (!Number.isNaN(parsed)) {
-                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(
-                        { guildId: ctx.guild!.id },
-                        { $set: { "quotas.panelEndTime": parsed } }
-                    );
+                    // Cancel button closes this panel and returns to main menu
+                    if (res instanceof MessageComponentInteraction) {
+                        await baseInt.followUp({ content: "❎ Canceled.", ephemeral: true });
+                        break;
+                    }
+
+                    const input = res.trim();
+
+                    // Allow clearing the date
+                    if (input.toLowerCase() === "clear") {
+                        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(
+                            { guildId: ctx.guild!.id },
+                            { $set: { "quotas.panelEndTime": null } }
+                        );
+                        await baseInt.followUp({ content: "🧹 Panel end date cleared.", ephemeral: true });
+                        break;
+                    }
+
+                    // Parse input
+                    let parsed: number = NaN;
+
+                    // YYYY-MM-DD
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+                        parsed = Date.parse(input + "T00:00:00Z");
+                    }
+                    // YYYY-MM-DD HH:MM (24h, allow 1-2 digit hour)
+                    else if (/^\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}$/.test(input)) {
+                        const [datePart, timePart] = input.split(/\s+/);
+                        const [hhStr, mmStr] = timePart.split(":");
+                        const hh = parseInt(hhStr, 10);
+                        const mm = parseInt(mmStr, 10);
+                        if (hh >= 0 && hh < 24 && mm >= 0 && mm < 60) {
+                            parsed = Date.parse(`${datePart}T${timePart}:00Z`);
+                        }
+                    }
+
+                    // Optional: reject past dates (remove this guard if you want to allow past)
+                    // if (!Number.isNaN(parsed) && parsed <= Date.now()) parsed = NaN;
+
+                    if (!Number.isNaN(parsed)) {
+                        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(
+                            { guildId: ctx.guild!.id },
+                            { $set: { "quotas.panelEndTime": parsed } }
+                        );
+
+                        await baseInt.followUp({
+                            content: `✅ Panel end date set to <t:${Math.floor(parsed / 1000)}:F> (UTC).`,
+                            ephemeral: true
+                        });
+
+                        // Stay on this panel, or break to return to main menu.
+                        break;
+                    } else {
+                        await baseInt.followUp({
+                            content: "❌ Invalid date. Use `YYYY-MM-DD` or `YYYY-MM-DD HH:MM` (24-hour, UTC) with a real date (e.g., not `2024-02-30`).",
+                            ephemeral: true
+                        });
+                        // Loop continues so they can try again on the same embed.
+                    }
                 }
 
                 break;
             }
-
 
             case ButtonConstants.ADD_ID: {
                 await this.addOrEditQuota(ctx, botMsg);
