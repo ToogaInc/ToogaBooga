@@ -407,12 +407,12 @@ export interface IGuildInfo {
         quotaInfo: IQuotaInfo[];
 
         /**
- * The display-only end timestamp for all quotas in this guild, in milliseconds. This is used for showing
- * when the quota period ends on quota panels across the guild, but does not affect the actual quota reset
- * logic. Only applicable when quotas are in manual mode.
- *
- * @type {number | null}
- */
+         * The display-only end timestamp for all quotas in this guild, in milliseconds. This is used for showing
+         * when the quota period ends on quota panels across the guild, but does not affect the actual quota reset
+         * logic. Only applicable when quotas are in manual mode.
+         *
+         * @type {number | null}
+         */
         panelEndTime?: number | null;
 
         /**

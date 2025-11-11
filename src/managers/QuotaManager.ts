@@ -176,9 +176,9 @@ export namespace QuotaManager {
                 const logInfo = quotaPointMap.get(memberIds[i])!;
                 const memberDisplay = members[i]?.displayName ?? memberIds[i];
                 const status = logInfo.points >= oldQuotas.pointsNeeded
-                    ? " Complete  "
+                    ? "Complete"
                     : logInfo.points > 0
-                        ? "Incomplete "
+                        ? "Incomplete"
                         : "Not Started";
 
                 const sb = new StringBuilder()
@@ -759,9 +759,6 @@ export namespace QuotaManager {
 
         const startTime = quotaInfo.lastReset;
         const { dayOfWeek, time } = guildDoc.quotas.resetTime;
-        const panelEndTime = guildDoc.quotas.panelEndTime ?? null;
-
-
 
         const quotaPtDisplay = getPointListAsString(guildDoc, quotaInfo);
 
@@ -802,6 +799,8 @@ export namespace QuotaManager {
         }
         // Manual-only mode
         else {
+            const panelEndTime = guildDoc.quotas.panelEndTime ?? null;
+            
             if (panelEndTime) {
                 const endDisplay = TimeUtilities.getDiscordTime({
                     time: panelEndTime,

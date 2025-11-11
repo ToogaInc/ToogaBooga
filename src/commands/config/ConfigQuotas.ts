@@ -20,6 +20,7 @@ import { MongoManager } from "../../managers/MongoManager";
 import { QuotaLogType, QuotaRunLogType, TimedResult, TimedStatus } from "../../definitions/Types";
 import { ArrayUtilities } from "../../utilities/ArrayUtilities";
 import { DungeonUtilities } from "../../utilities/DungeonUtilities";
+import { TimeUtilities, TimestampType } from "../../utilities/TimeUtilities";
 import { GeneralConstants } from "../../constants/GeneralConstants";
 import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import { QuotaManager } from "../../managers/QuotaManager";
@@ -158,7 +159,7 @@ export class ConfigQuotas extends BaseCommand {
                 "Click on the `Set Panel End Date` button to set a **display-only** end date shown on all quota panels when using manual resets."
                 + " This does **not** automatically reset quotas."
                 + (panelEndTime
-                    ? `\nCurrent panel end date: <t:${Math.floor(panelEndTime / 1000)}:F>`
+                    ? `\nCurrent panel end date: ${TimeUtilities.getDiscordTime({ time: panelEndTime, style: TimestampType.FullDateNoDay })}`
                     : `\nCurrent panel end date: ${StringUtil.codifyString("Not Set")}`)
             );
 
@@ -422,8 +423,10 @@ export class ConfigQuotas extends BaseCommand {
                                         .append(" It does **not** automatically reset quotas.")
                                         .appendLine(2)
                                         .append("Send a date/time in one of these formats (UTC/GMT):").appendLine()
-                                        .append("- `YYYY-MM-DD`").appendLine()
-                                        .append("- `YYYY-MM-DD HH:MM` (24-hour)").appendLine(2)
+                                        .append("- `YYYY-MM-DD` (e.g., `2025-11-09`)").appendLine()
+                                        .append("- `YYYY-MM-DD HH:MM` (24-hour, e.g., `2025-11-09 17:30`)").appendLine()
+                                        .append("Note: Use 4 digits for year, 2 digits for month, and 2 digits for day.")
+                                        .appendLine(2)
                                         .append("Type `clear` to remove the panel end date.")
                                         .toString()
                                 )
@@ -493,7 +496,7 @@ export class ConfigQuotas extends BaseCommand {
                         );
 
                         await baseInt.followUp({
-                            content: `✅ Panel end date set to <t:${Math.floor(parsed / 1000)}:F> (UTC).`,
+                            content: `Panel end date set to ${TimeUtilities.getDiscordTime({ time: parsed, style: TimestampType.FullDateNoDay })} (UTC).`,
                             ephemeral: true
                         });
 
@@ -501,7 +504,7 @@ export class ConfigQuotas extends BaseCommand {
                         break;
                     } else {
                         await baseInt.followUp({
-                            content: "❌ Invalid date. Use `YYYY-MM-DD` or `YYYY-MM-DD HH:MM` (24-hour, UTC) with a real date (e.g., not `2024-02-30`).",
+                            content: "Invalid date. Use `YYYY-MM-DD` or `YYYY-MM-DD HH:MM` (24-hour, UTC) with a real date (e.g., not `2024-02-99`).",
                             ephemeral: true
                         });
                         // Loop continues so they can try again on the same embed.
