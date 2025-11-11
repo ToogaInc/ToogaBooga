@@ -328,7 +328,6 @@ export class ConfigQuotas extends BaseCommand {
 
                 const selectedValue = resetDoWPrompt.values[0];
 
-                // "Never" → store sentinel, clear timer, done.
                 if (selectedValue === "-1") {
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                         $set: {
@@ -345,7 +344,6 @@ export class ConfigQuotas extends BaseCommand {
                     break;
                 }
 
-                // Otherwise ask for time as usual
                 await botMsg!.edit({
                     embeds: [
                         new MessageEmbed()
@@ -409,7 +407,7 @@ export class ConfigQuotas extends BaseCommand {
             }
 
             case "panel_end": {
-                // We'll reuse the button interaction to send ephemeral followups.
+
                 const baseInt = selectedButton;
 
                 while (true) {
@@ -487,9 +485,6 @@ export class ConfigQuotas extends BaseCommand {
                             parsed = Date.parse(`${datePart}T${timePart}:00Z`);
                         }
                     }
-
-                    // Optional: reject past dates (remove this guard if you want to allow past)
-                    // if (!Number.isNaN(parsed) && parsed <= Date.now()) parsed = NaN;
 
                     if (!Number.isNaN(parsed)) {
                         ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(

@@ -968,12 +968,12 @@ export namespace QuotaManager {
                     nextReset = diff;
                     LOGGER.info(`Found a more suitable end time: ${TimeUtilities.formatDuration(nextReset, false)}`);
                 } else if (diff < 0) {
-                    // Past due → reset now
+
                     const role = await GuildFgrUtilities.fetchRole(guild, quotaInfo.roleId);
                     LOGGER.info(`Reset quota for ${role?.name} in ${guild.name}`);
                     await QuotaManager.resetQuota(guild, quotaInfo.roleId);
                 } else {
-                    // Not due yet → just make sure embed reflects current config
+
                     await upsertLeaderboardMessage(quotaInfo.messageId, quotaInfo, guildDoc);
                 }
             }
