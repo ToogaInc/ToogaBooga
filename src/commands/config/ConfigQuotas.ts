@@ -20,6 +20,7 @@ import { MongoManager } from "../../managers/MongoManager";
 import { QuotaLogType, QuotaRunLogType, TimedResult, TimedStatus } from "../../definitions/Types";
 import { ArrayUtilities } from "../../utilities/ArrayUtilities";
 import { DungeonUtilities } from "../../utilities/DungeonUtilities";
+import { TimeUtilities, TimestampType } from "../../utilities/TimeUtilities";
 import { GeneralConstants } from "../../constants/GeneralConstants";
 import { GlobalFgrUtilities } from "../../utilities/fetch-get-request/GlobalFgrUtilities";
 import { QuotaManager } from "../../managers/QuotaManager";
@@ -111,33 +112,58 @@ export class ConfigQuotas extends BaseCommand {
      * @param {Message} botMsg The bot message, which will be used for interactivity (editing message).
      */
     public async mainMenu(ctx: ICommandContext, botMsg: Message | null): Promise<void> {
+        const panelEndTime = ctx.guildDoc!.quotas.panelEndTime ?? null;
+        const resetInfo = ctx.guildDoc!.quotas.resetTime;
+
+        let resetLabel: string;
+        if (resetInfo.dayOfWeek === -1 || resetInfo.time === -1) {
+            resetLabel = "Never (manual reset only)";
+        } else {
+            const minutes = resetInfo.time % 100;
+            const timeReset = `${Math.floor(resetInfo.time / 100)}:${minutes < 10 ? "0" + minutes.toString() : minutes}`;
+            const dayOfWeekName = ConfigQuotas.DAYS_OF_WEEK[resetInfo.dayOfWeek][0];
+            resetLabel = `${dayOfWeekName} at ${timeReset}`;
+        }
+
         const buttons: MessageButton[] = [
             ButtonConstants.QUIT_BUTTON,
             new MessageButton()
                 .setLabel("Set Reset Time")
                 .setCustomId("reset_time")
                 .setStyle("PRIMARY")
-                .setEmoji(EmojiConstants.CLOCK_EMOJI)
+                .setEmoji(EmojiConstants.CLOCK_EMOJI),
+            new MessageButton()
+                .setLabel("Set Panel End Date")
+                .setCustomId("panel_end")
+                .setStyle("SECONDARY")
         ];
 
-        const resetInfo = ctx.guildDoc!.quotas.resetTime;
-        const dayOfWeek = ConfigQuotas.DAYS_OF_WEEK[resetInfo.dayOfWeek][0];
-        const seconds = resetInfo.time % 100;
-        const timeReset = `${Math.floor(resetInfo.time / 100)}:${seconds < 10 ? "0" + seconds.toString() : seconds}`;
+
         const embed: MessageEmbed = new MessageEmbed()
             .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
             .setTitle("Quota Configuration Command")
             .setDescription(
-                "Here, you will be able to configure quotas for one or more roles. Select the appropriate option to"
-                + " begin."
-            ).addField(
+                "Here, you will be able to configure quotas for one or more roles. Select the appropriate option to begin."
+            )
+            .addField(
                 "Quit",
                 "Click on the `Quit` button to exit this process."
-            ).addField(
+            )
+            .addField(
                 "Set Reset Time",
-                "Click on the `Set Reset Time` button to set the time when all quotas will reset. The current reset"
-                + " time is:" + StringUtil.codifyString(`${dayOfWeek} at ${timeReset}`)
+                "Click on the `Set Reset Time` button to set when quotas will automatically reset. The current reset time is: "
+                + StringUtil.codifyString(resetLabel)
+            )
+            .addField(
+                "Set Panel End Date (Display Only)",
+                "Click on the `Set Panel End Date` button to set a **display-only** end date shown on all quota panels when using manual resets."
+                + " This does **not** automatically reset quotas."
+                + (panelEndTime
+                    ? `\nCurrent panel end date: ${TimeUtilities.getDiscordTime({ time: panelEndTime, style: TimestampType.FullDateNoDay })}`
+                    : `\nCurrent panel end date: ${StringUtil.codifyString("Not Set")}`)
             );
+
+
 
         if (ctx.guildDoc!.quotas.quotaInfo.length + 1 < ConfigQuotas.MAX_QUOTAS_ALLOWED) {
             buttons.push(
@@ -260,8 +286,8 @@ export class ConfigQuotas extends BaseCommand {
                             .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
                             .setTitle("Specify Day of Week for Reset")
                             .setDescription(
-                                "Select the day of the week that you want all quotas to reset at via the"
-                                + " dropdown menu."
+                                "Select the day of the week that you want all quotas to reset at via the dropdown menu."
+                                + " Select `Never` to disable automatic resets (manual reset only)."
                             )
                     ],
                     components: AdvancedCollector.getActionRowsFromComponents([
@@ -269,16 +295,20 @@ export class ConfigQuotas extends BaseCommand {
                             .setMaxValues(1)
                             .setMinValues(1)
                             .setCustomId("day_of_week")
-                            .addOptions(ConfigQuotas.DAYS_OF_WEEK.map(x => {
-                                const [dayOfWeekStr, dayOfWeekNum] = x;
-                                return {
+                            .addOptions([
+                                {
+                                    label: "Never (manual reset only)",
+                                    value: "-1"
+                                },
+                                ...ConfigQuotas.DAYS_OF_WEEK.map(([dayOfWeekStr, dayOfWeekNum]) => ({
                                     label: `${dayOfWeekStr} (${dayOfWeekNum})`,
                                     value: dayOfWeekNum.toString()
-                                };
-                            })),
+                                }))
+                            ]),
                         ButtonConstants.CANCEL_BUTTON
                     ])
                 });
+
                 const resetDoWPrompt = await AdvancedCollector.startInteractionCollector({
                     targetChannel: botMsg!.channel,
                     targetAuthor: ctx.user,
@@ -296,6 +326,24 @@ export class ConfigQuotas extends BaseCommand {
 
                 if (!resetDoWPrompt.isSelectMenu())
                     break;
+
+                const selectedValue = resetDoWPrompt.values[0];
+
+                if (selectedValue === "-1") {
+                    ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
+                        $set: {
+                            "quotas.resetTime.dayOfWeek": -1,
+                            "quotas.resetTime.time": -1
+                        }
+                    });
+
+                    if (QuotaManager.quotaTimeoutId) {
+                        clearTimeout(QuotaManager.quotaTimeoutId);
+                        QuotaManager.quotaTimeoutId = null;
+                    }
+
+                    break;
+                }
 
                 await botMsg!.edit({
                     embeds: [
@@ -335,7 +383,6 @@ export class ConfigQuotas extends BaseCommand {
                     const [hr, min] = m.content.split(":").map(x => Number.parseInt(x, 10));
                     if (Number.isNaN(hr) || hr < 0 || hr > 23)
                         return;
-
                     if (Number.isNaN(min) || min < 0 || min > 59)
                         return;
 
@@ -352,12 +399,121 @@ export class ConfigQuotas extends BaseCommand {
 
                 ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {
                     $set: {
-                        "quotas.resetTime.dayOfWeek": Number.parseInt(resetDoWPrompt.values[0], 10),
+                        "quotas.resetTime.dayOfWeek": Number.parseInt(selectedValue, 10),
                         "quotas.resetTime.time": resetTimePrompt
                     }
                 });
+
                 break;
             }
+
+            case "panel_end": {
+
+                const baseInt = selectedButton;
+
+                while (true) {
+                    await botMsg!.edit({
+                        embeds: [
+                            new MessageEmbed()
+                                .setAuthor({ name: ctx.guild!.name, iconURL: ctx.guild!.iconURL() ?? undefined })
+                                .setTitle("Set Panel End Date (Display Only)")
+                                .setDescription(
+                                    new StringBuilder()
+                                        .append("This sets a **display-only** end date used on all quota panels when using manual resets.")
+                                        .append(" It does **not** automatically reset quotas.")
+                                        .appendLine(2)
+                                        .append("Send a date/time in one of these formats (UTC/GMT):").appendLine()
+                                        .append("- `YYYY-MM-DD` (e.g., `2025-11-09`)").appendLine()
+                                        .append("- `YYYY-MM-DD HH:MM` (24-hour, e.g., `2025-11-09 17:30`)").appendLine()
+                                        .append("Note: Use 4 digits for year, 2 digits for month, and 2 digits for day.")
+                                        .appendLine(2)
+                                        .append("Type `clear` to remove the panel end date.")
+                                        .toString()
+                                )
+                        ],
+                        components: AdvancedCollector.getActionRowsFromComponents([
+                            ButtonConstants.CANCEL_BUTTON
+                        ])
+                    });
+
+                    const res = await AdvancedCollector.startDoubleCollector<string>({
+                        cancelFlag: null,
+                        acknowledgeImmediately: true,
+                        clearInteractionsAfterComplete: false,
+                        deleteBaseMsgAfterComplete: false,
+                        deleteResponseMessage: true,
+                        duration: 2 * 60 * 1000,
+                        oldMsg: botMsg!,
+                        targetAuthor: ctx.user,
+                        targetChannel: botMsg!.channel as TextChannel
+                    }, m => m.content.trim());
+
+                    if (!res) {
+                        await this.dispose(ctx, botMsg);
+                        return;
+                    }
+
+                    // Cancel button closes this panel and returns to main menu
+                    if (res instanceof MessageComponentInteraction) {
+                        await baseInt.followUp({ content: "❎ Canceled.", ephemeral: true });
+                        break;
+                    }
+
+                    const input = res.trim();
+
+                    // Allow clearing the date
+                    if (input.toLowerCase() === "clear") {
+                        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(
+                            { guildId: ctx.guild!.id },
+                            { $set: { "quotas.panelEndTime": null } }
+                        );
+                        await baseInt.followUp({ content: "🧹 Panel end date cleared.", ephemeral: true });
+                        break;
+                    }
+
+                    // Parse input
+                    let parsed: number = NaN;
+
+                    // YYYY-MM-DD
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+                        parsed = Date.parse(input + "T00:00:00Z");
+                    }
+                    // YYYY-MM-DD HH:MM (24h, allow 1-2 digit hour)
+                    else if (/^\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}$/.test(input)) {
+                        const [datePart, timePart] = input.split(/\s+/);
+                        const [hhStr, mmStr] = timePart.split(":");
+                        const hh = parseInt(hhStr, 10);
+                        const mm = parseInt(mmStr, 10);
+                        if (hh >= 0 && hh < 24 && mm >= 0 && mm < 60) {
+                            parsed = Date.parse(`${datePart}T${timePart}:00Z`);
+                        }
+                    }
+
+                    if (!Number.isNaN(parsed)) {
+                        ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc(
+                            { guildId: ctx.guild!.id },
+                            { $set: { "quotas.panelEndTime": parsed } }
+                        );
+
+                        await baseInt.followUp({
+                            content: `Panel end date set to ${TimeUtilities.getDiscordTime({ time: parsed, style: TimestampType.FullDateNoDay })} (UTC).`,
+                            ephemeral: true
+                        });
+
+                        // Stay on this panel, or break to return to main menu.
+                        break;
+                    } else {
+                        await baseInt.followUp({
+                            content: "Invalid date. Use `YYYY-MM-DD` or `YYYY-MM-DD HH:MM` (24-hour, UTC) with a real date (e.g., not `2024-02-99`).",
+                            ephemeral: true
+                        });
+                        // Loop continues so they can try again on the same embed.
+                    }
+                }
+
+                break;
+            }
+
             case ButtonConstants.ADD_ID: {
                 await this.addOrEditQuota(ctx, botMsg);
                 return;
@@ -523,6 +679,7 @@ export class ConfigQuotas extends BaseCommand {
             ButtonConstants.QUIT_BUTTON
         ];
 
+
         while (true) {
             const role = await GuildFgrUtilities.fetchRole(ctx.guild!, quotaToEdit.roleId);
             saveButton.setDisabled(!role);
@@ -545,6 +702,7 @@ export class ConfigQuotas extends BaseCommand {
                 "Point Rules Set",
                 `${quotaToEdit.pointValues.length} Values Set`
             );
+
 
             await botMsg.edit({
                 embeds: [embed],
@@ -705,7 +863,7 @@ export class ConfigQuotas extends BaseCommand {
                             }
                         });
                     }
-                    const messageId = await QuotaManager.upsertLeaderboardMessage(quotaToEdit.messageId, quotaToEdit, ctx.guildDoc!);                    
+                    const messageId = await QuotaManager.upsertLeaderboardMessage(quotaToEdit.messageId, quotaToEdit, ctx.guildDoc!);
                     quotaToEdit.messageId = messageId;
 
                     ctx.guildDoc = await MongoManager.updateAndFetchGuildDoc({ guildId: ctx.guild!.id }, {

@@ -63,7 +63,7 @@ export namespace QuotaManager {
     const IGNORE_RESET_TIME = 100_000;
 
     // Id to keep track of timeouts set so they don't eventually spam if the bot process isn't cleared
-    export let quotaTimeoutId: NodeJS.Timeout;
+    export let quotaTimeoutId: NodeJS.Timeout | null = null;
 
     /**
      * Checks if the string is of some quota type.
@@ -94,249 +94,233 @@ export namespace QuotaManager {
     export async function resetQuota(guild: Guild, roleId: string): Promise<boolean> {
         LOGGER.info(`Resetting quota for roleid ${MiscUtilities.getRoleName(roleId, guild)}`);
 
-        const guildDoc = await MongoManager.getOrCreateGuildDoc(guild, true);
-        if (!guildDoc)
-            return false;
+        try {
+            const guildDoc = await MongoManager.getOrCreateGuildDoc(guild, true);
+            if (!guildDoc) return false;
 
-        const oldQuotas = guildDoc.quotas.quotaInfo.find(x => x.roleId === roleId);
-        if (!oldQuotas)
-            return false;
+            const oldQuotas = guildDoc.quotas.quotaInfo.find(x => x.roleId === roleId);
+            if (!oldQuotas) return false;
 
-        // No channel = pull from database since we can't update it
-        const quotaChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(guild, oldQuotas.channel);
-        if (!quotaChannel) {
-            await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
-                $pull: {
-                    "quotas.quotaInfo.roleId": roleId
-                }
-            });
-            return false;
-        }
+            const quotaChannel = GuildFgrUtilities.getCachedChannel<TextChannel>(guild, oldQuotas.channel);
 
-        const role = await GuildFgrUtilities.fetchRole(guild, roleId);
-        // TODO this seems like a very poor idea on my part
-        await guild.members.fetch();
-        const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, oldQuotas.messageId);
-        // Only care about quota actions worth points
-        const quotaLogMap = new Collection<string, number>();
-        for (const { key, value } of oldQuotas.pointValues) {
-            if (value === 0) continue;
-            quotaLogMap.set(key, value);
-        }
-
-        // Sort all data into a map for easier use
-        // key = user ID
-        const quotaPointMap = new Collection<string, {
-            points: number;
-            quotaBreakdown: {
-                [quotaType: string]: { pts: number; qty: number; breakdown: string[] };
-            };
-        }>();
-
-        if (role) {
-            for (const [id,] of role.members) {
-                quotaPointMap.set(id, {
-                    points: 0,
-                    quotaBreakdown: {}
-                });
-            }
-        }
-
-        for (const logInfo of oldQuotas.quotaLog) {
-            if (!quotaPointMap.has(logInfo.userId)) {
-                quotaPointMap.set(logInfo.userId, {
-                    points: 0,
-                    quotaBreakdown: {}
-                });
+            // If channel is gone, remove the quota config and bail gracefully
+            if (!quotaChannel) {
+                await MongoManager.updateAndFetchGuildDoc(
+                    { guildId: guild.id },
+                    { $pull: { "quotas.quotaInfo": { roleId } } }
+                );
+                LOGGER.warn(`Quota channel missing; removed quota config for role ${roleId}`);
+                return true;
             }
 
-            const baseRule = logInfo.logType.split(":")[0];
-            let ruleToLog = logInfo.logType;
-            if (quotaLogMap.has(baseRule)) {
-                ruleToLog = baseRule;
+            const role = await GuildFgrUtilities.fetchRole(guild, roleId);
+
+            // Build a “points per key” map (skip zero-point rules)
+            const quotaLogMap = new Collection<string, number>();
+            for (const { key, value } of oldQuotas.pointValues) {
+                if (value !== 0) quotaLogMap.set(key, value);
             }
 
-            if (!quotaLogMap.has(ruleToLog)) continue;
-
-            const points = quotaLogMap.get(ruleToLog)!;
-            const pointLogEntry = quotaPointMap.get(logInfo.userId)!;
-
-            pointLogEntry.points += points * logInfo.amount;
-            if (!pointLogEntry.quotaBreakdown[ruleToLog]) {
-                pointLogEntry.quotaBreakdown[ruleToLog] = {
-                    qty: logInfo.amount,
-                    pts: points * logInfo.amount,
-                    breakdown: [
-                        `\t\t\t[${TimeUtilities.getDateTime(logInfo.timeIssued)}] Logged ${logInfo.amount} QTY.`
-                    ]
+            // Aggregate user points (only members we actually see in cache)
+            const quotaPointMap = new Collection<string, {
+                points: number;
+                quotaBreakdown: {
+                    [quotaType: string]: { pts: number; qty: number; breakdown: string[] };
                 };
-                continue;
+            }>();
+
+            if (role) {
+                for (const [id] of role.members) {
+                    quotaPointMap.set(id, { points: 0, quotaBreakdown: {} });
+                }
             }
 
-            pointLogEntry.quotaBreakdown[ruleToLog].qty += logInfo.amount;
-            pointLogEntry.quotaBreakdown[ruleToLog].pts += points * logInfo.amount;
-            pointLogEntry.quotaBreakdown[ruleToLog].breakdown.push(
-                `\t\t\t[${TimeUtilities.getDateTime(logInfo.timeIssued)}] Logged ${logInfo.amount} QTY.`
-            );
-        }
+            for (const logInfo of oldQuotas.quotaLog) {
+                if (!quotaPointMap.has(logInfo.userId)) {
+                    quotaPointMap.set(logInfo.userId, { points: 0, quotaBreakdown: {} });
+                }
 
-        // Process it so it can be put in a text file
-        const arrStrArr: string[] = [];
-        const memberIds = Array.from(quotaPointMap.keys());
-        const members = await Promise.all(memberIds.map(x => GuildFgrUtilities.fetchGuildMember(guild, x)));
-        for (let i = 0; i < members.length; i++) {
-            const logInfo = quotaPointMap.get(memberIds[i])!;
-            const memberDisplay = members[i]?.displayName ?? memberIds[i];
-            const status = logInfo.points >= oldQuotas.pointsNeeded
-                ? " Complete  "
-                : logInfo.points > 0
-                    ? "Incomplete "
-                    : "Not Started";
-            const sb = new StringBuilder()
-                .append(`- [${status}] ${memberDisplay}: ${logInfo.points}/${oldQuotas.pointsNeeded}`)
-                .appendLine()
-                .append(`\tUser Tag (ID): ${members[i]?.user.tag ?? "N/A"} (${memberIds[i]})`)
-                .appendLine()
-                .append(`\tRoles: [${members[i]?.roles.cache.map(x => x.name).join(", ") ?? ""}]`)
-                .appendLine()
-                .append("\tBreakdown:")
-                .appendLine();
-            const entries = Object.entries(logInfo.quotaBreakdown);
-            if (entries.length === 0) {
-                sb.append("\t\t- None Available.")
+                const baseRule = logInfo.logType.split(":")[0];
+                let ruleToLog = logInfo.logType;
+                if (quotaLogMap.has(baseRule)) ruleToLog = baseRule;
+
+                if (!quotaLogMap.has(ruleToLog)) continue;
+
+                const pts = quotaLogMap.get(ruleToLog)!;
+                const pointLogEntry = quotaPointMap.get(logInfo.userId)!;
+
+                pointLogEntry.points += pts * logInfo.amount;
+                if (!pointLogEntry.quotaBreakdown[ruleToLog]) {
+                    pointLogEntry.quotaBreakdown[ruleToLog] = {
+                        qty: logInfo.amount,
+                        pts: pts * logInfo.amount,
+                        breakdown: [
+                            `\t\t\t[${TimeUtilities.getDateTime(logInfo.timeIssued)}] Logged ${logInfo.amount} QTY.`
+                        ]
+                    };
+                } else {
+                    pointLogEntry.quotaBreakdown[ruleToLog].qty += logInfo.amount;
+                    pointLogEntry.quotaBreakdown[ruleToLog].pts += pts * logInfo.amount;
+                    pointLogEntry.quotaBreakdown[ruleToLog].breakdown.push(
+                        `\t\t\t[${TimeUtilities.getDateTime(logInfo.timeIssued)}] Logged ${logInfo.amount} QTY.`
+                    );
+                }
+            }
+
+            // Build summary text (unchanged from your logic, just wrapped safely)
+            const arrStrArr: string[] = [];
+            const memberIds = Array.from(quotaPointMap.keys());
+            const members = await Promise.all(memberIds.map(x => GuildFgrUtilities.fetchGuildMember(guild, x)));
+
+            for (let i = 0; i < members.length; i++) {
+                const logInfo = quotaPointMap.get(memberIds[i])!;
+                const memberDisplay = members[i]?.displayName ?? memberIds[i];
+                const status = logInfo.points >= oldQuotas.pointsNeeded
+                    ? "Complete"
+                    : logInfo.points > 0
+                        ? "Incomplete"
+                        : "Not Started";
+
+                const sb = new StringBuilder()
+                    .append(`- [${status}] ${memberDisplay}: ${logInfo.points}/${oldQuotas.pointsNeeded}`)
+                    .appendLine()
+                    .append(`\tUser Tag (ID): ${members[i]?.user.tag ?? "N/A"} (${memberIds[i]})`)
+                    .appendLine()
+                    .append(`\tRoles: [${members[i]?.roles.cache.map(x => x.name).join(", ") ?? ""}]`)
+                    .appendLine()
+                    .append("\tBreakdown:")
                     .appendLine();
-            }
-            else {
-                for (const [quotaType, { pts, qty, breakdown }] of entries) {
-                    // Need to look into quota types like `RunComplete:DUNGEON_ID` or `Parse`.
-                    const logArr = quotaType.split(":");
-                    if (logArr.length === 2) {
-                        // We assume the second element is the dungeon ID.
-                        // Get the dungeon name
-                        const dungeonName = (DungeonUtilities.isCustomDungeon(logArr[1])
-                            ? guildDoc.properties.customDungeons.find(x => x.codeName === logArr[1])?.dungeonName
-                            : DUNGEON_DATA.find(x => x.codeName === logArr[1])?.dungeonName) ?? logArr[1];
 
-                        sb.append(`\t\t- ${logArr[0]} (${dungeonName}): ${pts} PTS (${qty})`)
-                            .appendLine()
-                            .append(breakdown.join("\n"))
-                            .appendLine();
-                        continue;
+                const entries = Object.entries(logInfo.quotaBreakdown);
+                if (entries.length === 0) {
+                    sb.append("\t\t- None Available.").appendLine();
+                } else {
+                    for (const [quotaType, { pts, qty, breakdown }] of entries) {
+                        const logArr = quotaType.split(":");
+                        if (logArr.length === 2) {
+                            const dungeonName = (DungeonUtilities.isCustomDungeon(logArr[1])
+                                ? guildDoc.properties.customDungeons.find(x => x.codeName === logArr[1])?.dungeonName
+                                : DUNGEON_DATA.find(x => x.codeName === logArr[1])?.dungeonName) ?? logArr[1];
+
+                            sb.append(`\t\t- ${logArr[0]} (${dungeonName}): ${pts} PTS (${qty})`)
+                                .appendLine()
+                                .append(breakdown.join("\n"))
+                                .appendLine();
+                        } else {
+                            sb.append(`\t\t- ${quotaType}: ${pts} PTS (${qty})`)
+                                .appendLine()
+                                .append(breakdown.join("\n"))
+                                .appendLine();
+                        }
                     }
+                }
 
-                    sb.append(`\t\t- ${quotaType}: ${pts} PTS (${qty})`)
-                        .appendLine()
-                        .append(breakdown.join("\n"))
-                        .appendLine();
+                arrStrArr.push(sb.toString().trim());
+            }
+
+            const finalSummaryStr = new StringBuilder()
+                .append("================= QUOTA SUMMARY =================").appendLine()
+                .append(`- Role: ${MiscUtilities.getRoleName(oldQuotas.roleId, guild)}`)
+                .append(`- Start Time: ${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT`).appendLine()
+                .append(`- End Time: ${TimeUtilities.getDateTime(Date.now())} GMT`).appendLine()
+                .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine()
+                .append(`- Minimum Points Needed: ${oldQuotas.pointsNeeded}`).appendLine(2)
+                .append("================= POINT SUMMARY =================").appendLine()
+                .append(getPointListAsString(guildDoc, oldQuotas)).appendLine(2)
+                .append("================= MEMBER SUMMARY =================").appendLine()
+                .append(arrStrArr.join("\n"))
+                .toString();
+
+            const storageChannel = await MongoManager.getStorageChannel(guild);
+            const channelToUse = storageChannel ? storageChannel : quotaChannel;
+
+            let urlToFile: string | null = null;
+            const fileName = (`quota_${guild.name.replaceAll(" ", "-")}_${MiscUtilities.getRoleName(roleId, guild).replaceAll(" ", "-")}_${Date.now()}.txt`);
+
+            if (channelToUse) {
+                const storageMsg = await GlobalFgrUtilities.sendMsg(
+                    channelToUse,
+                    {
+                        files: [
+                            new MessageAttachment(Buffer.from(finalSummaryStr, "utf8"), fileName)
+                        ]
+                    }
+                ).catch(LOGGER.error);
+
+                if (storageMsg) urlToFile = storageMsg.attachments.first()?.url ?? null;
+            }
+
+            const descSb = new StringBuilder()
+                .append(`- Start Time: ${TimeUtilities.getDiscordTime({ time: oldQuotas.lastReset, style: TimestampType.FullDateNoDay })}`).appendLine()
+                .append(`- End Time: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}`).appendLine()
+                .append(`- Members w/ Role: \`${role?.members.size ?? "N/A"}\``).appendLine()
+                .append(`- Minimum Points Needed: \`${oldQuotas.pointsNeeded}\``).appendLine();
+            if (!role) {
+                descSb.append("- Warning: This role was not found; it might have been deleted. This role has been removed from the quota system.");
+            }
+
+            const summaryEmbed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
+                .setTitle(`Inactive Quota - Summary: **${role?.name ?? "ID " + roleId}**`)
+                .setDescription(descSb.toString())
+                .setTimestamp();
+
+            if (urlToFile) {
+                summaryEmbed.addField(
+                    "Summary",
+                    `Click [here](${urlToFile}) to get this quota period's summary. This will download a file.`
+                );
+            } else {
+                const fields = ArrayUtilities.arrayToStringFields(arrStrArr, (_, elem) => elem);
+                for (const field of fields) {
+                    summaryEmbed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
                 }
             }
 
-            arrStrArr.push(sb.toString().trim());
-        }
-
-        // If there's nothing to update, then we don't need to send inactive quota
-        const finalSummaryStr = new StringBuilder()
-            .append("================= QUOTA SUMMARY =================").appendLine()
-            .append(`- Role: ${MiscUtilities.getRoleName(oldQuotas.roleId, guild)}`)
-            .append(`- Start Time: ${TimeUtilities.getDateTime(oldQuotas.lastReset)} GMT`).appendLine()
-            .append(`- End Time: ${TimeUtilities.getDateTime(Date.now())} GMT`).appendLine()
-            .append(`- Members w/ Role: ${role?.members.size ?? "N/A"}`).appendLine()
-            .append(`- Minimum Points Needed: ${oldQuotas.pointsNeeded}`).appendLine(2)
-            .append("================= POINT SUMMARY =================").appendLine()
-            .append(getPointListAsString(guildDoc, oldQuotas)).appendLine(2)
-            .append("================= MEMBER SUMMARY =================").appendLine()
-            .append(arrStrArr.join("\n"))
-            .toString();
-        const storageChannel = await MongoManager.getStorageChannel(guild);
-        const channelToUse = storageChannel ? storageChannel : quotaChannel;
-        let urlToFile: string | null = null;
-        const fileName = (`quota_${guild.name.replaceAll(" ", "-")}_${MiscUtilities.getRoleName(roleId, guild).replaceAll(" ", "-")}_${Date.now()}.txt`);
-        if (channelToUse) {
-            const storageMsg = await GlobalFgrUtilities.sendMsg(
-                channelToUse,
-                {
-                    files: [
-                        new MessageAttachment(Buffer.from(finalSummaryStr, "utf8"),
-                            fileName)
-                    ]
-                }
-            ).catch(LOGGER.error);
-
-            if (storageMsg)
-                urlToFile = storageMsg.attachments.first()!.url;
-        }
-
-        const descSb = new StringBuilder()
-            .append(`- Start Time: ${TimeUtilities.getDiscordTime({ time: oldQuotas.lastReset, style: TimestampType.FullDateNoDay })}`).appendLine()
-            .append(`- End Time: ${TimeUtilities.getDiscordTime({ style: TimestampType.FullDateNoDay })}`).appendLine()
-            .append(`- Members w/ Role: \`${role?.members.size ?? "N/A"}\``).appendLine()
-            .append(`- Minimum Points Needed: \`${oldQuotas.pointsNeeded}\``).appendLine();
-        if (!role) {
-            descSb.append("- Warning: This role was not found; it might have been deleted. This role has been ")
-                .append("removed from the quota system.");
-        }
-
-        const summaryEmbed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
-            .setTitle(`Inactive Quota - Summary: **${role?.name ?? "ID " + roleId}**`)
-            .setDescription(descSb.toString())
-            .setTimestamp();
-        if (urlToFile) {
-            summaryEmbed.addField(
-                "Summary",
-                `Click [here](${urlToFile}) to get this quota period's summary. This will download a file.`
-            );
-        }
-        else {
-            const fields = ArrayUtilities.arrayToStringFields(
-                arrStrArr,
-                (_, elem) => elem
-            );
-            for (const field of fields) {
-                summaryEmbed.addField(GeneralConstants.ZERO_WIDTH_SPACE, field);
+            const quotaMsg = await GuildFgrUtilities.fetchMessage(quotaChannel, oldQuotas.messageId);
+            if (quotaMsg) {
+                await quotaMsg.edit({ embeds: [summaryEmbed] }).catch(LOGGER.error);
+                await quotaMsg.unpin().catch(LOGGER.error);
+            } else {
+                await quotaChannel.send({ embeds: [summaryEmbed] }).catch(LOGGER.error);
             }
-        }
 
-        if (quotaMsg) {
-            await quotaMsg.edit({ embeds: [summaryEmbed] });
-            quotaMsg.unpin().catch(LOGGER.error);
-        }
-        else
-            await quotaChannel.send({ embeds: [summaryEmbed] });
+            // Finally, clear logs & upsert a fresh leaderboard message
+            const startTime = new Date();
 
-        const startTime = new Date();
+            if (role) {
+                oldQuotas.quotaLog = [];
+                oldQuotas.lastReset = startTime.getTime();
 
-        if (role) {
-            oldQuotas.quotaLog = [];
-            oldQuotas.lastReset = startTime.getTime();
-            const newMsg: Message = await quotaChannel.send({
-                embeds: [
-                    (await getQuotaLeaderboardEmbed(guild, guildDoc, oldQuotas))!
-                ]
-            });
+                const newMsg = await quotaChannel.send({
+                    embeds: [(await getQuotaLeaderboardEmbed(guild, guildDoc, oldQuotas))!]
+                }).catch(LOGGER.error);
 
-            newMsg.pin().catch(LOGGER.error);
-
-            await MongoManager.updateAndFetchGuildDoc({
-                guildId: guild.id,
-                "quotas.quotaInfo.roleId": roleId
-            }, {
-                $set: {
-                    "quotas.quotaInfo.$.quotaLog": [],
-                    "quotas.quotaInfo.$.lastReset": startTime.getTime(),
-                    "quotas.quotaInfo.$.messageId": newMsg.id
+                if (newMsg) {
+                    await newMsg.pin().catch(LOGGER.error);
+                    await MongoManager.updateAndFetchGuildDoc({
+                        guildId: guild.id,
+                        "quotas.quotaInfo.roleId": roleId
+                    }, {
+                        $set: {
+                            "quotas.quotaInfo.$.quotaLog": [],
+                            "quotas.quotaInfo.$.lastReset": startTime.getTime(),
+                            "quotas.quotaInfo.$.messageId": newMsg.id
+                        }
+                    });
                 }
-            });
-        }
-        else {
-            await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
-                $pull: {
-                    "quotas.quotaInfo.roleId": roleId
-                }
-            });
-        }
+            } else {
+                await MongoManager.updateAndFetchGuildDoc({ guildId: guild.id }, {
+                    $pull: { "quotas.quotaInfo": { roleId } }
+                });
+            }
 
-        return true;
+            return true;
+        } catch (err) {
+            LOGGER.error(`resetQuota failed for role ${roleId}: ${String(err)}`);
+            return false;
+        }
     }
+
 
     /**
      * Resets all quotas.
@@ -762,60 +746,102 @@ export namespace QuotaManager {
      * @returns {Promise<MessageEmbed | null>} The embed, if any. `null` only if the role corresponding to the quota
      * could not be found.
      */
-    export async function getQuotaLeaderboardEmbed(guild: Guild, guildDoc: IGuildInfo,
-                                                   quotaInfo: IQuotaInfo): Promise<MessageEmbed | null> {
+    export async function getQuotaLeaderboardEmbed(
+        guild: Guild,
+        guildDoc: IGuildInfo,
+        quotaInfo: IQuotaInfo
+    ): Promise<MessageEmbed | null> {
         LOGGER.debug(`Getting Quota Leaderboard Embed: ${MiscUtilities.getRoleName(quotaInfo.roleId, guild)}`);
+
         const role = GuildFgrUtilities.getCachedRole(guild, quotaInfo.roleId);
         if (!role)
             return null;
 
         const startTime = quotaInfo.lastReset;
-        const endTime = TimeUtilities.getNextDate(
-            quotaInfo.lastReset,
-            guildDoc.quotas.resetTime.dayOfWeek,
-            guildDoc.quotas.resetTime.time
-        );
-        const timeLeft = TimeUtilities.getDiscordTime({ time: endTime.getTime() });
+        const { dayOfWeek, time } = guildDoc.quotas.resetTime;
 
         const quotaPtDisplay = getPointListAsString(guildDoc, quotaInfo);
+
+        const baseDesc = new StringBuilder()
+            .append(`- Start Time: ${TimeUtilities.getDiscordTime({ time: startTime, style: TimestampType.FullDateNoDay })}`).appendLine()
+            .append(`- Members w/ Role: \`${role.members.size}\``).appendLine()
+            .append(`- Minimum Points Needed: \`${quotaInfo.pointsNeeded}\``).appendLine()
+            .append("__**Point Values**__")
+            .append(
+                StringUtil.codifyString(
+                    quotaPtDisplay.length === 0
+                        ? "N/A"
+                        : quotaPtDisplay
+                )
+            )
+            .toString();
+
         const embed = MessageUtilities.generateBlankEmbed(guild, "RANDOM")
             .setTitle(`Active Quota: ${role.name}`)
-            .setDescription(
-                new StringBuilder()
-                    .append(`- Start Time: ${TimeUtilities.getDiscordTime({ time: startTime, style: TimestampType.FullDateNoDay })}`).appendLine()
-                    .append(`- End Time: ${TimeUtilities.getDiscordTime({ time: endTime.getTime(), style: TimestampType.FullDateNoDay })}`).appendLine()
-                    .append(`- Members w/ Role: \`${role.members.size}\``).appendLine()
-                    .append(`- Minimum Points Needed: \`${quotaInfo.pointsNeeded}\``).appendLine()
-                    .append("__**Point Values**__")
-                    .append(
-                        StringUtil.codifyString(
-                            quotaPtDisplay.length === 0
-                                ? "N/A"
-                                : quotaPtDisplay
-                        )
-                    )
-                    .toString()
-            )
+            .setDescription(baseDesc)
             .setTimestamp();
 
-        if (quotaInfo.quotaLog.length === 0)
-            return embed.addField("**__Time left__**", `Quota period ends ${timeLeft}`);
+        let timeLeftLabel: string | null = null;
 
+        // Auto-reset mode
+        if (dayOfWeek !== -1 && time !== -1) {
+            const endTime = TimeUtilities.getNextDate(startTime, dayOfWeek, time);
+            const endTimeDisplay = TimeUtilities.getDiscordTime({
+                time: endTime.getTime(),
+                style: TimestampType.FullDateNoDay
+            });
+
+            embed.setDescription(
+                embed.description + `\n- End Time: ${endTimeDisplay}`
+            );
+
+            timeLeftLabel = `Quota period ends ${TimeUtilities.getDiscordTime({ time: endTime.getTime() })}`;
+        }
+        // Manual-only mode
+        else {
+            const panelEndTime = guildDoc.quotas.panelEndTime ?? null;
+            
+            if (panelEndTime) {
+                const endDisplay = TimeUtilities.getDiscordTime({
+                    time: panelEndTime,
+                    style: TimestampType.FullDateNoDay
+                });
+
+                embed.setDescription(
+                    embed.description + `\n- End Time: ${endDisplay}`
+                );
+            } else {
+                embed.setDescription(
+                    embed.description + "\n- End Time: Manual reset only"
+                );
+            }
+        }
+
+
+        // No logs: just show time left if applicable
+        if (quotaInfo.quotaLog.length === 0) {
+            if (timeLeftLabel) {
+                embed.addField("**__Time left__**", timeLeftLabel);
+            }
+            return embed;
+        }
+
+        // Build leaderboard
         const points: [GuildMember | string, number][] = [];
         const memberIdSeen = new Set<string>();
+
         for (const { userId } of quotaInfo.quotaLog) {
             if (memberIdSeen.has(userId))
                 continue;
             memberIdSeen.add(userId);
+
             const member = await GuildFgrUtilities.fetchGuildMember(guild, userId);
-            if (member && member.roles.cache.has(role.id))
-                points.push([member ?? userId, calcTotalQuotaPtsForMember(userId, role.id, guildDoc)]);
+            if (member && member.roles.cache.has(role.id)) {
+                points.push([member, calcTotalQuotaPtsForMember(userId, role.id, guildDoc)]);
+            }
         }
 
-        const leaderboard = ArrayUtilities.generateLeaderboardArray(
-            points,
-            p => p[1]
-        );
+        const leaderboard = ArrayUtilities.generateLeaderboardArray(points, p => p[1]);
 
         const fields = ArrayUtilities.arrayToStringFields(
             leaderboard,
@@ -840,8 +866,13 @@ export namespace QuotaManager {
             initialAdded = true;
         }
 
-        return embed.addField("**__Time left__**", `Quota period ends ${timeLeft}`);
+        if (timeLeftLabel) {
+            embed.addField("**__Time left__**", timeLeftLabel);
+        }
+
+        return embed;
     }
+
 
     /**
      * Sends or edits an existing quota leaderboard with the most recent leaderboard
@@ -903,38 +934,66 @@ export namespace QuotaManager {
      */
     export async function checkForReset() {
         const guildDocs = await MongoManager.getGuildCollection().find().toArray();
+
         let nextReset = DEFAULT_CHECK_RESET;
+        let hasAutoResetGuild = false;
 
         for (const guildDoc of guildDocs) {
             const guild = GlobalFgrUtilities.getCachedGuild(guildDoc.guildId);
-
             if (!guild) continue;
 
-            guildDoc.quotas.quotaInfo.forEach(async (quotaInfo) => {
+            const { dayOfWeek, time } = guildDoc.quotas.resetTime;
+
+            // Manual-only mode: update embeds if you want, but don't schedule resets
+            if (dayOfWeek === -1 || time === -1) {
+                for (const quotaInfo of guildDoc.quotas.quotaInfo) {
+                    await upsertLeaderboardMessage(quotaInfo.messageId, quotaInfo, guildDoc);
+                }
+                continue;
+            }
+
+            hasAutoResetGuild = true;
+
+            for (const quotaInfo of guildDoc.quotas.quotaInfo) {
                 const endTime = TimeUtilities.getNextDate(
                     quotaInfo.lastReset,
-                    guildDoc.quotas.resetTime.dayOfWeek,
-                    guildDoc.quotas.resetTime.time
+                    dayOfWeek,
+                    time
                 );
 
-                if (endTime.getTime() > Date.now() && (endTime.getTime() - Date.now() < nextReset) && (endTime.getTime() - Date.now() > IGNORE_RESET_TIME)) {
-                    nextReset = endTime.getTime() - Date.now();
+                const diff = endTime.getTime() - Date.now();
+
+                if (diff > IGNORE_RESET_TIME && diff < nextReset) {
+                    nextReset = diff;
                     LOGGER.info(`Found a more suitable end time: ${TimeUtilities.formatDuration(nextReset, false)}`);
-                } else if (endTime.getTime() - Date.now() < 0) {
-                    // If the date has already passed, it needs to be reset
+                } else if (diff < 0) {
+
                     const role = await GuildFgrUtilities.fetchRole(guild, quotaInfo.roleId);
                     LOGGER.info(`Reset quota for ${role?.name} in ${guild.name}`);
                     await QuotaManager.resetQuota(guild, quotaInfo.roleId);
                 } else {
-                    // Otherwise, the date has not passed. Update the embed incase there has been any changes (reset time)
+
                     await upsertLeaderboardMessage(quotaInfo.messageId, quotaInfo, guildDoc);
                 }
-            });
+            }
         }
 
-        if (nextReset === DEFAULT_CHECK_RESET)
+        // If no guild has auto reset configured, stop scheduling.
+        if (!hasAutoResetGuild) {
+            LOGGER.info("No auto quota resets configured. Auto reset timer cleared.");
+            if (quotaTimeoutId) {
+                clearTimeout(quotaTimeoutId);
+                quotaTimeoutId = null;
+            }
+            return;
+        }
+
+        if (nextReset === DEFAULT_CHECK_RESET) {
             LOGGER.info("Could not find a new time to check for quota resets. Defaulting to 1 day.");
+        }
 
         quotaTimeoutId = setTimeout(checkForReset, nextReset);
     }
+
+
 }
