@@ -762,8 +762,36 @@ export namespace QuotaManager {
 
         const quotaPtDisplay = getPointListAsString(guildDoc, quotaInfo);
 
+        // Calculate end time display
+        let endTimeDisplay: string;
+        let timeLeftLabel: string | null = null;
+
+        if (dayOfWeek !== -1 && time !== -1) {
+            // Auto-reset mode
+            const endTime = TimeUtilities.getNextDate(startTime, dayOfWeek, time);
+            endTimeDisplay = TimeUtilities.getDiscordTime({
+                time: endTime.getTime(),
+                style: TimestampType.FullDateNoDay
+            });
+            timeLeftLabel = `Quota period ends ${TimeUtilities.getDiscordTime({ time: endTime.getTime() })}`;
+        }
+        else {
+            // Manual-only mode
+            const panelEndTime = guildDoc.quotas.panelEndTime ?? null;
+            if (panelEndTime) {
+                endTimeDisplay = TimeUtilities.getDiscordTime({
+                    time: panelEndTime,
+                    style: TimestampType.FullDateNoDay
+                });
+            }
+            else {
+                endTimeDisplay = "Manual reset only";
+            }
+        }
+
         const baseDesc = new StringBuilder()
             .append(`- Start Time: ${TimeUtilities.getDiscordTime({ time: startTime, style: TimestampType.FullDateNoDay })}`).appendLine()
+            .append(`- End Time: ${endTimeDisplay}`).appendLine()
             .append(`- Members w/ Role: \`${role.members.size}\``).appendLine()
             .append(`- Minimum Points Needed: \`${quotaInfo.pointsNeeded}\``).appendLine()
             .append("__**Point Values**__")
@@ -780,42 +808,6 @@ export namespace QuotaManager {
             .setTitle(`Active Quota: ${role.name}`)
             .setDescription(baseDesc)
             .setTimestamp();
-
-        let timeLeftLabel: string | null = null;
-
-        // Auto-reset mode
-        if (dayOfWeek !== -1 && time !== -1) {
-            const endTime = TimeUtilities.getNextDate(startTime, dayOfWeek, time);
-            const endTimeDisplay = TimeUtilities.getDiscordTime({
-                time: endTime.getTime(),
-                style: TimestampType.FullDateNoDay
-            });
-
-            embed.setDescription(
-                embed.description + `\n- End Time: ${endTimeDisplay}`
-            );
-
-            timeLeftLabel = `Quota period ends ${TimeUtilities.getDiscordTime({ time: endTime.getTime() })}`;
-        }
-        // Manual-only mode
-        else {
-            const panelEndTime = guildDoc.quotas.panelEndTime ?? null;
-            
-            if (panelEndTime) {
-                const endDisplay = TimeUtilities.getDiscordTime({
-                    time: panelEndTime,
-                    style: TimestampType.FullDateNoDay
-                });
-
-                embed.setDescription(
-                    embed.description + `\n- End Time: ${endDisplay}`
-                );
-            } else {
-                embed.setDescription(
-                    embed.description + "\n- End Time: Manual reset only"
-                );
-            }
-        }
 
 
         // No logs: just show time left if applicable
