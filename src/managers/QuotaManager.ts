@@ -777,7 +777,7 @@ export namespace QuotaManager {
         }
         else {
             // Manual-only mode
-            const panelEndTime = guildDoc.quotas.panelEndTime ?? null;
+            const panelEndTime = guildDoc.quotas.panelEndTime;
             if (panelEndTime) {
                 endTimeDisplay = TimeUtilities.getDiscordTime({
                     time: panelEndTime,
